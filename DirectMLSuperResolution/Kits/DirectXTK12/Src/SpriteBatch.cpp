@@ -81,7 +81,7 @@ public:
         _In_opt_ RECT const* sourceRectangle,
         FXMVECTOR color,
         FXMVECTOR originRotationDepth,
-        int flags);
+        unsigned int flags);
 
     // Info about a single sprite that is waiting to be drawn.
     __declspec(align(16)) struct SpriteInfo : public AlignedNew<SpriteInfo>
@@ -92,11 +92,11 @@ public:
         XMFLOAT4A originRotationDepth;
         D3D12_GPU_DESCRIPTOR_HANDLE texture;
         XMVECTOR textureSize;
-        int flags;
+        unsigned int flags;
 
         // Combine values from the public SpriteEffects enum with these internal-only flags.
-        static const int SourceInTexels = 4;
-        static const int DestSizeInPixels = 8;
+        static const unsigned int SourceInTexels = 4;
+        static const unsigned int DestSizeInPixels = 8;
 
         static_assert((SpriteEffects_FlipBoth & (SourceInTexels | DestSizeInPixels)) == 0, "Flag bits must not overlap");
     };
@@ -529,7 +529,7 @@ void XM_CALLCONV SpriteBatch::Impl::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
     RECT const* sourceRectangle,
     FXMVECTOR color,
     FXMVECTOR originRotationDepth,
-    int flags)
+    unsigned int flags)
 {
     if (!mInBeginEndPair)
         throw std::exception("Begin must be called before Draw");
@@ -706,26 +706,32 @@ void SpriteBatch::Impl::SortSprites()
     {
     case SpriteSortMode_Texture:
         // Sort by texture.
-        std::sort(mSortedSprites.begin(), mSortedSprites.begin() + mSpriteQueueCount, [] (SpriteInfo const* x, SpriteInfo const* y) -> bool
-        {
-            return x->texture < y->texture;
-        });
+        std::sort(mSortedSprites.begin(),
+            mSortedSprites.begin() + static_cast<int>(mSpriteQueueCount),
+            [](SpriteInfo const* x, SpriteInfo const* y) -> bool
+            {
+                return x->texture < y->texture;
+            });
         break;
 
     case SpriteSortMode_BackToFront:
         // Sort back to front.
-        std::sort(mSortedSprites.begin(), mSortedSprites.begin() + mSpriteQueueCount, [] (SpriteInfo const* x, SpriteInfo const* y) -> bool
-        {
-            return x->originRotationDepth.w > y->originRotationDepth.w;
-        });
+        std::sort(mSortedSprites.begin(),
+            mSortedSprites.begin() + static_cast<int>(mSpriteQueueCount),
+            [](SpriteInfo const* x, SpriteInfo const* y) -> bool
+            {
+                return x->originRotationDepth.w > y->originRotationDepth.w;
+            });
         break;
 
     case SpriteSortMode_FrontToBack:
         // Sort front to back.
-        std::sort(mSortedSprites.begin(), mSortedSprites.begin() + mSpriteQueueCount, [] (SpriteInfo const* x, SpriteInfo const* y) -> bool
-        {
-            return x->originRotationDepth.w < y->originRotationDepth.w;
-        });
+        std::sort(mSortedSprites.begin(),
+            mSortedSprites.begin() + static_cast<int>(mSpriteQueueCount),
+            [](SpriteInfo const* x, SpriteInfo const* y) -> bool
+            {
+                return x->originRotationDepth.w < y->originRotationDepth.w;
+            });
         break;
 
     default:
@@ -811,7 +817,7 @@ void SpriteBatch::Impl::RenderBatch(D3D12_GPU_DESCRIPTOR_HANDLE texture, XMVECTO
         // Set the vertex buffer view
         D3D12_VERTEX_BUFFER_VIEW vbv;
         size_t spriteVertexTotalSize = sizeof(VertexPositionColorTexture) * VerticesPerSprite;
-        vbv.BufferLocation = mVertexSegment.GpuAddress() + mSpriteCount * spriteVertexTotalSize;
+        vbv.BufferLocation = mVertexSegment.GpuAddress() + (UINT64(mSpriteCount) * UINT64(spriteVertexTotalSize));
         vbv.StrideInBytes = sizeof(VertexPositionColorTexture);
         vbv.SizeInBytes = static_cast<UINT>(batchSize * spriteVertexTotalSize);
         commandList->IASetVertexBuffers(0, 1, &vbv);
@@ -841,7 +847,7 @@ void XM_CALLCONV SpriteBatch::Impl::RenderSprite(SpriteInfo const* sprite, Verte
     XMVECTOR originRotationDepth = XMLoadFloat4A(&sprite->originRotationDepth);
 
     float rotation = sprite->originRotationDepth.z;
-    int flags = sprite->flags;
+    unsigned int flags = sprite->flags;
 
     // Extract the source and destination sizes into separate vectors.
     XMVECTOR sourceSize = XMVectorSwizzle<2, 3, 2, 3>(source);
@@ -911,7 +917,7 @@ void XM_CALLCONV SpriteBatch::Impl::RenderSprite(SpriteInfo const* sprite, Verte
     static_assert(SpriteEffects_FlipHorizontally == 1 &&
         SpriteEffects_FlipVertically == 2, "If you change these enum values, the mirroring implementation must be updated to match");
 
-    const unsigned int mirrorBits = flags & 3;
+    const unsigned int mirrorBits = flags & 3u;
 
     // Generate the four output vertices.
     for (size_t i = 0; i < VerticesPerSprite; i++)
@@ -1070,7 +1076,7 @@ void XM_CALLCONV SpriteBatch::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
 
     XMVECTOR originRotationDepth = XMVectorSet(origin.x, origin.y, rotation, layerDepth);
 
-    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, effects);
+    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, static_cast<unsigned int>(effects));
 }
 
 
@@ -1090,7 +1096,7 @@ void XM_CALLCONV SpriteBatch::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
 
     XMVECTOR originRotationDepth = XMVectorSet(origin.x, origin.y, rotation, layerDepth);
 
-    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, effects);
+    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, static_cast<unsigned int>(effects));
 }
 
 
@@ -1120,7 +1126,7 @@ void XM_CALLCONV SpriteBatch::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
 
     XMVECTOR originRotationDepth = XMVectorPermute<0, 1, 4, 5>(origin, rotationDepth);
 
-    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, effects);
+    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, static_cast<unsigned int>(effects));
 }
 
 
@@ -1142,7 +1148,7 @@ void XM_CALLCONV SpriteBatch::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
 
     XMVECTOR originRotationDepth = XMVectorPermute<0, 1, 4, 5>(origin, rotationDepth);
 
-    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, effects);
+    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, static_cast<unsigned int>(effects));
 }
 
 
@@ -1172,7 +1178,7 @@ void XM_CALLCONV SpriteBatch::Draw(D3D12_GPU_DESCRIPTOR_HANDLE texture,
 
     XMVECTOR originRotationDepth = XMVectorSet(origin.x, origin.y, rotation, layerDepth);
 
-    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, effects | Impl::SpriteInfo::DestSizeInPixels);
+    pImpl->Draw(texture, textureSize, destination, sourceRectangle, color, originRotationDepth, static_cast<unsigned int>(effects) | Impl::SpriteInfo::DestSizeInPixels);
 }
 
 

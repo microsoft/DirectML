@@ -28,8 +28,8 @@ using namespace DirectX;
 // ModelMeshPart
 //--------------------------------------------------------------------------------------
 
-ModelMeshPart::ModelMeshPart(uint32_t partIndex) :
-    partIndex(partIndex),
+ModelMeshPart::ModelMeshPart(uint32_t ipartIndex) :
+    partIndex(ipartIndex),
     materialIndex(0),
     indexCount(0),
     startIndex(0),

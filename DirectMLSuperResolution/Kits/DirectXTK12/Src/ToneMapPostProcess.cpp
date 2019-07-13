@@ -239,10 +239,10 @@ ToneMapPostProcess::Impl::Impl(_In_ ID3D12Device* device, const RenderTargetStat
     mDirtyFlags(INT_MAX),
     mDeviceResources(deviceResourcesPool.DemandCreate(device))
 {
-    if (op < 0 || op >= Operator_Max)
+    if (op >= Operator_Max)
         throw std::out_of_range("Tonemap operator not defined");
 
-    if (func < 0 || func > TransferFunction_Max)
+    if (func > TransferFunction_Max)
         throw std::out_of_range("Transfer function not defined");
 
     // Create root signature.

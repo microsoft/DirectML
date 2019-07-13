@@ -2179,25 +2179,25 @@ void Sample::CreateUIResources()
     m_spriteBatch = std::make_unique<SpriteBatch>(device, uploadBatch, spd);
 
     wchar_t strFilePath[MAX_PATH] = {};
-    DX::FindMediaFile(strFilePath, MAX_PATH, L"Media\\Fonts\\SegoeUI_30.spritefont");
+    DX::FindMediaFile(strFilePath, MAX_PATH, L"SegoeUI_30.spritefont");
     m_labelFont = std::make_unique<SpriteFont>(device, uploadBatch,
         strFilePath,
         m_fontDescriptorHeap->GetCpuHandle(FontDescriptors::e_descLabelFont),
         m_fontDescriptorHeap->GetGpuHandle(FontDescriptors::e_descLabelFont));
 
-    DX::FindMediaFile(strFilePath, MAX_PATH, L"Media\\Fonts\\SegoeUI_30_Bold.spritefont");
+    DX::FindMediaFile(strFilePath, MAX_PATH, L"SegoeUI_30_Bold.spritefont");
     m_labelFontBold = std::make_unique<SpriteFont>(device, uploadBatch,
         strFilePath,
         m_fontDescriptorHeap->GetCpuHandle(FontDescriptors::e_descLabelFontBold),
         m_fontDescriptorHeap->GetGpuHandle(FontDescriptors::e_descLabelFontBold));
 
-    DX::FindMediaFile(strFilePath, MAX_PATH, L"Media\\Fonts\\SegoeUI_18.spritefont");
+    DX::FindMediaFile(strFilePath, MAX_PATH, L"SegoeUI_18.spritefont");
     m_legendFont = std::make_unique<SpriteFont>(device, uploadBatch,
         strFilePath,
         m_fontDescriptorHeap->GetCpuHandle(FontDescriptors::e_descLegendFont),
         m_fontDescriptorHeap->GetGpuHandle(FontDescriptors::e_descLegendFont));
 
-    DX::FindMediaFile(strFilePath, MAX_PATH, L"Media\\Fonts\\XboxOneControllerLegendSmall.spritefont");
+    DX::FindMediaFile(strFilePath, MAX_PATH, L"XboxOneControllerLegendSmall.spritefont");
     m_ctrlFont = std::make_unique<SpriteFont>(device, uploadBatch,
         strFilePath,
         m_fontDescriptorHeap->GetCpuHandle(FontDescriptors::e_descCtrlFont),

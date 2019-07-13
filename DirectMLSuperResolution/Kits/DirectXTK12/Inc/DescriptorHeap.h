@@ -102,7 +102,7 @@ namespace DirectX
             }
 
             D3D12_CPU_DESCRIPTOR_HANDLE handle;
-            handle.ptr = m_hCPU.ptr + UINT64(index) * UINT64(m_increment);
+            handle.ptr = static_cast<SIZE_T>(m_hCPU.ptr + UINT64(index) * UINT64(m_increment));
             return handle;
         }
 

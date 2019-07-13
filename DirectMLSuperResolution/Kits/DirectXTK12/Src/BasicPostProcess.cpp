@@ -206,7 +206,7 @@ BasicPostProcess::Impl::Impl(_In_ ID3D12Device* device, const RenderTargetState&
     mDirtyFlags(INT_MAX),
     mDeviceResources(deviceResourcesPool.DemandCreate(device))
 {
-    if (ifx < 0 || ifx >= Effect_Max)
+    if (ifx >= Effect_Max)
         throw std::out_of_range("Effect not defined");
    
     switch (ifx)

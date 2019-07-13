@@ -163,15 +163,15 @@ SpriteFont::Impl::Impl(
 
 // Constructs a SpriteFont from arbitrary user specified glyph data.
 _Use_decl_annotations_
-SpriteFont::Impl::Impl(D3D12_GPU_DESCRIPTOR_HANDLE texture, XMUINT2 textureSize, Glyph const* glyphs, size_t glyphCount, float lineSpacing)
-    : texture(texture),
-    textureSize(textureSize),
-    glyphs(glyphs, glyphs + glyphCount),
+SpriteFont::Impl::Impl(D3D12_GPU_DESCRIPTOR_HANDLE itexture, XMUINT2 itextureSize, Glyph const* iglyphs, size_t glyphCount, float ilineSpacing)
+    : texture(itexture),
+    textureSize(itextureSize),
+    glyphs(iglyphs, iglyphs + glyphCount),
     defaultGlyph(nullptr),
-    lineSpacing(lineSpacing),
+    lineSpacing(ilineSpacing),
     utfBufferSize(0)
 {
-    if (!std::is_sorted(glyphs, glyphs + glyphCount))
+    if (!std::is_sorted(iglyphs, iglyphs + glyphCount))
     {
         throw std::exception("Glyphs must be in ascending codepoint order");
     }
@@ -292,7 +292,7 @@ void SpriteFont::Impl::CreateTextureResource(
 
     D3D12_SUBRESOURCE_DATA subres = {};
     subres.pData = data;
-    subres.RowPitch = stride;
+    subres.RowPitch = ptrdiff_t(stride);
     subres.SlicePitch = ptrdiff_t(stride) * ptrdiff_t(rows);
 
     upload.Upload(
@@ -321,7 +321,7 @@ const wchar_t* SpriteFont::Impl::ConvertUTF8(_In_z_ const char *text)
     {
         // Compute required buffer size
         result = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
-        utfBufferSize = AlignUp(result, 1024);
+        utfBufferSize = AlignUp(static_cast<size_t>(result), 1024);
         utfBuffer.reset(new wchar_t[utfBufferSize]);
 
         // Retry conversion
