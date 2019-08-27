@@ -180,7 +180,7 @@ void MediaEnginePlayer::Initialize(IDXGIFactory4* dxgiFactory, ID3D12Device* dev
 #else
             adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_WARP,
 #endif
-            0,
+            nullptr,
             D3D11_CREATE_DEVICE_VIDEO_SUPPORT | D3D11_CREATE_DEVICE_BGRA_SUPPORT,
             &fLevel,
             1,
