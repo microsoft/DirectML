@@ -39,7 +39,7 @@ namespace DirectX
         DDS_ALPHA_MODE_CUSTOM        = 4,
     };
 
-    enum DDS_LOADER_FLAGS
+    enum DDS_LOADER_FLAGS : uint32_t
     {
         DDS_LOADER_DEFAULT      = 0,
         DDS_LOADER_FORCE_SRGB   = 0x1,

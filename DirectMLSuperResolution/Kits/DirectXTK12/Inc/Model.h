@@ -50,7 +50,7 @@ namespace DirectX
         uint32_t                                                materialIndex;  // Index of the material spec to use
         uint32_t                                                indexCount;
         uint32_t                                                startIndex;
-        uint32_t                                                vertexOffset;
+        int32_t                                                 vertexOffset;
         uint32_t                                                vertexStride;
         uint32_t                                                vertexCount;
         uint32_t                                                indexBufferSize;
@@ -267,7 +267,7 @@ namespace DirectX
                 return handle;
 
             handle = heap->GetGPUDescriptorHandleForHeapStart();
-            handle.ptr += static_cast<UINT64>(descriptorSize * (static_cast<size_t>(textureIndex) + descriptorOffset));
+            handle.ptr += static_cast<UINT64>(descriptorSize * (UINT64(textureIndex) + UINT64(descriptorOffset)));
 
             return handle;
         }

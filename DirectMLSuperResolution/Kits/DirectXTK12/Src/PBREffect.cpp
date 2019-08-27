@@ -173,7 +173,7 @@ const int EffectBase<PBREffectTraits>::PixelShaderIndices[] =
 
 // Global pool of per-device PBREffect resources. Required by EffectBase<>, but not used.
 template<>
-SharedResourcePool<ID3D12Device*, EffectBase<PBREffectTraits>::DeviceResources> EffectBase<PBREffectTraits>::deviceResourcesPool;
+SharedResourcePool<ID3D12Device*, EffectBase<PBREffectTraits>::DeviceResources> EffectBase<PBREffectTraits>::deviceResourcesPool = {};
 
 // Constructor.
 PBREffect::Impl::Impl(_In_ ID3D12Device* device,
@@ -420,7 +420,7 @@ void PBREffect::Impl::Apply(_In_ ID3D12GraphicsCommandList* commandList)
             throw std::exception("PBREffect");
         }
 
-        for (int i = 0; i < ConstantBuffer; i++)
+        for (unsigned i = 0; i < ConstantBuffer; i++)
         {
             if (i == EmissiveTexture)
                 continue;
@@ -613,6 +613,36 @@ void PBREffect::SetConstantRoughness(float value)
 
 
 // Texture settings.
+void PBREffect::SetAlbedoTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptor)
+{
+    pImpl->descriptors[Impl::RootParameterIndex::AlbedoTexture] = srvDescriptor;
+    pImpl->descriptors[Impl::RootParameterIndex::SurfaceSampler] = samplerDescriptor;
+}
+
+
+void PBREffect::SetNormalTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor)
+{
+    pImpl->descriptors[Impl::RootParameterIndex::NormalTexture] = srvDescriptor;
+}
+
+
+void PBREffect::SetRMATexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor)
+{
+    pImpl->descriptors[Impl::RootParameterIndex::RMATexture] = srvDescriptor;
+}
+
+
+void PBREffect::SetEmissiveTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor)
+{
+    if (!pImpl->emissiveMap)
+    {
+        DebugTrace("WARNING: Emissive texture set on PBREffect instance created without emissive shader (texture %llu)\n", srvDescriptor.ptr);
+    }
+
+    pImpl->descriptors[Impl::RootParameterIndex::EmissiveTexture] = srvDescriptor;
+}
+
+
 void PBREffect::SetSurfaceTextures(
     D3D12_GPU_DESCRIPTOR_HANDLE albedo,
     D3D12_GPU_DESCRIPTOR_HANDLE normal,
@@ -639,17 +669,6 @@ void PBREffect::SetIBLTextures(
     pImpl->descriptors[Impl::RootParameterIndex::IrradianceTexture] = irradiance;
 
     pImpl->dirtyFlags |= EffectDirtyFlags::ConstantBuffer;
-}
-
-
-void PBREffect::SetEmissiveTexture(D3D12_GPU_DESCRIPTOR_HANDLE emissive)
-{
-    if (!pImpl->emissiveMap)
-    {
-        DebugTrace("WARNING: Emissive texture set on PBREffect instance created without emissive shader (texture %llu)\n", emissive.ptr);
-    }
-
-    pImpl->descriptors[Impl::RootParameterIndex::EmissiveTexture] = emissive;
 }
 
 

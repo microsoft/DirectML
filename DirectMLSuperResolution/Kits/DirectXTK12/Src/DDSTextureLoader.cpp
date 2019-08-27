@@ -18,7 +18,7 @@
 #include "DDSTextureLoader.h"
 
 #include "PlatformHelpers.h"
-#include "dds.h"
+#include "DDS.h"
 #include "DirectXHelpers.h"
 #include "LoaderHelpers.h"
 #include "ResourceUploadBatch.h"
@@ -85,13 +85,13 @@ namespace
             if (!slicePlane)
             {
                 // Plane 0
-                res.SlicePitch = res.RowPitch * height;
+                res.SlicePitch = res.RowPitch * static_cast<LONG>(height);
             }
             else
             {
                 // Plane 1
-                res.pData = static_cast<const uint8_t*>(res.pData) + res.RowPitch * height;
-                res.SlicePitch = res.RowPitch * ((height + 1) >> 1);
+                res.pData = static_cast<const uint8_t*>(res.pData) + uintptr_t(res.RowPitch) * height;
+                res.SlicePitch = res.RowPitch * ((static_cast<LONG>(height) + 1) >> 1);
             }
             break;
 
@@ -99,14 +99,14 @@ namespace
             if (!slicePlane)
             {
                 // Plane 0
-                res.SlicePitch = res.RowPitch * height;
+                res.SlicePitch = res.RowPitch * static_cast<LONG>(height);
             }
             else
             {
                 // Plane 1
-                res.pData = static_cast<const uint8_t*>(res.pData) + res.RowPitch * height;
+                res.pData = static_cast<const uint8_t*>(res.pData) + uintptr_t(res.RowPitch) * height;
                 res.RowPitch = (res.RowPitch >> 1);
-                res.SlicePitch = res.RowPitch * height;
+                res.SlicePitch = res.RowPitch * static_cast<LONG>(height);
             }
             break;
 
@@ -267,7 +267,8 @@ namespace
             IID_GRAPHICS_PPV_ARGS(texture));
         if (SUCCEEDED(hr))
         {
-            _Analysis_assume_(*texture != 0);
+            assert(texture != nullptr && *texture != nullptr);
+            _Analysis_assume_(texture != nullptr && *texture != nullptr);
 
             SetDebugObjectName(*texture, L"DDSTextureLoader");
         }
@@ -330,6 +331,7 @@ namespace
                     DebugTrace("ERROR: Unknown DXGI format (%u)\n", static_cast<uint32_t>(d3d10ext->dxgiFormat));
                     return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
                 }
+                break;
             }
 
             format = d3d10ext->dxgiFormat;
@@ -367,6 +369,11 @@ namespace
                 }
                 break;
 
+            case D3D12_RESOURCE_DIMENSION_BUFFER:
+                DebugTrace("ERROR: Resource dimension buffer type not supported for textures\n");
+                return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+
+            case D3D12_RESOURCE_DIMENSION_UNKNOWN:
             default:
                 DebugTrace("ERROR: Unknown resource dimension (%u)\n", static_cast<uint32_t>(d3d10ext->resourceDimension));
                 return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
@@ -462,6 +469,10 @@ namespace
             }
             break;
 
+        case D3D12_RESOURCE_DIMENSION_BUFFER:
+            DebugTrace("ERROR: Resource dimension buffer type not supported for textures\n");
+            return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+
         default:
             DebugTrace("ERROR: Unknown resource dimension (%u)\n", static_cast<uint32_t>(resDim));
             return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
@@ -517,9 +528,10 @@ namespace
             {
                 subresources.clear();
 
-                maxsize = (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+                maxsize = static_cast<size_t>(
+                    (resDim == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
                     ? D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION
-                    : D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+                    : D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION);
 
                 hr = FillInitData(width, height, depth, mipCount, arraySize,
                     numberOfPlanes, format,

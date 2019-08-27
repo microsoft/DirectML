@@ -36,7 +36,7 @@ namespace DirectX
         SpriteSortMode_FrontToBack,
     };
 
-    enum SpriteEffects
+    enum SpriteEffects : uint32_t
     {
         SpriteEffects_None = 0,
         SpriteEffects_FlipHorizontally = 1,
@@ -52,7 +52,7 @@ namespace DirectX
             _In_opt_ const D3D12_BLEND_DESC* blend = nullptr,
             _In_opt_ const D3D12_DEPTH_STENCIL_DESC* depthStencil = nullptr,
             _In_opt_ const D3D12_RASTERIZER_DESC* rasterizer = nullptr,
-            _In_opt_ const D3D12_GPU_DESCRIPTOR_HANDLE* samplerDescriptor = nullptr)
+            _In_opt_ const D3D12_GPU_DESCRIPTOR_HANDLE* isamplerDescriptor = nullptr)
             :
             blendDesc(blend ? *blend : s_DefaultBlendDesc),
             depthStencilDesc(depthStencil ? *depthStencil : s_DefaultDepthStencilDesc),
@@ -63,8 +63,8 @@ namespace DirectX
             customVertexShader{},
             customPixelShader{}
         {
-            if (samplerDescriptor)
-                this->samplerDescriptor = *samplerDescriptor;
+            if (isamplerDescriptor)
+                this->samplerDescriptor = *isamplerDescriptor;
         }
 
         D3D12_BLEND_DESC            blendDesc;

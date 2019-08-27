@@ -568,7 +568,7 @@ void DirectX::CreateADPCM(WAVEFORMATEX* wfx, size_t wfxSize, int sampleRate, int
 _Use_decl_annotations_
 void DirectX::CreateXWMA(WAVEFORMATEX* wfx, int sampleRate, int channels, int blockAlign, int avgBytes, bool wma3)
 {
-    wfx->wFormatTag = (wma3) ? WAVE_FORMAT_WMAUDIO3 : WAVE_FORMAT_WMAUDIO2;
+    wfx->wFormatTag = static_cast<WORD>((wma3) ? WAVE_FORMAT_WMAUDIO3 : WAVE_FORMAT_WMAUDIO2);
     wfx->nChannels = static_cast<WORD>(channels);
     wfx->nSamplesPerSec = static_cast<DWORD>(sampleRate);
     wfx->nAvgBytesPerSec = static_cast<DWORD>(avgBytes);
@@ -591,7 +591,7 @@ void DirectX::CreateXMA2(WAVEFORMATEX* wfx, size_t wfxSize, int sampleRate, int 
         throw std::invalid_argument("XMA2WAVEFORMATEX");
     }
 
-    if (!bytesPerBlock || (bytesPerBlock > XMA_READBUFFER_MAX_BYTES))
+    if ((bytesPerBlock < 1) || (bytesPerBlock > int(XMA_READBUFFER_MAX_BYTES)))
     {
         DebugTrace("XMA2 needs a valid bytes per block\n");
         throw std::invalid_argument("XMA2WAVEFORMATEX");
@@ -614,7 +614,7 @@ void DirectX::CreateXMA2(WAVEFORMATEX* wfx, size_t wfxSize, int sampleRate, int 
     xmaFmt->ChannelMask = GetDefaultChannelMask(channels);
 
     xmaFmt->SamplesEncoded = static_cast<DWORD>(samplesEncoded);
-    xmaFmt->BytesPerBlock = bytesPerBlock;
+    xmaFmt->BytesPerBlock = static_cast<DWORD>(bytesPerBlock);
     xmaFmt->PlayBegin = xmaFmt->PlayLength =
         xmaFmt->LoopBegin = xmaFmt->LoopLength = xmaFmt->LoopCount = 0;
     xmaFmt->EncoderVersion = 4 /* XMAENCODER_VERSION_XMA2 */;
@@ -626,7 +626,7 @@ void DirectX::CreateXMA2(WAVEFORMATEX* wfx, size_t wfxSize, int sampleRate, int 
 
 
 _Use_decl_annotations_
-bool DirectX::ComputePan(float pan, int channels, float* matrix)
+bool DirectX::ComputePan(float pan, unsigned int channels, float* matrix)
 {
     memset(matrix, 0, sizeof(float) * 16);
 
