@@ -26,24 +26,24 @@ namespace DirectX
     struct EffectPipelineStateDescription
     {
         EffectPipelineStateDescription(
-            _In_opt_ const D3D12_INPUT_LAYOUT_DESC* inputLayout,
+            _In_opt_ const D3D12_INPUT_LAYOUT_DESC* iinputLayout,
             const D3D12_BLEND_DESC& blend,
             const D3D12_DEPTH_STENCIL_DESC& depthStencil,
             const D3D12_RASTERIZER_DESC& rasterizer,
             const RenderTargetState& renderTarget,
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-            D3D12_INDEX_BUFFER_STRIP_CUT_VALUE stripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED)
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE iprimitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+            D3D12_INDEX_BUFFER_STRIP_CUT_VALUE istripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED)
             :
             inputLayout{},
             blendDesc(blend),
             depthStencilDesc(depthStencil),
             rasterizerDesc(rasterizer),
             renderTargetState(renderTarget),
-            primitiveTopology(primitiveTopology),
-            stripCutValue(stripCutValue)
+            primitiveTopology(iprimitiveTopology),
+            stripCutValue(istripCutValue)
         {
-            if (inputLayout)
-                this->inputLayout = *inputLayout;
+            if (iinputLayout)
+                this->inputLayout = *iinputLayout;
         }
 
         EffectPipelineStateDescription(const EffectPipelineStateDescription&) = default;

@@ -17,6 +17,9 @@ using Microsoft::WRL::ComPtr;
 
 namespace DirectX
 {
+    uint32_t CountMips(uint32_t width, uint32_t height);
+        // Also used by DDSTextureLoader & WICTextureLoader
+
     uint32_t CountMips(uint32_t width, uint32_t height)
     {
         if (width == 0 || height == 0)
@@ -306,7 +309,7 @@ public:
         , mTypedUAVLoadAdditionalFormats(false)
         , mStandardSwizzle64KBSupported(false)
     {
-        assert(device != 0);
+        assert(device != nullptr);
         D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
         if (SUCCEEDED(device->CheckFeatureSupport(
             D3D12_FEATURE_D3D12_OPTIONS,
@@ -618,7 +621,7 @@ private:
 
         SetDebugObjectName(descriptorHeap.Get(), L"ResourceUploadBatch");
 
-        uint32_t descriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        auto descriptorSize = static_cast<int>(mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
         // Create the top-level SRV
         CD3DX12_CPU_DESCRIPTOR_HANDLE handleIt(descriptorHeap->GetCPUDescriptorHandleForHeapStart());

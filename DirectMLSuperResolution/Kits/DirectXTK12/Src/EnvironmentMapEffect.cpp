@@ -222,7 +222,7 @@ const int EffectBase<EnvironmentMapEffectTraits>::PixelShaderIndices[] =
 
 // Global pool of per-device EnvironmentMapEffect resources.
 template<>
-SharedResourcePool<ID3D12Device*, EffectBase<EnvironmentMapEffectTraits>::DeviceResources> EffectBase<EnvironmentMapEffectTraits>::deviceResourcesPool;
+SharedResourcePool<ID3D12Device*, EffectBase<EnvironmentMapEffectTraits>::DeviceResources> EffectBase<EnvironmentMapEffectTraits>::deviceResourcesPool = {};
 
 
 // Constructor.

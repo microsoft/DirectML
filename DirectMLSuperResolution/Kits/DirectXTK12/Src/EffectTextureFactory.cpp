@@ -44,7 +44,7 @@ public:
         _In_ ID3D12DescriptorHeap* descriptorHeap)
         : mPath{}
         , mTextureDescriptorHeap(descriptorHeap)
-        , device(device)
+        , mDevice(device)
         , mResourceUploadBatch(resourceUploadBatch)
         , mSharing(true)
         , mForceSRGB(false)
@@ -60,7 +60,7 @@ public:
         _In_ D3D12_DESCRIPTOR_HEAP_FLAGS descriptorHeapFlags)
         : mPath{}
         , mTextureDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptorHeapFlags, numDescriptors)
-        , device(device)
+        , mDevice(device)
         , mResourceUploadBatch(resourceUploadBatch)
         , mSharing(true)
         , mForceSRGB(false)
@@ -82,7 +82,7 @@ public:
     std::vector<TextureCacheEntry> mResources; // flat list of unique resources so we can index into it
 
 private:
-    ID3D12Device*                  device;
+    ComPtr<ID3D12Device>           mDevice;
     ResourceUploadBatch&           mResourceUploadBatch;
 
     TextureCache                   mTextureCache;
@@ -144,7 +144,7 @@ size_t EffectTextureFactory::Impl::CreateTexture(_In_z_ const wchar_t* name, int
         if (_wcsicmp(ext, L".dds") == 0)
         {
             HRESULT hr = CreateDDSTextureFromFileEx(
-                device,
+                mDevice.Get(),
                 mResourceUploadBatch,
                 fullName,
                 0u,
@@ -164,7 +164,7 @@ size_t EffectTextureFactory::Impl::CreateTexture(_In_z_ const wchar_t* name, int
             textureEntry.mIsCubeMap = false;
 
             HRESULT hr = CreateWICTextureFromFileEx(
-                device,
+                mDevice.Get(),
                 mResourceUploadBatch,
                 fullName,
                 0u,
@@ -191,8 +191,8 @@ size_t EffectTextureFactory::Impl::CreateTexture(_In_z_ const wchar_t* name, int
     assert(textureEntry.mResource != nullptr);
 
     // bind a new descriptor in slot 
-    auto textureDescriptor = mTextureDescriptorHeap.GetCpuHandle(descriptorSlot);
-    DirectX::CreateShaderResourceView(device, textureEntry.mResource.Get(), textureDescriptor, textureEntry.mIsCubeMap);
+    auto textureDescriptor = mTextureDescriptorHeap.GetCpuHandle(static_cast<size_t>(descriptorSlot));
+    DirectX::CreateShaderResourceView(mDevice.Get(), textureEntry.mResource.Get(), textureDescriptor, textureEntry.mIsCubeMap);
 
     return textureEntry.slot;
 }

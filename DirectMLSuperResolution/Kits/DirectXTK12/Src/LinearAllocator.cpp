@@ -12,6 +12,7 @@
 #include "PlatformHelpers.h"
 #include "LinearAllocator.h"
 
+// Set this to 1 to enable some additional debug validation
 #define VALIDATE_LISTS 0
 
 #if VALIDATE_LISTS
@@ -26,7 +27,7 @@ LinearAllocatorPage::LinearAllocatorPage() noexcept
     , pNextPage(nullptr)
     , mMemory(nullptr)
     , mPendingFence(0)
-    , mGpuAddress {}
+    , mGpuAddress{}
     , mOffset(0)
     , mSize(0)
     , mRefCount(1)
@@ -36,10 +37,12 @@ LinearAllocatorPage::LinearAllocatorPage() noexcept
 size_t LinearAllocatorPage::Suballocate(_In_ size_t size, _In_ size_t alignment)
 {
     size_t offset = AlignUp(mOffset, alignment);
-#ifdef _DEBUG
     if (offset + size > mSize)
-        throw std::exception("Out of free memory in page suballoc");
-#endif
+    {
+        // Use of suballocate should be limited to pages with free space,
+        // so really shouldn't happen.
+        throw std::exception("LinearAllocatorPage::Suballocate");
+    }
     mOffset = offset + size;
     return offset;
 }
@@ -55,6 +58,8 @@ void LinearAllocatorPage::Release()
     }
 }
 
+
+//--------------------------------------------------------------------------------------
 LinearAllocator::LinearAllocator(
     _In_ ID3D12Device* pDevice,
     _In_ size_t pageSize,
@@ -76,7 +81,9 @@ LinearAllocator::LinearAllocator(
     {
         if (GetNewPage() == nullptr)
         {
-            throw std::exception("Out of memory.");
+            DebugTrace("LinearAllocator failed to preallocate pages (%zu required bytes, %zu pages)\n",
+                preallocatePageCount * m_increment, preallocatePageCount);
+            throw std::bad_alloc();
         }
     }
 }
@@ -112,10 +119,10 @@ LinearAllocatorPage* LinearAllocator::FindPageForAlloc(_In_ size_t size, _In_ si
         throw std::exception("Cannot honor zero size allocation request.");
 #endif
 
-    LinearAllocatorPage* page = GetPageForAlloc(size, alignment);
-    if (page == nullptr)
+    auto page = GetPageForAlloc(size, alignment);
+    if (!page)
     {
-        throw std::exception("Out of memory.");
+        return nullptr;
     }
 
     return page;
@@ -133,7 +140,7 @@ void LinearAllocator::FenceCommittedPages(_In_ ID3D12CommandQueue* commandQueue)
     LinearAllocatorPage* readyPages = nullptr;
     LinearAllocatorPage* unreadyPages = nullptr;
     LinearAllocatorPage* nextPage = nullptr;
-    for (LinearAllocatorPage* page = m_usedPages; page != nullptr; page = nextPage)
+    for (auto page = m_usedPages; page != nullptr; page = nextPage)
     {
         nextPage = page->pNextPage;
 
@@ -182,7 +189,7 @@ void LinearAllocator::RetirePendingPages()
 {
     // For each page that we know has a fence pending, check it. If the fence has passed,
     // we can mark the page for re-use.
-    LinearAllocatorPage* page = m_pendingPages;
+    auto page = m_pendingPages;
     while (page != nullptr)
     {
         LinearAllocatorPage* nextPage = page->pNextPage;
@@ -212,14 +219,13 @@ void LinearAllocator::Shrink()
 LinearAllocatorPage* LinearAllocator::GetCleanPageForAlloc()
 {
     // Grab the first unused page, if one exists. Else, allocate a new page.
-    LinearAllocatorPage* page = m_unusedPages;
-    if (page == nullptr)
+    auto page = m_unusedPages;
+    if (!page)
     {
         // Allocate a new page
         page = GetNewPage();
-        if (page == nullptr)
+        if (!page)
         {
-            // OOM.
             return nullptr;
         }
     }
@@ -244,8 +250,8 @@ LinearAllocatorPage* LinearAllocator::GetPageForAlloc(
     }
 
     // Find a page in the pending pages list that has space.
-    LinearAllocatorPage* page = FindPageForAlloc(m_usedPages, sizeBytes, alignment);
-    if (page == nullptr)
+    auto page = FindPageForAlloc(m_usedPages, sizeBytes, alignment);
+    if (!page)
     {
         page = GetCleanPageForAlloc();
     }
@@ -258,7 +264,7 @@ LinearAllocatorPage* LinearAllocator::FindPageForAlloc(
     size_t sizeBytes,
     size_t alignment)
 {
-    for (LinearAllocatorPage* page = list; page != nullptr; page = page->pNextPage)
+    for (auto page = list; page != nullptr; page = page->pNextPage)
     {
         size_t offset = AlignUp(page->mOffset, alignment);
         if (offset + sizeBytes <= m_increment)
@@ -269,20 +275,24 @@ LinearAllocatorPage* LinearAllocator::FindPageForAlloc(
 
 LinearAllocatorPage* LinearAllocator::GetNewPage()
 {
-    ComPtr<ID3D12Resource> spResource;
-
     CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
     CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(m_increment);
 
     // Allocate the upload heap
-    if (FAILED(m_device->CreateCommittedResource(
+    ComPtr<ID3D12Resource> spResource;
+    HRESULT hr = m_device->CreateCommittedResource(
         &uploadHeapProperties,
         D3D12_HEAP_FLAG_NONE,
         &bufferDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
-        IID_GRAPHICS_PPV_ARGS(spResource.ReleaseAndGetAddressOf()))))
+        IID_GRAPHICS_PPV_ARGS(spResource.ReleaseAndGetAddressOf()));
+    if (FAILED(hr))
     {
+        if (hr != E_OUTOFMEMORY)
+        {
+            DebugTrace("LinearAllocator::GetNewPage resource allocation failed due to unexpected error %08X\n", hr);
+        }
         return nullptr;
     }
 
@@ -297,18 +307,20 @@ LinearAllocatorPage* LinearAllocator::GetNewPage()
 
     // Create a fence
     ComPtr<ID3D12Fence> spFence;
-    if (FAILED(m_device->CreateFence(
+    hr = m_device->CreateFence(
         0,
         D3D12_FENCE_FLAG_NONE,
-        IID_GRAPHICS_PPV_ARGS(spFence.ReleaseAndGetAddressOf()))))
+        IID_GRAPHICS_PPV_ARGS(spFence.ReleaseAndGetAddressOf()));
+    if (FAILED(hr))
     {
+        DebugTrace("LinearAllocator::GetNewPage failed to allocate fence with error %08X\n", hr);
         return nullptr;
     }
 
     SetDebugObjectName(spFence.Get(), L"LinearAllocator");
 
     // Add the page to the page list
-    LinearAllocatorPage* page = new LinearAllocatorPage;
+    auto page = new LinearAllocatorPage;
     page->mSize = m_increment;
     page->mMemory = pMemory;
     page->pPrevPage = nullptr;
@@ -442,7 +454,7 @@ void LinearAllocator::FreePages(LinearAllocatorPage* page)
 #if VALIDATE_LISTS
 void LinearAllocator::ValidateList(LinearAllocatorPage* list)
 {
-    for (LinearAllocatorPage* page = list, *lastPage = nullptr;
+    for (auto page = list, *lastPage = nullptr;
         page != nullptr;
         lastPage = page, page = page->pNextPage)
     {
@@ -484,7 +496,7 @@ void LinearAllocator::SetDebugName(const wchar_t* name)
 
 void LinearAllocator::SetPageDebugName(LinearAllocatorPage* list)
 {
-    for (LinearAllocatorPage* page = list; page != nullptr; page = page->pNextPage)
+    for (auto page = list; page != nullptr; page = page->pNextPage)
     {
         page->mUploadResource->SetName(m_debugName.c_str());
     }

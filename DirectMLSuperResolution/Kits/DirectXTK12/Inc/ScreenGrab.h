@@ -22,7 +22,7 @@
 #include <d3d12.h>
 #endif
 
-#include <ocidl.h>
+#include <OCIdl.h>
 #include <functional>
 
 

@@ -395,7 +395,7 @@ public:
     {
         SetDebugObjectName(mDescriptors.Heap(), L"CommonStates");
 
-        for (int i = 0; i < static_cast<int>(SamplerIndex::Count); ++i)
+        for (size_t i = 0; i < static_cast<size_t>(SamplerIndex::Count); ++i)
         {
             device->CreateSampler(&SamplerDescs[i], mDescriptors.GetCpuHandle(i));
         }

@@ -115,9 +115,12 @@ namespace
             assert(allocator != nullptr);
             assert(poolSize < MinPageSize || poolSize == allocator->PageSize());
 
-            LinearAllocatorPage* page = allocator->FindPageForAlloc(size, alignment);
-            if (page == nullptr)
-                throw std::exception("Out of memory");
+            auto page = allocator->FindPageForAlloc(size, alignment);
+            if (!page)
+            {
+                DebugTrace("GraphicsMemory failed to allocate page (%zu requested bytes, %zu alignment)\n", size, alignment);
+                throw std::bad_alloc();
+            }
 
             size_t offset = page->Suballocate(size, alignment);
 
@@ -138,7 +141,7 @@ namespace
 
             for (auto& i : mPools)
             {
-                if (i != nullptr)
+                if (i)
                 {
                     i->RetirePendingPages();
                     i->FenceCommittedPages(commandQueue);
@@ -152,19 +155,21 @@ namespace
 
             for (auto& i : mPools)
             {
-                if (i != nullptr)
+                if (i)
                 {
                     i->Shrink();
                 }
             }
         }
 
+    #if !defined(_XBOX_ONE) || !defined(_TITLE)
         ID3D12Device* GetDevice() const { return mDevice.Get(); }
+    #endif
 
     private:
         ComPtr<ID3D12Device> mDevice;
         std::array<std::unique_ptr<LinearAllocator>, AllocatorPoolCount> mPools;
-        std::mutex mMutex;
+        mutable std::mutex mMutex;
     };
 } // anonymous namespace
 
@@ -365,6 +370,7 @@ GraphicsResource::GraphicsResource(
     , mBufferOffset(offset)
     , mSize(size)
 {
+    assert(mPage != nullptr);
     mPage->AddRef();
 }
 
@@ -381,9 +387,10 @@ GraphicsResource::GraphicsResource(GraphicsResource&& other) noexcept
 
 GraphicsResource::~GraphicsResource()
 {
-    if (mPage != nullptr)
+    if (mPage)
     {
         mPage->Release();
+        mPage = nullptr;
     }
 }
 
@@ -395,12 +402,12 @@ GraphicsResource&& GraphicsResource::operator= (GraphicsResource&& other) noexce
 
 void GraphicsResource::Reset()
 {
-    if (mPage != nullptr)
+    if (mPage)
     {
         mPage->Release();
+        mPage = nullptr;
     }
 
-    mPage = nullptr;
     mGpuAddress = {};
     mResource = nullptr;
     mMemory = nullptr;
@@ -410,9 +417,10 @@ void GraphicsResource::Reset()
 
 void GraphicsResource::Reset(GraphicsResource&& alloc)
 {
-    if (mPage != nullptr)
+    if (mPage)
     {
         mPage->Release();
+        mPage = nullptr;
     }
 
     mGpuAddress = alloc.GpuAddress();

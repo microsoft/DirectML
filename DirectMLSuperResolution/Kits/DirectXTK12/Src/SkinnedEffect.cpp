@@ -221,7 +221,7 @@ const int EffectBase<SkinnedEffectTraits>::PixelShaderIndices[] =
 
 // Global pool of per-device SkinnedEffect resources.
 template<>
-SharedResourcePool<ID3D12Device*, EffectBase<SkinnedEffectTraits>::DeviceResources> EffectBase<SkinnedEffectTraits>::deviceResourcesPool;
+SharedResourcePool<ID3D12Device*, EffectBase<SkinnedEffectTraits>::DeviceResources> EffectBase<SkinnedEffectTraits>::deviceResourcesPool = {};
 
 
 // Constructor.

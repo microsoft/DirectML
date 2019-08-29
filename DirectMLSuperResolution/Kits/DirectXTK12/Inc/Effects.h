@@ -524,6 +524,12 @@ namespace DirectX
         void __cdecl SetConstantRoughness(float value);
 
         // Texture settings.
+        void __cdecl SetAlbedoTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor, D3D12_GPU_DESCRIPTOR_HANDLE samplerDescriptor);
+        void __cdecl SetNormalTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor);
+        void __cdecl SetRMATexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor);
+
+        void __cdecl SetEmissiveTexture(D3D12_GPU_DESCRIPTOR_HANDLE srvDescriptor);
+
         void __cdecl SetSurfaceTextures(
             D3D12_GPU_DESCRIPTOR_HANDLE albedo,
             D3D12_GPU_DESCRIPTOR_HANDLE normal,
@@ -535,8 +541,6 @@ namespace DirectX
             int numRadianceMips,
             D3D12_GPU_DESCRIPTOR_HANDLE irradiance,
             D3D12_GPU_DESCRIPTOR_HANDLE sampler);
-
-        void __cdecl SetEmissiveTexture(D3D12_GPU_DESCRIPTOR_HANDLE emissive);
 
         // Render target size, required for velocity buffer output.
         void __cdecl SetRenderTargetSizeInPixels(int width, int height);
