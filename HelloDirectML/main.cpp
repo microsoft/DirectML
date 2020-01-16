@@ -38,7 +38,7 @@ void InitializeDirect3D12(
 
         hr = ::D3D12CreateDevice(
             dxgiAdapter.get(),
-            D3D_FEATURE_LEVEL_12_0,
+            D3D_FEATURE_LEVEL_11_0,
             __uuidof(d3D12Device),
             d3D12Device.put_void());
         if (hr == DXGI_ERROR_UNSUPPORTED) continue;
