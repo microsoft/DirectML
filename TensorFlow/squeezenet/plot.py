@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 import matplotlib.pyplot as plt
 import json
 import os

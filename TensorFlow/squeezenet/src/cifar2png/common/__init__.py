@@ -1,1 +1,0 @@
-name = "cifar2png"

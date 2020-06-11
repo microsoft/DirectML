@@ -1,4 +1,0 @@
-*.pyc
-__pycache__
-cifar2png.egg-info/
-dist/

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 import os
 import glob
 import shutil

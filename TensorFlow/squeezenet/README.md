@@ -1,5 +1,10 @@
-<h1>SqueezeNet Model
----
+# SqueezeNet Model <!-- omit in toc -->
+
+Sample scripts for training the SqueezeNet model using TensorFlow on DirectML.
+
+These scripts were forked from https://github.com/vonclites/squeezenet. The original code is Copyright (c) 2018 Domenick Poster, and is used here under the terms of the MIT License. See [LICENSE](./src/LICENSE) for more information.
+
+The original paper can be found at: https://arxiv.org/abs/1602.07360
 
 - [Setup Data](#setup-data)
 - [Training](#training)
@@ -7,14 +12,11 @@
 - [Tracing](#tracing)
 - [Visualizing](#visualizing)
 - [Details](#details)
-- [Architecture](#architecture)
 - [Links](#links)
 
-# Setup Data
+## Setup Data
 
-We have a [a fork](https://github.com/PatriceVignola/squeezenet) of [Vonclites' implementation](https://github.com/vonclites/squeezenet) of SqueezeNet for TensorFlow that can be used for training and inference, and it uses the CIFAR-10 dataset by default. These steps only need to be performed once (preferably in a [conda](https://docs.conda.io/en/latest/miniconda.html) environment).
-
-Change the working directory to the root-level `squeezenet` folder and ensure you have the pip packages. Then run the setup script to download and convert data:
+After installing the TensorFlow on DirectML package (see [**TODO adtsai: Getting started with TensorFlow**](#)), open a console to the `squeezenet` directory and run the setup script to download and convert data:
 
 ```
 pip install -r requirements.txt
@@ -39,7 +41,7 @@ Saving train images: 100%|██████████████████
 Saving test images: 100%|██████████████████████████████████████████████████████| 10000/10000 [00:05<00:00, 1684.41it/s]
 ```
 
-# Training
+## Training
 
 A helper script exists to train SqueezeNet with default data, batch size, and so on:
 
@@ -65,7 +67,7 @@ Train Step 10   :  0.125
 
 By default, the script will run for 1800 training steps with a batch size of 32 and print the accuracy for each step. The training script can be run multiple times and saves progress with checkpoints every 100 steps (by default). If you've already trained 1800 steps, running `train.py` will have no effect; you may run `python clean.py` to delete the checkpoints and start over.
 
-The accuracy should increase over time. With the default arguments (intended for speed, which prefer speed over quality), you should see around 45-55% accuracy after 1800 steps. The exact value will vary, but if it's substantially lower then something is probably not right.
+The accuracy should increase over time. With the default arguments (intended for speed, which prefer speed over quality), you should see around 45-55% accuracy after 1800 steps.
 
 ```
 Evaluation Step 1800 :  0.467
@@ -79,7 +81,7 @@ Once you're finished with training (at least one checkpoint must exist), you can
 python src/save_squeezenet.py --model_dir data
 ```
 
-# Testing
+## Testing
 
 Once the model is trained and saved we can now run the prediction using the following steps. Feel free to change the input image from the test set. Make sure that the data_format layout matches the same layout that the model is trained with.
 
@@ -93,7 +95,7 @@ You should see the result such as this:
 data/cifar10_images/test/ship/0001.png: predicted ship
 ```
 
-# Tracing
+## Tracing
 
 It may be useful to get a trace of TensorFlow during training. As with training, there is a wrapper script for convenience:
 
@@ -127,11 +129,11 @@ cifar_trace_9.json duration : 24.022 ms
 {"min": 22.111, "max": 674.313, "median": 24.118, "measurements": [22.111, 22.397, 22.864, 23.305, 24.022, 24.118, 24.587, 24.679, 100.84, 674.313]}
 ```
 
-The first few traces are typically much slower on DML, since our kernels won't have been cached yet (compiling DML operators can be expensive). You can inspect the timelines for the traces by opening one of the saved json files in Chrome/Edge and navigating to `chrome://tracing` in the browser.
+It can take a few training steps before a performance steady state is reached, due to caching and other effects. You can inspect the timelines for the traces by opening one of the saved json files in Chrome/Edge and navigating to `chrome://tracing` in the browser.
 
-# Visualizing
+## Visualizing
 
-You can launch TensorBoard from the same conda environment you're using to train/test the model. This can be done before or after you've trained; you simply point it at the `data/eval` directory where events are recorded and it will update automatically.
+You can launch TensorBoard from the same environment you're using to train/test the model. This can be done before or after you've trained; you simply point it at the `data/eval` directory where events are recorded and it will update automatically.
 
 ```
 tensorboard --logdir data/eval
@@ -143,11 +145,11 @@ For SqueezeNet, the scalars tab will show training accuracy. This tab will be em
 
 ![Scalars Tab](Content/squeezenet_tboard_scalars.png)
 
-The graph tab always shows the computational graph. You'll find that the graph view is a bit messier than an ONNX graph visualized with Netron: it contains all sorts of helper functions for reading data, variables, computing gradients, control flow, and so on. You can expand many of the nodes to break them up further until you see individual op_nodes in the graph, which will tell you on which device they were placed.
+The graph tab always shows the computational graph. You can expand many of the nodes to break them up further until you see individual op_nodes in the graph, which will tell you on which device they were placed.
 
 ![Graph Tab](Content/squeezenet_tboard_graph.png)
 
-# Details
+## Details
 
 Some of the interesting parameters of `train_squeezenet.py` you may want to adjust:
 
@@ -165,30 +167,15 @@ If you let the script run to completion and let it save checkpoints, subsequent 
 cifar10_images\  cifar10_test.tfrecord  cifar10_train.tfrecord  labels.txt
 ```
 
-# Architecture
-
-[SqueezeNet](https://arxiv.org/abs/1602.07360) is a convolutional neural network (CNN) that can classify images, and its claim to fame is achieving high accuracy with a small model size. The original paper, published in 2017, provides intuition on how to reduce the number of parameters in a CNN-based model at an architectural level. This approach was different from other state-of-the-art model compression techniques at the time, which focused on post-processing a pretrained model using quantization, Huffman encoding, and sparse matrices that eliminate close-to-zero weights. The authors showed that the strategies used in SqueezeNet's design are complementary with existing model compression techniques, resulting in a tiny model (4.8MB before compression; 0.47MB after) that has similar accuracy to AlexNet (240MB before compression; 6.9MB after).
-
-Many CNNs extensively use 3x3 or 5x5 convolution filters that sample along all channels of the input, and these filters requires a large number of parameters. Two of the strategies used to limit the size of SqueezeNet involve replacing larger 3x3 filters with 1x1 filters, and reducing the number of input channels in the 3x3 filters that remain. These two strategies culminate in the so-called *fire module*. The authors refer to structurally similar compositions of smaller layers as *modules*, and the fire module consists entirely of 1x1- and 3x3-sized convolution filters grouped into a *squeeze layer* and *expand layer*:
-
-![SqueezeNet Fire Module](Content/squeezenet_fire_module.jpg)
-
-The *squeeze layer* of a fire module is exclusively 1x1 filters, and it reduces the number of channels passed on to the following expand layer (hence the name squeeze). The expand layer has an equal number of 1x1 and 3x3 filters, and its output increases the number of channels passed on to the following layers (hence the name expand).
-
-A third strategy employed in SqueezeNet's design aims to maximize accuracy -- especially important with the reduced number of parameters -- by placing pooling layers toward the end of the model. The relu activations occur on the relatively larger output of the expand layer, *before downsampling* with pooling, which illustrates the third strategy to preserve accuracy.
-
-![SqueezeNet Macroarchitecture](Content/squeezenet_macro.jpg)
-
-The model described in the paper contains only 15 macro-level layers, most of which are so-called *fire modules*. Alternative designs shown in the paper use simple and complex bypass connections, which are similar to those used in residual networks (e.g. ResNet): for example, the output from each fire module is piped as input into the next two fire modules. However, these alternative designs are rarely used in the implementations found online (e.g. ONNX, TensorFlow, Caffe). Furthermore, the exact placement of the MaxPool layers varies in each implementation. For example, the paper shows a 3/4/1 fire module split between pooling layers, but the [ONNX implementation](https://github.com/onnx/models/tree/master/vision/classification/squeezenet/squeezenet) uses a 2/2/4 split. The [TensorFlow implementation](https://github.com/PatriceVignola/squeezenet) we are using matches the original paper's layout. 
-
-# Links
+## Links
 
 - [Original paper](https://arxiv.org/abs/1602.07360)
 - [Original source (Caffe)](https://github.com/forresti/SqueezeNet)
 - [Original training data (LSVRC 2012)](http://www.image-net.org/challenges/LSVRC/2012/)
 - [Alternative training data (CIFAR-10)](https://www.cs.toronto.edu/~kriz/cifar.html)
-- [Implementation: TensorFlow (Vonclites)](https://github.com/vonclites/squeezenet)
-- [Implementation: TensorFlow (Pat's Fork of Vonclites)](https://github.com/PatriceVignola/squeezenet)
-- [Implementation: TensorFlow (MKOS on CIFAR-10)](https://github.com/mkos/squeezenet)
-- [Implementation: TensorFlow (Tandon-A on Tiny ImageNet)](https://github.com/Tandon-A/SqueezeNet)
-- [Implementation: ONNX](https://github.com/onnx/models/tree/master/vision/classification/squeezenet/squeezenet)
+
+Alternative implementations:
+- [TensorFlow (Vonclites)](https://github.com/vonclites/squeezenet)
+- [TensorFlow (MKOS on CIFAR-10)](https://github.com/mkos/squeezenet)
+- [TensorFlow (Tandon-A on Tiny ImageNet)](https://github.com/Tandon-A/SqueezeNet)
+- [ONNX](https://github.com/onnx/models/tree/master/vision/classification/squeezenet/squeezenet)

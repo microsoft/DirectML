@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 import subprocess
 import argparse
 import shutil
@@ -61,6 +63,3 @@ if traces:
         os.makedirs(output_dir)
     for i in range(0,len(traces)):
         shutil.copy(traces[i], output_dir)
-
-    timing_script = os.path.join("..", "helpers", "trace_times.py")
-    subprocess.run(f"python {timing_script} --traces_dir {output_dir}", shell=True, check=True)
