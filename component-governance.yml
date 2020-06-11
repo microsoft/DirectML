@@ -1,0 +1,15 @@
+resources:
+- repo: self
+  clean: true
+
+pool:
+  name: Package ES Lab E
+  
+trigger:
+  batch: true
+  branches:
+    include: 
+    - master 
+
+steps:
+  - task: ComponentGovernanceComponentDetection@0
