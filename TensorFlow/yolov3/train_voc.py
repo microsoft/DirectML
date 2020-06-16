@@ -3,7 +3,7 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size", default=8)
+parser.add_argument("--batch_size", default=4)
 parser.add_argument("--epochs", default=10)
 parser.add_argument("--mode", default="fit", choices=("fit", "eager_tf"))
 parser.add_argument("--trace", action="store_true")
@@ -13,6 +13,8 @@ cl = " ".join([
     "python train.py",
     "--dataset", os.path.join("data", "voc2012_train.tfrecord"),
     "--val_dataset", os.path.join("data", "voc2012_val.tfrecord"),
+    "--num_samples 5717",
+    "--num_val_samples 5823",
     "--classes", os.path.join("data", "voc2012.names"),
     "--num_classes 20",
     f"--mode {args.mode}",

@@ -22,6 +22,8 @@ import os
 
 flags.DEFINE_string('dataset', '', 'path to dataset')
 flags.DEFINE_string('val_dataset', '', 'path to validation dataset')
+flags.DEFINE_integer('num_samples', None, 'Number of samples to take from the dataset per epoch')
+flags.DEFINE_integer('num_val_samples', None, 'Number of samples to take from the validation dataset per epoch')
 flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
 flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
                     'path to weights file')
@@ -88,6 +90,7 @@ def main(_argv):
     train_dataset = train_dataset.map(lambda x, y: (
         dataset.transform_images(x, FLAGS.size),
         dataset.transform_targets(y, anchors, anchor_masks, FLAGS.size)))
+    train_dataset = train_dataset.repeat()
     train_dataset = train_dataset.prefetch(
         buffer_size=tf.data.experimental.AUTOTUNE)
 
@@ -99,6 +102,7 @@ def main(_argv):
     val_dataset = val_dataset.map(lambda x, y: (
         dataset.transform_images(x, FLAGS.size),
         dataset.transform_targets(y, anchors, anchor_masks, FLAGS.size)))
+    val_dataset = val_dataset.repeat()
 
     # TF2 doesn't need this, but we're using TF1.15.
     if FLAGS.mode == "fit":
@@ -248,7 +252,9 @@ def main(_argv):
         history = model.fit(train_dataset,
                             epochs=FLAGS.epochs,
                             callbacks=callbacks,
-                            validation_data=val_dataset)
+                            validation_data=val_dataset,
+                            steps_per_epoch=FLAGS.num_samples // FLAGS.batch_size,
+                            validation_steps=FLAGS.num_val_samples // FLAGS.batch_size)
 
 
 if __name__ == '__main__':
