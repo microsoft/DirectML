@@ -1,6 +1,6 @@
 # DirectML <!-- omit in toc -->
 
-DirectML is a high-performance, hardware-accelerated DirectX 12 library for machine learning. DirectML provides GPU acceleration for common machine learning tasks across a broad range of supported hardware and drivers, including all DirectX12-capable GPUs from vendors such as AMD, Intel, NVIDIA, and Qualcomm.
+DirectML is a high-performance, hardware-accelerated DirectX 12 library for machine learning. DirectML provides GPU acceleration for common machine learning tasks across a broad range of supported hardware and drivers, including all DirectX 12-capable GPUs from vendors such as AMD, Intel, NVIDIA, and Qualcomm.
 
 When used standalone, the DirectML API is a low-level DirectX 12 library and is suitable for high-performance, low-latency applications such as frameworks, games, and other real-time applications. The seamless interoperability of DirectML with Direct3D 12 as well as its low overhead and conformance across hardware makes DirectML ideal for accelerating machine learning when both high performance is desired, and the reliability and predictability of results across hardware is critical.
 
@@ -112,8 +112,8 @@ We look forward to hearing from you!
 
 ### More information
 [Introducing DirectML (Game Developers Conference '19)](https://www.youtube.com/watch?v=QjQm_wNrvVw)   
-[Accelerating GPU Inferencing with DirectML and DirectX 12 (SIGGRAPH '18)](http://on-demand.gputechconf.com/siggraph/2018/video/sig1814-2-adrian-tsai-gpu-inferencing-directml-and-directx-12.html)
-[Windows AI: hardware-accelerated ML on Windows devices (Microsoft Build '20)](https://www.youtube.com/watch?v=-qf2PMuOXWI&feature=youtu.be)
+[Accelerating GPU Inferencing with DirectML and DirectX 12 (SIGGRAPH '18)](http://on-demand.gputechconf.com/siggraph/2018/video/sig1814-2-adrian-tsai-gpu-inferencing-directml-and-directx-12.html)  
+[Windows AI: hardware-accelerated ML on Windows devices (Microsoft Build '20)](https://www.youtube.com/watch?v=-qf2PMuOXWI&feature=youtu.be)  
 [Gaming with Windows ML (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/gaming-with-windows-ml/)  
 [DirectML at GDC 2019 (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directml-at-gdc-2019/)  
 [DirectX ❤ Linux (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directx-heart-linux/)
