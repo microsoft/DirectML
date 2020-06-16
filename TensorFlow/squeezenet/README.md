@@ -16,7 +16,7 @@ The original paper can be found at: https://arxiv.org/abs/1602.07360
 
 ## Setup Data
 
-After installing the TensorFlow on DirectML package (see [**TODO adtsai: Getting started with TensorFlow**](#)), open a console to the `squeezenet` directory and run the setup script to download and convert data:
+After installing the TensorFlow on DirectML package (see [GPU accelerated ML training](http://aka.ms/gpuinwsldocs)), open a console to the `squeezenet` directory and run the setup script to download and convert data:
 
 ```
 pip install -r requirements.txt

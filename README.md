@@ -87,18 +87,18 @@ TensorFlow is a popular open source platform for machine learning and is a leadi
 
 DirectML acceleration for TensorFlow 1.15 is currently available for Public Preview. TensorFlow on DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware.
 
-Tensorflow on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [**(TODO adtsai: Getting started with TensorFlow)**](#)
+TensorFlow on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
 
 * [TensorFlow on DirectML homepage](./TensorFlow)
-* [TensorFlow homepage](https://www.tensorflow.org/)
+* [tensorflow-directml PyPI project](https://pypi.org/project/tensorflow-directml/)
 * [TensorFlow GitHub | RFC: TensorFlow on DirectML](https://github.com/tensorflow/community/pull/243)
-* [**(TODO justoeck: PyPI package link)**](#)
+* [TensorFlow homepage](https://www.tensorflow.org/)
 
 ## Feedback
 
 We look forward to hearing from you!
 
-* For TensorFlow on DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML-Samples/issues) or contact us directly at askdirectml@microsoft.com.
+* For TensorFlow on DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML/issues) or contact us directly at askdirectml@microsoft.com.
 
 * For WinML issues, please file a GitHub issue at [microsoft/Windows-Machine-Learning](https://github.com/Microsoft/Windows-Machine-Learning/issues). Alternatively, you can reach us directly at askwindowsml@microsoft.com.
 
