@@ -1,0 +1,6 @@
+/squeezenet/data
+.vscode
+__pycache__
+traces/
+!/op_report/data/traces
+*.xlsx

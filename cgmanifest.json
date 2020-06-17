@@ -1,0 +1,33 @@
+{
+    "Registrations":[
+       {
+          "component":{
+             "type":"git",
+             "git":{
+                "commitHash":"5f296bbef998e75721818d6b336264ae10f4a77d",
+                "repositoryUrl":"https://github.com/tensorflow/models"
+             }
+          }
+       },
+       {
+          "component":{
+             "type":"git",
+             "git":{
+                "commitHash":"f13555462e835409480829f8fdacac96835161e5",
+                "repositoryUrl":"https://github.com/vonclites/squeezenet"
+             }
+          }
+       },
+       {
+          "component":{
+             "type":"git",
+             "git":{
+                "commitHash":"65294d5dc1794b325db5a37b2ed02773ca5bf839",
+                "repositoryUrl":"https://github.com/zzh8829/yolov3-tf2"
+             }
+          }
+       }
+    ],
+    "Version":1
+ }
+ 
