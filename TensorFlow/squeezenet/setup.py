@@ -5,7 +5,7 @@ import os
 import subprocess
 
 def find_cifar2png():
-    for path in  os.environ["PATH"].split(";"):
+    for path in os.environ["PATH"].split(os.pathsep):
         for root,_,files in os.walk(path):
             for filename in files:
                 if filename == "cifar2png":
