@@ -110,7 +110,7 @@ def main(_argv):
     img = draw_outputs(img, (boxes, scores, classes, nums), class_names, class_colors)
 
     if FLAGS.output:
-        cv2.imwrite(FLAGS.output, img)
+        cv2.imwrite(FLAGS.output, img * 255.0)
         logging.info('output saved to: {}'.format(FLAGS.output))
 
     if not FLAGS.headless:
