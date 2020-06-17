@@ -1,8 +1,8 @@
-# TensorFlow on DirectML <!-- omit in toc -->
+# TensorFlow with DirectML <!-- omit in toc -->
 
 DirectML support for TensorFlow 1.15 is experimental and currently available as a Public Preview.
 
-TensorFlow on DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware.
+TensorFlow with DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware.
 
 - [Getting Started](#getting-started)
 - [Samples](#samples)
@@ -11,7 +11,7 @@ TensorFlow on DirectML enables training and inference of complex machine learnin
 
 ## Getting Started
 
-TensorFlow on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about).
+TensorFlow with DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about).
 
 For detailed instructions on getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs).
 
@@ -24,7 +24,7 @@ Two sample models are included in this repo to help you get started. These sampl
 
 ## Feedback
 
-For comments, questions, feedback, or if you're having problems, please [file an issue](https://github.com/microsoft/DirectML/issues). Alternatively you can contact us directly at askdirectml@microsoft.com
+For comments, questions, feedback, or if you're having problems, please [file an issue](https://github.com/microsoft/DirectML/issues) or contact us directly at askdirectml@microsoft.com
 
 ## External Links
 
