@@ -89,7 +89,8 @@ DirectML acceleration for TensorFlow 1.15 is currently available for Public Prev
 
 TensorFlow on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
 
-* [TensorFlow on DirectML homepage](./TensorFlow)
+* [TensorFlow on DirectML GitHub repo](https://github.com/microsoft/tensorflow-directml)
+* [TensorFlow on DirectML samples](./TensorFlow)
 * [tensorflow-directml PyPI project](https://pypi.org/project/tensorflow-directml/)
 * [TensorFlow GitHub | RFC: TensorFlow on DirectML](https://github.com/tensorflow/community/pull/243)
 * [TensorFlow homepage](https://www.tensorflow.org/)
