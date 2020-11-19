@@ -46,7 +46,7 @@ namespace DX
             L"Media\\CubeMaps",
             L"Media\\HDR",
             L"Media\\Sounds",
-            L"Media\\Videos",
+            L"Media\\Videos\\Turn10",
             0
         };
 

@@ -3,6 +3,8 @@
 
 #include "pch.h"
 
+#pragma warning(disable : 4238) // References to temporary classes are okay because they are only used as function parameters.
+
 using winrt::com_ptr;
 using winrt::check_hresult;
 using winrt::check_bool;
@@ -98,69 +100,7 @@ void CloseExecuteResetWait(
     ::WaitForSingleObjectEx(fenceEventHandle.get(), INFINITE, FALSE);
 }
 
-// ===================================================================================================================
-//   DML utilities
-// ===================================================================================================================
-
-inline UINT64 DMLCalcBufferTensorSize(
-    DML_TENSOR_DATA_TYPE dataType,
-    UINT dimensionCount,
-    _In_reads_(dimensionCount) const UINT* sizes,
-    _In_reads_opt_(dimensionCount) const UINT* strides
-    )
-{
-    UINT elementSizeInBytes = 0;
-    switch (dataType)
-    {
-    case DML_TENSOR_DATA_TYPE_FLOAT32:
-    case DML_TENSOR_DATA_TYPE_UINT32:
-    case DML_TENSOR_DATA_TYPE_INT32:
-        elementSizeInBytes = 4;
-        break;
-
-    case DML_TENSOR_DATA_TYPE_FLOAT16:
-    case DML_TENSOR_DATA_TYPE_UINT16:
-    case DML_TENSOR_DATA_TYPE_INT16:
-        elementSizeInBytes = 2;
-        break;
-
-    case DML_TENSOR_DATA_TYPE_UINT8:
-    case DML_TENSOR_DATA_TYPE_INT8:
-        elementSizeInBytes = 1;
-        break;
-
-    default:
-        return 0; // Invalid data type
-    }
-
-    UINT64 minimumImpliedSizeInBytes = 0;
-    if (!strides)
-    {
-        minimumImpliedSizeInBytes = sizes[0];
-        for (UINT i = 1; i < dimensionCount; ++i)
-        {
-            minimumImpliedSizeInBytes *= sizes[i];
-        }
-        minimumImpliedSizeInBytes *= elementSizeInBytes;
-    }
-    else
-    {
-        UINT indexOfLastElement = 0;
-        for (UINT i = 0; i < dimensionCount; ++i)
-        {
-            indexOfLastElement += (sizes[i] - 1) * strides[i];
-        }
-
-        minimumImpliedSizeInBytes = (indexOfLastElement + 1) * elementSizeInBytes;
-    }
-
-    // Round up to the nearest 4 bytes.
-    minimumImpliedSizeInBytes = (minimumImpliedSizeInBytes + 3) & ~3ui64;
-
-    return minimumImpliedSizeInBytes;
-}
-
-int __cdecl wmain(int /*argc*/, char ** /*argv*/)
+int main()
 {
     com_ptr<ID3D12Device> d3D12Device;
     com_ptr<ID3D12CommandQueue> commandQueue;
@@ -186,8 +126,10 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
         __uuidof(dmlDevice),
         dmlDevice.put_void()));
 
-    constexpr UINT tensorSizes[4] = { 1, 2, 3, 4};
+    constexpr UINT tensorSizes[4] = { 1, 2, 3, 4 };
     constexpr UINT tensorElementCount = tensorSizes[0] * tensorSizes[1] * tensorSizes[2] * tensorSizes[3];
+
+#if !USE_DMLX
 
     DML_BUFFER_TENSOR_DESC dmlBufferTensorDesc = {};
     dmlBufferTensorDesc.DataType = DML_TENSOR_DATA_TYPE_FLOAT32;
@@ -238,6 +180,33 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
         DML_EXECUTION_FLAG_NONE,
         __uuidof(dmlCompiledOperator),
         dmlCompiledOperator.put_void()));
+
+    // 24 elements * 4 == 96 bytes.
+    UINT64 tensorBufferSize{ dmlBufferTensorDesc.TotalTensorSizeInBytes };
+
+#else 
+
+    // Create DirectML operator(s). Operators represent abstract functions such as "multiply", "reduce", "convolution", or even
+    // compound operations such as recurrent neural nets. This example creates an instance of the Identity operator,
+    // which applies the function f(x) = x for all elements in a tensor.
+
+    com_ptr<IDMLCompiledOperator> dmlCompiledOperator;
+
+    dml::Graph graph(dmlDevice.get());
+    dml::TensorDesc::Dimensions dimensions(std::begin(tensorSizes), std::end(tensorSizes));
+    dml::TensorDesc desc = { DML_TENSOR_DATA_TYPE_FLOAT32, dimensions};
+    dml::Expression input = dml::InputTensor(graph, 0, desc);
+
+    // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
+    dml::Expression output = dml::Identity(input);
+
+    DML_EXECUTION_FLAGS executionFlags = DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION;
+    dmlCompiledOperator.attach(graph.Compile(executionFlags, { output }).Detach());
+
+    // 24 elements * 4 == 96 bytes.
+    UINT64 tensorBufferSize{ desc.totalTensorSizeInBytes };
+
+#endif
 
     com_ptr<IDMLOperatorInitializer> dmlOperatorInitializer;
     IDMLCompiledOperator* dmlCompiledOperators[] = { dmlCompiledOperator.get() };
@@ -379,9 +348,6 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
 
     // Create tensor buffers for upload/input/output/readback of the tensor elements.
 
-    // 24 elements * 4 == 96 bytes.
-    UINT64 tensorBufferSize{ dmlBufferTensorDesc.TotalTensorSizeInBytes };
-
     com_ptr<ID3D12Resource> uploadBuffer;
     check_hresult(d3D12Device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -415,7 +381,7 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
 
         D3D12_SUBRESOURCE_DATA tensorSubresourceData{};
         tensorSubresourceData.pData = inputTensorElementArray.data();
-        tensorSubresourceData.RowPitch = tensorBufferSize;
+        tensorSubresourceData.RowPitch = static_cast<LONG_PTR>(tensorBufferSize);
         tensorSubresourceData.SlicePitch = tensorSubresourceData.RowPitch;
 
         // Upload the input tensor to the GPU.
@@ -434,8 +400,8 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
                 inputBuffer.get(),
                 D3D12_RESOURCE_STATE_COPY_DEST,
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-                )
-            );
+            )
+        );
     }
 
     DML_BUFFER_BINDING inputBufferBinding{ inputBuffer.get(), 0, tensorBufferSize };
@@ -480,14 +446,14 @@ int __cdecl wmain(int /*argc*/, char ** /*argv*/)
             outputBuffer.get(),
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
             D3D12_RESOURCE_STATE_COPY_SOURCE
-            )
-        );
+        )
+    );
 
     commandList->CopyResource(readbackBuffer.get(), outputBuffer.get());
 
     CloseExecuteResetWait(d3D12Device, commandQueue, commandAllocator, commandList);
 
-    D3D12_RANGE tensorBufferRange{ 0, tensorBufferSize };
+    D3D12_RANGE tensorBufferRange{ 0, static_cast<SIZE_T>(tensorBufferSize) };
     FLOAT* outputBufferData{};
     check_hresult(readbackBuffer->Map(0, &tensorBufferRange, reinterpret_cast<void**>(&outputBufferData)));
 

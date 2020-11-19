@@ -1,0 +1,4 @@
+[submodule "Python/pybind11"]
+	path = Python/pybind11
+	url = https://github.com/pybind/pybind11.git
+	branch = v2.5
