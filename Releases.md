@@ -2,13 +2,11 @@
 
 See [DirectML version history on MSDN](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-version-history) for more detailed notes.
 
-| Version                            | Feature level                                                                                                                      | First available in (Windows 10)                          | Redistributable                                                                           |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [1.4.0](#directml-140)<sup>1</sup> | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Not yet released                                         | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0) |
-| [1.1.0](#directml-110)             | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
-| [1.0.0](#directml-100)             | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
-
-<sup>1</sup> DirectML versions 1.2.0 and 1.3.0 were not made widely available.
+| Version                | Feature level                                                                                                                      | First available in (Windows 10)                          | Redistributable                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [1.4.0](#directml-140) | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Not yet released                                         | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0) |
+| [1.1.0](#directml-110) | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
+| [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
 
 # DirectML 1.4.0
 
