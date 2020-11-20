@@ -8,6 +8,16 @@
 *.user
 *.userosscache
 *.sln.docstates
+.vs/
+.vscode/
+
+# Visual Studio Python Extension
+*.pyproj
+
+# Python extensions package artifacts
+build/
+dist/
+*.egg-info/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -328,3 +338,4 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
