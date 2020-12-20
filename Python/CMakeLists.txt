@@ -6,8 +6,13 @@ message("DMLX_PATH=${DMLX_PATH}")
 project(pydirectml)
 
 if(MSVC)
-# Enables some MSVC C++17 and newer features
+if(MSVC_VERSION GREATER_EQUAL 1920)
+# Use C++17 on VS 16.0 (aka 2019) and later but with relaxed conformance check
+set(PYBIND11_CPP_STANDARD /std:c++17 /permissive)
+else()
+# Use the latest C++ standard available for newer features
 set(PYBIND11_CPP_STANDARD /std:c++latest)
+endif()
 endif()
 
 add_subdirectory(pybind11)
