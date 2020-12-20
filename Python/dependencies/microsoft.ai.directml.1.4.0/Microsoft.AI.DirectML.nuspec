@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.AI.DirectML</id>
+    <version>1.4.0</version>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="file">LICENSE.txt</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <projectUrl>https://aka.ms/DirectML</projectUrl>
+    <description>DirectML Redistributable Package.</description>
+    <releaseNotes>https://github.com/microsoft/DirectML/blob/master/Releases.md</releaseNotes>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>AI MachineLearning DirectX D3D12 Direct3D12 DirectML Native</tags>
+  </metadata>
+</package>
