@@ -198,7 +198,7 @@ int main()
     dml::Expression input = dml::InputTensor(graph, 0, desc);
 
     // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
-    dml::Expression output = dml::Identity(input) + dml::Identity(input);
+    dml::Expression output = dml::Identity(input);
 
     DML_EXECUTION_FLAGS executionFlags = DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION;
     dmlCompiledOperator.attach(graph.Compile(executionFlags, { output }).Detach());
