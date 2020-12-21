@@ -198,7 +198,7 @@ int main()
     dml::Expression input = dml::InputTensor(graph, 0, desc);
 
     // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
-    dml::Expression output = dml::Identity(input);
+    dml::Expression output = dml::Identity(input) + dml::Identity(input);
 
     DML_EXECUTION_FLAGS executionFlags = DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION;
     dmlCompiledOperator.attach(graph.Compile(executionFlags, { output }).Detach());
@@ -260,9 +260,7 @@ int main()
     // The temporary resource is scratch memory (used internally by DirectML), whose contents you don't need to define.
     // The persistent resource is long-lived, and you need to initialize it using the IDMLOperatorInitializer.
 
-    UINT64 temporaryResourceSize = std::max(
-        initializeBindingProperties.TemporaryResourceSize,
-        executeBindingProperties.TemporaryResourceSize);
+    UINT64 temporaryResourceSize = initializeBindingProperties.TemporaryResourceSize;
     UINT64 persistentResourceSize = executeBindingProperties.PersistentResourceSize;
 
     // Bind and initialize the operator on the GPU.
@@ -331,6 +329,8 @@ int main()
     dmlBindingTableDesc.Dispatchable = dmlCompiledOperator.get();
 
     check_hresult(dmlBindingTable->Reset(&dmlBindingTableDesc));
+
+    temporaryResourceSize = executeBindingProperties.TemporaryResourceSize;
 
     if (temporaryResourceSize != 0)
     {
