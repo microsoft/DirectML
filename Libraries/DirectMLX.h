@@ -626,17 +626,6 @@ namespace dml
         {
             detail::GraphDesc graph = m_graphBuilder->GetGraphDesc(outputs);
 
-            // If there's only a single node, don't bother creating a graph - just compile the operator directly.
-            if (graph.nodes.size() == 1)
-            {
-                IDMLDevice* device = m_graphBuilder->GetDevice();
-
-                Microsoft::WRL::ComPtr<IDMLCompiledOperator> compiledOp;
-                DMLX_THROW_IF_FAILED(device->CompileOperator(graph.nodes[0].Operator, flags, IID_PPV_ARGS(&compiledOp)));
-
-                return compiledOp;
-            }
-
             std::vector<DML_GRAPH_NODE_DESC> graphNodes(graph.nodes.size());
             for (size_t i = 0; i < graphNodes.size(); ++i)
             {
