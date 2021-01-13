@@ -273,15 +273,18 @@ int main()
         check_hresult(d3D12Device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(temporaryResourceSize),
+            &CD3DX12_RESOURCE_DESC::Buffer(temporaryResourceSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
             D3D12_RESOURCE_STATE_COMMON,
             nullptr,
             __uuidof(temporaryBuffer),
             temporaryBuffer.put_void()));
 
-        DML_BUFFER_BINDING bufferBinding{ temporaryBuffer.get(), 0, temporaryResourceSize };
-        DML_BINDING_DESC bindingDesc{ DML_BINDING_TYPE_BUFFER, &bufferBinding };
-        dmlBindingTable->BindTemporaryResource(&bindingDesc);
+        if (initializeBindingProperties.TemporaryResourceSize != 0)
+        {
+            DML_BUFFER_BINDING bufferBinding{ temporaryBuffer.get(), 0, temporaryResourceSize };
+            DML_BINDING_DESC bindingDesc{ DML_BINDING_TYPE_BUFFER, &bufferBinding };
+            dmlBindingTable->BindTemporaryResource(&bindingDesc);
+        }
     }
 
     com_ptr<ID3D12Resource> persistentBuffer;
