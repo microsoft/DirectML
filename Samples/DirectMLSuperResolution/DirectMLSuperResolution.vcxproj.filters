@@ -130,6 +130,9 @@
       <Filter>Assets</Filter>
     </None>
     <None Include="Readme.docx" />
+    <None Include="Assets\weights.bin">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="settings.manifest">
@@ -145,9 +148,6 @@
     </CopyFileToFolders>
     <CopyFileToFolders Include="Media\Videos\Turn10\FH3_540p60.mp4">
       <Filter>Assets</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="Assets\weights.bin">
-      <Filter>Resource Files</Filter>
     </CopyFileToFolders>
   </ItemGroup>
 </Project>
