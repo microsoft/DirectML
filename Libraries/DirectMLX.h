@@ -476,8 +476,7 @@ namespace dml
             uint64_t totalTensorSizeInBytesVal,
             uint32_t guaranteedBaseOffsetAlignmentVal)
         {
-            const uint32_t dimensionCount = static_cast<uint32_t>(tensorSizes.size());
-            assert(!tensorStrides || tensorStrides->size() == dimensionCount);
+            assert(!tensorStrides || tensorStrides->size() == static_cast<uint32_t>(tensorSizes.size()));
 
             this->dataType = tensorDataType;
             this->flags = tensorFlags;
@@ -604,6 +603,24 @@ namespace dml
 
     } // namespace detail
 
+    class Expression
+    {
+    public:
+        /*implicit*/ Expression(detail::NodeOutput* nodeOutput = nullptr)
+            : m_nodeOutput(nodeOutput)
+        {}
+
+        // Returns a struct containing the required properties of the tensor to hold the output of this expression,
+        // once evaluated.
+        const TensorDesc& GetOutputDesc() const { return Impl()->GetOutputDesc(); }
+
+        // For internal use only
+        detail::NodeOutput* Impl() const { return m_nodeOutput; }
+
+    private:
+        detail::NodeOutput* m_nodeOutput; // weak; this is owned by the GraphBuilder
+    };
+
     class Graph
     {
     public:
@@ -673,24 +690,6 @@ namespace dml
 
     private:
         std::unique_ptr<detail::GraphBuilder> m_graphBuilder;
-    };
-
-    class Expression
-    {
-    public:
-        /*implicit*/ Expression(detail::NodeOutput* nodeOutput = nullptr)
-            : m_nodeOutput(nodeOutput)
-        {}
-
-        // Returns a struct containing the required properties of the tensor to hold the output of this expression,
-        // once evaluated.
-        const TensorDesc& GetOutputDesc() const { return Impl()->GetOutputDesc(); }
-
-        // For internal use only
-        detail::NodeOutput* Impl() const { return m_nodeOutput; }
-
-    private:
-        detail::NodeOutput* m_nodeOutput; // weak; this is owned by the GraphBuilder
     };
 
     // Represents an activation to be fused with an existing operator. The meaning of param1 and param2 depend on the
