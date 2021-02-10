@@ -11,9 +11,9 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 # DirectML 1.4.1
 
-- Bug fixes related to metaccomands:
+- Bug fixes related to metacomands:
   - Fix BATCH_NORMALIZATION crash when the operator is created with DimensionCount > 5.
-  - Fix DML_OPERATOR_MAX_POOLING1/2 binding order for optional output indices tensor. This did not affect the output, but when running GPU validation enabled, an error would happen "Supplied parameters size doesn't match enumerated size".
+  - Fix DML_OPERATOR_MAX_POOLING1/2 binding order for optional output indices tensor. This did not affect the output, but when running with GPU validation enabled, an error would happen "Supplied parameters size doesn't match enumerated size".
 
 # DirectML 1.4.0
 
