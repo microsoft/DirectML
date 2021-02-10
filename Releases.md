@@ -4,9 +4,16 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                | Feature level                                                                                                                      | First available in (Windows 10)                          | Redistributable                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [1.4.1](#directml-141) | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Not yet released                                         | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.1) |
 | [1.4.0](#directml-140) | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Not yet released                                         | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0) |
 | [1.1.0](#directml-110) | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
 | [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
+
+# DirectML 1.4.1
+
+- Bug fixes related to metacomands:
+  - Fix DML_OPERATOR_BATCH_NORMALIZATION crash when the operator is created with DimensionCount > 5.
+  - Fix DML_OPERATOR_MAX_POOLING1/2 binding order for optional output indices tensor. This did not affect the output, but when running with GPU validation enabled, an error would happen "Supplied parameters size doesn't match enumerated size".
 
 # DirectML 1.4.0
 
