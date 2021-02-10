@@ -15,13 +15,6 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
   - Fix BATCH_NORMALIZATION crash when the operator is created with DimensionCount > 5.
   - Fix DML_OPERATOR_MAX_POOLING1/2 binding order for optional output indices tensor. This did not affect the output, but when running GPU validation enabled, an error would happen "Supplied parameters size doesn't match enumerated size".
 
-- First release of DirectML as a redistributable NuGet package, [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML).
-- Introduces two new feature levels since DirectML 1.1.0: [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) and [DML_FEATURE_LEVEL_2_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_1).
-  - Adds 44 new operators.
-  - The maximum number of tensor dimensions has been increased from 5 to 8.
-  - Select operators support additional tensor data types.
-- Substantial performance improvements for several operators.
-
 # DirectML 1.4.0
 
 - First release of DirectML as a redistributable NuGet package, [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML).
