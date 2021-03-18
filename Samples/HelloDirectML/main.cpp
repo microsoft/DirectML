@@ -427,13 +427,6 @@ int main()
     dmlBindingTable->BindOutputs(1, &outputBindingDesc);
 
     // Record execution of the compiled operator.
-	for (int i = 0; i != 10000; ++i) {
-		commandList->SetDescriptorHeaps(ARRAYSIZE(d3D12DescriptorHeaps), d3D12DescriptorHeaps);
-		dmlCommandRecorder->RecordDispatch(commandList.get(), dmlCompiledOperator.get(), dmlBindingTable.get());
-		CloseExecuteResetWait(d3D12Device, commandQueue, commandAllocator, commandList);
-		std::this_thread::sleep_for(std::chrono::milliseconds(3));
-	}
-
     dmlCommandRecorder->RecordDispatch(commandList.get(), dmlCompiledOperator.get(), dmlBindingTable.get());
 
     CloseExecuteResetWait(d3D12Device, commandQueue, commandAllocator, commandList);
