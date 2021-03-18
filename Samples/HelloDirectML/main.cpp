@@ -80,7 +80,7 @@ void CloseExecuteResetWait(
 
     ID3D12CommandList* commandLists[] = { commandList.get() };
     commandQueue->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists);
-
+    
     com_ptr<ID3D12Fence> d3D12Fence;
     check_hresult(d3D12Device->CreateFence(
         0,
@@ -96,8 +96,8 @@ void CloseExecuteResetWait(
 
     check_hresult(commandQueue->Signal(d3D12Fence.get(), 1));
     ::WaitForSingleObjectEx(fenceEventHandle.get(), INFINITE, FALSE);
-
-	check_hresult(commandAllocator->Reset());
+    
+    check_hresult(commandAllocator->Reset());
     check_hresult(commandList->Reset(commandAllocator.get(), nullptr));
 }
 
