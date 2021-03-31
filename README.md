@@ -37,10 +37,10 @@ DirectML requires a DirectX 12 capable device. Almost all commercially-available
 
 ### For application developers
 
-DirectML exposes a native C++ DirectX 12 API. The header and library (DirectML.h/DirectML.lib) are available as part of the [redistributable NuGet package](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0), and are also included in the Windows 10 SDK version 10.0.18362 or newer.
+DirectML exposes a native C++ DirectX 12 API. The header and library (DirectML.h/DirectML.lib) are available as part of the [redistributable NuGet package](https://www.nuget.org/packages/Microsoft.AI.DirectML/), and are also included in the Windows 10 SDK version 10.0.18362 or newer.
 
 * The Windows 10 SDK can be downloaded from the [Windows Dev Center](https://developer.microsoft.com/windows/downloads/windows-10-sdk/)
-* [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0) on the NuGet Gallery
+* [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML/) on the NuGet Gallery
 * [DirectML programming guide](https://docs.microsoft.com/windows/win32/direct3d12/dml)
 * [DirectML API reference](https://docs.microsoft.com/windows/win32/direct3d12/direct3d-directml-reference)
 
@@ -58,7 +58,7 @@ See the following sections for more information:
 
 DirectML C++ sample code is available under [Samples](./Samples).
 * [HelloDirectML](./Samples/HelloDirectML): A minimal "hello world" application that executes a single DirectML operator.
-* [DirectMLSuperResolution](./Samples/DirectMLSuperResolution/Samples/ML/DirectMLSuperResolution): A sample that uses DirectML to execute a basic super-resolution model to upscale video from 540p to 1080p in real time.
+* [DirectMLSuperResolution](./Samples/DirectMLSuperResolution): A sample that uses DirectML to execute a basic super-resolution model to upscale video from 540p to 1080p in real time.
 * [yolov4](./Samples/yolov4): YOLOv4 is an object detection model capable of recognizing up to 80 different classes of objects in an image. This sample contains a complete end-to-end implementation of the model using DirectML, and is able to run in real time on a user-provided video stream.
 
 DirectML Python sample code is available under [Python/samples](./Python/samples). The samples require PyDirectML, an open source Python projection library for DirectML, which can be built and installed to a Python executing environment from [Python/src](./Python/src). Refer to the [Python/README.md](Python/README.md) file for more details.
@@ -88,7 +88,7 @@ ONNX Runtime is a cross-platform inferencing and training accelerator compatible
 
 DirectML is available as an optional *execution provider* for ONNX Runtime that provides hardware acceleration when running on Windows 10.
 
-For more information about getting started, see [Using the DirectML execution provider](https://github.com/microsoft/onnxruntime/blob/master/docs/execution_providers/DirectML-ExecutionProvider.md#using-the-directml-execution-provider).
+For more information about getting started, see [Using the DirectML execution provider](https://www.onnxruntime.ai/docs/reference/execution-providers/DirectML-ExecutionProvider.html#using-the-directml-execution-provider).
 
 * [ONNX Runtime homepage](https://aka.ms/onnxruntime)
 * [ONNX Runtime GitHub](https://github.com/microsoft/onnxruntime)
