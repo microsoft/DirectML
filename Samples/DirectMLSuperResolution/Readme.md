@@ -1,13 +1,3 @@
----
-page_type: sample
-languages:
-- cpp
-products:
-- windows
-extendedZipContent:
-- ../../../Kits
-- ../../../Media
----
 # DirectMLSuperResolution
 For more information see this [Word document](Readme.docx).
 # Privacy Statement
