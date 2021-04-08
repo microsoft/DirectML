@@ -2851,7 +2851,7 @@ namespace dml
             outputSequenceSizes[0] = inputTensor.sizes[1]; // SequenceLength
             outputSequenceSizes[1] = directionCount;
             outputSequenceSizes[2] = inputTensor.sizes[2]; // BatchSize
-            outputSequenceSizes[3] = hiddenInitTensor.sizes[3]; // HiddenSize
+            outputSequenceSizes[3] = recurrenceTensor.sizes[3]; // HiddenSize
             outputSequenceTensor = TensorDesc(inputTensor.dataType, outputSequenceSizes, builder->GetTensorPolicy());
         }
         if (outputOptions == GRUOutputOptions::Single || outputOptions == GRUOutputOptions::Both)
@@ -2859,7 +2859,7 @@ namespace dml
             outputSingleSizes[0] = 1;
             outputSingleSizes[1] = directionCount;
             outputSingleSizes[2] = inputTensor.sizes[2]; // BatchSize
-            outputSingleSizes[3] = hiddenInitTensor.sizes[3]; // HiddenSize
+            outputSingleSizes[3] = recurrenceTensor.sizes[3]; // HiddenSize
             outputSingleTensor = TensorDesc(inputTensor.dataType, outputSingleSizes, builder->GetTensorPolicy());
         }
 
