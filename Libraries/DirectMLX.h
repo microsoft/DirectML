@@ -1062,6 +1062,8 @@ namespace dml
         return output;
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
     inline Expression ClipGrad(Expression input, Expression inputGradient, float min, float max)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
@@ -1083,6 +1085,8 @@ namespace dml
 
         return output;
     }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression Cos(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
     {
@@ -1254,10 +1258,14 @@ namespace dml
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_SQRT, DML_ELEMENT_WISE_SQRT_OPERATOR_DESC>(input, scaleBias);
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
     inline Expression DifferenceSquare(Expression a, Expression b)
     {
         return detail::ElementWiseBinary<DML_OPERATOR_ELEMENT_WISE_DIFFERENCE_SQUARE, DML_ELEMENT_WISE_DIFFERENCE_SQUARE_OPERATOR_DESC>(a, b);
     }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression Subtract(Expression a, Expression b)
     {
@@ -2659,6 +2667,8 @@ namespace dml
         return output;
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
     struct BatchNormalizationGradOutputs
     {
         Expression gradient;
@@ -2684,28 +2694,30 @@ namespace dml
         TensorDesc outputScaleGradientTensor(meanTensor.dataType, meanTensor.sizes, builder->GetTensorPolicy());
         TensorDesc outputBiasGradientTensor(meanTensor.dataType, meanTensor.sizes, builder->GetTensorPolicy());
 
-        DML_BATCH_NORMALIZATION_GRAD_OPERATOR_DESC bng_desc = {};
-        bng_desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.MeanTensor = meanTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.VarianceTensor = varianceTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.ScaleTensor = scaleTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.Epsilon = epsilon;
+        DML_BATCH_NORMALIZATION_GRAD_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.MeanTensor = meanTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.VarianceTensor = varianceTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ScaleTensor = scaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Epsilon = epsilon;
         
-        bng_desc.OutputGradientTensor = outputGradientTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.OutputScaleGradientTensor = outputScaleGradientTensor.AsPtr<DML_TENSOR_DESC>();
-        bng_desc.OutputBiasGradientTensor = outputBiasGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputGradientTensor = outputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputScaleGradientTensor = outputScaleGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputBiasGradientTensor = outputBiasGradientTensor.AsPtr<DML_TENSOR_DESC>();
         
         dml::detail::NodeOutput* const inputs[] = { input.Impl(), inputGradient.Impl(), mean.Impl(), variance.Impl(), scale.Impl() };
-        dml::detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_BATCH_NORMALIZATION_GRAD, &bng_desc, inputs);
+        dml::detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_BATCH_NORMALIZATION_GRAD, &desc, inputs);
         
         BatchNormalizationGradOutputs outputValues;
-        outputValues.gradient = builder->CreateNodeOutput(node, 0, *bng_desc.OutputGradientTensor);
-        outputValues.scaleGradient = builder->CreateNodeOutput(node, 1, *bng_desc.OutputScaleGradientTensor);
-        outputValues.biasGradient = builder->CreateNodeOutput(node, 2, *bng_desc.OutputBiasGradientTensor);
+        outputValues.gradient = builder->CreateNodeOutput(node, 0, *desc.OutputGradientTensor);
+        outputValues.scaleGradient = builder->CreateNodeOutput(node, 1, *desc.OutputScaleGradientTensor);
+        outputValues.biasGradient = builder->CreateNodeOutput(node, 2, *desc.OutputBiasGradientTensor);
 
         return outputValues;
     }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression MeanVarianceNormalization(
         Expression input,
