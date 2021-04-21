@@ -105,9 +105,6 @@
     <Image Include="Assets\atg.ico">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\grca-BA-bike-shop_1280x720.jpg">
-      <Filter>Assets</Filter>
-    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Assets\TensorToImagePS.hlsl">
@@ -151,8 +148,9 @@
     </Manifest>
   </ItemGroup>
   <ItemGroup>
-    <Media Include="Assets\grca-grand-canyon-association-park-store_1280x720.mp4">
-      <Filter>Assets</Filter>
-    </Media>
+    <CopyFileToFolders Include="Assets\grca-BA-bike-shop_1280x720.jpg">
+      <Filter>Resource Files</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Assets\grca-grand-canyon-association-park-store_1280x720.mp4" />
   </ItemGroup>
 </Project>
