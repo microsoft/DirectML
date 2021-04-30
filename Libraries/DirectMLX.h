@@ -1038,7 +1038,7 @@ namespace dml
 
     inline Expression ATanYX(Expression a, Expression b)
     {
-        return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_ATAN_YX, DML_ELEMENT_WISE_ATAN_YX_OPERATOR_DESC>(a, b);
+        return detail::ElementWiseBinary<DML_OPERATOR_ELEMENT_WISE_ATAN_YX, DML_ELEMENT_WISE_ATAN_YX_OPERATOR_DESC>(a, b);
     }
 
     inline Expression Ceil(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
