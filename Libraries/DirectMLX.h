@@ -3229,9 +3229,38 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: SliceGrad
-    // 
+    inline Expression SliceGrad(
+        Expression inputGradient,
+        TensorDimensions outputGradientSizes,
+        Span<const uint32_t> inputWindowOffsets,
+        Span<const uint32_t> inputWindowSizes,
+        Span<const int32_t> inputWindowStrides)
+    {
+        detail::GraphBuilder* builder = inputGradient.Impl()->GetGraphBuilder();
+
+        TensorDesc inputGradientTensor = inputGradient.Impl()->GetOutputDesc();
+
+        assert(inputWindowOffsets.size() == inputGradientTensor.sizes.size());
+        assert(inputWindowOffsets.size() == outputGradientSizes.size());
+        assert(inputWindowOffsets.size() == inputWindowStrides.size());
+        assert(inputWindowOffsets.size() == inputWindowSizes.size());
+
+        TensorDesc outputGradientTensor(inputGradientTensor.dataType, std::move(outputGradientSizes), builder->GetTensorPolicy());
+
+        DML_SLICE_GRAD_OPERATOR_DESC sliceGradDesc = {};
+        sliceGradDesc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        sliceGradDesc.OutputGradientTensor = outputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        sliceGradDesc.DimensionCount = static_cast<uint32_t>(inputWindowOffsets.size());
+        sliceGradDesc.InputWindowOffsets = inputWindowOffsets.data();
+        sliceGradDesc.InputWindowSizes = inputWindowSizes.data();
+        sliceGradDesc.InputWindowStrides = inputWindowStrides.data();
+
+        detail::NodeOutput* const inputs[] = { inputGradient.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_SLICE_GRAD, &sliceGradDesc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputGradientTensor));
+
+        return output;
+    }
 
     // 
     // TODO: AdamOptimizer
