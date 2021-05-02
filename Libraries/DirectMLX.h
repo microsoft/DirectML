@@ -3068,9 +3068,51 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: CumulativeSummation
-    // 
+    inline Expression CumulativeProduct(
+        Expression input,
+        uint32_t axis,
+        DML_AXIS_DIRECTION axisDirection,
+        bool hasExclusiveProduct)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_CUMULATIVE_PRODUCT_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.HasExclusiveProduct = hasExclusiveProduct;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CUMULATIVE_PRODUCT, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+    inline Expression ReverseSubsequences(
+        Expression input,
+        Expression sequenceLengths,
+        uint32_t axis)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc sequenceLengthsTensor = sequenceLengths.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_REVERSE_SUBSEQUENCES_OPERATOR_DESC reverseDesc = {};
+        reverseDesc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        reverseDesc.SequenceLengthsTensor = sequenceLengthsTensor.AsPtr<DML_TENSOR_DESC>();
+        reverseDesc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        reverseDesc.Axis = axis;
+
+        detail::NodeOutput* const inputs[] = { input.Impl(), sequenceLengths.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_REVERSE_SUBSEQUENCES, &reverseDesc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
 
     inline Expression ReverseSubsequences(
         Expression input,
