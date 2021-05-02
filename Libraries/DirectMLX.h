@@ -2531,9 +2531,46 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: GatherND (DML_OPERATOR_GATHER_ND1)
-    // 
+    inline Expression GatherND(
+        Expression input,
+        Expression indices,
+        uint32_t inputDimensionCount,
+        uint32_t indicesDimensionCount,
+        uint32_t batchDimensionCount)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc indicesTensor = indices.Impl()->GetOutputDesc();
+
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
+        assert(indicesTensor.sizes.size() == dimensionCount);
+        assert(inputDimensionCount <= dimensionCount);
+        assert(indicesDimensionCount <= dimensionCount);
+        assert(batchDimensionCount <= dimensionCount);
+
+        uint32_t numberOfCoordinatesPerIndex = indicesTensor.sizes.back();
+        uint32_t numberOfOutputDimensionsFromInput = inputDimensionCount - batchDimensionCount - numberOfCoordinatesPerIndex;
+
+        TensorDimensions outputSizes;
+        outputSizes.assign(indicesTensor.sizes.end() - indicesDimensionCount, indicesTensor.sizes.end() - 1);
+        outputSizes.insert(outputSizes.end(), inputTensor.sizes.end() - numberOfOutputDimensionsFromInput, inputTensor.sizes.end());
+
+        TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
+
+        DML_GATHER_ND1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.IndicesTensor = indicesTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputDimensionCount = inputDimensionCount;
+        desc.IndicesDimensionCount = indicesDimensionCount;
+        desc.BatchDimensionCount = batchDimensionCount;
+
+        detail::NodeOutput* const inputs[] = { input.Impl(), indices.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_GATHER_ND1, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
 
     inline Expression ScatterElements(
         Expression input,
