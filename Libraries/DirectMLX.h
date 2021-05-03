@@ -3068,6 +3068,30 @@ namespace dml
         return output;
     }
 
+    inline Expression CumulativeSummation(
+        Expression input,
+        uint32_t axis,
+        DML_AXIS_DIRECTION axisDirection,
+        bool hasExclusiveSum)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_CUMULATIVE_SUMMATION_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.AxisDirection = axisDirection;
+        desc.HasExclusiveSum = hasExclusiveSum;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CUMULATIVE_SUMMATION, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
     inline Expression CumulativeProduct(
         Expression input,
         uint32_t axis,
@@ -3082,6 +3106,7 @@ namespace dml
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.Axis = axis;
+        desc.AxisDirection = axisDirection;
         desc.HasExclusiveProduct = hasExclusiveProduct;
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
