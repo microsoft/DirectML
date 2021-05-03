@@ -2550,9 +2550,10 @@ namespace dml
 
         uint32_t numberOfCoordinatesPerIndex = indicesTensor.sizes.back();
         uint32_t numberOfOutputDimensionsFromInput = inputDimensionCount - batchDimensionCount - numberOfCoordinatesPerIndex;
+        uint32_t outputPaddingAmount = inputTensor.sizes.size() - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
 
-        TensorDimensions outputSizes;
-        outputSizes.assign(indicesTensor.sizes.end() - indicesDimensionCount, indicesTensor.sizes.end() - 1);
+        TensorDimensions outputSizes(outputPaddingAmount, 1);
+        outputSizes.insert(outputSizes.end(), indicesTensor.sizes.end() - indicesDimensionCount, indicesTensor.sizes.end() - 1);
         outputSizes.insert(outputSizes.end(), inputTensor.sizes.end() - numberOfOutputDimensionsFromInput, inputTensor.sizes.end());
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
