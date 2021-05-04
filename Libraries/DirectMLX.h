@@ -1036,10 +1036,14 @@ namespace dml
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_ATAN, DML_ELEMENT_WISE_ATAN_OPERATOR_DESC>(input, scaleBias);
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
     inline Expression ATanYX(Expression a, Expression b)
     {
         return detail::ElementWiseBinary<DML_OPERATOR_ELEMENT_WISE_ATAN_YX, DML_ELEMENT_WISE_ATAN_YX_OPERATOR_DESC>(a, b);
     }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression Ceil(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
     {
@@ -3097,6 +3101,8 @@ namespace dml
         return output;
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
     inline Expression CumulativeProduct(
         Expression input,
         uint32_t axis,
@@ -3120,6 +3126,8 @@ namespace dml
 
         return output;
     }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression ReverseSubsequences(
         Expression input,
