@@ -2552,12 +2552,14 @@ namespace dml
         TensorDesc indicesTensor = indices.Impl()->GetOutputDesc();
 
         uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
-        assert(indicesTensor.sizes.size() == dimensionCount);
-        assert(inputDimensionCount <= dimensionCount);
-        assert(indicesDimensionCount <= dimensionCount);
-        assert(batchDimensionCount <= dimensionCount);
+        assert(inputDimensionCount >= 1u && inputDimensionCount <= inputTensor.sizes.size());
+        assert(indicesDimensionCount >= 1u && indicesDimensionCount <= indicesTensor.sizes.size());
+        assert(batchDimensionCount < inputDimensionCount);
+        assert(batchDimensionCount < indicesDimensionCount);
 
         uint32_t numberOfCoordinatesPerIndex = indicesTensor.sizes.back();
+        assert(numberOfCoordinatesPerIndex >= 1u && numberOfCoordinatesPerIndex <= inputDimensionCount - batchDimensionCount);
+
         uint32_t numberOfOutputDimensionsFromInput = inputDimensionCount - batchDimensionCount - numberOfCoordinatesPerIndex;
         uint32_t outputPaddingAmount = inputTensor.sizes.size() - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
 
