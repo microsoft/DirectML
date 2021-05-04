@@ -1036,6 +1036,11 @@ namespace dml
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_ATAN, DML_ELEMENT_WISE_ATAN_OPERATOR_DESC>(input, scaleBias);
     }
 
+    inline Expression ATanYX(Expression a, Expression b)
+    {
+        return detail::ElementWiseBinary<DML_OPERATOR_ELEMENT_WISE_ATAN_YX, DML_ELEMENT_WISE_ATAN_YX_OPERATOR_DESC>(a, b);
+    }
+
     inline Expression Ceil(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
     {
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_CEIL, DML_ELEMENT_WISE_CEIL_OPERATOR_DESC>(input, scaleBias);
