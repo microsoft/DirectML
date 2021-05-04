@@ -1036,6 +1036,15 @@ namespace dml
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_ATAN, DML_ELEMENT_WISE_ATAN_OPERATOR_DESC>(input, scaleBias);
     }
 
+#if DML_TARGET_VERSION >= 0x3100
+
+    inline Expression ATanYX(Expression a, Expression b)
+    {
+        return detail::ElementWiseBinary<DML_OPERATOR_ELEMENT_WISE_ATAN_YX, DML_ELEMENT_WISE_ATAN_YX_OPERATOR_DESC>(a, b);
+    }
+
+#endif // DML_TARGET_VERSION >= 0x3100
+
     inline Expression Ceil(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
     {
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_CEIL, DML_ELEMENT_WISE_CEIL_OPERATOR_DESC>(input, scaleBias);
@@ -3106,9 +3115,57 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: CumulativeSummation
-    // 
+    inline Expression CumulativeSummation(
+        Expression input,
+        uint32_t axis,
+        DML_AXIS_DIRECTION axisDirection,
+        bool hasExclusiveSum)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_CUMULATIVE_SUMMATION_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.AxisDirection = axisDirection;
+        desc.HasExclusiveSum = hasExclusiveSum;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CUMULATIVE_SUMMATION, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+#if DML_TARGET_VERSION >= 0x3100
+
+    inline Expression CumulativeProduct(
+        Expression input,
+        uint32_t axis,
+        DML_AXIS_DIRECTION axisDirection,
+        bool hasExclusiveProduct)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_CUMULATIVE_PRODUCT_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.AxisDirection = axisDirection;
+        desc.HasExclusiveProduct = hasExclusiveProduct;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CUMULATIVE_PRODUCT, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+#endif // DML_TARGET_VERSION >= 0x3100
 
     inline Expression ReverseSubsequences(
         Expression input,
@@ -3267,9 +3324,38 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: SliceGrad
-    // 
+    inline Expression SliceGrad(
+        Expression inputGradient,
+        TensorDimensions outputGradientSizes,
+        Span<const uint32_t> inputWindowOffsets,
+        Span<const uint32_t> inputWindowSizes,
+        Span<const int32_t> inputWindowStrides)
+    {
+        detail::GraphBuilder* builder = inputGradient.Impl()->GetGraphBuilder();
+
+        TensorDesc inputGradientTensor = inputGradient.Impl()->GetOutputDesc();
+
+        assert(inputWindowOffsets.size() == inputGradientTensor.sizes.size());
+        assert(inputWindowOffsets.size() == outputGradientSizes.size());
+        assert(inputWindowOffsets.size() == inputWindowStrides.size());
+        assert(inputWindowOffsets.size() == inputWindowSizes.size());
+
+        TensorDesc outputGradientTensor(inputGradientTensor.dataType, std::move(outputGradientSizes), builder->GetTensorPolicy());
+
+        DML_SLICE_GRAD_OPERATOR_DESC sliceGradDesc = {};
+        sliceGradDesc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        sliceGradDesc.OutputGradientTensor = outputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        sliceGradDesc.DimensionCount = static_cast<uint32_t>(inputWindowOffsets.size());
+        sliceGradDesc.InputWindowOffsets = inputWindowOffsets.data();
+        sliceGradDesc.InputWindowSizes = inputWindowSizes.data();
+        sliceGradDesc.InputWindowStrides = inputWindowStrides.data();
+
+        detail::NodeOutput* const inputs[] = { inputGradient.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_SLICE_GRAD, &sliceGradDesc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputGradientTensor));
+
+        return output;
+    }
 
     // 
     // TODO: AdamOptimizer
