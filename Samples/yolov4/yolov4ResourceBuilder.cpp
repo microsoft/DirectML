@@ -549,13 +549,13 @@ void Sample::InitializeDirectMLResources()
         m_deviceResources->GetD3DDevice(),
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-        executeBindingProps.RequiredDescriptorCount);
+        std::max(executeBindingProps.RequiredDescriptorCount, 1u));
 
 	auto initDescriptorHeap = std::make_unique<DescriptorHeap>(
 		m_deviceResources->GetD3DDevice(),
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
 		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-		initBindingProps.RequiredDescriptorCount);
+		std::max(initBindingProps.RequiredDescriptorCount, 1u));
 
     // Operator initialization dispatches will use this heap right away
     ID3D12DescriptorHeap* pHeaps[] = { initDescriptorHeap->Heap() };
