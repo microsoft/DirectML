@@ -2562,7 +2562,7 @@ namespace dml
         assert(numberOfCoordinatesPerIndex >= 1u && numberOfCoordinatesPerIndex <= inputDimensionCount - batchDimensionCount);
 
         uint32_t numberOfOutputDimensionsFromInput = inputDimensionCount - batchDimensionCount - numberOfCoordinatesPerIndex;
-        uint32_t outputPaddingAmount = inputTensor.sizes.size() - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
+        uint32_t outputPaddingAmount = static_cast<uint32_t>(inputTensor.sizes.size()) - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
 
         TensorDimensions outputSizes(outputPaddingAmount, 1);
         outputSizes.insert(outputSizes.end(), indicesTensor.sizes.end() - indicesDimensionCount, indicesTensor.sizes.end() - 1);
