@@ -549,10 +549,16 @@ void Sample::InitializeDirectMLResources()
         m_deviceResources->GetD3DDevice(),
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-        std::max(initBindingProps.RequiredDescriptorCount, executeBindingProps.RequiredDescriptorCount));
+        executeBindingProps.RequiredDescriptorCount);
+
+	auto initDescriptorHeap = std::make_unique<DescriptorHeap>(
+		m_deviceResources->GetD3DDevice(),
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		initBindingProps.RequiredDescriptorCount);
 
     // Operator initialization dispatches will use this heap right away
-    ID3D12DescriptorHeap* pHeaps[] = { m_dmlDescriptorHeap->Heap() };
+    ID3D12DescriptorHeap* pHeaps[] = { initDescriptorHeap->Heap() };
     commandList->SetDescriptorHeaps(_countof(pHeaps), pHeaps);
 
     // Create any persistent resources required for the operators.
@@ -611,18 +617,23 @@ void Sample::InitializeDirectMLResources()
     Microsoft::WRL::ComPtr<IDMLBindingTable> initBindingTable;
     assert(initBindingProps.PersistentResourceSize == 0);
 
-    DML_BINDING_TABLE_DESC tableDesc =
-    {
-        m_dmlOpInitializer.Get(),
-        m_dmlDescriptorHeap->GetCpuHandle(0),
-        m_dmlDescriptorHeap->GetGpuHandle(0),
-        initBindingProps.RequiredDescriptorCount
-    };
+	DML_BINDING_TABLE_DESC tableDesc =
+	{
+		m_dmlOpInitializer.Get(),
+		initDescriptorHeap->GetCpuHandle(0),
+		initDescriptorHeap->GetGpuHandle(0),
+		initBindingProps.RequiredDescriptorCount
+	};
     DX::ThrowIfFailed(m_dmlDevice->CreateBindingTable(&tableDesc, IID_PPV_ARGS(&initBindingTable)));
 
     // Create the binding table for execution
-    tableDesc.Dispatchable = m_dmlGraph.Get();
-    tableDesc.SizeInDescriptors = executeBindingProps.RequiredDescriptorCount;
+	tableDesc =
+	{
+		m_dmlGraph.Get(),
+		m_dmlDescriptorHeap->GetCpuHandle(0),
+		m_dmlDescriptorHeap->GetGpuHandle(0),
+		executeBindingProps.RequiredDescriptorCount
+	};
     DX::ThrowIfFailed(m_dmlDevice->CreateBindingTable(&tableDesc, IID_PPV_ARGS(&m_dmlBindingTable)));
 
     DML_BUFFER_BINDING inputBufferBinding{ m_modelInput.Get(), 0, m_modelInput->GetDesc().Width };
