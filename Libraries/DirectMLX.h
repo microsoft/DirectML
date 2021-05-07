@@ -2553,7 +2553,6 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         TensorDesc indicesTensor = indices.Impl()->GetOutputDesc();
 
-        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
         assert(inputDimensionCount >= 1u && inputDimensionCount <= inputTensor.sizes.size());
         assert(indicesDimensionCount >= 1u && indicesDimensionCount <= indicesTensor.sizes.size());
         assert(batchDimensionCount < inputDimensionCount);
