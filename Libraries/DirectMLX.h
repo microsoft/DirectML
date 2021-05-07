@@ -249,11 +249,12 @@ namespace dml
     class Expression;
 
     using TensorDimensions = SmallVector<uint32_t, 4>;
+    using TensorStrides = SmallVector<uint32_t, 4>;
 
     // The custom properties returned by a TensorPolicy.
     struct TensorProperties
     {
-        Optional<TensorDimensions> strides;
+        Optional<TensorStrides> strides;
         uint64_t totalTensorSizeInBytes;
         uint32_t guaranteedBaseOffsetAlignment;
     };
@@ -329,7 +330,7 @@ namespace dml
             Span<const uint32_t> sizes)
         {
             uint32_t dimensionCount = static_cast<uint32_t>(sizes.size());
-            TensorDimensions strides(dimensionCount);
+            TensorStrides strides(dimensionCount);
 
             enum Axes { N, C, /* spatial dimensions ... */ };
 
@@ -374,11 +375,12 @@ namespace dml
     {
     public:
         using Dimensions = TensorDimensions;
+        using Strides = TensorStrides;
 
         DML_TENSOR_DATA_TYPE dataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
         DML_TENSOR_FLAGS flags = DML_TENSOR_FLAG_NONE;
         Dimensions sizes;
-        Optional<Dimensions> strides;
+        Optional<Strides> strides;
         uint64_t totalTensorSizeInBytes = 0;
         uint32_t guaranteedBaseOffsetAlignment = 0;
 
@@ -3383,7 +3385,7 @@ namespace dml
         Expression input,
         DML_TENSOR_DATA_TYPE newType,
         TensorDimensions newSizes,
-        Optional<TensorDimensions> newStrides)
+        Optional<TensorStrides> newStrides)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
@@ -3405,7 +3407,7 @@ namespace dml
     inline Expression Reinterpret(
         Expression input,
         TensorDimensions newSizes,
-        Optional<TensorDimensions> newStrides)
+        Optional<TensorStrides> newStrides)
     {
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
 
