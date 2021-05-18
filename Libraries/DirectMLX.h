@@ -2574,7 +2574,6 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         TensorDesc indicesTensor = indices.Impl()->GetOutputDesc();
 
-        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
         assert(inputDimensionCount >= 1u && inputDimensionCount <= inputTensor.sizes.size());
         assert(indicesDimensionCount >= 1u && indicesDimensionCount <= indicesTensor.sizes.size());
         assert(batchDimensionCount < inputDimensionCount);
@@ -2584,7 +2583,7 @@ namespace dml
         assert(numberOfCoordinatesPerIndex >= 1u && numberOfCoordinatesPerIndex <= inputDimensionCount - batchDimensionCount);
 
         uint32_t numberOfOutputDimensionsFromInput = inputDimensionCount - batchDimensionCount - numberOfCoordinatesPerIndex;
-        uint32_t outputPaddingAmount = inputTensor.sizes.size() - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
+        uint32_t outputPaddingAmount = static_cast<uint32_t>(inputTensor.sizes.size()) - (indicesDimensionCount + numberOfOutputDimensionsFromInput - 1);
 
         TensorDimensions outputSizes(outputPaddingAmount, 1);
         outputSizes.insert(outputSizes.end(), indicesTensor.sizes.end() - indicesDimensionCount, indicesTensor.sizes.end() - 1);
@@ -2697,9 +2696,38 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: TopK (DML_OPERATOR_TOP_K1)
-    // 
+    struct TopKOutputs
+    {
+        Expression value;
+        Expression index; 
+    };
+
+    inline TopKOutputs TopK(Expression input, uint32_t axis, uint32_t k, DML_AXIS_DIRECTION axisDirection)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+
+        TensorDimensions outputSizes = inputTensor.sizes;
+        outputSizes.back() = k;
+
+        TensorDesc outputValueTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
+        TensorDesc outputIndexTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
+
+        DML_TOP_K1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputValueTensor = outputValueTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputIndexTensor = outputIndexTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.K = k;
+        desc.AxisDirection = axisDirection;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_TOP_K1, &desc, inputs);
+        detail::NodeOutput* outputValue = builder->CreateNodeOutput(node, 0, std::move(outputValueTensor));
+        detail::NodeOutput* outputIndex = builder->CreateNodeOutput(node, 1, std::move(outputIndexTensor));
+
+        return { outputValue, outputIndex };
+    }
 
     inline Expression BatchNormalization(
         Expression input,
