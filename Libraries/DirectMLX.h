@@ -2675,9 +2675,38 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: TopK (DML_OPERATOR_TOP_K1)
-    // 
+    struct TopKOutputs
+    {
+        Expression value;
+        Expression index; 
+    };
+
+    inline TopKOutputs TopK(Expression input, uint32_t axis, uint32_t k, DML_AXIS_DIRECTION axisDirection)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+
+        TensorDimensions outputSizes = inputTensor.sizes;
+        outputSizes.back() = k;
+
+        TensorDesc outputValueTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
+        TensorDesc outputIndexTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
+
+        DML_TOP_K1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputValueTensor = outputValueTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputIndexTensor = outputIndexTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Axis = axis;
+        desc.K = k;
+        desc.AxisDirection = axisDirection;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_TOP_K1, &desc, inputs);
+        detail::NodeOutput* outputValue = builder->CreateNodeOutput(node, 0, std::move(outputValueTensor));
+        detail::NodeOutput* outputIndex = builder->CreateNodeOutput(node, 1, std::move(outputIndexTensor));
+
+        return { outputValue, outputIndex };
+    }
 
     inline Expression BatchNormalization(
         Expression input,
