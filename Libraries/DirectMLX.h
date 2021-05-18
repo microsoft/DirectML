@@ -1005,7 +1005,28 @@ namespace dml
         return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_ACOS, DML_ELEMENT_WISE_ACOS_OPERATOR_DESC>(input, scaleBias);
     }
 
-    inline Expression Add(Expression a, Expression b, FusedActivation fusedActivation = FusedActivation::None())
+    inline Expression Add(Expression a, Expression b)
+    {
+        assert(detail::HasSameOwner({ a, b }));
+        detail::GraphBuilder* builder = a.Impl()->GetGraphBuilder();
+
+        TensorDesc aTensor = a.Impl()->GetOutputDesc();
+        TensorDesc bTensor = b.Impl()->GetOutputDesc();
+        TensorDesc outputTensor(aTensor.dataType, aTensor.sizes, builder->GetTensorPolicy()); // Same as input
+
+        DML_ELEMENT_WISE_ADD_OPERATOR_DESC desc = {};
+        desc.ATensor = aTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BTensor = bTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+
+        detail::NodeOutput* const inputs[] = { a.Impl(), b.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_ELEMENT_WISE_ADD, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+    inline Expression Add(Expression a, Expression b, FusedActivation fusedActivation)
     {
         assert(detail::HasSameOwner({ a, b }));
         detail::GraphBuilder* builder = a.Impl()->GetGraphBuilder();
