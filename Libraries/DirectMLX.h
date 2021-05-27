@@ -3422,9 +3422,64 @@ namespace dml
     // TODO: Argmax
     // 
 
-    // 
-    // TODO: ROIAlign
-    // 
+#if DML_TARGET_VERSION >= 0x4000
+
+    inline Expression RoiAlign(
+        Expression input,
+        Expression roi,
+        Expression batchIndices,
+        DML_REDUCE_FUNCTION reductionFunction,
+        DML_INTERPOLATION_MODE interpolationMode,
+        float spatialScaleX,
+        float spatialScaleY,
+        float inputPixelOffset,
+        float outputPixelOffset,
+        float outOfBoundsInputValue,
+        uint32_t minimumSamplesPerOutput,
+        uint32_t maximumSamplesPerOutput,
+        bool alignRegionsToCorners,
+        uint32_t cropHeight,
+        uint32_t cropWidth)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc roiTensor = roi.Impl()->GetOutputDesc();
+        TensorDesc batchIndicesTensor = batchIndices.Impl()->GetOutputDesc();
+
+        TensorDesc::Dimensions outputSizes({
+            roiTensor.sizes[roiTensor.sizes.size() - 2],
+            inputTensor.sizes[1],
+            cropHeight,
+            cropWidth,
+        });
+
+        TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
+
+        DML_ROI_ALIGN1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ROITensor = roiTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BatchIndicesTensor = batchIndicesTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ReductionFunction = reductionFunction; 
+        desc.InterpolationMode = interpolationMode;
+        desc.SpatialScaleX = spatialScaleX;
+        desc.SpatialScaleY = spatialScaleY;
+        desc.InputPixelOffset = inputPixelOffset;
+        desc.OutputPixelOffset = outputPixelOffset;
+        desc.OutOfBoundsInputValue = outOfBoundsInputValue;
+        desc.MinimumSamplesPerOutput = minimumSamplesPerOutput;
+        desc.MaximumSamplesPerOutput = maximumSamplesPerOutput;
+        desc.AlignRegionsToCorners = alignRegionsToCorners;
+
+        detail::NodeOutput* const inputs[] = { input.Impl(), roi.Impl(), batchIndices.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_ROI_ALIGN1, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+#endif // DML_TARGET_VERSION >= 0x4000
 
     // Reinterprets the memory of a tensor with a different type and dimensions (analogously to using
     // reinterpret_cast to access raw bits). Note that this is different to the DML Cast operator, which performs
