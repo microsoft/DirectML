@@ -3438,8 +3438,8 @@ namespace dml
         uint32_t minimumSamplesPerOutput,
         uint32_t maximumSamplesPerOutput,
         bool alignRegionsToCorners,
-        uint32_t cropHeight,
-        uint32_t cropWidth)
+        uint32_t outputHeight,
+        uint32_t outputWidth)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
 
@@ -3447,11 +3447,14 @@ namespace dml
         TensorDesc roiTensor = roi.Impl()->GetOutputDesc();
         TensorDesc batchIndicesTensor = batchIndices.Impl()->GetOutputDesc();
 
+        uint32_t channelCount = inputTensor.sizes[1];
+        uint32_t roiCount = roiTensor.sizes.size() < 2 ? 1u : roiTensor.sizes[roiTensor.sizes.size() - 2];
+
         TensorDesc::Dimensions outputSizes({
-            roiTensor.sizes[roiTensor.sizes.size() - 2],
-            inputTensor.sizes[1],
-            cropHeight,
-            cropWidth,
+            roiCount,
+            channelCount,
+            outputHeight,
+            outputWidth,
         });
 
         TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
