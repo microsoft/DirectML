@@ -3570,12 +3570,12 @@ namespace dml
 
         RoiAlignGradOutputs outputs {};
 
-        if (outputGradient)
+        if (computeOutputGradient)
         {
             outputs.outputGradient = builder->CreateNodeOutput(node, 0, std::move(outputGradientTensor));
         }
 
-        if (outputROIGradient)
+        if (computeOutputROIGradient)
         {
             outputs.outputROIGradient = builder->CreateNodeOutput(node, 1, std::move(outputROIGradientTensor));
         }
