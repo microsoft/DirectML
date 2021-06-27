@@ -3484,6 +3484,102 @@ namespace dml
 
 #endif // DML_TARGET_VERSION >= 0x4000
 
+#if DML_TARGET_VERSION >= 0x4100
+    struct RoiAlignGradOutputs
+    {
+        Expression outputGradient;
+        Expression outputROIGradient;
+    };
+
+    inline RoiAlignGradOutputs RoiAlignGrad(
+        Optional<Expression> input,
+        Expression inputGradient,
+        Expression roi,
+        Expression batchIndices,
+        DML_REDUCE_FUNCTION reductionFunction,
+        DML_INTERPOLATION_MODE interpolationMode,
+        float spatialScaleX,
+        float spatialScaleY,
+        float inputPixelOffset,
+        float outputPixelOffset,
+        uint32_t minimumSamplesPerOutput,
+        uint32_t maximumSamplesPerOutput,
+        bool alignRegionsToCorners,
+        uint32_t batchSize,
+        uint32_t imageHeight,
+        uint32_t imageWidth,
+        bool computeOutputGradient,
+        bool computeOutputROIGradient)
+    {
+        detail::GraphBuilder* builder = inputGradient.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.has_value() ? input->Impl()->GetOutputDesc() : TensorDesc();
+        TensorDesc inputGradientTensor = inputGradient.Impl()->GetOutputDesc();
+        TensorDesc roiTensor = roi.Impl()->GetOutputDesc();
+        TensorDesc batchIndicesTensor = batchIndices.Impl()->GetOutputDesc();
+
+        assert(computeOutputGradient || computeOutputROIGradient);
+        assert(inputGradientTensor.sizes.size() == 4);
+        assert(roiTensor.sizes.size() >= 2);
+        assert(roiTensor.sizes.size() <= 4);
+        assert(batchIndicesTensor.sizes.size() <= 4);
+        assert(!input || inputTensor.sizes.size() == 4);
+        assert(!computeOutputROIGradient || input);
+        assert(reductionFunction == DML_REDUCE_FUNCTION_AVERAGE || input);
+
+        TensorDesc outputGradientTensor;
+        if (computeOutputGradient)
+        {
+            TensorDesc::Dimensions outputGradientSizes({
+                batchSize,
+                inputGradientTensor.sizes[1],
+                imageHeight,
+                imageWidth,
+            });
+
+            assert(!input || inputTensor.sizes == outputGradientSizes);
+            outputGradientTensor = TensorDesc(inputGradientTensor.dataType, outputGradientSizes, builder->GetTensorPolicy());
+        }
+        
+        TensorDesc outputROIGradientTensor = computeOutputROIGradient ? TensorDesc(roiTensor.dataType, roiTensor.sizes, builder->GetTensorPolicy()) : TensorDesc();
+        assert(!computeOutputROIGradient || computeOutputROIGradient.sizes == roiTensor.sizes);
+
+        DML_ROI_ALIGN_GRAD_OPERATOR_DESC desc = {};
+        desc.InputTensor = input ? inputTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ROITensor = roiTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BatchIndicesTensor = batchIndicesTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputGradientTensor = computeOutputGradient ? outputGradientTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.OutputROIGradientTensor = computeOutputROIGradient ? outputROIGradientTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.ReductionFunction = reductionFunction; 
+        desc.InterpolationMode = interpolationMode;
+        desc.SpatialScaleX = spatialScaleX;
+        desc.SpatialScaleY = spatialScaleY;
+        desc.InputPixelOffset = inputPixelOffset;
+        desc.OutputPixelOffset = outputPixelOffset;
+        desc.MinimumSamplesPerOutput = minimumSamplesPerOutput;
+        desc.MaximumSamplesPerOutput = maximumSamplesPerOutput;
+        desc.AlignRegionsToCorners = alignRegionsToCorners;
+
+        detail::NodeOutput* const inputs[] = { input ? input->Impl() : nullptr, inputGradient.Impl(), roi.Impl(), batchIndices.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(static_cast<DML_OPERATOR_TYPE>(DML_OPERATOR_ROI_ALIGN_GRAD), &desc, inputs);
+
+        RoiAlignGradOutputs outputs {};
+
+        if (outputGradient)
+        {
+            outputs.outputGradient = builder->CreateNodeOutput(node, 0, std::move(outputGradientTensor));
+        }
+
+        if (outputROIGradient)
+        {
+            outputs.outputROIGradient = builder->CreateNodeOutput(node, 1, std::move(outputROIGradientTensor));
+        }
+
+        return outputs;
+    }
+#endif
+
     // Reinterprets the memory of a tensor with a different type and dimensions (analogously to using
     // reinterpret_cast to access raw bits). Note that this is different to the DML Cast operator, which performs
     // a type cast on the contents of a tensor (analogously to static_cast). The total tensor size of the output
