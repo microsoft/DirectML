@@ -3505,11 +3505,11 @@ namespace dml
         uint32_t minimumSamplesPerOutput,
         uint32_t maximumSamplesPerOutput,
         bool alignRegionsToCorners,
-        uint32_t batchSize,
-        uint32_t imageHeight,
-        uint32_t imageWidth,
         bool computeOutputGradient,
-        bool computeOutputROIGradient)
+        bool computeOutputROIGradient,
+        Optional<uint32_t> batchSize = {},
+        Optional<uint32_t> imageHeight = {},
+        Optional<uint32_t> imageWidth = {})
     {
         detail::GraphBuilder* builder = inputGradient.Impl()->GetGraphBuilder();
 
@@ -3530,11 +3530,15 @@ namespace dml
         TensorDesc outputGradientTensor;
         if (computeOutputGradient)
         {
+            assert(batchSize.has_value());
+            assert(imageHeight.has_value());
+            assert(imageWidth.has_value());
+
             TensorDesc::Dimensions outputGradientSizes({
-                batchSize,
+                *batchSize,
                 inputGradientTensor.sizes[1],
-                imageHeight,
-                imageWidth,
+                *imageHeight,
+                *imageWidth,
             });
 
             assert(!input || inputTensor.sizes == outputGradientSizes);
