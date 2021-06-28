@@ -3519,17 +3519,7 @@ namespace dml
         TensorDesc batchIndicesTensor = batchIndices.Impl()->GetOutputDesc();
 
         assert(computeOutputGradient || computeOutputROIGradient);
-        assert(inputGradientTensor.sizes.size() == 4);
-        assert(roiTensor.sizes.size() >= 2);
-        assert(roiTensor.sizes.size() <= 4);
-        assert(batchIndicesTensor.sizes.size() <= 4);
-        assert(!input || inputTensor.sizes.size() == 4);
-        assert(!computeOutputROIGradient || input);
-        assert(reductionFunction == DML_REDUCE_FUNCTION_AVERAGE || input);
-        assert(!input || inputTensor.sizes[0] == batchSize);
-        assert(!input || inputTensor.sizes[1] == inputGradientTensor.sizes[1]);
-        assert(!input || inputTensor.sizes[2] == imageHeight);
-        assert(!input || inputTensor.sizes[3] == imageWidth);
+        assert(inputGradientTensor.sizes.size() > 1);
 
         TensorDesc outputGradientTensor;
         if (computeOutputGradient)
@@ -3541,7 +3531,6 @@ namespace dml
                 imageWidth,
             });
 
-            assert(!input || inputTensor.sizes == outputGradientSizes);
             outputGradientTensor = TensorDesc(inputGradientTensor.dataType, outputGradientSizes, builder->GetTensorPolicy());
         }
         
