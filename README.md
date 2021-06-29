@@ -20,6 +20,8 @@ More information about DirectML can be found in [Introduction to DirectML](https
   - [More information](#more-information)
 - [Contributing](#contributing)
 
+Visit the [DirectX Landing Page](https://devblogs.microsoft.com/directx/landing-page/) for more resources for DirectX developers.
+
 ## Getting Started with DirectML
 
 DirectML is distributed as a system component of Windows 10, and is available as part of the Windows 10 operating system (OS) in Windows 10, version 1903 (10.0; Build 18362), and newer.
