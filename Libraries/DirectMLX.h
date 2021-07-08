@@ -2660,13 +2660,63 @@ namespace dml
         return output;
     }
 
-    // 
-    // TODO: SpaceToDepth (DML_OPERATOR_SPACE_TO_DEPTH1)
-    // 
+    inline Expression SpaceToDepth(
+        Expression input,
+        uint32_t blockSize,
+        DML_DEPTH_SPACE_ORDER order = DML_DEPTH_SPACE_ORDER_DEPTH_COLUMN_ROW)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        dml::TensorDesc::Dimensions outputSizes = {
+            inputTensor.sizes[0],
+            inputTensor.sizes[1] * blockSize * blockSize,
+            inputTensor.sizes[2] / blockSize,
+            inputTensor.sizes[3] / blockSize
+        };
 
-    // 
-    // TODO: DepthToSpace (DML_OPERATOR_DEPTH_TO_SPACE1)
-    // 
+        TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
+
+        DML_SPACE_TO_DEPTH1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BlockSize = blockSize;
+        desc.Order = order;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_SPACE_TO_DEPTH1, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
+    inline Expression DepthToSpace(
+        Expression input,
+        uint32_t blockSize,
+        DML_DEPTH_SPACE_ORDER order = DML_DEPTH_SPACE_ORDER_DEPTH_COLUMN_ROW)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        dml::TensorDesc::Dimensions outputSizes = {
+            inputTensor.sizes[0],
+            inputTensor.sizes[1] / (blockSize * blockSize),
+            inputTensor.sizes[2] * blockSize,
+            inputTensor.sizes[3] * blockSize
+        };
+
+        TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
+
+        DML_DEPTH_TO_SPACE1_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BlockSize = blockSize;
+        desc.Order = order;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_DEPTH_TO_SPACE1, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
 
     inline Expression Tile(Expression input, Span<const uint32_t> repeats)
     {
