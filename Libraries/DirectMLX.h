@@ -2667,12 +2667,15 @@ namespace dml
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        
+        assert(inputTensor.sizes.size() == 4);
+
         dml::TensorDesc::Dimensions outputSizes = {
             inputTensor.sizes[0],
             inputTensor.sizes[1] * blockSize * blockSize,
             inputTensor.sizes[2] / blockSize,
             inputTensor.sizes[3] / blockSize
-        };
+        };    
 
         TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
 
@@ -2696,6 +2699,9 @@ namespace dml
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        
+        assert(inputTensor.sizes.size() == 4);
+
         dml::TensorDesc::Dimensions outputSizes = {
             inputTensor.sizes[0],
             inputTensor.sizes[1] / (blockSize * blockSize),
