@@ -3591,7 +3591,7 @@ namespace dml
         }
         
         TensorDesc outputROIGradientTensor = computeOutputROIGradient ? TensorDesc(roiTensor.dataType, roiTensor.sizes, builder->GetTensorPolicy()) : TensorDesc();
-        assert(!computeOutputROIGradient || computeOutputROIGradient.sizes == roiTensor.sizes);
+        assert(!computeOutputROIGradient || outputROIGradientTensor.sizes == roiTensor.sizes);
 
         DML_ROI_ALIGN_GRAD_OPERATOR_DESC desc = {};
         desc.InputTensor = input ? inputTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
