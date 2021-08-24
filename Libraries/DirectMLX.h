@@ -2875,6 +2875,107 @@ namespace dml
 
 #endif // DML_TARGET_VERSION >= 0x3100
 
+#if DML_TARGET_VERSION >= 0x4100
+    struct BatchNormalizationTrainingOutputs
+    {
+        Expression output;
+        Expression mean;
+        Expression variance; 
+    };
+
+    inline BatchNormalizationTrainingOutputs BatchNormalizationTraining(
+        Expression input,
+        Expression scale,
+        Expression bias,
+        Optional<Expression> fusedAdd,
+        float epsilon,
+        FusedActivation fusedActivation = FusedActivation::None())
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc scaleTensor = scale.Impl()->GetOutputDesc();
+        TensorDesc biasTensor = bias.Impl()->GetOutputDesc();
+
+        TensorDesc fusedAddTensor;
+        if (fusedAdd)
+        {
+            fusedAddTensor = fusedAdd->Impl()->GetOutputDesc();
+        }
+
+        TensorDesc outputTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputMeanTensor(inputTensor.dataType, scaleTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputVarianceTensor(inputTensor.dataType, scaleTensor.sizes, builder->GetTensorPolicy());
+
+        detail::FusedActivationStorage storage;
+
+        DML_BATCH_NORMALIZATION_TRAINING_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ScaleTensor = scaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.BiasTensor = biasTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.FusedAddTensor = fusedAdd.has_value() ? fusedAddTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputMeanTensor = outputMeanTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputVarianceTensor = outputVarianceTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Epsilon = epsilon;
+        desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
+
+        SmallVector<detail::NodeOutput*, 4> inputs = { input.Impl(), scale.Impl(), bias.Impl() };
+
+        if (fusedAdd)
+        {
+            inputs.push_back(fusedAdd->Impl());
+        }
+
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_BATCH_NORMALIZATION_TRAINING, &desc, inputs);
+        detail::NodeOutput* output         = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+        detail::NodeOutput* outputMean     = builder->CreateNodeOutput(node, 1, std::move(outputMeanTensor));
+        detail::NodeOutput* outputVariance = builder->CreateNodeOutput(node, 2, std::move(outputVarianceTensor));
+
+        return {output, outputMean, outputVariance};
+    }
+
+    inline BatchNormalizationGradOutputs BatchNormalizationTrainingGrad(
+        Expression input,
+        Expression inputGradient,
+        Expression mean,
+        Expression variance,
+        Expression scale,
+        float epsilon)
+    {
+        dml::detail::GraphBuilder* builder = mean.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc inputGradientTensor = inputGradient.Impl()->GetOutputDesc();
+        TensorDesc meanTensor = mean.Impl()->GetOutputDesc();
+        TensorDesc varianceTensor = variance.Impl()->GetOutputDesc();
+        TensorDesc scaleTensor = scale.Impl()->GetOutputDesc();
+        TensorDesc outputGradientTensor(inputTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputScaleGradientTensor(meanTensor.dataType, meanTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputBiasGradientTensor(meanTensor.dataType, meanTensor.sizes, builder->GetTensorPolicy());
+
+        DML_BATCH_NORMALIZATION_TRAINING_GRAD_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputGradientTensor = inputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.MeanTensor = meanTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.VarianceTensor = varianceTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.ScaleTensor = scaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.Epsilon = epsilon;
+        
+        desc.OutputGradientTensor = outputGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputScaleGradientTensor = outputScaleGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputBiasGradientTensor = outputBiasGradientTensor.AsPtr<DML_TENSOR_DESC>();
+        
+        dml::detail::NodeOutput* const inputs[] = { input.Impl(), inputGradient.Impl(), mean.Impl(), variance.Impl(), scale.Impl() };
+        dml::detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_BATCH_NORMALIZATION_TRAINING_GRAD, &desc, inputs);
+        
+        BatchNormalizationGradOutputs outputValues;
+        outputValues.gradient = builder->CreateNodeOutput(node, 0, *desc.OutputGradientTensor);
+        outputValues.scaleGradient = builder->CreateNodeOutput(node, 1, *desc.OutputScaleGradientTensor);
+        outputValues.biasGradient = builder->CreateNodeOutput(node, 2, *desc.OutputBiasGradientTensor);
+
+        return outputValues;
+    }
+#endif // DML_TARGET_VERSION >= 0x4100
+
     inline Expression MeanVarianceNormalization(
         Expression input,
         Optional<Expression> scale,
