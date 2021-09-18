@@ -13,7 +13,7 @@ More information about DirectML can be found in [Introduction to DirectML](https
 - [DirectML Samples](#directml-samples)
 - [Windows ML on DirectML](#windows-ml-on-directml)
 - [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
-- [TensorFlow with DirectML (Preview)](#tensorflow-with-directml-preview)
+- [TensorFlow with DirectML](#tensorflow-with-directml-preview)
 - [Feedback](#feedback)
 - [External Links](#external-links)
   - [Documentation](#documentation)
@@ -96,7 +96,7 @@ For more information about getting started, see [Using the DirectML execution pr
 * [ONNX Runtime GitHub](https://github.com/microsoft/onnxruntime)
 * [DirectML Execution Provider readme](https://github.com/microsoft/onnxruntime/blob/master/docs/execution_providers/DirectML-ExecutionProvider.md)
 
-## TensorFlow with DirectML (Preview)
+## TensorFlow with DirectML
 
 TensorFlow is a popular open source platform for machine learning and is a leading framework for training of machine learning models.
 
