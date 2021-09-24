@@ -34,6 +34,7 @@
 #endif
 
 #if __has_include("dml_optional_extensions.h")
+    #define DML_OPTIONAL_EXTENDED
     #include "dml_optional_extensions.h"
 #endif
 
@@ -225,7 +226,7 @@ namespace dml
     using Span = absl::Span<T>;
 
     using absl::make_unique;
-#else
+#else !defined(DML_OPTIONAL_EXTENDED)
     template <typename T>
     using Optional = std::optional<T>;
 
