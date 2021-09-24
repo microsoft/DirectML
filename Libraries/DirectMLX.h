@@ -25,14 +25,16 @@
 #include <type_traits>
 #include <functional>
 
-#if DMLX_USE_ABSEIL
+#if !DMLX_USE_ABSEIL & __cplusplus > 201703L
+    #include <optional>
+#else
     #if __cpp_lib_span
         #include <span>
     #endif
-#elif defined(DMLX_USE_C10)
-    #include <c10/util/Optional.h>
-#else
-    #include <optional>
+#endif
+
+#if __has_include("dml_optional_extensions.h")
+    #include "dml_optional_extensions.h"
 #endif
 
 #ifndef _WIN32
@@ -225,13 +227,10 @@ namespace dml
     using absl::make_unique;
 #else
     template <typename T>
-    #ifdef DMLX_USE_C10
-        using Optional = c10::optional<T>;
-        constexpr c10::nullopt_t NullOpt = c10::nullopt;
-    #else
-        using Optional = std::optional<T>;
-        constexpr std::nullopt_t NullOpt = std::nullopt;
-    #endif
+    using Optional = std::optional<T>;
+
+    constexpr std::nullopt_t NullOpt = std::nullopt;
+
     template <typename T, size_t N>
     using SmallVector = std::vector<T>;
 
