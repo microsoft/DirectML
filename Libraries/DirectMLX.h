@@ -12,7 +12,9 @@
 
 #pragma once
 #include "DirectML.h"
-
+#ifndef _WIN32
+#include "dxguids/dxguids.h"
+#endif
 #include <cstdint>
 #include <cassert>
 #include <vector>
@@ -29,6 +31,16 @@
     #if __cpp_lib_span
         #include <span>
     #endif
+#endif
+
+#ifndef _WIN32
+WINADAPTER_IID(IDMLDevice1, 0xa0884f9a, 0xd2be, 0x4355, 0xaa, 0x5d, 0x59, 0x01, 0x28, 0x1a, 0xd1, 0xd2)
+WINADAPTER_IID(IDMLOperator, 0x26caae7a, 0x3081, 0x4633, 0x95, 0x81, 0x22, 0x6f, 0xbe, 0x57, 0x69, 0x5d)
+WINADAPTER_IID(IDMLCompiledOperator, 0x6b15e56a, 0xbf5c, 0x4902, 0x92, 0xd8, 0xda, 0x3a, 0x65, 0x0a, 0xfe, 0xa4)
+WINADAPTER_IID(IDMLDevice, 0x6dbd6437, 0x96fd, 0x423f, 0xa9, 0x8c, 0xae, 0x5e, 0x7c, 0x2a, 0x57, 0x3f)
+WINADAPTER_IID(IDMLBindingTable, 0x29c687dc, 0xde74, 0x4e3b, 0xab, 0x00, 0x11, 0x68, 0xf2, 0xfc, 0x3c, 0xfc)
+WINADAPTER_IID(IDMLCommandRecorder, 0xe6857a76, 0x2e3e, 0x4fdd, 0xbf, 0xf4, 0x5d, 0x2b, 0xa1, 0x0f, 0xb4, 0x53)
+WINADAPTER_IID(IDMLOperatorInitializer, 0x427c1113, 0x435c, 0x469c, 0x86, 0x76, 0x4d, 0x5d, 0xd0, 0x72, 0xf8, 0x13)
 #endif
 
 /** Calculates the minimum number of bytes required to store a buffer tensor with the specified type, sizes, and
@@ -82,7 +94,7 @@ inline UINT64 DMLCalcBufferTensorSize(
     UINT64 minimumImpliedSizeInBytes = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = sizes[0];
+        minimumImpliedSizeInBytes = sizes ? sizes[0] : 1;
         for (UINT i = 1; i < dimensionCount; ++i)
         {
             minimumImpliedSizeInBytes *= sizes[i];
@@ -3470,9 +3482,43 @@ namespace dml
         return out;
     }
 
-    // 
-    // TODO: NonZeroCoordinates
-    // 
+    struct NonZeroCoordinatesOutputs
+    {
+        Expression count;
+        Expression coordinates;
+    };
+    inline NonZeroCoordinatesOutputs NonZeroCoordinates(
+        Expression input)
+    {
+          detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, {1,1,1,1}, builder->GetTensorPolicy()); // Same as input
+
+        uint32_t effectiveRank = -1;
+        auto inputTensorSizes = inputTensor.sizes;
+        uint32_t totalElements = 1;
+        for(int i = 0; i<inputTensorSizes.size(); i++) {
+            if(inputTensorSizes[i] > 1 && effectiveRank == -1) {
+                effectiveRank = inputTensorSizes.size() - i;
+            }
+            totalElements *= inputTensorSizes[i];
+        }
+        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {1,1, totalElements, effectiveRank}, builder->GetTensorPolicy());
+
+        DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputCountTensor = outputCountTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputCoordinatesTensor = outputCoordinatesTensor.AsPtr<DML_TENSOR_DESC>();
+        
+        NonZeroCoordinatesOutputs out;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_NONZERO_COORDINATES, &desc, inputs);
+        out.count = builder->CreateNodeOutput(node, 0, std::move(outputCountTensor));
+        out.coordinates = builder->CreateNodeOutput(node, 1, std::move(outputCoordinatesTensor));
+        return out;
+    }
 
     // If not specified, parameters are defaulted to the following values:
     //   Scales = computed by dividing the input sizes by the output sizes
