@@ -25,17 +25,15 @@
 #include <type_traits>
 #include <functional>
 
-#if !DMLX_USE_ABSEIL & __cplusplus > 201703L
-    #include <optional>
-#else
+#if DMLX_USE_ABSEIL
     #if __cpp_lib_span
         #include <span>
     #endif
-#endif
-
-#if __has_include("dml_optional_extensions.h")
-    #define DML_OPTIONAL_EXTENDED
+#elif ((__cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L) && (_MSC_VER >= 1913))) && __has_include(<optional>)
+    #include <optional>
+#elif __has_include("dml_optional_extensions.h")
     #include "dml_optional_extensions.h"
+    #define DMLX_OPTIONAL_EXTENDED
 #endif
 
 #ifndef _WIN32
@@ -226,11 +224,12 @@ namespace dml
     using Span = absl::Span<T>;
 
     using absl::make_unique;
-#else !defined(DML_OPTIONAL_EXTENDED)
+#else
+    #ifndef DMLX_OPTIONAL_EXTENDED
     template <typename T>
-    using Optional = std::optional<T>;
-
-    constexpr std::nullopt_t NullOpt = std::nullopt;
+        using Optional = std::optional<T>;
+        constexpr std::nullopt_t NullOpt = std::nullopt;
+    #endif
 
     template <typename T, size_t N>
     using SmallVector = std::vector<T>;
