@@ -27,7 +27,7 @@
     #if __cpp_lib_span
         #include <span>
     #endif
-#elif ((__cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L) && (_MSC_VER >= 1913))) && __has_include(<optional>)
+#elif ((__cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L))) && __has_include(<optional>)
     // stl optional is only available in cpp17 and above.
     #include <optional>
 #elif __has_include("dml_optional_extensions.h")
