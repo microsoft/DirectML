@@ -3483,7 +3483,7 @@ namespace dml
     inline NonZeroCoordinatesOutputs NonZeroCoordinates(
         Expression input)
     {
-          detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
 
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, {1,1,1,1}, builder->GetTensorPolicy()); // Same as input
