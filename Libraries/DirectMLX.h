@@ -3492,7 +3492,8 @@ namespace dml
         uint32_t totalElements = 1;
         for (uint32_t i = 0; i < dimensionCount; ++i)
         {
-            if(inputTensorSizes[i] > 1 && effectiveRank == -1) {
+            if (inputTensorSizes[i] > 1 && effectiveRank == -1)
+            {
                 effectiveRank = dimensionCount - i;
             }
             totalElements *= inputTensorSizes[i];
