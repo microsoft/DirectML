@@ -27,7 +27,7 @@
     #if __cpp_lib_span
         #include <span>
     #endif
-#elif (__cplusplus >= 201703L && __has_include(<optional>)
+#elif __cplusplus >= 201703L && __has_include(<optional>)
     // stl optional is only available in cpp17 and above.
     #include <optional>
 #elif __has_include("dml_optional_extensions.h")
@@ -86,7 +86,7 @@ inline UINT64 DMLCalcBufferTensorSize(
     UINT64 minimumImpliedSizeInBytes = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = sizes ? sizes[0] : 1;
+        minimumImpliedSizeInBytes = dimensionCount > 0 ? sizes[0] : 1;
         for (UINT i = 1; i < dimensionCount; ++i)
         {
             minimumImpliedSizeInBytes *= sizes[i];
@@ -3480,24 +3480,26 @@ namespace dml
         Expression count;
         Expression coordinates;
     };
-    inline NonZeroCoordinatesOutputs NonZeroCoordinates(
-        Expression input)
+    inline NonZeroCoordinatesOutputs NonZeroCoordinates(Expression input)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
-
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
-        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, {1,1,1,1}, builder->GetTensorPolicy()); // Same as input
-
+        const auto& inputTensorSizes = inputTensor.sizes;
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensorSizes.size());
+        TensorDimensions outputSizes = {};
         uint32_t effectiveRank = -1;
-        auto inputTensorSizes = inputTensor.sizes;
         uint32_t totalElements = 1;
-        for(int i = 0; i<inputTensorSizes.size(); i++) {
+        for(uint32_t i = 0; i < dimensionCount; ++i) {
             if(inputTensorSizes[i] > 1 && effectiveRank == -1) {
-                effectiveRank = inputTensorSizes.size() - i;
+                effectiveRank = dimensionCount - i;
             }
             totalElements *= inputTensorSizes[i];
+            outputSizes.push_back(1);
         }
-        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {1,1, totalElements, effectiveRank}, builder->GetTensorPolicy());
+        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
+        outputSizes[dimensionCount - 2] = totalElements;
+        outputSizes[dimensionCount - 1] = effectiveRank;
+        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
 
         DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
