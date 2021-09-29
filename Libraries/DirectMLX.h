@@ -3486,10 +3486,12 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         const auto& inputTensorSizes = inputTensor.sizes;
         uint32_t dimensionCount = static_cast<uint32_t>(inputTensorSizes.size());
+
         TensorDimensions outputSizes = {};
         uint32_t effectiveRank = -1;
         uint32_t totalElements = 1;
-        for(uint32_t i = 0; i < dimensionCount; ++i) {
+        for(uint32_t i = 0; i < dimensionCount; ++i)
+        {
             if(inputTensorSizes[i] > 1 && effectiveRank == -1) {
                 effectiveRank = dimensionCount - i;
             }
