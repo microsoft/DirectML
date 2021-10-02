@@ -215,9 +215,9 @@ namespace dml
     using absl::make_unique;
 #else
     #ifndef DMLX_OPTIONAL_EXTENDED
-    template <typename T>
-        using Optional = std::optional<T>;
-        constexpr std::nullopt_t NullOpt = std::nullopt;
+        template <typename T>
+            using Optional = std::optional<T>;
+            constexpr std::nullopt_t NullOpt = std::nullopt;
     #endif
 
     template <typename T, size_t N>
@@ -3488,21 +3488,14 @@ namespace dml
         uint32_t dimensionCount = static_cast<uint32_t>(inputTensorSizes.size());
 
         TensorDimensions outputSizes = {};
-        uint32_t effectiveRank = -1;
         uint32_t totalElements = 1;
         for (uint32_t i = 0; i < dimensionCount; ++i)
         {
-            if (inputTensorSizes[i] > 1 && effectiveRank == -1)
-            {
-                effectiveRank = dimensionCount - i;
-            }
             totalElements *= inputTensorSizes[i];
             outputSizes.push_back(1);
         }
         TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
-        outputSizes[dimensionCount - 2] = totalElements;
-        outputSizes[dimensionCount - 1] = effectiveRank;
-        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
+        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {totalElements, dimensionCount}, builder->GetTensorPolicy());
 
         DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
