@@ -23,12 +23,16 @@
 #include <type_traits>
 #include <functional>
 
-#if !DMLX_USE_ABSEIL
-    #include <optional>
-#else
+#if DMLX_USE_ABSEIL
     #if __cpp_lib_span
         #include <span>
     #endif
+#elif __cplusplus >= 201703L && __has_include(<optional>)
+    // stl optional is only available in cpp17 and above.
+    #include <optional>
+#elif __has_include("dml_optional_extensions.h")
+    #include "dml_optional_extensions.h"
+    #define DMLX_OPTIONAL_EXTENDED
 #endif
 
 /** Calculates the minimum number of bytes required to store a buffer tensor with the specified type, sizes, and
@@ -82,8 +86,8 @@ inline UINT64 DMLCalcBufferTensorSize(
     UINT64 minimumImpliedSizeInBytes = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = sizes[0];
-        for (UINT i = 1; i < dimensionCount; ++i)
+        minimumImpliedSizeInBytes = 1;
+        for (UINT i = 0; i < dimensionCount; ++i)
         {
             minimumImpliedSizeInBytes *= sizes[i];
         }
@@ -210,10 +214,11 @@ namespace dml
 
     using absl::make_unique;
 #else
-    template <typename T>
-    using Optional = std::optional<T>;
-
-    constexpr std::nullopt_t NullOpt = std::nullopt;
+    #ifndef DMLX_OPTIONAL_EXTENDED
+        template <typename T>
+            using Optional = std::optional<T>;
+            constexpr std::nullopt_t NullOpt = std::nullopt;
+    #endif
 
     template <typename T, size_t N>
     using SmallVector = std::vector<T>;
@@ -3470,9 +3475,40 @@ namespace dml
         return out;
     }
 
-    // 
-    // TODO: NonZeroCoordinates
-    // 
+    struct NonZeroCoordinatesOutputs
+    {
+        Expression count;
+        Expression coordinates;
+    };
+    inline NonZeroCoordinatesOutputs NonZeroCoordinates(Expression input)
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        const auto& inputTensorSizes = inputTensor.sizes;
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensorSizes.size());
+
+        TensorDimensions outputCountSizes = {1};
+        uint32_t totalElements = 1;
+        for (uint32_t i = 0; i < dimensionCount; ++i)
+        {
+            totalElements *= inputTensorSizes[i];
+        }
+        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputCountSizes, builder->GetTensorPolicy());
+        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {totalElements, dimensionCount}, builder->GetTensorPolicy());
+
+        DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputCountTensor = outputCountTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputCoordinatesTensor = outputCoordinatesTensor.AsPtr<DML_TENSOR_DESC>();
+        
+        NonZeroCoordinatesOutputs output;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_NONZERO_COORDINATES, &desc, inputs);
+        output.count = builder->CreateNodeOutput(node, 0, std::move(outputCountTensor));
+        output.coordinates = builder->CreateNodeOutput(node, 1, std::move(outputCoordinatesTensor));
+        return output;
+    }
 
     // If not specified, parameters are defaulted to the following values:
     //   Scales = computed by dividing the input sizes by the output sizes
