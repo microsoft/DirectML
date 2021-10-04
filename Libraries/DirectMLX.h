@@ -86,8 +86,8 @@ inline UINT64 DMLCalcBufferTensorSize(
     UINT64 minimumImpliedSizeInBytes = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = dimensionCount > 0 ? sizes[0] : 1;
-        for (UINT i = 1; i < dimensionCount; ++i)
+        minimumImpliedSizeInBytes = 1;
+        for (UINT i = 0; i < dimensionCount; ++i)
         {
             minimumImpliedSizeInBytes *= sizes[i];
         }
@@ -3487,14 +3487,13 @@ namespace dml
         const auto& inputTensorSizes = inputTensor.sizes;
         uint32_t dimensionCount = static_cast<uint32_t>(inputTensorSizes.size());
 
-        TensorDimensions outputSizes = {};
+        TensorDimensions outputCountSizes = {1};
         uint32_t totalElements = 1;
         for (uint32_t i = 0; i < dimensionCount; ++i)
         {
             totalElements *= inputTensorSizes[i];
-            outputSizes.push_back(1);
         }
-        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputSizes, builder->GetTensorPolicy());
+        TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputCountSizes, builder->GetTensorPolicy());
         TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {totalElements, dimensionCount}, builder->GetTensorPolicy());
 
         DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
@@ -3502,13 +3501,13 @@ namespace dml
         desc.OutputCountTensor = outputCountTensor.AsPtr<DML_TENSOR_DESC>();
         desc.OutputCoordinatesTensor = outputCoordinatesTensor.AsPtr<DML_TENSOR_DESC>();
         
-        NonZeroCoordinatesOutputs out;
+        NonZeroCoordinatesOutputs output;
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_NONZERO_COORDINATES, &desc, inputs);
-        out.count = builder->CreateNodeOutput(node, 0, std::move(outputCountTensor));
-        out.coordinates = builder->CreateNodeOutput(node, 1, std::move(outputCoordinatesTensor));
-        return out;
+        output.count = builder->CreateNodeOutput(node, 0, std::move(outputCountTensor));
+        output.coordinates = builder->CreateNodeOutput(node, 1, std::move(outputCoordinatesTensor));
+        return output;
     }
 
     // If not specified, parameters are defaulted to the following values:
