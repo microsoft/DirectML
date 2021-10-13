@@ -13,6 +13,12 @@ else()
 # Use the latest C++ standard available for newer features
 set(PYBIND11_CPP_STANDARD /std:c++latest)
 endif()
+
+# ssize_t does not exist for MSVC but SSIZE_T is available in BaseTsd.
+add_definitions(-Dssize_t=SSIZE_T)
+set(CMAKE_REQUIRED_DEFINITIONS -Dssize_t=SSIZE_T)
+set(CMAKE_EXTRA_INCLUDE_FILES BaseTsd.h)
+
 endif()
 
 add_subdirectory(pybind11)
