@@ -1,6 +1,6 @@
 # PyTorch with DirectML Samples <!-- omit in toc -->
 
-For detailed instructions on getting started with TensorFlow with DirectML, see [GPU accelerated ML training](http://aka.ms/gpuinwsldocs).
+For detailed instructions on getting started with PyTorch with DirectML, see [GPU accelerated ML training](http://aka.ms/gpuinwsldocs).
 
 ## Samples
 
