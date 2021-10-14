@@ -14,6 +14,7 @@ More information about DirectML can be found in [Introduction to DirectML](https
 - [Windows ML on DirectML](#windows-ml-on-directml)
 - [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
 - [TensorFlow with DirectML](#tensorflow-with-directml-preview)
+- [PyTorch with DirectML](#pytorch-with-directml)
 - [Feedback](#feedback)
 - [External Links](#external-links)
   - [Documentation](#documentation)
@@ -55,6 +56,7 @@ See the following sections for more information:
 * [Windows ML on DirectML](#Windows-ML-on-DirectML)
 * [ONNX Runtime on DirectML](#ONNX-Runtime-on-DirectML)
 * [TensorFlow with DirectML (Preview)](#TensorFlow-with-DirectML-Preview)
+* [PyTorch with DirectML (Preview)](#pytorch-with-DirectML-Preview)
 
 ## DirectML Samples
 
@@ -110,11 +112,23 @@ TensorFlow on DirectML is supported on both the latest versions of Windows 10 an
 * [TensorFlow GitHub | RFC: TensorFlow on DirectML](https://github.com/tensorflow/community/pull/243)
 * [TensorFlow homepage](https://www.tensorflow.org/)
 
+## PyTorch with DirectML
+
+DirectML acceleration for PyTorch 1.8.0 is currently available for Public Preview. PyTorch with DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware.
+
+PyTorch on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
+
+* [PyTorch on DirectML samples](./PyTorch)
+* [pytorch-directml PyPI project](https://pypi.org/project/tensorflow-directml/)
+* [PyTorch homepage](https://pytorch.org/)
+
 ## Feedback
 
 We look forward to hearing from you!
 
 * For TensorFlow with DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML-Samples/issues) or contact us directly at askdirectml@microsoft.com.
+
+* For PyTorch with DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML-Samples/issues) or contact us directly at askdirectml@microsoft.com.
 
 * For Windows ML issues, please file a GitHub issue at [microsoft/Windows-Machine-Learning](https://github.com/Microsoft/Windows-Machine-Learning/issues) or contact us directly at askwindowsml@microsoft.com.
 
