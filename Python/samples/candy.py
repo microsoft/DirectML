@@ -56,7 +56,7 @@ conv4 = dml.convolution(pad3, conv4_filter, conv4_bias, start_padding = [4,4], e
 # instance_norm5
 instance_norm5_scale = dml.input_tensor(builder, 3, dml.TensorDesc(data_type, [1,16,1,1]))
 instance_norm5_bias = dml.input_tensor(builder, 4, dml.TensorDesc(data_type, flags, [1,16,1,1]))
-instance_norm5 = dml.mean_variance_normalization(conv4, instance_norm5_scale, instance_norm5_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm5 = dml.mean_variance_normalization(conv4, instance_norm5_scale, instance_norm5_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv7
 conv7_filter = dml.input_tensor(builder, 5, dml.TensorDesc(data_type, flags, [32,16,3,3]))
@@ -66,7 +66,7 @@ conv7 = dml.convolution(instance_norm5, conv7_filter, conv7_bias, strides = [2,2
 # instance_norm8
 instance_norm8_scale = dml.input_tensor(builder, 7, dml.TensorDesc(data_type, [1,32,1,1]))
 instance_norm8_bias = dml.input_tensor(builder, 8, dml.TensorDesc(data_type, flags, [1,32,1,1]))
-instance_norm8 = dml.mean_variance_normalization(conv7, instance_norm8_scale, instance_norm8_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm8 = dml.mean_variance_normalization(conv7, instance_norm8_scale, instance_norm8_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv10
 conv10_filter = dml.input_tensor(builder, 9, dml.TensorDesc(data_type, flags, [64,32,3,3]))
@@ -76,7 +76,7 @@ conv10 = dml.convolution(instance_norm8, conv10_filter, conv10_bias, strides = [
 # instance_norm11
 instance_norm11_scale = dml.input_tensor(builder, 11, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm11_bias = dml.input_tensor(builder, 12, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm11 = dml.mean_variance_normalization(conv10, instance_norm11_scale, instance_norm11_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm11 = dml.mean_variance_normalization(conv10, instance_norm11_scale, instance_norm11_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv16
 conv16_filter = dml.input_tensor(builder, 13, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -86,7 +86,7 @@ conv16 = dml.convolution(instance_norm11, conv16_filter, conv16_bias)
 # instance_norm17
 instance_norm17_scale = dml.input_tensor(builder, 15, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm17_bias = dml.input_tensor(builder, 16, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm17 = dml.mean_variance_normalization(conv16, instance_norm17_scale, instance_norm17_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm17 = dml.mean_variance_normalization(conv16, instance_norm17_scale, instance_norm17_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv19
 conv19_filter = dml.input_tensor(builder, 17, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -96,7 +96,7 @@ conv19 = dml.convolution(instance_norm17, conv19_filter, conv19_bias)
 # instance_norm15
 instance_norm15_scale = dml.input_tensor(builder, 19, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm15_bias = dml.input_tensor(builder, 20, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm15 = dml.mean_variance_normalization(conv19, instance_norm15_scale, instance_norm15_bias, 0, 1, 0.000009999999747378752)
+instance_norm15 = dml.mean_variance_normalization(conv19, instance_norm15_scale, instance_norm15_bias, [0,2,3], 1, 0.000009999999747378752)
 
 # crop21
 crop21 = dml.slice(instance_norm11,[0,0,2,2],[1,64,196,196],[1,1,1,1])
@@ -112,7 +112,7 @@ conv26 = dml.convolution(add, conv26_filter, conv26_bias)
 # instance_norm27
 instance_norm27_scale = dml.input_tensor(builder, 23, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm27_bias = dml.input_tensor(builder, 24, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm27 = dml.mean_variance_normalization(conv26, instance_norm27_scale, instance_norm27_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm27 = dml.mean_variance_normalization(conv26, instance_norm27_scale, instance_norm27_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv29
 conv29_filter = dml.input_tensor(builder, 25, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -122,7 +122,7 @@ conv29 = dml.convolution(instance_norm27, conv29_filter, conv29_bias)
 # instance_norm25
 instance_norm25_scale = dml.input_tensor(builder, 27, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm25_bias = dml.input_tensor(builder, 28, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm25 = dml.mean_variance_normalization(conv29, instance_norm25_scale, instance_norm25_bias, 0, 1, 0.000009999999747378752)
+instance_norm25 = dml.mean_variance_normalization(conv29, instance_norm25_scale, instance_norm25_bias, [0,2,3], 1, 0.000009999999747378752)
 
 # crop21
 crop31 = dml.slice(add,[0,0,2,2],[1,64,196-2-2,196-2-2],[1,1,1,1])
@@ -138,7 +138,7 @@ conv36 = dml.convolution(add1, conv36_filter, conv36_bias)
 # instance_norm37
 instance_norm37_scale = dml.input_tensor(builder, 31, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm37_bias = dml.input_tensor(builder, 32, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm37 = dml.mean_variance_normalization(conv36, instance_norm37_scale, instance_norm37_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm37 = dml.mean_variance_normalization(conv36, instance_norm37_scale, instance_norm37_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv39
 conv39_filter = dml.input_tensor(builder, 33, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -148,7 +148,7 @@ conv39 = dml.convolution(instance_norm37, conv39_filter, conv39_bias)
 # instance_norm35
 instance_norm35_scale = dml.input_tensor(builder, 35, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm35_bias = dml.input_tensor(builder, 36, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm35 = dml.mean_variance_normalization(conv39, instance_norm35_scale, instance_norm35_bias, 0, 1, 0.000009999999747378752)
+instance_norm35 = dml.mean_variance_normalization(conv39, instance_norm35_scale, instance_norm35_bias, [0,2,3], 1, 0.000009999999747378752)
 
 # crop41
 crop41 = dml.slice(add1,[0,0,2,2],[1, 64, 192-2-2, 192-2-2],[1,1,1,1])
@@ -164,7 +164,7 @@ conv46 = dml.convolution(add2, conv46_filter, conv46_bias)
 # instance_norm47
 instance_norm47_scale = dml.input_tensor(builder, 39, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm47_bias = dml.input_tensor(builder, 40, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm47 = dml.mean_variance_normalization(conv46, instance_norm47_scale, instance_norm47_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm47 = dml.mean_variance_normalization(conv46, instance_norm47_scale, instance_norm47_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv49
 conv49_filter = dml.input_tensor(builder, 41, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -174,7 +174,7 @@ conv49 = dml.convolution(instance_norm47, conv49_filter, conv49_bias)
 # instance_norm45
 instance_norm45_scale = dml.input_tensor(builder, 43, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm45_bias = dml.input_tensor(builder, 44, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm45 = dml.mean_variance_normalization(conv49, instance_norm45_scale, instance_norm45_bias, 0, 1, 0.000009999999747378752)
+instance_norm45 = dml.mean_variance_normalization(conv49, instance_norm45_scale, instance_norm45_bias, [0,2,3], 1, 0.000009999999747378752)
 
 # crop51
 crop51 = dml.slice(instance_norm35,[0,0,2,2],[1, 64, 188-2-2, 188-2-2],[1,1,1,1])
@@ -190,7 +190,7 @@ conv56 = dml.convolution(add3, conv56_filter, conv56_bias)
 # instance_norm57
 instance_norm57_scale = dml.input_tensor(builder, 47, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm57_bias = dml.input_tensor(builder, 48, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm57 = dml.mean_variance_normalization(conv56, instance_norm57_scale, instance_norm57_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm57 = dml.mean_variance_normalization(conv56, instance_norm57_scale, instance_norm57_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv59
 conv59_filter = dml.input_tensor(builder, 49, dml.TensorDesc(data_type, flags, [64,64,3,3]))
@@ -200,7 +200,7 @@ conv59 = dml.convolution(instance_norm57, conv59_filter, conv59_bias)
 # instance_norm55
 instance_norm55_scale = dml.input_tensor(builder, 51, dml.TensorDesc(data_type, [1,64,1,1]))
 instance_norm55_bias = dml.input_tensor(builder, 52, dml.TensorDesc(data_type, flags, [1,64,1,1]))
-instance_norm55 = dml.mean_variance_normalization(conv59, instance_norm55_scale, instance_norm55_bias, 0, 1, 0.000009999999747378752)
+instance_norm55 = dml.mean_variance_normalization(conv59, instance_norm55_scale, instance_norm55_bias, [0,2,3], 1, 0.000009999999747378752)
 
 # crop61
 crop61 = dml.slice(add3,[0,0,2,2],[1, 64, 184-2-2, 184-2-2],[1,1,1,1])
@@ -219,7 +219,7 @@ crop63 = dml.slice(conv63,[0,0,1,1],[1, 32, 362-1-1, 362-1-1],[1,1,1,1])
 # instance_norm65
 instance_norm65_scale = dml.input_tensor(builder, 55, dml.TensorDesc(data_type, [1,32,1,1]))
 instance_norm65_bias = dml.input_tensor(builder, 56, dml.TensorDesc(data_type, flags, [1,32,1,1]))
-instance_norm65 = dml.mean_variance_normalization(crop63, instance_norm65_scale, instance_norm65_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm65 = dml.mean_variance_normalization(crop63, instance_norm65_scale, instance_norm65_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv67
 conv67_filter = dml.input_tensor(builder, 57, dml.TensorDesc(data_type, flags, [32,16,3,3]))
@@ -232,7 +232,7 @@ crop67 = dml.slice(conv67,[0,0,1,1],[1, 16, 722-1-1, 722-1-1],[1,1,1,1])
 # instance_norm69
 instance_norm69_scale = dml.input_tensor(builder, 59, dml.TensorDesc(data_type, [1,16,1,1]))
 instance_norm69_bias = dml.input_tensor(builder, 60, dml.TensorDesc(data_type, flags, [1,16,1,1]))
-instance_norm69 = dml.mean_variance_normalization(crop67, instance_norm69_scale, instance_norm69_bias, 0, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
+instance_norm69 = dml.mean_variance_normalization(crop67, instance_norm69_scale, instance_norm69_bias, [0,2,3], 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # conv71
 conv71_filter = dml.input_tensor(builder, 61, dml.TensorDesc(data_type, flags, [3,16,9,9]))

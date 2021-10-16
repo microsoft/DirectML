@@ -384,7 +384,7 @@ PYBIND11_MODULE(pydirectml, module)
     module.def("activation_identity", &dml::ActivationIdentity, "Takes an input tensor and return the tensor as an output.",
         py::arg("input"));
 
-    module.def("add", &dml::Add, "Takes 2 input tensors and performs addition then returns the resulting tensor.",
+    module.def("add", py::overload_cast<dml::Expression, dml::Expression, dml::FusedActivation>(&dml::Add), "Takes 2 input tensors and performs addition then returns the resulting tensor.",
         py::arg("a"),
         py::arg("b"),
         py::arg("fused_activation") = dml::FusedActivation::None());
@@ -419,11 +419,20 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("start_padding"), 
         py::arg("end_padding"));
 
-    module.def("mean_variance_normalization", &dml::MeanVarianceNormalization, "Normalize inputs using output = scale * (input - mean) / sqrt(variance + epsilon) + bias, where mean and variance are computed per instance per channel.",
+    module.def("mean_variance_normalization", [](
+        dml::Expression input,
+        dml::Optional<dml::Expression> scale,
+        dml::Optional<dml::Expression> bias,
+        std::vector<uint32_t> axes,
+        bool normalizeVariance,
+        float epsilon,
+        dml::FusedActivation fusedActivation) {
+            return dml::MeanVarianceNormalization(input, scale, bias, axes, normalizeVariance, epsilon, fusedActivation);
+        }, "Normalize inputs using output = scale * (input - mean) / sqrt(variance + epsilon) + bias, where mean and variance are computed per instance per channel.",
         py::arg("input"),
         py::arg("scale") = dml::NullOpt,
         py::arg("bias") = dml::NullOpt,
-        py::arg("cross_channel"),
+        py::arg("axes") = std::vector<uint32_t>{},
         py::arg("normalize_variance"),
         py::arg("epsilon"),
         py::arg("fused_activation") = dml::FusedActivation::None());
