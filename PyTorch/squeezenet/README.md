@@ -10,6 +10,7 @@ The original paper can be found at: https://arxiv.org/abs/1602.07360
 - [Prepare Data](#prepare-data)
 - [Training](#training)
 - [Testing](#testing)
+- [Predict](#predict)
 - [Tracing](#tracing)
 - [Links](#links)
 
@@ -92,24 +93,55 @@ The accuracy should increase over time.
 
 You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters. Increasing the batch size will, in general, improve the accuracy. 
 
-Once you're finished with training (at least one checkpoint must exist), you can save the model for testing.
+You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the pytorch\checkpoints\<device>\<model>\checkpoint.pth path.
 
 ```
-python pytorch\squeezenet\train.py --save_model
+python pytorch\resnet50\train.py --save_model
 ```
+
+Checkpoints will be saved to the pytorch\checkpoints\<device>\<model>\checkpoint.pth path.
 
 ## Testing
 
-Once the model is trained and saved we can now run the prediction using the following steps. Feel free to change the input image from the test set. Make sure that the data_format layout matches the same layout that the model is trained with.
+Once the model is trained and saved we can now test the model using the following steps. The test script will use the latest trained model from the checkpoints folder.
 
 ```
-python src/predict_squeezenet.py --model_dir data --data_format NCHW --image data/cifar10_images/test/ship/0001.png
+python pytorch\squeezenet\test.py
 ```
 
 You should see the result such as this:
 
 ```
-data/cifar10_images/test/ship/0001.png: predicted ship
+>python pytorch\squeezenet\test.py
+Loading the testing dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+        Test data X [N, C, H, W]:
+                shape=torch.Size([32, 3, 224, 224]),
+                dtype=torch.float32
+        Test data Y:
+                shape=torch.Size([32]),
+                dtype=torch.int64
+Finished moving squeezenet1_1 to device: dml in 0.22499728202819824s.
+current highest_accuracy:  0.10000000149011612
+Test Error:
+ Accuracy: 10.0%, Avg loss: 2.321213
+```
+## Predict
+
+Once the model is trained and saved we can now run the prediction using the following steps. The predict script will use that latest trained model from the checkpoints folder.
+
+```
+python pytorch\squeezenet\predict.py --image E:\a.jpeg
+```
+
+You should see the result such as this:
+
+```
+E:\work\dml>python pytorch\squeezenet\predict.py --image E:\a.jpeg
+hammerhead 0.35642221570014954
+stingray 0.34619468450546265
+electric ray 0.09593362361192703
+cock 0.07319413870573044
+great white shark 0.06555310636758804
 ```
 
 ## Tracing
@@ -117,8 +149,8 @@ data/cifar10_images/test/ship/0001.png: predicted ship
 It may be useful to get a trace during training or evaluation.
 
 ```
-python pytorch\squeezenet\test.py --trace
-python pytorch\squeezenet\train.py --trace
+python pytorch\squeezenet\test.py --trace True
+python pytorch\squeezenet\train.py --trace True
 ```
 
 With default settings, you'll see output like the following:
