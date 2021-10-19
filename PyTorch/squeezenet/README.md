@@ -12,7 +12,7 @@ The original paper can be found at: https://arxiv.org/abs/1602.07360
 - [Testing](#testing)
 - [Predict](#predict)
 - [Tracing](#tracing)
-- [Links](#links)
+- [External Links](#links)
 
 ## Setup
 Install the following prerequisites:
@@ -87,19 +87,21 @@ Test Error:
  Accuracy: 28.6%, Avg loss: 1.862064
 ```
 
-By default, the script will run for 50 epochs with a batch size of 32 and print the accuracy after every 100 batches. The training script can be run multiple times and saves progress after each epoch (by default).
+By default, the script will run for 50 epochs with a batch size of 32 and print the accuracy after every 100 batches. The training script can be run multiple times and saves progress after each epoch (by default). The accuracy should increase over time.
 
-The accuracy should increase over time.
+> When discrete memory or shared GPU memory is insufficient consider running the same scripts with a smaller batch size (use the --batch_size argument). For example:
 
-You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters. Increasing the batch size will, in general, improve the accuracy. 
+```
+python pytorch\resnet50\train.py --batch_size 8
+```
 
-You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the pytorch\checkpoints\<device>\<model>\checkpoint.pth path.
+You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters.
+
+You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the `pytorch\checkpoints\<device>\<model>\checkpoint.pth` path.
 
 ```
 python pytorch\resnet50\train.py --save_model
 ```
-
-Checkpoints will be saved to the pytorch\checkpoints\<device>\<model>\checkpoint.pth path.
 
 ## Testing
 
@@ -248,7 +250,7 @@ Done! with highest_accuracy:  0
 
 ```
 
-## Links
+## External Links
 
 - [Original paper](https://arxiv.org/abs/1602.07360)
 - [Original training data (LSVRC 2012)](http://www.image-net.org/challenges/LSVRC/2012/)

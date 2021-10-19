@@ -1,6 +1,6 @@
 # PyTorch with DirectML Samples <!-- omit in toc -->
 
-For detailed instructions on getting started with PyTorch with DirectML, see [GPU accelerated ML training](http://aka.ms/gpuinwsldocs).
+For detailed instructions on getting started with PyTorch with DirectML, see [GPU accelerated ML training](https://docs.microsoft.com/en-us/windows/ai/directml/gpu-pytorch-windows).
 
 - [Setup](#setup)
 - [Samples](#samples)
@@ -20,7 +20,7 @@ Follow the steps below to get set up with PyTorch on DirectML.
 ```
 4.  Install PyTorch+DirectML
 ```
-    pip install -U --force-reinstall pytorch\pytorch_directml.txt
+    pip install -U --force-reinstall -r pytorch\pytorch_directml.txt
 ```
 
 > Note: Currently a warning will be issued when the package is installed that indicates that tensorboard and torchvision reference an incompatible version of torch. This can be safely ignored. The current version of PyTorch on DirecML is based off Torch 1.8.0, and is compatible with these packages.
