@@ -21,6 +21,7 @@ set(CMAKE_EXTRA_INCLUDE_FILES BaseTsd.h)
 
 endif()
 
+add_subdirectory(gpgmm)
 add_subdirectory(pybind11)
 
 pybind11_add_module(
@@ -31,6 +32,6 @@ pybind11_add_module(
     )
 
 target_compile_options(pydirectml PRIVATE /W4 /WX)
-target_include_directories(pydirectml PRIVATE pybind11/include ${DML_PATH}/include ${DMLX_PATH})
+target_include_directories(pydirectml PRIVATE pybind11/include gpgmm/src/include gpgmm/ ${DML_PATH}/include ${DMLX_PATH})
 target_link_directories(pydirectml PRIVATE ${DML_PATH}/bin/x64-win)
-target_link_libraries(pydirectml PRIVATE dxgi.lib d3d12.lib directml.lib)
+target_link_libraries(pydirectml PRIVATE gpgmm dxgi.lib d3d12.lib directml.lib)

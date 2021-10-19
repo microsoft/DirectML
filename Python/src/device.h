@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <gpgmm_d3d12.h>
+
 namespace pydml
 {
     class Device
@@ -51,9 +53,9 @@ namespace pydml
 
         void EnsureUploadHeapSize(uint64_t requestedSizeInBytes);
         void EnsureReadBackHeapSize(uint64_t requestedSizeInBytes);
-        void EnsureCpuOrDefaultBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<ID3D12Resource>& buffer);
-        void EnsureCpuBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<ID3D12Resource>& buffer);
-        void EnsureDefaultBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<ID3D12Resource>& buffer);
+        void EnsureCpuOrDefaultBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation>& buffer);
+        void EnsureCpuBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation>& buffer);
+        void EnsureDefaultBufferSize(uint64_t requestedSizeInBytes, _Inout_ Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation>& buffer);
         void EnsureDescriptorHeapSize(uint32_t requestedSizeInDescriptors);
 
         void ClearGpuBuffers(dml::Span<ID3D12Resource*> buffers);
@@ -64,6 +66,11 @@ namespace pydml
         Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
         Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocator> m_resourceAllocator;
+        
+        // Residency management is used to handle oversubscribing of video memory. 
+        // The lifetime of |m_residencyManager| will be fully owned by |m_resourceAllocator|.
+        gpgmm::d3d12::ResidencyManager* m_residencyManager = nullptr;
 
         // GPU- and CPU-visible descriptor heaps used for ClearUnorderedAccessView
         Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_clearUavDescriptorHeapGpu;
@@ -73,18 +80,31 @@ namespace pydml
         Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
         Microsoft::WRL::ComPtr<IDMLOperatorInitializer> m_operatorInitializer;
         Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;
+        
+        // GPU descriptor heaps require explicit residency management since they must
+        // stay in a GPU visible memory.
+        class SVDescriptorHeap : public gpgmm::d3d12::Heap {
+        public:
+            SVDescriptorHeap(ComPtr<ID3D12DescriptorHeap> heap, uint64_t size) 
+            : gpgmm::d3d12::Heap(heap, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, size), m_Heap(heap) {
+            }
+
+            Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_Heap;
+        };
 
         // Lazily-initialized resources for operator initialization/execution
-        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_uploadHeap;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_readbackHeap;
+        std::unique_ptr<SVDescriptorHeap> m_descriptorHeap;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_uploadHeap;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_readbackHeap;
 
         // DEFAULT heap buffers to hold input tensors, output tensors, and temporary and persistent resources. The input
         // and output resources are suballocated for operators that have multiple inputs or outputs.
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_inputsResource;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_outputsResource;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_temporaryResource;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentResource;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_inputsResource;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_outputsResource;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_temporaryResource;
+        Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> m_persistentResource;
+
+        gpgmm::d3d12::ResidencySet m_residencySet;
 
         bool m_useCpuCustomHeapResources = false;
         bool m_useGpu = true;
