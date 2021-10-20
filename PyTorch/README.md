@@ -17,13 +17,16 @@ Follow the steps below to get set up with PyTorch on DirectML.
 3. Install prerequisites
 ```
     pip install -r pytorch\requirements.txt 
-```
-4.  Install PyTorch+DirectML
-```
-    pip install -U --force-reinstall -r pytorch\pytorch_directml.txt
+    pip uninstall torch
 ```
 
-> Note: Currently a warning will be issued when the package is installed that indicates that tensorboard and torchvision reference an incompatible version of torch. This can be safely ignored. The current version of PyTorch on DirecML is based off Torch 1.8.0, and is compatible with these packages.
+> Note: The torchvision package automatically installs the torch==1.8.0 dependency, but this is not needed and will cause collisions with the pytorch-directml package. We must uninstall the torch package after installing requirements.
+
+4. _(optional)_ Run `pip list`. The following packages should be installed:
+```
+pytorch-directml        1.8.0a0.dev211019
+torchvision             0.9.0
+```
 
 ## Samples
 
