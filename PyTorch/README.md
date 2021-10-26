@@ -16,8 +16,9 @@ Follow the steps below to get set up with PyTorch on DirectML.
 
 3. Install prerequisites
 ```
-    pip install -r pytorch\requirements.txt 
+    pip install torchvision==0.9.0
     pip uninstall torch
+    pip install pytorch-directml
 ```
 
 > Note: The torchvision package automatically installs the torch==1.8.0 dependency, but this is not needed and will cause collisions with the pytorch-directml package. We must uninstall the torch package after installing requirements.
