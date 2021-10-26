@@ -1,2 +1,0 @@
-torchvision==0.9.0
-pytorch-directml
