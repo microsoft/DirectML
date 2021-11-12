@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <gpgmm_d3d12.h>
+
 inline void ThrowIfFailed(HRESULT hr)
 {
     if (FAILED(hr))
@@ -106,28 +108,29 @@ struct DmlBufferArrayBinding
     }
 };
 
-inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateCommittedResource(
-    ID3D12Device* device,
+inline Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> CreateResource(
+    gpgmm::d3d12::ResourceAllocator* resourceAllocator,
     const D3D12_RESOURCE_DESC& resourceDesc,
     const D3D12_HEAP_PROPERTIES& heapProperties,
     D3D12_RESOURCE_STATES initialState
     )
 {
-    Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-    ThrowIfFailed(device->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &resourceDesc,
+    gpgmm::d3d12::ALLOCATION_DESC allocationDesc = {};
+    allocationDesc.HeapType = heapProperties.Type;
+
+    Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> resource;
+    ThrowIfFailed(resourceAllocator->CreateResource(
+        allocationDesc,
+        resourceDesc,
         initialState,
         nullptr,
-        IID_GRAPHICS_PPV_ARGS(resource.GetAddressOf())
-        ));
+        resource.GetAddressOf()));
 
     return resource;
 }
 
-inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateCpuCustomBuffer(
-    ID3D12Device* device,
+inline Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> CreateCpuCustomBuffer(
+    gpgmm::d3d12::ResourceAllocator* resourceAllocator,
     UINT64 sizeInBytes,
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
     )
@@ -140,32 +143,32 @@ inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateCpuCustomBuffer(
         0
     };
 
-    return CreateCommittedResource(
-        device,
+    return CreateResource(
+        resourceAllocator,
         CD3DX12_RESOURCE_DESC::Buffer(sizeInBytes, flags),
         heapProperties,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS
         );
 }
 
-inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
-    ID3D12Device* device,
+inline Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> CreateDefaultBuffer(
+    gpgmm::d3d12::ResourceAllocator* resourceAllocator,
     UINT64 sizeInBytes,
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
     )
 {
-    return CreateCommittedResource(
-        device,
+    return CreateResource(
+        resourceAllocator,
         CD3DX12_RESOURCE_DESC::Buffer(sizeInBytes, flags),
         CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS
         );
 }
 
-inline Microsoft::WRL::ComPtr<ID3D12Resource> CreateReadBackBuffer(ID3D12Device* device, UINT64 sizeInBytes)
+inline Microsoft::WRL::ComPtr<gpgmm::d3d12::ResourceAllocation> CreateReadBackBuffer(gpgmm::d3d12::ResourceAllocator* resourceAllocator, UINT64 sizeInBytes)
 {
-    return CreateCommittedResource(
-        device,
+    return CreateResource(
+        resourceAllocator,
         CD3DX12_RESOURCE_DESC::Buffer(sizeInBytes),
         CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
         D3D12_RESOURCE_STATE_COPY_DEST
