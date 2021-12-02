@@ -2,10 +2,11 @@
 
 See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/direct3d12/dml-version-history) for more detailed notes.
 
-| Version                | Feature level                                                                                                                | First available in (Windows 10)                          | Redistributable                                                                           |
+| Version                | Feature level                                                                                                                | First available in OS                                    | Redistributable                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [1.8.0](#directml-180) | [DML_FEATURE_LEVEL_5_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_0) | TBD                                                      | [Microsoft.AI.DirectML.1.8.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.8.0) |
 | [1.7.0](#directml-170) | [DML_FEATURE_LEVEL_4_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_4_1) | TBD                                                      | [Microsoft.AI.DirectML.1.7.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.7.0) |
-| [1.6.0](#directml-160) | [DML_FEATURE_LEVEL_4_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_4_0) | TBD                                                      | [Microsoft.AI.DirectML.1.6.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.6.0) |
+| [1.6.0](#directml-160) | [DML_FEATURE_LEVEL_4_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_4_0) | Windows 11 (Build 10.0.22000; 21H2)                      | [Microsoft.AI.DirectML.1.6.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.6.0) |
 | [1.5.1](#directml-151) | [DML_FEATURE_LEVEL_3_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_1) | Redistributable only                                     | [Microsoft.AI.DirectML.1.5.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.5.1) |
 | [1.5.0](#directml-150) | [DML_FEATURE_LEVEL_3_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_1) | Redistributable only                                     | [Microsoft.AI.DirectML.1.5.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.5.0) |
 | [1.4.3](#directml-143) | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                     | [Microsoft.AI.DirectML.1.4.3](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.3) |
@@ -15,21 +16,36 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.1.0](#directml-110) | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
 | [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
 
+# DirectML 1.8.0
+
+- Introduces [DML_FEATURE_LEVEL_5_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_0)
+  - Adds 4 new operators:
+    - DML_OPERATOR_ELEMENT_WISE_CLIP1
+    - DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1
+    - DML_OPERATOR_PADDING1
+    - DML_OPERATOR_ELEMENT_WISE_NEGATE
+  - Supports 64-bit data type for operators: CLIP, CLIP_GRAD, CUMULATIVE_SUMMATION, CUMULATIVE_PRODUCT, ELEMENT_WISE_MAX, ELEMENT_WISE_MIN, REDUCE+REDUCE_FUNCTION_MAX, REDUCE+REDUCE_FUNCTION_MAX, REDUCE+REDUCE_FUNCTION_SUM, REDUCE+REDUCE_FUNCTION_MULTIPLY, REDUCE+REDUCE_FUNCTION_SUM_SQUARE, REDUCE+REDUCE_FUNCTION_L1, PADDING, SPACE_TO_DEPTH, DEPTH_TO_SPACE, TOP_K, ELEMENT_WISE_NEGATE, ELEMENT_WISE_IF, MAX_POOLING, MAX_UNPOOLING, FILL_VALUE_SEQUENCE, REVERSE_SUBSEQUENCES, ROI_ALIGN BatchIndicesTensor.
+- Bug fixes.
+
 # DirectML 1.7.0
 
 - Introduces [DML_FEATURE_LEVEL_4_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_4_1)
-  - Adds 3 new operators: 
+  - Adds 3 new operators:
     - DML_OPERATOR_ROI_ALIGN_GRAD
     - DML_OPERATOR_BATCH_NORMALIZATION_TRAINING
     - DML_OPERATOR_BATCH_NORMALIZATION_TRAINING_GRAD
+  - Supports 64-bit data type for operators: ELEMENT_WISE_IDENTITY, ELEMENT_WISE_ADD, ELEMENT_WISE_SUBTRACT, ELEMENT_WISE_MULTIPLY, ELEMENT_WISE_ABS, ELEMENT_WISE_SIGN, ELEMENT_WISE_LOGICAL_EQUALS, ELEMENT_WISE_LOGICAL_GREATER_THAN, ELEMENT_WISE_LOGICAL_LESS_THAN, ELEMENT_WISE_LOGICAL_GREATER_THAN_OR_EQUAL, ELEMENT_WISE_LOGICAL_LESS_THAN_OR_EQUAL, ELEMENT_WISE_BIT_SHIFT_LEFT, ELEMENT_WISE_BIT_SHIFT_RIGHT, ELEMENT_WISE_BIT_AND, ELEMENT_WISE_BIT_OR, ELEMENT_WISE_BIT_NOT, ELEMENT_WISE_BIT_XOR, ELEMENT_WISE_BIT_COUNT, ARGMIN, ARGMAX, CAST, SLICE, SLICE1, SLICE_GRAD, SPLIT, JOIN, GATHER, GATHER_ELEMENTS, GATHER_ND, GATHER_ND1, SCATTER, SCATTER_ND, FILL_VALUE_CONSTANT, TILE, ONE_HOT
 - Substantial performance improvements for several operators (especially in training scenarios).
 - Bug fixes.
 
 # DirectML 1.6.0
 
 - Introduces [DML_FEATURE_LEVEL_4_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_4_0)
-  - Adds 3 new operators.
-  - Adds extended dimension count support and/or data type support to 17 existing operators.
+  - Adds 3 new operators:
+    - DML_OPERATOR_ELEMENT_WISE_QUANTIZED_LINEAR_ADD
+    - DML_OPERATOR_DYNAMIC_QUANTIZE_LINEAR
+    - DML_OPERATOR_ROI_ALIGN1
+  - Supports 8D tensors for operators: FILL_VALUE_CONSTANT, FILL_VALUE_SEQUENCE, CUMULATIVE_SUMMATION, CUMULATIVE_PRODUCT, REVERSE_SUBSEQUENCES, ACTIVATION_RELU_GRAD, RANDOM_GENERATOR, NONZERO_COORDINATES, ADAM_OPTIMIZER, DYNAMIC_QUANTIZE_LINEAR, ELEMENT_WISE_QUANTIZED_LINEAR_ADD
 - Substantial performance improvements for several operators.
 - Bug fixes.
 
@@ -40,8 +56,14 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 # DirectML 1.5.0
 
 - Introduces a new feature level: [DML_FEATURE_LEVEL_3_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_1)
-  - Adds 6 new operators.
-  - Adds support for 8-dimensional tensors to 11 existing operators.
+  - Adds 6 new operators:
+    - DML_OPERATOR_ELEMENT_WISE_ATAN_YX,
+    - DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD,
+    - DML_OPERATOR_ELEMENT_WISE_DIFFERENCE_SQUARE,
+    - DML_OPERATOR_LOCAL_RESPONSE_NORMALIZATION_GRAD,
+    - DML_OPERATOR_CUMULATIVE_PRODUCT,
+    - DML_OPERATOR_BATCH_NORMALIZATION_GRAD,
+  - Supports 8D tensors for operators: ELEMENT_WISE_CLIP_GRAD, ELEMENT_WISE_DIFFERENCE_SQUARE, ELEMENT_WISE_ATAN_YX, CAST, JOIN, PADDING, TILE, TOP_K, BATCH_NORMALIZATION, BATCH_NORMALIZATION_GRAD, LP_NORMALIZATION, TOP_K1, MEAN_VARIANCE_NORMALIZATION1, SLICE_GRAD
 - Initial support ARM/ARM64 builds of DirectML.
 - Substantial performance improvements for several operators.
 - Bug fixes.
@@ -65,7 +87,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 - First release of DirectML as a redistributable NuGet package, [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML).
 - Introduces two new feature levels since DirectML 1.1.0: [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) and [DML_FEATURE_LEVEL_2_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_1).
   - Adds 44 new operators.
-  - The maximum number of tensor dimensions has been increased from 5 to 8.
+  - The maximum number of tensor dimensions has been increased from 5 to 8 for operators: ELEMENT_WISE_IDENTITY, ELEMENT_WISE_ABS, ELEMENT_WISE_ACOS, ELEMENT_WISE_ADD, ELEMENT_WISE_ASIN, ELEMENT_WISE_ATAN, ELEMENT_WISE_CEIL, ELEMENT_WISE_CLIP, ELEMENT_WISE_COS, ELEMENT_WISE_DIVIDE, ELEMENT_WISE_EXP, ELEMENT_WISE_FLOOR, ELEMENT_WISE_LOG, ELEMENT_WISE_LOGICAL_AND, ELEMENT_WISE_LOGICAL_EQUALS, ELEMENT_WISE_LOGICAL_GREATER_THAN, ELEMENT_WISE_LOGICAL_LESS_THAN, ELEMENT_WISE_LOGICAL_GREATER_THAN_OR_EQUAL, ELEMENT_WISE_LOGICAL_LESS_THAN_OR_EQUAL, ELEMENT_WISE_LOGICAL_NOT, ELEMENT_WISE_LOGICAL_OR, ELEMENT_WISE_LOGICAL_XOR, ELEMENT_WISE_MAX, ELEMENT_WISE_MEAN, ELEMENT_WISE_MIN, ELEMENT_WISE_MULTIPLY, ELEMENT_WISE_POW, ELEMENT_WISE_CONSTANT_POW, ELEMENT_WISE_RECIP, ELEMENT_WISE_SIN, ELEMENT_WISE_SQRT, ELEMENT_WISE_SUBTRACT, ELEMENT_WISE_TAN, ELEMENT_WISE_THRESHOLD, ELEMENT_WISE_QUANTIZE_LINEAR, ELEMENT_WISE_DEQUANTIZE_LINEAR, ARGMIN, ARGMAX, SLICE, SPLIT, GATHER, ELEMENT_WISE_SIGN, ELEMENT_WISE_IS_NAN, ELEMENT_WISE_ERF, ELEMENT_WISE_SINH, ELEMENT_WISE_COSH, ELEMENT_WISE_TANH, ELEMENT_WISE_ASINH, ELEMENT_WISE_ACOSH, ELEMENT_WISE_ATANH, ELEMENT_WISE_IF, ELEMENT_WISE_ADD1, SCATTER, ONE_HOT, ELEMENT_WISE_BIT_SHIFT_LEFT, ELEMENT_WISE_BIT_SHIFT_RIGHT, ELEMENT_WISE_ROUND, ELEMENT_WISE_IS_INFINITY, ELEMENT_WISE_MODULUS_TRUNCATE, ELEMENT_WISE_MODULUS_FLOOR, GATHER_ELEMENTS, GATHER_ND, SCATTER_ND, SLICE1, ELEMENT_WISE_BIT_AND, ELEMENT_WISE_BIT_OR, ELEMENT_WISE_BIT_XOR, ELEMENT_WISE_BIT_NOT, ELEMENT_WISE_BIT_COUNT, GATHER_ND1
   - Select operators support additional tensor data types.
 - Substantial performance improvements for several operators.
 - Bug fixes.
