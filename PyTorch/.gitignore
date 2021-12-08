@@ -6,3 +6,4 @@ traces/
 *.xlsx
 data/cifar-10-python
 checkpoints
+coco128
