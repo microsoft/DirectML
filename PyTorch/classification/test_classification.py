@@ -135,12 +135,15 @@ def main(path, batch_size, device, model_str, trace):
 
     print('Finished moving {} to device: {} in {}s.'.format(model_str, device, time.time() - start))
 
+
+    cross_entropy_loss = nn.CrossEntropyLoss().to(device)
+
     # Test
     highest_accuracy = eval(testing_dataloader,
                             model_str,
                             model,
                             device,
-                            nn.CrossEntropyLoss().to(device),
+                            cross_entropy_loss,
                             0,
                             False,
                             trace)
@@ -152,7 +155,6 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=32, metavar='N', help='Batch size to train with.')
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
     parser.add_argument('--model', type=str, default='squeezenet1_1', help='The model to use.')
-    parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
     args = parser.parse_args()
 
-    main(args.path, args.batch_size, args.device, args.model, args.trace)
+    main(args.path, args.batch_size, args.device, args.model)

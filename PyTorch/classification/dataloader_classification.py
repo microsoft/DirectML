@@ -33,36 +33,36 @@ def print_dataloader(dataloader, mode):
         break
 
 
-def create_training_data_transform():
-    return transforms.Compose([transforms.RandomResizedCrop(224),
+def create_training_data_transform(input_size):
+    return transforms.Compose([transforms.RandomResizedCrop(input_size),
                                           transforms.RandomHorizontalFlip(),
                                           transforms.ToTensor(),
                                           transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
 
-def create_training_dataloader(path, batch_size):
+def create_training_dataloader(path, batch_size, input_size=224):
     path = get_data_path(path)
     print('Loading the training dataset from: {}'.format(path))
-    train_transform = create_training_data_transform()       
+    train_transform = create_training_data_transform(input_size)       
     training_set = datasets.CIFAR10(root=path, train=True, download=False, transform=train_transform)
     data_loader = DataLoader(dataset=training_set, batch_size=batch_size, shuffle=True, num_workers=0)
     print_dataloader(data_loader, 'Train')
     return data_loader
 
 
-def create_testing_data_transform():
+def create_testing_data_transform(input_size):
     return transforms.Compose([
         transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.CenterCrop(input_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
 
-def create_testing_dataloader(path, batch_size):
+def create_testing_dataloader(path, batch_size, input_size=224):
     path = get_data_path(path)
     print('Loading the testing dataset from: {}'.format(path))
-    test_transform = create_testing_data_transform()
+    test_transform = create_testing_data_transform(input_size)
     test_set = datasets.CIFAR10(root=path, train=False, download=False, transform=test_transform)
     data_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=False, num_workers=0)
     print_dataloader(data_loader, 'Test')
