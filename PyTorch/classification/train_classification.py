@@ -29,7 +29,7 @@ def select_device(device=''):
     else:
         return torch.device('cpu')
 
-def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, trace_des_path, pred_num=1):
+def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, pred_num=1):
     size = len(dataloader.dataset)
 
     # Define optimizer
@@ -54,11 +54,8 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
                     elif pred_num==3:
                         pred, _, _ = model(X)
                     else:
-                        # pred = model(X)
+                        pred = model(X)
 
-                        # for segmentation models
-                        pred = model(X)['out']
-                        pred = pred.max(2).values.max(2).values
                     batch_loss = loss(pred, y)
                     batch_loss.backward()
 
@@ -70,6 +67,15 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
             break
         else:
             # Compute loss and perform backpropagation
+            if pred_num==2:
+                outputs, aux_outputs = model(X)
+                loss1 = loss(outputs, labels)
+                loss2 = loss(aux_outputs, labels)
+                batch_loss = loss1 + 0.4*loss2
+            elif pred_num==3:
+                pred, _, _ = model(X)
+            else:
+                pred = model(X)
             batch_loss = loss(model(X), y)
             batch_loss.backward()
 
@@ -85,8 +91,14 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
 
 def main(path, batch_size, epochs, learning_rate,
          momentum, weight_decay, device, model_str, save_model, trace):
-    batch_size = 1 if trace else batch_size
-    epochs = 1 if trace else epochs
+    if trace:
+        if model_str == 'inception_v3':
+            batch_size = 3
+        else:
+            batch_size = 1
+        ephochs = 1
+    
+    input_size = 299 if model_str == 'inception_v3' else 224
 
     if (model_str == 'squeezenet1_1'):
         model = models.squeezenet1_1(num_classes=10).to(device)
@@ -124,19 +136,14 @@ def main(path, batch_size, epochs, learning_rate,
         raise Exception(f"Model {model_str} is not supported yet!")
 
     # Load the dataset
-    batch_size = 3 if model_str == 'inception_v3' else batch_size
-    training_dataloader = dataloader_classification.create_training_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
-    testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
+    training_dataloader = dataloader_classification.create_training_dataloader(path, batch_size, input_size)
+    testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size, input_size)
 
-    trace_des_path = "E:\\xianz\\sheilk\\DirectML\\PyTorch\\classification\\trace\\train_" + model_str + "_" + device + "_trace.json"
     # Create the device
     device = select_device(device)
 
-    print (device)
-
     # Load the model on the device
     start = time.time()
-
     
     print('Finished moving {} to device: {} in {}s.'.format(model_str, device, time.time() - start))
  
@@ -162,7 +169,6 @@ def main(path, batch_size, epochs, learning_rate,
               momentum,
               weight_decay,
               trace,
-              trace_des_path,
               pred_num)
 
         if not trace:
