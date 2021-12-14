@@ -27,7 +27,7 @@ def select_device(device=''):
     if device.lower() == 'dml':
         return torch.device('dml')
     else:
-        return torch.device('cpu')    
+        return torch.device('cpu')
 
 def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, trace_des_path, pred_num=1):
     size = len(dataloader.dataset)
@@ -67,17 +67,10 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
                         optimizer.zero_grad()
             print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=1000))
             prof.export_chrome_trace(trace_des_path)
-            break;
+            break
         else:
             # Compute loss and perform backpropagation
             batch_loss = loss(model(X), y)
-            # batch_loss = model(X).sum()
-            if torch.isinf(batch_loss.to("cpu")) or torch.isnan(batch_loss.to("cpu")):
-                print (model(X).to("cpu"))
-                print (y.to("cpu"))
-                print (X.shape)
-                print (y.shape)
-                exit()
             batch_loss.backward()
 
             if batch % optimize_after_batches == 0:
@@ -127,24 +120,11 @@ def main(path, batch_size, epochs, learning_rate,
         model = models.wide_resnet50_2(num_classes=10).to(device)
     elif (model_str == 'mnasnet1_0'):
         model = models.mnasnet1_0(num_classes=10).to(device)
-
-    elif (model_str == 'fcn_resnet50'):
-        model = models.segmentation.fcn_resnet50(num_classes=10).to(device)
-    elif (model_str == 'fcn_resnet101'):
-        model = models.segmentation.fcn_resnet101(num_classes=10).to(device)
-    elif (model_str == 'deeplabv3_resnet50'):
-        model = models.segmentation.deeplabv3_resnet50(num_classes=10).to(device)
-    elif (model_str == 'deeplabv3_resnet101'):
-        model = models.segmentation.deeplabv3_resnet101(num_classes=10).to(device)
-    elif (model_str == 'deeplabv3_mobilenet_v3_large'):
-        model = models.segmentation.deeplabv3_mobilenet_v3_large(num_classes=10).to(device)
-    elif (model_str == 'lraspp_mobilenet_v3_large'):
-        model = models.segmentation.lraspp_mobilenet_v3_large(num_classes=10).to(device)
     else:
         raise Exception(f"Model {model_str} is not supported yet!")
 
     # Load the dataset
-    batch_size = 3 if model_str == 'inception_v3' or model_str.startswith("deeplabv3") else batch_size
+    batch_size = 3 if model_str == 'inception_v3' else batch_size
     training_dataloader = dataloader_classification.create_training_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
     testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
 

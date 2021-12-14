@@ -26,14 +26,6 @@ def main():
                             'resnext50_32x4d',
                             'wide_resnet50_2',
                             'mnasnet1_0']
-
-    segmentation_models = ['fcn_resnet50',
-                          'fcn_resnet101',
-                          'deeplabv3_resnet50',
-                          'deeplabv3_resnet101',
-                          'deeplabv3_mobilenet_v3_large',
-                          'lraspp_mobilenet_v3_large']
-    
     
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, default="cifar-10-python", help="Path to cifar dataset.")
@@ -47,10 +39,10 @@ def main():
     parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
     args = parser.parse_args()
 
-    for model in segmentation_models:
+    for model in classification_models:
         try:
           classify_train(args.path, args.batch_size, args.epochs, args.learning_rate,
-                  args.momentum, args.weight_decay, 'cpu', model, args.save_model, True)
+                  args.momentum, args.weight_decay, 'cpu', model, args.save_model, args.trace)
         except:
           print ("failed")
           continue
