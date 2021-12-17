@@ -35,17 +35,16 @@ def main():
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='The percentage of past parameters to store.')
     parser.add_argument('--weight_decay', default=0.0001, type=float, help='The parameter to decay weights.')
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
+    parser.add_argument('--model', type=str, default='', help='The model to use.')
     parser.add_argument('--save_model', action='store_true', help='Save the model state_dict to file')
     parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
     args = parser.parse_args()
 
-    for model in classification_models:
-        try:
-          classify_train(args.path, args.batch_size, args.epochs, args.learning_rate,
-                  args.momentum, args.weight_decay, 'cpu', model, args.save_model, args.trace)
-        except:
-          print ("failed")
-          continue
+    if (args.model == ''):
+        print("please specify the model for model list: ")
+        sys.exit()
+    classify_train(args.path, args.batch_size, args.epochs, args.learning_rate,
+            args.momentum, args.weight_decay, 'dml', args.model, args.save_model, args.trace)
 
     
 

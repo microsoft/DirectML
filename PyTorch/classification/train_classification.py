@@ -29,7 +29,7 @@ def select_device(device=''):
     else:
         return torch.device('cpu')
 
-def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, pred_num=1):
+def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, model_str):
     size = len(dataloader.dataset)
 
     # Define optimizer
@@ -49,9 +49,9 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
             with profiler.profile(record_shapes=True, with_stack=True, profile_memory=True) as prof:
                 with profiler.record_function("model_inference"):
                     # Compute loss and perform backpropagation
-                    if pred_num==2:
+                    if (model_str == 'inception_v3'):
                         pred, _ = model(X)
-                    elif pred_num==3:
+                    elif (model_str == 'googlenet'):
                         pred, _, _ = model(X)
                     else:
                         pred = model(X)
@@ -67,22 +67,26 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
             break
         else:
             # Compute loss and perform backpropagation
-            if pred_num==2:
+            if (model_str == 'inception_v3'):
                 outputs, aux_outputs = model(X)
-                loss1 = loss(outputs, labels)
-                loss2 = loss(aux_outputs, labels)
+                loss1 = loss(outputs, y)
+                loss2 = loss(aux_outputs, y)
                 batch_loss = loss1 + 0.4*loss2
-            elif pred_num==3:
-                pred, _, _ = model(X)
+            elif (model_str == 'googlenet'):
+                outputs, aux_outputs_1, aux_outputs_2 = model(X)
+                loss1 = loss(outputs, y)
+                loss2 = loss(aux_outputs_1, y)
+                loss3 = loss(aux_outputs_2, y)
+                batch_loss = loss1 + 0.3*loss2 + 0.3*loss3
             else:
                 pred = model(X)
-            batch_loss = loss(model(X), y)
+                batch_loss = loss(model(X), y)
             batch_loss.backward()
 
             if batch % optimize_after_batches == 0:
                 optimizer.step()
                 optimizer.zero_grad()
-
+            
         if (batch+1) % 100 == 0:
             batch_loss_cpu, current = batch_loss.to('cpu'), batch * len(X)
             print(f"loss: {batch_loss_cpu.item():>7f}  [{current:>5d}/{size:>5d}] in {time.time() - start:>5f}s")
@@ -151,12 +155,6 @@ def main(path, batch_size, epochs, learning_rate,
 
     highest_accuracy = 0
 
-    if (model_str == 'inception_v3'):
-        pred_num = 2
-    elif (model_str == 'googlenet'):
-        pred_num = 3
-    else:
-        pred_num = 1
     for t in range(epochs):
         print(f"Epoch {t+1}\n-------------------------------")
 
@@ -169,7 +167,7 @@ def main(path, batch_size, epochs, learning_rate,
               momentum,
               weight_decay,
               trace,
-              pred_num)
+              model_str)
 
         if not trace:
             # Test
@@ -194,10 +192,12 @@ if __name__ == "__main__":
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='The percentage of past parameters to store.')
     parser.add_argument('--weight_decay', default=0.0001, type=float, help='The parameter to decay weights.')
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
-    parser.add_argument('--model', type=str, default='squeezenet1_1', help='The model to use.')
+    parser.add_argument('--model', type=str, default='', help='The model to use.')
     parser.add_argument('--save_model', action='store_true', help='save model state_dict to file')
     parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
     args = parser.parse_args()
 
+    if (not model_str):
+        print("please specify the model for model list: ")
     main(args.path, args.batch_size, args.epochs, args.learning_rate,
          args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace)
