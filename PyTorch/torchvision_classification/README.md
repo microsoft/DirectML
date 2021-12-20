@@ -41,6 +41,22 @@ A helper script exists to train classification models with default data, batch s
 python pytorch\torchvision_classification\train.py --model resnet18
 ```
 
+model names from list below can be used to train:
+- resnet18
+- alexnet
+- vgg16
+- squeezenet1_0
+- densenet161
+- inception_v3
+- googlenet
+- shufflenet_v2_x1_0
+- mobilenet_v2
+- mobilenet_v3_large
+- mobilenet_v3_small
+- resnext50_32x4d
+- wide_resnet50_2
+- mnasnet1_0
+
 The first few lines of output should look similar to the following (exact numbers may change):
 ```
 > python pytorch\torchvision_classification\train.py --model resnet18
