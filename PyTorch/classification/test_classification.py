@@ -111,9 +111,9 @@ def get_model(model_str, device):
 
     return model
 
-def preprocess(filename, device):
+def preprocess(filename, device, input_size=1):
     input_image = Image.open(filename)
-    preprocess_transform = dataloader_classification.create_testing_data_transform()
+    preprocess_transform = dataloader_classification.create_testing_data_transform(input_size)
     input_tensor = preprocess_transform(input_image)
     input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
     input_batch = input_batch.to(device)
@@ -184,8 +184,6 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, default="cifar-10-python", help="Path to cifar dataset.")
     parser.add_argument('--batch_size', type=int, default=32, metavar='N', help='Batch size to train with.')
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
-    parser.add_argument('--model', type=str, default='', help='The model to use.')
+    parser.add_argument('--model', type=str, default='resnet18', help='The model to use.')
     args = parser.parse_args()
-    if (args.model == ''):
-        print("please specify the model for model list: ")
     main(args.path, args.batch_size, args.device, args.model)
