@@ -15,6 +15,7 @@ import os
 import pathlib
 import test_classification
 import dataloader_classification
+from test_classification import get_model
 import torch.autograd.profiler as profiler
 
 def select_device(device=''):
@@ -63,7 +64,6 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
                         optimizer.step()
                         optimizer.zero_grad()
             print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=1000))
-            prof.export_chrome_trace(trace_des_path)
             break
         else:
             # Compute loss and perform backpropagation
@@ -100,44 +100,11 @@ def main(path, batch_size, epochs, learning_rate,
             batch_size = 3
         else:
             batch_size = 1
-        ephochs = 1
+        epochs = 1
     
     input_size = 299 if model_str == 'inception_v3' else 224
 
-    if (model_str == 'squeezenet1_1'):
-        model = models.squeezenet1_1(num_classes=10).to(device)
-    elif (model_str == 'resnet50'):
-        model = models.resnet50(num_classes=10).to(device)
-    elif (model_str == 'squeezenet1_0'):
-        model = models.squeezenet1_0(num_classes=10).to(device)
-    elif (model_str == 'resnet18'):
-        model = models.resnet18(num_classes=10).to(device)
-    elif (model_str == 'alexnet'):
-        model = models.alexnet(num_classes=10).to(device)
-    elif (model_str == 'vgg16'):
-        model = models.vgg16(num_classes=10).to(device)
-    elif (model_str == 'densenet161'):
-        model = models.densenet161(num_classes=10).to(device)
-    elif (model_str == 'inception_v3'):
-        model = models.inception_v3(num_classes=10).to(device)
-    elif (model_str == 'googlenet'):
-        model = models.googlenet(num_classes=10).to(device)
-    elif (model_str == 'shufflenet_v2_x1_0'):
-        model = models.shufflenet_v2_x1_0(num_classes=10).to(device)
-    elif (model_str == 'mobilenet_v2'):
-        model = models.mobilenet_v2(num_classes=10).to(device)
-    elif (model_str == 'mobilenet_v3_large'):
-        model = models.mobilenet_v3_large(num_classes=10).to(device)
-    elif (model_str == 'mobilenet_v3_small'):
-        model = models.mobilenet_v3_small(num_classes=10).to(device)
-    elif (model_str == 'resnext50_32x4d'):
-        model = models.resnext50_32x4d(num_classes=10).to(device)
-    elif (model_str == 'wide_resnet50_2'):
-        model = models.wide_resnet50_2(num_classes=10).to(device)
-    elif (model_str == 'mnasnet1_0'):
-        model = models.mnasnet1_0(num_classes=10).to(device)
-    else:
-        raise Exception(f"Model {model_str} is not supported yet!")
+    model = get_model(model_str, device)
 
     # Load the dataset
     training_dataloader = dataloader_classification.create_training_dataloader(path, batch_size, input_size)
@@ -197,7 +164,6 @@ if __name__ == "__main__":
     parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
     args = parser.parse_args()
 
-    if (not model_str):
-        print("please specify the model for model list: ")
+    print (args)
     main(args.path, args.batch_size, args.epochs, args.learning_rate,
          args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace)
