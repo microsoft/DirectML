@@ -112,7 +112,7 @@ Test Error:
 Once the model is trained and saved we can now run the prediction using the following steps. The predict script will use that latest trained model from the checkpoints folder.
 
 ```
-python pytorch\torchvision_classification\predict.py --image E:\a.jpeg
+python pytorch\torchvision_classification\predict.py --model resnet18 --image E:\a.jpeg
 ```
 
 You should see the result such as this:
