@@ -68,9 +68,13 @@ loss: 1.814574  [ 9568/50000] in 13.828154s
 loss: 2.250808  [12768/50000] in 13.965441s
 ```
 
-By default, the script will run for 50 epochs with a batch size of 32 and print the accuracy after every 100 batches. The training script can be run multiple times and saves progress after each epoch (by default).
+By default, the script will run for 50 epochs with a batch size of 32 and print the accuracy after every 100 batches. The training script can be run multiple times and saves progress after each epoch (by default). The accuracy should increase over time.
 
-The accuracy should increase over time.
+> When discrete memory or shared GPU memory is insufficient consider running the same scripts with a smaller batch size (use the --batch_size argument). For example:
+
+```
+python pytorch\torchvision_classification\train.py --model resnet18 --batch_size 8
+```
 
 You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters. Increasing the batch size will, in general, improve the accuracy. 
 

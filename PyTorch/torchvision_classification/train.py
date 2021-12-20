@@ -8,7 +8,7 @@ classification_folder = str(os.path.join(pathlib.Path(__file__).parent.parent.re
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, classification_folder)
 
-from train_classification import main as classify_train
+from train_classification import main as train
 
 classification_models = ['resnet18',
                         'alexnet',
@@ -41,7 +41,7 @@ def main():
     args = parser.parse_args()
     print (args)
 
-    classify_train(args.path, args.batch_size, args.epochs, args.learning_rate,
+    train(args.path, args.batch_size, args.epochs, args.learning_rate,
             args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace)
 
     

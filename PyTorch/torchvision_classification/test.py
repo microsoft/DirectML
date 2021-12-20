@@ -11,7 +11,7 @@ classification_folder = str(os.path.join(pathlib.Path(__file__).parent.parent.re
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, classification_folder)
 
-from test_classification import main as classify_test
+from test_classification import main as test
 from train import classification_models
 
 def main():
@@ -26,7 +26,7 @@ def main():
     batch_size = 1 if args.trace else args.batch_size
 
     print (args)
-    classify_test(args.path, batch_size, args.device, 'resnet50', args.trace)
+    test(args.path, batch_size, args.device, 'resnet50', args.trace)
 
     
 if __name__ == "__main__":
