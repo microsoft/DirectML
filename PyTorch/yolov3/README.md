@@ -20,7 +20,7 @@ pip install -r pytorch\yolov3\requirements.txt
 A helper script exists to train yolov3 with default data, batch size, and so on, and testing is enabled by default, to disable, use --notest:
 
 ```
-python train.py --batch-size 4 --device dml --nosave --notest
+python pytorch\yolov3\train.py --batch-size 4 --device dml --nosave --notest
 ```
 
 The first few lines of output should look similar to the following (exact numbers may change):
@@ -78,11 +78,34 @@ Logging results to runs\train\exp2
 Starting training for 300 epochs...
 
      Epoch   gpu_mem       box       obj       cls     total    labels  img_size
-     0/299        0G   0.02813   0.02754  0.007858   0.06353        72       640:   0%|                                 | 0/32 [00:04<?, ?it/s]E:\Anaconda3\envs\yolov3\lib\site-packages\torch\jit\_trace.py:727: UserWarning: The input to trace is already a ScriptModule, tracing it is a no-op. Returning the object as is.
-  warnings.warn(
-     0/299        0G   0.03181    0.0266   0.01114   0.06955        53       640: 100%|████████████████████████| 32/32 [02:10<00:00,  4.09s/it]
-               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|████████████| 16/16 [01:40<00:00,  6.26s/it]
-                 all         128         929       0.717       0.678       0.774       0.541
+     0/299        0G   0.02813   0.02754  0.007858   0.06353        72       640:   0%|                                 | 0/32 [00:04<?, ?it/s]0/299        0G   0.03196   0.02657   0.01137   0.06991        53       640: 100%|█| 32/32 [01:11<00:00,  2.23
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:23<
+                 all         128         929        0.76       0.662       0.766       0.535
+
+     Epoch   gpu_mem       box       obj       cls     total    labels  img_size
+     1/299        0G   0.03009   0.02614    0.0103   0.06654        47       640: 100%|█| 32/32 [00:53<00:00,  1.67
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:29<
+                 all         128         929       0.732       0.682       0.762       0.534
+
+     Epoch   gpu_mem       box       obj       cls     total    labels  img_size
+     2/299        0G   0.03052   0.02793   0.00998   0.06844        91       640: 100%|█| 32/32 [00:56<00:00,  1.77
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:26<
+                 all         128         929       0.767       0.664        0.77       0.539
+
+     Epoch   gpu_mem       box       obj       cls     total    labels  img_size
+     3/299        0G   0.03024   0.02296  0.008987   0.06219        57       640: 100%|█| 32/32 [00:49<00:00,  1.56
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:27<
+                 all         128         929       0.765       0.686       0.777       0.546
+
+     Epoch   gpu_mem       box       obj       cls     total    labels  img_size
+     4/299        0G   0.02897    0.0229   0.00982   0.06168        80       640: 100%|█| 32/32 [00:53<00:00,  1.67
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:20<
+                 all         128         929       0.678       0.774       0.798       0.568
+
+     Epoch   gpu_mem       box       obj       cls     total    labels  img_size
+     5/299        0G   0.02868   0.02454  0.008925   0.06214        66       640: 100%|█| 32/32 [00:48<00:00,  1.53
+               Class      Images      Labels           P           R      mAP@.5  mAP@.5:.95: 100%|█| 16/16 [00:26<
+                 all         128         929       0.691        0.78       0.808       0.573
 ```
 
 
