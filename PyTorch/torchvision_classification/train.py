@@ -38,11 +38,19 @@ def main():
     parser.add_argument('--model', type=str, default='squeezenet1_0', help='The model to use.')
     parser.add_argument('--save_model', action='store_true', help='Save the model state_dict to file')
     parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
+    parser.add_argument('--ci_train', type=bool, default=False, help='Enable CI test.')
     args = parser.parse_args()
-    print (args)
 
-    train(args.path, args.batch_size, args.epochs, args.learning_rate,
-            args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace)
+    if args.ci_train:
+        for model in classification_models:
+            args.model = model
+            print (args)
+            train(args.path, args.batch_size, args.epochs, args.learning_rate,
+                args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace, args.ci_train)
+    else:
+        print (args)
+        train(args.path, args.batch_size, args.epochs, args.learning_rate,
+                args.momentum, args.weight_decay, args.device, args.model, args.save_model, args.trace, args.ci_train)
 
     
 

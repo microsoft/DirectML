@@ -30,7 +30,7 @@ def select_device(device=''):
     else:
         return torch.device('cpu')
 
-def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, model_str):
+def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay, trace, model_str, ci_train):
     size = len(dataloader.dataset)
 
     # Define optimizer
@@ -88,19 +88,23 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
                 optimizer.zero_grad()
             
         if (batch+1) % 100 == 0:
-            batch_loss_cpu, current = batch_loss.to('cpu'), batch * len(X)
+            batch_loss_cpu, current = batch_loss.to('cpu'), (batch+1) * len(X)
             print(f"loss: {batch_loss_cpu.item():>7f}  [{current:>5d}/{size:>5d}] in {time.time() - start:>5f}s")
             start = time.time()
 
+        if ci_train:
+            print(f"train [{len(X):>5d}/{size:>5d}] in {time.time() - start:>5f}s")
+            break
+
 
 def main(path, batch_size, epochs, learning_rate,
-         momentum, weight_decay, device, model_str, save_model, trace):
+         momentum, weight_decay, device, model_str, save_model, trace, ci_train):
     if trace:
         if model_str == 'inception_v3':
             batch_size = 3
         else:
             batch_size = 1
-        epochs = 1
+    epochs = 1 if trace or ci_train else epochs
     
     input_size = 299 if model_str == 'inception_v3' else 224
 
@@ -134,9 +138,10 @@ def main(path, batch_size, epochs, learning_rate,
               momentum,
               weight_decay,
               trace,
-              model_str)
+              model_str,
+              ci_train)
 
-        if not trace:
+        if not trace and not ci_train:
             # Test
             highest_accuracy = test_classification.eval(testing_dataloader,
                                     model_str,
