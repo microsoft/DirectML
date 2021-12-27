@@ -57,7 +57,7 @@ def train(hyp, opt, device, tb_writer=None):
         yaml.safe_dump(vars(opt), f, sort_keys=False)
 
     # Configure
-    plots = not opt.evolve  # create plots
+    plots = False  # create plots
     cuda = device.type == 'cuda'
     init_seeds(2 + rank)
     with open(opt.data) as f:
@@ -400,9 +400,9 @@ def train(hyp, opt, device, tb_writer=None):
                         'wandb_id': wandb_logger.wandb_run.id if wandb_logger.wandb else None}
 
                 # Save last, best and delete
-                torch.save(ckpt, last)
-                if best_fitness == fi:
-                    torch.save(ckpt, best)
+                # torch.save(ckpt, last)
+                # if best_fitness == fi:
+                #     torch.save(ckpt, best)
                 if wandb_logger.wandb:
                     if ((epoch + 1) % opt.save_period == 0 and not final_epoch) and opt.save_period != -1:
                         wandb_logger.log_model(
@@ -494,8 +494,8 @@ if __name__ == '__main__':
     opt.global_rank = int(os.environ['RANK']) if 'RANK' in os.environ else -1
     set_logging(opt.global_rank)
     if opt.global_rank in [-1, 0]:
-        check_git_status()
-        check_requirements(exclude=('pycocotools', 'thop'))
+        # check_git_status()
+        check_requirements(exclude=('pycocotools', 'thop','torchvision', 'torch'))
 
     # Resume
     wandb_run = check_wandb_resume(opt)
