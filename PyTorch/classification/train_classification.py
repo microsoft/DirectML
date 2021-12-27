@@ -19,7 +19,7 @@ from test_classification import get_model
 import torch.autograd.profiler as profiler
 
 def select_device(device=''):
-    if device == 'cuda':
+    if device.lower() == 'cuda':
         if not torch.cuda.is_available():
             print ("torch.cuda not available")
             return torch.device('cpu')    
