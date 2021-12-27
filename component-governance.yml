@@ -3,7 +3,7 @@ resources:
   clean: true
 
 pool:
-  name: Package ES Lab E
+  vmImage: windows-latest
   
 trigger:
   batch: true
