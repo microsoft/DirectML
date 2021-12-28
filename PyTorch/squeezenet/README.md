@@ -12,7 +12,7 @@ The original paper can be found at: https://arxiv.org/abs/1602.07360
 - [Testing](#testing)
 - [Predict](#predict)
 - [Tracing](#tracing)
-- [External Links](#links)
+- [External Links](#external-links)
 
 ## Setup
 Install the following prerequisites:
