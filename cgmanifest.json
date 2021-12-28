@@ -26,7 +26,16 @@
                 "repositoryUrl":"https://github.com/zzh8829/yolov3-tf2"
              }
           }
-       }
+       },
+       {
+         "component":{
+            "type":"git",
+            "git":{
+               "commitHash":"1be31704c9c690929e4f6e6d950f40755ef2dcdc",
+               "repositoryUrl":"https://github.com/ultralytics/yolov3"
+            }
+         }
+      }
     ],
     "Version":1
  }
