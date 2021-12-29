@@ -98,7 +98,7 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
 
 
 def main(path, batch_size, epochs, learning_rate,
-         momentum, weight_decay, device, model_str, save_model, trace, ci_train):
+         momentum, weight_decay, device, model_str, save_model, trace, ci_train=False):
     if trace:
         if model_str == 'inception_v3':
             batch_size = 3
