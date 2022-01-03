@@ -74,18 +74,46 @@ def get_model(model_str, device):
         model = models.squeezenet1_1(num_classes=10).to(device)
     elif (model_str == 'resnet50'):
         model = models.resnet50(num_classes=10).to(device)
+    elif (model_str == 'squeezenet1_0'):
+        model = models.squeezenet1_0(num_classes=10).to(device)
+    elif (model_str == 'resnet18'):
+        model = models.resnet18(num_classes=10).to(device)
+    elif (model_str == 'alexnet'):
+        model = models.alexnet(num_classes=10).to(device)
+    elif (model_str == 'vgg16'):
+        model = models.vgg16(num_classes=10).to(device)
+    elif (model_str == 'densenet161'):
+        model = models.densenet161(num_classes=10).to(device)
+    elif (model_str == 'inception_v3'):
+        model = models.inception_v3(num_classes=10).to(device)
+    elif (model_str == 'googlenet'):
+        model = models.googlenet(num_classes=10).to(device)
+    elif (model_str == 'shufflenet_v2_x1_0'):
+        model = models.shufflenet_v2_x1_0(num_classes=10).to(device)
+    elif (model_str == 'mobilenet_v2'):
+        model = models.mobilenet_v2(num_classes=10).to(device)
+    elif (model_str == 'mobilenet_v3_large'):
+        model = models.mobilenet_v3_large(num_classes=10).to(device)
+    elif (model_str == 'mobilenet_v3_small'):
+        model = models.mobilenet_v3_small(num_classes=10).to(device)
+    elif (model_str == 'resnext50_32x4d'):
+        model = models.resnext50_32x4d(num_classes=10).to(device)
+    elif (model_str == 'wide_resnet50_2'):
+        model = models.wide_resnet50_2(num_classes=10).to(device)
+    elif (model_str == 'mnasnet1_0'):
+        model = models.mnasnet1_0(num_classes=10).to(device)
     else:
         raise Exception(f"Model {model_str} is not supported yet!")
-    
+
     checkpoint = get_checkpoint_folder(model_str, device)
     if (exists(checkpoint)):
         model.load_state_dict(torch.load(checkpoint))
 
     return model
 
-def preprocess(filename, device):
+def preprocess(filename, device, input_size=1):
     input_image = Image.open(filename)
-    preprocess_transform = dataloader_classification.create_testing_data_transform()
+    preprocess_transform = dataloader_classification.create_testing_data_transform(input_size)
     input_tensor = preprocess_transform(input_image)
     input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
     input_batch = input_batch.to(device)
@@ -117,8 +145,16 @@ def predict(filename, model_str, device):
 
 
 def main(path, batch_size, device, model_str, trace):
+    if trace:
+        if model_str == 'inception_v3':
+            batch_size = 3
+        else:
+            batch_size = 1
+            
+    input_size = 299 if model_str == 'inception_v3' else 224
+
     # Load the dataset
-    testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size)
+    testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size, input_size)
 
     # Create the device
     device = torch.device(device)
@@ -126,21 +162,18 @@ def main(path, batch_size, device, model_str, trace):
     # Load the model on the device
     start = time.time()
 
-    if (model_str == 'squeezenet1_1'):
-        model = models.squeezenet1_1(num_classes=10).to(device)
-    elif (model_str == 'resnet50'):
-        model = models.resnet50(num_classes=10).to(device)
-    else:
-        raise Exception(f"Model {model_str} is not supported yet!")
+    model = get_model(model_str, device)
 
     print('Finished moving {} to device: {} in {}s.'.format(model_str, device, time.time() - start))
+
+    cross_entropy_loss = nn.CrossEntropyLoss().to(device)
 
     # Test
     highest_accuracy = eval(testing_dataloader,
                             model_str,
                             model,
                             device,
-                            nn.CrossEntropyLoss().to(device),
+                            cross_entropy_loss,
                             0,
                             False,
                             trace)
@@ -151,8 +184,6 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, default="cifar-10-python", help="Path to cifar dataset.")
     parser.add_argument('--batch_size', type=int, default=32, metavar='N', help='Batch size to train with.')
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
-    parser.add_argument('--model', type=str, default='squeezenet1_1', help='The model to use.')
-    parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
+    parser.add_argument('--model', type=str, default='resnet18', help='The model to use.')
     args = parser.parse_args()
-
-    main(args.path, args.batch_size, args.device, args.model, args.trace)
+    main(args.path, args.batch_size, args.device, args.model)
