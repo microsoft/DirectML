@@ -73,7 +73,7 @@ Usage:
 If your machine has multiple adapters you can display them:
 
 ```
-PS C:\Users\justin\src\dxdispatch> .\build\Debug\dxdispatch.exe -s    
+> .\dxdispatch.exe -s    
 
 NVIDIA GeForce RTX 2070 SUPER
 -Version: 27.21.14.5671

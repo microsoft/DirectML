@@ -31,11 +31,11 @@ BEGIN
     BEGIN
         BLOCK "040904E4"
         BEGIN
-            VALUE "CompanyName",      "Justin Stoecker"
+            VALUE "CompanyName",      "Microsoft Corporation"
             VALUE "FileDescription",  VER_PRODUCTNAME
             VALUE "FileVersion",      VER_STRING
             VALUE "InternalName",     "@PROJECT_NAME@.exe"
-            VALUE "LegalCopyright",   "\251 Justin Stoecker. All rights reserved."
+            VALUE "LegalCopyright",   "\251 Microsoft Corporation. All rights reserved."
             VALUE "OriginalFilename", "@PROJECT_NAME@.exe"
             VALUE "ProductName",      VER_PRODUCTNAME
             VALUE "ProductVersion",   VER_STRING

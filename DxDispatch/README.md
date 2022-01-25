@@ -1,7 +1,5 @@
 # DxDispatch
 
-**This is a hobby project and a work in progress! Releases will use [semantic versioning](https://semver.org/), starting with 0.1.0, to reflect the beta nature of this tool.**
-
 DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders or DirectML operators), and commands to execute. The model abstraction makes it easy to experiment, but it also preserves low-level control and flexibility.
 
 Some of the things you can do with this tool:
@@ -25,7 +23,7 @@ DxDispatch currently targets the following versions of DirectX components:
 
 # System Requirements
 
-DxDispatch is currently only available for Windows 10, but support for WSL is planned. DxDispatch depends on the [DirectX 12 Agility SDK](https://devblogs.microsoft.com/directx/announcing-dx12agility/), which is only available on Version 1909+.
+DxDispatch is currently only available for Windows 10/11, but support for WSL may be added in the future. DxDispatch depends on the [DirectX 12 Agility SDK](https://devblogs.microsoft.com/directx/announcing-dx12agility/), which is only available on Version 1909+.
 
 - A DirectX 12 capable hardware device.
 - Windows 10 November 2019 Update (Version 1909; Build 18363) or newer.
