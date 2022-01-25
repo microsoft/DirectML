@@ -11,9 +11,10 @@ More information about DirectML can be found in [Introduction to DirectML](https
   - [For application developers](#for-application-developers)
   - [For users, data scientists, and researchers](#for-users-data-scientists-and-researchers)
 - [DirectML Samples](#directml-samples)
+- [DxDispatch Tool](#dxdispatch-tool)
 - [Windows ML on DirectML](#windows-ml-on-directml)
 - [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
-- [TensorFlow with DirectML](#tensorflow-with-directml-preview)
+- [TensorFlow with DirectML](#tensorflow-with-directml)
 - [PyTorch with DirectML](#pytorch-with-directml)
 - [Feedback](#feedback)
 - [External Links](#external-links)
@@ -73,6 +74,9 @@ DirectML Python sample code is available under [Python/samples](./Python/samples
 * [FNS-Candy](./Python/samples/candy.py): Adapted from the [Windows ML Style Transfer model](https://github.com/microsoft/Windows-Machine-Learning/tree/master/Samples/FNSCandyStyleTransfer) sample, FNS-Candy re-applies specific artistic styles on regular images.
 * [Super Resolution](./Python/samples/superres.py): Adapted from the [ONNX Super Resolution model](https://github.com/onnx/models/tree/master/vision/super_resolution/sub_pixel_cnn_2016), Super-Res upscales and sharpens the input images to refine the details and improve image quality.
 
+## DxDispatch Tool
+
+[DxDispatch](./DxDispatch/README.md) is simple command-line executable for launching DirectX 12 compute programs (including DirectML operators) without writing all the C++ boilerplate.
 
 ## Windows ML on DirectML
 
