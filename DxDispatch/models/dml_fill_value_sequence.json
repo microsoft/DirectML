@@ -1,0 +1,40 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "Out":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 5, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "fill_sequence":
+        {
+            "type": "DML_OPERATOR_FILL_VALUE_SEQUENCE",
+            "desc": 
+            {
+                "ValueDataType": "FLOAT32",
+                "ValueStart": 3.2,
+                "ValueDelta": 1.5,
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,1,5] }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "fill_sequence",
+            "bindings": { "OutputTensor": "Out" }
+        },
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}

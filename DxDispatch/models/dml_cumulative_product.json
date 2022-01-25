@@ -1,0 +1,50 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [2,4,8,3]
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 4, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "cumulative_product": 
+        {
+            "type": "DML_OPERATOR_CUMULATIVE_PRODUCT",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,1,4] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,1,4] },
+                "Axis": 3,
+                "AxisDirection": "DML_AXIS_DIRECTION_INCREASING",
+                "HasExclusiveProduct": false
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "cumulative_product",
+            "bindings": 
+            {
+                "InputTensor": "A",
+                "OutputTensor": "Out"
+            }
+        },
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}

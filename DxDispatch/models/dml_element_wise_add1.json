@@ -1,0 +1,35 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": { "initialValuesDataType": "FLOAT32", "initialValues": [1,2,3] },
+        "B": { "initialValuesDataType": "FLOAT32", "initialValues": [5,8,-5] },
+        "Out": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 3, "value": 0 } }
+    },
+
+    "dispatchables": 
+    {
+        "add": 
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_ADD1",
+            "desc": 
+            {
+                "ATensor": { "DataType": "FLOAT32", "Sizes": [3] },
+                "BTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+                "FusedActivation": { "Type": "ACTIVATION_ELU", "Alpha": 0.5 }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "add",
+            "bindings": { "ATensor": "A", "BTensor": "B", "OutputTensor": "Out" }
+        },
+        { "type": "print", "resource": "Out" }
+    ]
+}
