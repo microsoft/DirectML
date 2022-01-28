@@ -44,7 +44,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "q,direct_queue", 
-            "Use a direct queue/lists (default is a a compute queue/lists)", 
+            "Use a direct queue/lists (default is a compute queue/lists)", 
             cxxopts::value<bool>()
         )
         ;

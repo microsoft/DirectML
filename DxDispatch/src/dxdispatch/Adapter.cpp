@@ -90,7 +90,8 @@ Adapter Adapter::Select(std::string_view adapterSubstring)
 
     for (auto& adapter : adapters)
     {
-        if (strstr(adapter.GetDescription().data(), adapterSubstring.data()))
+        auto adapterDescription = adapter.GetDescription();
+        if (adapterDescription.find(adapterSubstring) != adapterDescription.npos)
         {
             return adapter;
         }

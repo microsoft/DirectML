@@ -105,7 +105,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PROPERTY:Microsoft::Direct3D12,DEBUG_DLL_PATH> $<TARGET_FILE_DIR:dxdispatch>/$<TARGET_PROPERTY:Microsoft::Direct3D12,SUBDIR_PATH>
 )
 
-# TODO: improve this installation
 install(
     FILES 
     $<TARGET_FILE:dxdispatch> 

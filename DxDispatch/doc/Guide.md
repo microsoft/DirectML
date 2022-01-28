@@ -59,12 +59,12 @@ Usage:
   -d, --debug                Enable D3D and DML debug layers
   -b, --benchmark            Show benchmarking information
   -i, --dispatch_repeat arg  [Benchmarking only] The number of times to      
-                             repeat each dispatch (default: 256)
+                             repeat each dispatch (default: 128)
   -h, --help                 Print command-line usage help
   -a, --adapter arg          Substring to match a desired DirectX adapter    
                              (default: )
   -s, --show_adapters        Show all available DirectX adapters
-  -q, --direct_queue         Use a direct queue/lists (default is a a compute
+  -q, --direct_queue         Use a direct queue/lists (default is compute
                              queue/lists)
 ```
 
