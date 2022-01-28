@@ -30,7 +30,7 @@
         {
             "component": {
                 "type": "other",
-                "git": {
+                "other": {
                     "name": "DirectX Shader Compiler",
                     "version": "2021_12_08",
                     "downloadUrl": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.6.2112/dxc_2021_12_08.zip"
@@ -76,7 +76,7 @@
         {
             "component": {
                 "type": "other",
-                "git": {
+                "other": {
                     "name": "Half",
                     "version": "2.1.0",
                     "downloadUrl": "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download"
