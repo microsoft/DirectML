@@ -10,6 +10,7 @@ public:
     bool PrintHelp() const { return m_printHelp; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     bool BenchmarkingEnabled() const { return m_benchmarkingEnabled; }
+    bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
     const std::string& ModelPath() const { return m_modelPath; }
     const std::string& HelpText() const { return m_helpText; }
@@ -21,6 +22,7 @@ private:
     bool m_printHelp = false;
     bool m_debugLayersEnabled = false;
     bool m_benchmarkingEnabled = false;
+    bool m_forceDisablePrecompiledShadersOnXbox = true;
     std::string m_adapterSubstring = "";
     std::string m_modelPath;
     std::string m_helpText;

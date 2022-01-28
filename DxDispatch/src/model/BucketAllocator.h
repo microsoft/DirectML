@@ -8,6 +8,11 @@
 
 #include <deque>
 #include <wil/result.h>
+#include <half.hpp>
+#ifndef WIN32
+#include <sys/mman.h>
+#include <cerrno>
+#endif
 
 class BucketAllocator
 {
@@ -60,8 +65,22 @@ private:
         {
             this->allocatedSize = 0;
             this->capacity = RoundUpToMultiple<size_t>(minimumSize, 4096);
+#ifdef WIN32
             this->data = VirtualAlloc(nullptr, this->capacity, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             THROW_LAST_ERROR_IF_NULL(this->data);
+#else
+            this->data = mmap(nullptr, this->capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+            if (this->data == MAP_FAILED)
+            {
+                switch (errno)
+                {
+                case EINVAL: THROW_HR(E_INVALIDARG); break;
+                case ENOMEM: THROW_HR(E_OUTOFMEMORY); break;
+                case EMFILE: THROW_HR(E_OUTOFMEMORY); break;
+                default: THROW_HR(E_UNEXPECTED); break;
+                }
+            }
+#endif
         }
 
         Bucket(const Bucket&) = delete;
@@ -86,7 +105,11 @@ private:
         {
             if (data)
             {
+#ifdef WIN32
                 (void)VirtualFree(data, 0, MEM_RELEASE);
+#else
+                int result = munmap(this->data, this->capacity);
+#endif
             }
         }
 
@@ -115,7 +138,7 @@ private:
             }
 
             allocatedSize = newAllocatedSize;
-            return static_cast<byte*>(data) + alignedOffset;
+            return static_cast<std::byte*>(data) + alignedOffset;
         }
     };
 

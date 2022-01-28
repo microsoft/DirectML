@@ -1,11 +1,11 @@
 #pragma once
 
-#include "d3d12shader.h"
+#include "CommandLineArgs.h"
 
 class HlslDispatchable : public Dispatchable
 {
 public:
-    HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc);
+    HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc, const CommandLineArgs& args);
 
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
@@ -28,12 +28,12 @@ public:
 
 private:
     void CompileWithDxc();
-    void CompileWithFxc();
     void CreateRootSignatureAndBindingMap();
 
 private:
     std::shared_ptr<Device> m_device;
     Model::HlslDispatchableDesc m_desc;
+    bool m_forceDisablePrecompiledShadersOnXbox;
     Microsoft::WRL::ComPtr<ID3D12ShaderReflection> m_shaderReflection;
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;

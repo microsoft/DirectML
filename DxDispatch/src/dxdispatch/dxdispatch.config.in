@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Game configVersion="0">
+
+  <Identity Name="DxDispatch"
+            Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+            Version="@PROJECT_VERSION@.0"/>
+  
+  <ExecutableList>
+    <Executable Name="dxdispatch.exe"
+                Id="Game" />
+  </ExecutableList>
+ 
+  <ShellVisuals DefaultDisplayName="DxDispatch"
+                PublisherDisplayName="DirectML Team"
+                Description="Command-line tool to run DX12 compute shaders and DML operators"
+                ForegroundText="dark"
+                BackgroundColor="#000000"
+                />
+
+</Game>

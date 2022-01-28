@@ -323,8 +323,8 @@ foreach ($OperatorName in $SuccessfulOps)
     $OpFunctionName = "ParseDml$(ConvertSnakeToCamelCase $OperatorName)OperatorDesc"
     $Cpp += "    case DML_OPERATOR_${OperatorName}: return GetBindPoints(*reinterpret_cast<const DML_${OperatorName}_OPERATOR_DESC*>(desc.Desc));"
 }
+$Cpp += "    default: throw std::invalid_argument(`"Unknown operator type.`");"
 $Cpp += "    }"
-$Cpp += "    throw std::invalid_argument(`"Unknown operator type.`");"
 $Cpp += "}"
 
 $Cpp | Out-File "$PSScriptRoot/../src/model/JsonParsersGenerated.cpp" -Encoding utf8

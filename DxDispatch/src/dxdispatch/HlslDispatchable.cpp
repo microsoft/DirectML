@@ -2,15 +2,14 @@
 #include "Adapter.h"
 #include "Device.h"
 #include "Model.h"
+#include "CommandLineArgs.h"
 #include "Dispatchable.h"
 #include "HlslDispatchable.h"
-#include "d3d12shader.h"
-#include "dxcapi.h"
-// #include <d3dcompiler.h>
 
 using Microsoft::WRL::ComPtr;
 
-HlslDispatchable::HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc) : m_device(device), m_desc(desc)
+HlslDispatchable::HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc, const CommandLineArgs& args) 
+    : m_device(device), m_desc(desc), m_forceDisablePrecompiledShadersOnXbox(args.ForceDisablePrecompiledShadersOnXbox())
 {
 }
 
@@ -165,7 +164,7 @@ void HlslDispatchable::CreateRootSignatureAndBindingMap()
     {
         if (rootSignatureErrors)
         {
-            std::cerr << static_cast<LPCSTR>(rootSignatureErrors->GetBufferPointer());
+            LogError(static_cast<LPCSTR>(rootSignatureErrors->GetBufferPointer()));
         }
         THROW_HR(hr);
     }
@@ -174,11 +173,16 @@ void HlslDispatchable::CreateRootSignatureAndBindingMap()
         0, 
         rootSignatureBlob->GetBufferPointer(), 
         rootSignatureBlob->GetBufferSize(), 
-        IID_PPV_ARGS(m_rootSignature.ReleaseAndGetAddressOf())));
+        IID_GRAPHICS_PPV_ARGS(m_rootSignature.ReleaseAndGetAddressOf())));
 }
 
 void HlslDispatchable::CompileWithDxc()
 {
+    if (!m_device->GetDxcCompiler())
+    {
+        throw std::runtime_error("DXC is not available for this platform");
+    }
+
     ComPtr<IDxcBlobEncoding> source;
     THROW_IF_FAILED(m_device->GetDxcUtils()->LoadFile(
         m_desc.sourcePath.c_str(), 
@@ -191,10 +195,22 @@ void HlslDispatchable::CompileWithDxc()
     sourceBuffer.Encoding = DXC_CP_ACP;
 
     std::vector<std::wstring> compilerArgs(m_desc.compilerArgs.size());
-    std::vector<LPCWSTR> lpcwstrArgs(m_desc.compilerArgs.size());
     for (size_t i = 0; i < m_desc.compilerArgs.size(); i++)
     {
         compilerArgs[i] = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_desc.compilerArgs[i]);
+    }
+
+#ifdef _GAMING_XBOX
+    if (m_forceDisablePrecompiledShadersOnXbox)
+    {
+        compilerArgs.push_back(L"-D");
+        compilerArgs.push_back(L"__XBOX_DISABLE_PRECOMPILE");
+    }
+#endif
+
+    std::vector<LPCWSTR> lpcwstrArgs(compilerArgs.size());
+    for (size_t i = 0; i < compilerArgs.size(); i++)
+    {
         lpcwstrArgs[i] = compilerArgs[i].data();
     }
 
@@ -210,7 +226,8 @@ void HlslDispatchable::CompileWithDxc()
     THROW_IF_FAILED(result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr));
     if (errors != nullptr && errors->GetStringLength() != 0)
     {
-        std::wcerr << L"Warnings and Errors:" << errors->GetStringPointer();
+        std::string errorsString{ errors->GetStringPointer() };
+        LogError(fmt::format("DXC failed to compile with errors: {}", errorsString));
     }
 
     HRESULT compileStatus = S_OK;
@@ -262,8 +279,8 @@ void HlslDispatchable::CompileWithDxc()
     psoDesc.CS.pShaderBytecode = shaderBlob->GetBufferPointer();
     psoDesc.CS.BytecodeLength = shaderBlob->GetBufferSize();
     THROW_IF_FAILED(m_device->D3D()->CreateComputePipelineState(
-        &psoDesc, 
-        IID_PPV_ARGS(m_pipelineState.ReleaseAndGetAddressOf())));
+        &psoDesc,
+        IID_GRAPHICS_PPV_ARGS(m_pipelineState.ReleaseAndGetAddressOf())));
 
     ComPtr<ID3D12DescriptorHeap> descriptorHeap;
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
@@ -272,36 +289,7 @@ void HlslDispatchable::CompileWithDxc()
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(
         &descriptorHeapDesc, 
-        IID_PPV_ARGS(m_descriptorHeap.ReleaseAndGetAddressOf())));
-}
-
-void HlslDispatchable::CompileWithFxc()
-{
-    // std::vector<D3D_SHADER_MACRO> defines;
-    // // insert defines
-    // defines.push_back({nullptr, nullptr});
-
-    // LPCWSTR sourcePath = m_desc.sourcePath.wstring().c_str();
-    // LPCSTR entrypoint = "CSMain";
-    // LPCSTR target = "cs_5_1";
-    // UINT flags = 0;
-
-    // ComPtr<ID3DBlob> shaderBlob;
-    // ComPtr<ID3DBlob> shaderErrors;
-
-    // // TODO map CL to flags
-
-    // // Nothing to do for HLSL op
-    // THROW_IF_FAILED(D3DCompileFromFile(
-    //     sourcePath, 
-    //     defines.data(), 
-    //     D3D_COMPILE_STANDARD_FILE_INCLUDE, 
-    //     entrypoint, 
-    //     target, 
-    //     flags, 
-    //     0, 
-    //     shaderBlob.ReleaseAndGetAddressOf(), 
-    //     shaderErrors.ReleaseAndGetAddressOf()));
+        IID_GRAPHICS_PPV_ARGS(m_descriptorHeap.ReleaseAndGetAddressOf())));
 }
 
 void HlslDispatchable::Initialize()
@@ -312,7 +300,7 @@ void HlslDispatchable::Initialize()
     }
     else
     {
-        CompileWithFxc();
+        throw std::invalid_argument("FXC isn't supported yet");
     }
 }
 

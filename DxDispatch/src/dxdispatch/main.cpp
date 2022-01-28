@@ -9,10 +9,12 @@
 
 using Microsoft::WRL::ComPtr;
 
-// Needed for DX12 agility SDK.
+#if !defined(_GAMING_XBOX) && defined(WIN32)
+// Needed for DX12 agility SDK. Xbox uses DX12.x from the GDK.
 // https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = DIRECT3D_AGILITY_SDK_VERSION; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = DIRECT3D_AGILITY_SDK_PATH; }
+#endif
 
 int main(int argc, char** argv)
 {
@@ -23,13 +25,13 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        std::cerr << "ERROR: failed to parse command-line arguments." << std::endl << e.what() << std::endl;
+        LogError(fmt::format("Failed to parse command-line arguments: {}", e.what()));
         return 1;
     }
 
     if (args.PrintHelp())
     {
-        std::cout << args.HelpText() << std::endl;
+        LogInfo(args.HelpText());
         return 0;
     }
 
@@ -37,7 +39,7 @@ int main(int argc, char** argv)
     {
         for (auto& adapter : Adapter::GetAll())
         {
-            std::cout << adapter.GetDetailedDescription() << "\n\n";
+            LogInfo(adapter.GetDetailedDescription());
         }
 
         return 0;
@@ -50,7 +52,7 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        std::cerr << "ERROR: failed to parse the JSON model." << std::endl << e.what() << std::endl;
+        LogError(fmt::format("Failed to parse the JSON model: {}", e.what()));
         return 1;
     }
 
@@ -59,14 +61,14 @@ int main(int argc, char** argv)
     {
         Adapter adapter = Adapter::Select(args.AdapterSubstring());
         device = std::make_shared<Device>(
-            adapter.GetDXCoreAdapter(), 
+            adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 
             args.CommandListType());
-        std::cout << "Running on '" << adapter.GetDescription() << "'\n";
+        LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
     }
     catch (std::exception& e)
     {
-        std::cerr << "ERROR: failed to create a device:" << std::endl << e.what() << std::endl;
+        LogError(fmt::format("Failed to create a device: {}", e.what()));
         return 1;
     }
 
@@ -77,7 +79,7 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        std::cerr << "ERROR: failed to execute the model." << std::endl << e.what() << std::endl;
+        LogError(fmt::format("Failed to execute the model: {}", e.what()));
         return 1;
     }
 

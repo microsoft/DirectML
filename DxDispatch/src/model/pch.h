@@ -1,7 +1,11 @@
 #pragma once
 
 #define NOMINMAX
-#define DML_TARGET_VERSION_USE_LATEST
+
+#ifndef _WIN32
+#include <wsl/winadapter.h>
+#include "directml_guids.h"
+#endif
 
 #include <unordered_map>
 #include <vector>

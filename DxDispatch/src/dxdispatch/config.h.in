@@ -1,4 +1,10 @@
 #pragma once
 
-#define PROJECT_NAME "@PROJECT_NAME@"
-#define PROJECT_VER  "@PROJECT_VERSION@"
+static constexpr auto c_projectName = "@PROJECT_NAME@";
+static constexpr auto c_projectVersion = "@PROJECT_VERSION@";
+
+static constexpr auto c_directmlConfig = "@directml_config@";
+static constexpr auto c_d3d12Config = "@d3d12_config@";
+static constexpr auto c_dxcompilerConfig = "@dxcompiler_config@";
+static constexpr auto c_pixConfig = "@pix_config@";
+static constexpr auto c_gdkConfig = "@gdk_config@";
