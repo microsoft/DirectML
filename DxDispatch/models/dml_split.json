@@ -1,0 +1,63 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [1,2,3,4,5,6]
+        },
+        "Out1": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 2, "value": 0 }
+        },
+        "Out2": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 2, "value": 0 }
+        },
+        "Out3": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 2, "value": 0 }
+        }
+    },
+
+    "dispatchables":
+    {
+        "split": 
+        {
+            "type": "DML_OPERATOR_SPLIT",
+            "desc":
+            {
+                "Axis": 0,
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [6] },
+                "OutputCount": 3,
+                "OutputTensors":
+                [
+                    { "DataType": "FLOAT32", "Sizes": [2] },
+                    { "DataType": "FLOAT32", "Sizes": [2] },
+                    { "DataType": "FLOAT32", "Sizes": [2] }
+                ]
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "split",
+            "bindings": 
+            {
+                "InputTensor": "A",
+                "OutputTensors": ["Out1", "Out2", "Out3"]
+            }
+        },
+        { "type": "print", "resource": "Out1" },
+        { "type": "print", "resource": "Out2" },
+        { "type": "print", "resource": "Out3" }
+    ]
+}

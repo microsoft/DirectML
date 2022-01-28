@@ -1,0 +1,65 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 32, "valueStart": 1, "valueDelta": 1 }
+        },
+        "weights": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 40, "valueStart": 1, "valueDelta": 0.4 }
+        },
+        "recurrence": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 50, "value": 0.3 }
+        },
+        "output": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 80, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "rnn": 
+        {
+            "type": "DML_OPERATOR_RNN",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,8,4] },
+                "WeightTensor": { "DataType": "FLOAT32", "Sizes": [1,2,5,4] },
+                "RecurrenceTensor": { "DataType": "FLOAT32", "Sizes": [1,2,5,5] },
+                "OutputSingleTensor": { "DataType": "FLOAT32", "Sizes": [1,2,8,5] },
+                "ActivationDescCount": 2,
+                "ActivationDescs":
+                [
+                    { "Type": "ACTIVATION_ELU", "Alpha": 0.5 },
+                    { "Type": "ACTIVATION_ELU", "Alpha": 3.5 }
+                ],
+                "Direction": "DML_RECURRENT_NETWORK_DIRECTION_BIDIRECTIONAL"
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "rnn",
+            "bindings": 
+            {
+                "InputTensor": "input",
+                "WeightTensor": "weights",
+                "RecurrenceTensor": "recurrence",
+                "OutputSingleTensor": "output"
+            }
+        },
+        { "type": "print", "resource": "output" }
+    ]
+}

@@ -1,0 +1,48 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 25, "valueStart": 1, "valueDelta": 1 }
+        },
+        "output":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 6, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "slice":
+        {
+            "type": "DML_OPERATOR_SLICE",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,5,5] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,3,2] },
+                "DimensionCount": 4,
+                "Offsets": [0,0,1,1],
+                "Sizes": [1,1,3,2],
+                "Strides": [1,1,1,2]
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "slice",
+            "bindings": 
+            {
+                "InputTensor": "input",
+                "OutputTensor": "output"
+            }
+        },
+        { "type": "print", "resource": "output" }
+    ]
+}

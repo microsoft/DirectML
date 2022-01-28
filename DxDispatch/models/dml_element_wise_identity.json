@@ -1,0 +1,45 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [1,2,3]
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 3, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "identity": 
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+                "ScaleBias": { "Scale": 2, "Bias": 10 }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "identity",
+            "bindings": 
+            {
+                "InputTensor": "A",
+                "OutputTensor": "Out"
+            }
+        },
+        { "type": "print", "resource": "Out" }
+    ]
+}

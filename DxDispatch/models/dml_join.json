@@ -1,0 +1,64 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 10, "valueStart": 1, "valueDelta": 1 }
+        },
+        "B": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 3, "valueStart": 100, "valueDelta": 15 }
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 10, "value": 0 }
+        }
+    },
+
+    "dispatchables":
+    {
+        "join": 
+        {
+            "type": "DML_OPERATOR_JOIN",
+            "desc":
+            {
+                "Axis": 0,
+                "InputCount": 3,
+                "InputTensors": 
+                [
+                    { "DataType": "FLOAT32", "Sizes": [3] },
+                    { "DataType": "FLOAT32", "Sizes": [2] },
+                    { "DataType": "FLOAT32", "Sizes": [5] }
+                ],
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [10] }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "join",
+            "bindings": 
+            {
+                "InputTensors": 
+                [ 
+                    { "name": "A", "elementCount": 3, "elementOffset": 0 },
+                    "B",
+                    { "name": "A", "elementCount": 5, "elementOffset": 4 } 
+                ],
+                "OutputTensor": "Out"
+            }
+        },
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}

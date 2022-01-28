@@ -1,0 +1,48 @@
+// This file REQUIRES the following external definitions:
+// VER_MAJOR, VER_MINOR, VER_BUILD, VER_PRIVATE, and VER_STRING
+
+#include <Winver.h>
+
+#define VER_PRODUCTNAME "@PROJECT_NAME@"
+#define VER_MAJOR @PROJECT_VERSION_MAJOR@
+#define VER_MINOR @PROJECT_VERSION_MINOR@
+#define VER_PATCH @PROJECT_VERSION_PATCH@
+#define VER_PRIVATE 0
+#define VER_STRING "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
+
+#if _DEBUG
+#define VER_DEBUG VS_FF_DEBUG
+#else
+#define VER_DEBUG 0
+#endif
+
+// -----------------------------------------------------------------------------
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     VER_MAJOR, VER_MINOR, VER_PATCH, VER_PRIVATE
+PRODUCTVERSION  VER_MAJOR, VER_MINOR, VER_PATCH, VER_PRIVATE
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       VER_DEBUG
+FILEOS          VOS__WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      "Microsoft Corporation"
+            VALUE "FileDescription",  VER_PRODUCTNAME
+            VALUE "FileVersion",      VER_STRING
+            VALUE "InternalName",     "@PROJECT_NAME@.exe"
+            VALUE "LegalCopyright",   "\251 Microsoft Corporation. All rights reserved."
+            VALUE "OriginalFilename", "@PROJECT_NAME@.exe"
+            VALUE "ProductName",      VER_PRODUCTNAME
+            VALUE "ProductVersion",   VER_STRING
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END

@@ -1,0 +1,46 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 4, "valueStart": 1, "valueDelta": 1 }
+        },
+        "output":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 16, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "upsample":
+        {
+            "type": "DML_OPERATOR_UPSAMPLE_2D",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,2,2] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,4,4] },
+                "ScaleSize": { "Width": 2, "Height": 2 },
+                "InterpolationMode": "DML_INTERPOLATION_MODE_LINEAR"
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "upsample",
+            "bindings": 
+            {
+                "InputTensor": "input",
+                "OutputTensor": "output"
+            }
+        },
+        { "type": "print", "resource": "output" }
+    ]
+}

@@ -1,0 +1,69 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": [ 1, 2, 4, 8, -2, -3 ]
+        },
+        "B": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": [ 1, 5, 2, 3, 4, 10 ]
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 6, "value": 0 }
+        },
+        "Constants": 
+        {
+            "initialValuesDataType": "UNKNOWN",
+            "initialValues": 
+            [
+                { "name": "elementCount", "type": "UINT32",  "value": 6 }
+            ],
+            "sizeInBytes": 256
+        }
+    },
+
+    "dispatchables": 
+    {
+        "add": 
+        {
+            "type": "hlsl",
+            "sourcePath": "models/add_fp16.hlsl",
+            "compiler": "dxc",
+            "compilerArgs": 
+            [
+                "-T", "cs_6_2",
+                "-E", "CSMain",
+                "-D", "NUM_THREADS=6",
+                "-enable-16bit-types"
+            ]
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "add",
+            "threadGroupCount": [ 1, 1, 1 ],
+            "bindings": 
+            {
+                "inputA": "A",
+                "inputB": "B",
+                "output": "Out",
+                "constants": "Constants"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}
