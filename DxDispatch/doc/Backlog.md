@@ -14,10 +14,6 @@
 - Support flags (i.e. D3D12_DESCRIPTOR_RANGE_FLAGS)
 - Option to bind using root constants/descriptors (perhaps a bool) instead of descriptor tables
 
-**Build**
-- WSL2 build
-- Support ninja generator (some work to ensure platform detected correctly for nuget deps)
-
 **Other**
 - Better printing: reinterpret shape (default 1D) and data type
 - Documentation

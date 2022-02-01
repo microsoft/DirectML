@@ -4,9 +4,9 @@ class Adapter
 {
 public:
     Adapter() = default;
-    Adapter(IDXCoreAdapter* adapter);
+    Adapter(IAdapter* adapter);
 
-    IDXCoreAdapter* GetDXCoreAdapter() { return m_adapter.Get(); }
+    IAdapter* GetAdapter() { return m_adapter.Get(); }
     std::string_view GetDescription() const { return m_description; }
     std::string GetDetailedDescription() const;
 
@@ -14,6 +14,7 @@ public:
     static std::vector<Adapter> GetAll();
 
 private:
+#ifndef _GAMING_XBOX
     template <typename T>
     bool TryGetProperty(DXCoreAdapterProperty prop, T& outputValue)
     {
@@ -40,9 +41,10 @@ private:
         }
         return false;
     }
+#endif
 
 private:
-    Microsoft::WRL::ComPtr<IDXCoreAdapter> m_adapter;
+    Microsoft::WRL::ComPtr<IAdapter> m_adapter;
     std::string m_description;
     std::string m_driverVersion;
     bool m_isHardware = false;
@@ -64,7 +66,9 @@ private:
         };
     } m_driverVersionRaw;
 
+#ifndef _GAMING_XBOX
     DXCoreHardwareID m_hardwareId = {};
+#endif
 
     // Bytes of dedicated adapter memory (not shared with CPU).
     uint64_t m_dedicatedAdapterMemory = 0;

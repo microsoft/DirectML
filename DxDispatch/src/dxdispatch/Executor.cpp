@@ -5,13 +5,12 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "DmlDispatchable.h"
+#ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
+#endif
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
-
-#define USE_PIX
-#include <WinPixEventRuntime/pix3.h>
 
 struct Timer
 {
@@ -47,7 +46,11 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         {
             if (std::holds_alternative<Model::HlslDispatchableDesc>(desc.value))
             {
-                m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value));
+#ifdef DXCOMPILER_NONE
+                throw std::invalid_argument("HLSL dispatchables require DXCompiler");
+#else
+                m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value), args);
+#endif
             }
             else
             {
@@ -60,7 +63,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 }
                 catch (const std::exception& e)
                 {
-                    std::cerr << "ERROR while resolving bindings: " << e.what() << '\n';
+                    LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
                     m_device->PrintDebugLayerMessages();
                     return;
                 }
@@ -71,7 +74,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         catch(const std::exception& e)
         {
             device->PrintDebugLayerMessages();
-            throw std::invalid_argument(fmt::format("ERROR creating dispatchable '{}':", desc.name));
+            throw std::invalid_argument(fmt::format("ERROR creating dispatchable '{}': {}", desc.name, e.what()));
         }
     }
 
@@ -121,7 +124,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
         }
         catch (const std::exception& e)
         {
-            std::cerr << "ERROR while resolving bindings: " << e.what() << '\n';
+            LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
             m_device->PrintDebugLayerMessages();
             return;
         }
@@ -140,7 +143,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
         }
         catch (const std::exception& e)
         {
-            std::cerr << "ERROR while binding resources: " << e.what() << '\n';
+            LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
             m_device->PrintDebugLayerMessages();
             return;
         }
@@ -162,7 +165,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
         }
         catch (const std::exception& e)
         {
-            std::cerr << "ERROR while executing the dispatchable: " << e.what() << '\n';
+            LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
             m_device->PrintDebugLayerMessages();
             return;
         }
@@ -185,13 +188,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
     if (m_commandLineArgs.BenchmarkingEnabled())
     {
         // Assuming multiple times, skip the first since it warms up the pipeline.
-        int skipped = std::min(1ull, executeAverages.size() - 1);
+        int skipped = executeAverages.empty() ? 0 : 1;
         double avgTime = std::accumulate(
             executeAverages.begin() + skipped, 
             executeAverages.end(), 
             0.0) / (executeAverages.size() - skipped);
 
-        std::cout << "Dispatch '" << command.dispatchableName << "': " << avgTime << " ms\n";
+        LogInfo(fmt::format("Dispatch '{}': {} ms", command.dispatchableName, avgTime));
     }
 }
 
@@ -234,6 +237,7 @@ std::string ToString(gsl::span<const std::byte> byteValues, const Model::BufferD
     case DML_TENSOR_DATA_TYPE_INT16: ss << BufferDataView<int16_t>{byteValues, desc}; break;
     case DML_TENSOR_DATA_TYPE_INT32: ss << BufferDataView<int32_t>{byteValues, desc}; break;
     case DML_TENSOR_DATA_TYPE_INT64: ss << BufferDataView<int64_t>{byteValues, desc}; break;
+    default: throw std::invalid_argument("Unexpected DML_TENSOR_DATA_TYPE");
     }
     return ss.str();
 }
@@ -248,11 +252,11 @@ void Executor::operator()(const Model::PrintCommand& command)
         auto outputValues = m_device->Download(resource.Get());
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-        std::cout << "Resource '" << command.resourceName << "': " << ToString(outputValues, bufferDesc) << std::endl;
+        LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
     }
     catch (const std::exception& e)
     {
-        std::cerr << "ERROR while printing resource: " << e.what() << '\n';
+        LogError(fmt::format("Failed to print resource: {}", e.what()));
         m_device->PrintDebugLayerMessages();
     }
 }

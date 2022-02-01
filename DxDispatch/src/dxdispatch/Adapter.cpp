@@ -3,8 +3,22 @@
 
 using Microsoft::WRL::ComPtr;
 
-Adapter::Adapter(IDXCoreAdapter* adapter) : m_adapter(adapter)
+Adapter::Adapter(IAdapter* adapter) : m_adapter(adapter)
 {
+#ifdef _GAMING_XBOX
+    DXGI_ADAPTER_DESC adapterDesc;
+    THROW_IF_FAILED(adapter->GetDesc(&adapterDesc));
+
+    m_description = "Xbox";
+    m_driverVersion = "Unknown";
+    m_driverVersionRaw.value = 0;
+    m_isHardware = true;
+    m_isDetachable = false;
+    m_isIntegrated = false;
+    m_dedicatedAdapterMemory = adapterDesc.DedicatedVideoMemory;
+    m_dedicatedSystemMemory = adapterDesc.DedicatedSystemMemory;
+    m_sharedSystemMemory = adapterDesc.SharedSystemMemory;
+#else
     TryGetProperty(DXCoreAdapterProperty::DriverDescription, m_description);
     TryGetProperty(DXCoreAdapterProperty::IsHardware, m_isHardware);
     TryGetProperty(DXCoreAdapterProperty::IsDetachable, m_isDetachable);
@@ -23,6 +37,7 @@ Adapter::Adapter(IDXCoreAdapter* adapter) : m_adapter(adapter)
         oss << m_driverVersionRaw.parts.d;
         m_driverVersion = oss.str();
     }
+#endif
 }
 
 std::string Adapter::GetDetailedDescription() const
@@ -55,13 +70,32 @@ std::string Adapter::GetDetailedDescription() const
 
 std::vector<Adapter> Adapter::GetAll()
 {
+    std::vector<Adapter> adapters;
+
+#ifdef _GAMING_XBOX
+    Microsoft::WRL::ComPtr<ID3D12Device> device;
+    D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
+    params.Version = D3D12_SDK_VERSION;
+    params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+    params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+    params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+    THROW_IF_FAILED(D3D12XboxCreateDevice(nullptr, &params, IID_GRAPHICS_PPV_ARGS(device.ReleaseAndGetAddressOf())));
+
+    ComPtr<IDXGIDevice1> dxgiDevice;
+    THROW_IF_FAILED(device.As(&dxgiDevice));
+
+    ComPtr<IDXGIAdapter> adapter;
+    THROW_IF_FAILED(dxgiDevice->GetAdapter(adapter.GetAddressOf()));
+
+    adapters.emplace_back(adapter.Get());
+#else
     ComPtr<IDXCoreAdapterFactory> adapterFactory;
     THROW_IF_FAILED(DXCoreCreateAdapterFactory(adapterFactory.GetAddressOf()));
 
     ComPtr<IDXCoreAdapterList> adapterList;
     GUID attributes[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE };
     THROW_IF_FAILED(adapterFactory->CreateAdapterList(
-        ARRAYSIZE(attributes),
+        _countof(attributes),
         attributes,
         adapterList.GetAddressOf()));
 
@@ -69,9 +103,8 @@ std::vector<Adapter> Adapter::GetAll()
         DXCoreAdapterPreference::Hardware, 
         DXCoreAdapterPreference::HighPerformance 
     };
-    THROW_IF_FAILED(adapterList->Sort(ARRAYSIZE(preferences), preferences));
+    THROW_IF_FAILED(adapterList->Sort(_countof(preferences), preferences));
 
-    std::vector<Adapter> adapters;
     adapters.reserve(adapterList->GetAdapterCount());
 
     for (uint32_t i = 0; i < adapterList->GetAdapterCount(); i++)
@@ -80,6 +113,7 @@ std::vector<Adapter> Adapter::GetAll()
         THROW_IF_FAILED(adapterList->GetAdapter(i, dxcoreAdapter.ReleaseAndGetAddressOf()));
         adapters.emplace_back(dxcoreAdapter.Get());
     }
+#endif
 
     return adapters;
 }
@@ -90,8 +124,7 @@ Adapter Adapter::Select(std::string_view adapterSubstring)
 
     for (auto& adapter : adapters)
     {
-        auto adapterDescription = adapter.GetDescription();
-        if (adapterDescription.find(adapterSubstring) != adapterDescription.npos)
+        if (strstr(adapter.GetDescription().data(), adapterSubstring.data()))
         {
             return adapter;
         }

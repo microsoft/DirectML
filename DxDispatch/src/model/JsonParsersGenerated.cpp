@@ -4662,6 +4662,6 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_ACTIVATION_TANH: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_TANH_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_THRESHOLDED_RELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SHRINK: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SHRINK_OPERATOR_DESC*>(desc.Desc));
+    default: throw std::invalid_argument("Unknown operator type.");
     }
-    throw std::invalid_argument("Unknown operator type.");
 }

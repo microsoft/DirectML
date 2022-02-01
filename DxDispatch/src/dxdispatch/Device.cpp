@@ -7,73 +7,88 @@ using Microsoft::WRL::ComPtr;
 static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 { 0x59da69, 0xb561, 0x43d9, { 0xa3, 0x9b, 0x33, 0x55, 0x7, 0x4b, 0x10, 0x82 } };
 
-Device::Device(IDXCoreAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType)
+Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType)
 {
-    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
+#ifdef _GAMING_XBOX
+    Microsoft::WRL::ComPtr<ID3D12Device> device;
+    D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
+    params.Version = D3D12_SDK_VERSION;
 
+    if (debugLayersEnabled)
+    {
+        params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
+    }
+    // Enable the instrumented driver.
+    //params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
+
+    params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+    params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+    params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
+
+    THROW_IF_FAILED(D3D12XboxCreateDevice(adapter, &params, IID_GRAPHICS_PPV_ARGS(m_d3d.ReleaseAndGetAddressOf())));
+#else // !_GAMING_XBOX
     if (debugLayersEnabled)
     {
         ComPtr<ID3D12Debug3> d3dDebug;
         THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&d3dDebug)));
         d3dDebug->EnableDebugLayer();
         d3dDebug->SetEnableGPUBasedValidation(true);
-        dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
     }
 
     THROW_IF_FAILED(D3D12CreateDevice(
         adapter, 
         D3D_FEATURE_LEVEL_11_0, 
         IID_PPV_ARGS(&m_d3d)));
+#endif
 
     THROW_IF_FAILED(m_d3d->CreateFence(
         0, 
         D3D12_FENCE_FLAG_NONE, 
-        IID_PPV_ARGS(&m_fence)));
+        IID_GRAPHICS_PPV_ARGS(m_fence.ReleaseAndGetAddressOf())));
 
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
     queueDesc.Type = commandListType;
-    THROW_IF_FAILED(m_d3d->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_queue)));
+    THROW_IF_FAILED(m_d3d->CreateCommandQueue(
+        &queueDesc, 
+        IID_GRAPHICS_PPV_ARGS(m_queue.ReleaseAndGetAddressOf())));
     m_commandListType = queueDesc.Type;
+
+    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
+    if (debugLayersEnabled)
+    {
+        dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
+    }
 
     THROW_IF_FAILED(DMLCreateDevice1(
         m_d3d.Get(), 
         dmlCreateDeviceFlags, 
-        DML_FEATURE_LEVEL_3_1, 
+        DML_FEATURE_LEVEL_5_0, 
         IID_PPV_ARGS(&m_dml)));
 
-    static_cast<void>(m_queue->QueryInterface(IID_PPV_ARGS(&m_sharingContract)));
-
+#ifndef _GAMING_XBOX
     if (debugLayersEnabled)
     {
         THROW_IF_FAILED(m_d3d->QueryInterface(m_infoQueue.GetAddressOf()));
         m_infoQueue->ClearStoredMessages();
     }
-
-    if (m_sharingContract)
-    {
-        //m_sharingContract->BeginCapturableWork(PIX_EVAL_CAPTURABLE_WORK_GUID);
-    }
+#endif
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(
         m_commandListType,
-        IID_PPV_ARGS(&m_commandAllocator)));
+        IID_GRAPHICS_PPV_ARGS(m_commandAllocator.ReleaseAndGetAddressOf())));
 
     THROW_IF_FAILED(m_d3d->CreateCommandList(
         0,
         m_commandListType,
         m_commandAllocator.Get(),
         nullptr,
-        IID_PPV_ARGS(&m_commandList)));
+        IID_GRAPHICS_PPV_ARGS(m_commandList.ReleaseAndGetAddressOf())));
 
     THROW_IF_FAILED(m_dml->CreateCommandRecorder(IID_PPV_ARGS(&m_commandRecorder)));
 }
 
 Device::~Device()
 {
-    if (m_sharingContract)
-    {
-        //m_sharingContract->EndCapturableWork(PIX_EVAL_CAPTURABLE_WORK_GUID);
-    }
 }
 
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
@@ -92,7 +107,7 @@ ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
         &resourceDesc, 
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
         nullptr, 
-        IID_PPV_ARGS(&resource)));
+        IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
 
     return resource;
 }
@@ -113,7 +128,7 @@ ComPtr<ID3D12Resource> Device::CreateUploadBuffer(
         &resourceDesc,
         D3D12_RESOURCE_STATE_GENERIC_READ,
         nullptr,
-        IID_PPV_ARGS(&resource)));
+        IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
 
     return resource;
 }
@@ -134,7 +149,7 @@ ComPtr<ID3D12Resource> Device::CreateReadbackBuffer(
         &resourceDesc,
         D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr,
-        IID_PPV_ARGS(&resource)));
+        IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
 
     return resource;
 }
@@ -148,6 +163,7 @@ void Device::WaitForGpuWorkToComplete()
 
 void Device::PrintDebugLayerMessages()
 {
+#if !defined(_GAMING_XBOX) && defined(WIN32)
     if (m_infoQueue)
     {
         auto numMessages = m_infoQueue->GetNumStoredMessages();
@@ -158,10 +174,11 @@ void Device::PrintDebugLayerMessages()
             std::vector<std::byte> buffer(messageLength);
             D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(buffer.data());
             THROW_IF_FAILED(m_infoQueue->GetMessageA(i, message, &messageLength));
-            std::cerr << message->pDescription << std::endl;
+            LogError(message->pDescription);
         }
         m_infoQueue->ClearStoredMessages();
     }
+#endif
 }
 
 void Device::RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable)
@@ -200,7 +217,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_COPY_DEST)
         };
-        m_commandList->ResourceBarrier(ARRAYSIZE(barriers), barriers);
+        m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
     m_commandList->CopyResource(defaultBuffer.Get(), uploadBuffer.Get());
@@ -213,7 +230,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
                 D3D12_RESOURCE_STATE_COPY_DEST,
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
         };
-        m_commandList->ResourceBarrier(ARRAYSIZE(barriers), barriers);
+        m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
     m_temporaryResources.push_back(std::move(uploadBuffer));
@@ -234,7 +251,7 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_COPY_SOURCE)
         };
-        m_commandList->ResourceBarrier(ARRAYSIZE(barriers), barriers);
+        m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
     m_commandList->CopyResource(readbackBuffer.Get(), defaultBuffer.Get());
@@ -247,7 +264,7 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
                 D3D12_RESOURCE_STATE_COPY_SOURCE,
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
         };
-        m_commandList->ResourceBarrier(ARRAYSIZE(barriers), barriers);
+        m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
     DispatchAndWait();
@@ -272,7 +289,7 @@ void Device::DispatchAndWait()
     THROW_IF_FAILED(m_commandList->Close());
 
     ID3D12CommandList* commandLists[] = { m_commandList.Get() };
-    m_queue->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists);
+    m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
     WaitForGpuWorkToComplete();
     THROW_IF_FAILED(m_d3d->GetDeviceRemovedReason());
     THROW_IF_FAILED(m_commandAllocator->Reset());
@@ -281,8 +298,10 @@ void Device::DispatchAndWait()
     m_temporaryResources.clear();
 }
 
+#ifndef DXCOMPILER_NONE
 void Device::EnsureDxcInterfaces()
 {
+#if defined(_GAMING_XBOX) || defined(_AMD64_)
     if (!m_dxcCompiler)
     {
         // Lazily create DXC compiler and helpers.
@@ -290,6 +309,7 @@ void Device::EnsureDxcInterfaces()
         THROW_IF_FAILED(m_dxcUtils->CreateDefaultIncludeHandler(&m_dxcIncludeHandler));
         THROW_IF_FAILED(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxcCompiler)));
     }
+#endif
 }
 
 IDxcUtils* Device::GetDxcUtils()
@@ -309,6 +329,7 @@ IDxcCompiler3* Device::GetDxcCompiler()
     EnsureDxcInterfaces();
     return m_dxcCompiler.Get();
 }
+#endif // !DXCOMPILER_NONE
 
 /*static*/ uint32_t Device::GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
 {
@@ -332,9 +353,10 @@ IDxcCompiler3* Device::GetDxcCompiler()
         case DML_TENSOR_DATA_TYPE_INT64:
         case DML_TENSOR_DATA_TYPE_UINT64:
             return 8;
-    }
 
-    throw std::invalid_argument("Unknown data type");
+        default:
+            throw std::invalid_argument("Unknown data type");
+    }
 }
 
 /*static*/ DXGI_FORMAT Device::GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType)

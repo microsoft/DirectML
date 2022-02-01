@@ -112,7 +112,7 @@ void DmlDispatchable::Initialize()
     ComPtr<IDMLOperatorInitializer> initializer;
     IDMLCompiledOperator* ops[] = { m_operatorCompiled.Get() };
     THROW_IF_FAILED(m_device->DML()->CreateOperatorInitializer(
-        ARRAYSIZE(ops),
+        _countof(ops),
         ops,
         IID_PPV_ARGS(&initializer)));
 
@@ -125,10 +125,10 @@ void DmlDispatchable::Initialize()
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.NumDescriptors = std::max(1u, initializer->GetBindingProperties().RequiredDescriptorCount);
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&descriptorHeap)));
+    THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(&descriptorHeapDesc, IID_GRAPHICS_PPV_ARGS(descriptorHeap.ReleaseAndGetAddressOf())));
 
     ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap.Get() };
-    m_device->GetCommandList()->SetDescriptorHeaps(ARRAYSIZE(descriptorHeaps), descriptorHeaps);
+    m_device->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     DML_BINDING_TABLE_DESC bindingTableDesc = {};
     bindingTableDesc.Dispatchable = initializer.Get();
@@ -200,10 +200,10 @@ void DmlDispatchable::Bind(const Bindings& bindings)
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(
         &descriptorHeapDesc, 
-        IID_PPV_ARGS(m_descriptorHeap.ReleaseAndGetAddressOf())));
+        IID_GRAPHICS_PPV_ARGS(m_descriptorHeap.ReleaseAndGetAddressOf())));
 
     ID3D12DescriptorHeap* descriptorHeaps[] = { m_descriptorHeap.Get() };
-    m_device->GetCommandList()->SetDescriptorHeaps(ARRAYSIZE(descriptorHeaps), descriptorHeaps);
+    m_device->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     DML_BINDING_TABLE_DESC bindingTableDesc = {};
     bindingTableDesc.Dispatchable = m_operatorCompiled.Get();

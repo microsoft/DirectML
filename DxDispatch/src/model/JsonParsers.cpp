@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "JsonParsers.h"
 
+#ifndef WIN32
+#define _stricmp strcasecmp
+#endif
+
 using Microsoft::WRL::ComPtr;
 
 static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
@@ -25,6 +29,9 @@ static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
         case DML_TENSOR_DATA_TYPE_INT64:
         case DML_TENSOR_DATA_TYPE_UINT64:
             return 8;
+
+        default:
+            throw std::invalid_argument("Unexpected DML_TENSOR_DATA_TYPE");
     }
 }
 
@@ -195,9 +202,9 @@ T ParseFloatingPointNumber(const rapidjson::Value& value)
     else if (value.IsString())
     {
         auto strValue = value.GetString();
-        if (!stricmp(strValue, "inf")) { return std::numeric_limits<T>::infinity(); }
-        if (!stricmp(strValue, "-inf")) { return -std::numeric_limits<T>::infinity(); }
-        if (!stricmp(strValue, "nan")) { return std::numeric_limits<T>::quiet_NaN(); }
+        if (!_stricmp(strValue, "inf")) { return std::numeric_limits<T>::infinity(); }
+        if (!_stricmp(strValue, "-inf")) { return -std::numeric_limits<T>::infinity(); }
+        if (!_stricmp(strValue, "nan")) { return std::numeric_limits<T>::quiet_NaN(); }
         throw std::invalid_argument("Expected 'NaN', 'Inf', or '-Inf'.");
     }
     else
@@ -996,14 +1003,14 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
     case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, half_float::half(0));
     case DML_TENSOR_DATA_TYPE_FLOAT32: return AsBytes(ParseFloat32Field, 0.0f);
     case DML_TENSOR_DATA_TYPE_FLOAT64: return AsBytes(ParseFloat64Field, 0.0);
-    case DML_TENSOR_DATA_TYPE_UINT8: return AsBytes(ParseUInt8Field, 0ui8);
-    case DML_TENSOR_DATA_TYPE_UINT16: return AsBytes(ParseUInt16Field, 0ui16);
-    case DML_TENSOR_DATA_TYPE_UINT32: return AsBytes(ParseUInt32Field, 0ui32);
-    case DML_TENSOR_DATA_TYPE_UINT64: return AsBytes(ParseUInt64Field, 0ui64);
-    case DML_TENSOR_DATA_TYPE_INT8: return AsBytes(ParseInt8Field, 0i8);
-    case DML_TENSOR_DATA_TYPE_INT16: return AsBytes(ParseInt16Field, 0i16);
-    case DML_TENSOR_DATA_TYPE_INT32: return AsBytes(ParseInt32Field, 0i32);
-    case DML_TENSOR_DATA_TYPE_INT64: return AsBytes(ParseInt64Field, 0i64);
+    case DML_TENSOR_DATA_TYPE_UINT8: return AsBytes(ParseUInt8Field, static_cast<uint8_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT16: return AsBytes(ParseUInt16Field, static_cast<uint16_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT32: return AsBytes(ParseUInt32Field, static_cast<uint32_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT64: return AsBytes(ParseUInt64Field, static_cast<uint64_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT8: return AsBytes(ParseInt8Field, static_cast<int8_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT16: return AsBytes(ParseInt16Field, static_cast<int16_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT32: return AsBytes(ParseInt32Field, static_cast<int32_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT64: return AsBytes(ParseInt64Field, static_cast<int64_t>(0));
     default: throw std::invalid_argument(fmt::format("Invalid tensor data type."));
     }
 }
@@ -1095,7 +1102,7 @@ Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const rapidjson::Valu
     desc.sourcePath = ParseStringField(object, "sourcePath");
 
     auto compilerStr = ParseStringField(object, "compiler", false, "dxc");
-    if (!stricmp(compilerStr.data(), "dxc"))
+    if (!_stricmp(compilerStr.data(), "dxc"))
     {
         desc.compiler = Model::HlslDispatchableDesc::Compiler::DXC;
     }
@@ -1193,7 +1200,7 @@ Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const 
     Model::DispatchableDesc desc;
     desc.name = name;
     auto type = ParseStringField(object, "type");
-    if (!stricmp(type.data(), "hlsl")) 
+    if (!_stricmp(type.data(), "hlsl")) 
     { 
         desc.value = ParseModelHlslDispatchableDesc(object);
     }
@@ -1259,11 +1266,11 @@ Model::Command ParseModelCommand(const rapidjson::Value& object)
     Model::Command command = {};
 
     auto type = ParseStringField(object, "type");
-    if (!stricmp(type.data(), "dispatch")) 
+    if (!_stricmp(type.data(), "dispatch")) 
     { 
         command = ParseDispatchCommand(object);
     }
-    else if (!stricmp(type.data(), "print")) 
+    else if (!_stricmp(type.data(), "print")) 
     {
         command = ParsePrintCommand(object);
     }
@@ -1290,7 +1297,7 @@ Model ParseModel(const rapidjson::Document& doc)
     {
         throw std::invalid_argument("Expected an object named 'resources'");
     }
-    for (auto& field = resourcesField->value.MemberBegin(); field != resourcesField->value.MemberEnd(); field++)
+    for (auto field = resourcesField->value.MemberBegin(); field != resourcesField->value.MemberEnd(); field++)
     {
         try
         {
@@ -1308,7 +1315,7 @@ Model ParseModel(const rapidjson::Document& doc)
     {
         throw std::invalid_argument("Expected an object named 'dispatchables'");
     }
-    for (auto& field = dispatchablesField->value.MemberBegin(); field != dispatchablesField->value.MemberEnd(); field++)
+    for (auto field = dispatchablesField->value.MemberBegin(); field != dispatchablesField->value.MemberEnd(); field++)
     {
         try
         {
@@ -1326,7 +1333,7 @@ Model ParseModel(const rapidjson::Document& doc)
     {
         throw std::invalid_argument("Expected an array field named 'commands'");
     }
-    auto& commandsArray = commandsField->value.GetArray();
+    auto commandsArray = commandsField->value.GetArray();
     for (uint32_t i = 0; i < commandsArray.Size(); i++)
     {
         try

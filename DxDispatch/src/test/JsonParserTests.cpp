@@ -1,5 +1,9 @@
 #define NOMINMAX
-#define DML_TARGET_VERSION_USE_LATEST
+
+#ifndef WIN32
+#include <wsl/winadapter.h>
+#include "directml_guids.h"
+#endif
 
 #include <gtest/gtest.h>
 #include <fmt/format.h>
@@ -24,7 +28,7 @@ TEST(ParseFloat16Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     half_float::half expectedValues[] = { half_float::half(1.2f), half_float::half(5.0f), half_float::half(-1.2345f) };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseFloat16(d[fieldName.data()]), expectedValues[i]);
@@ -128,7 +132,7 @@ TEST(ParseFloat32Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     float expectedValues[] = { 1.2f, 5.0f, -1.2345f };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseFloat32(d[fieldName.data()]), expectedValues[i]);
@@ -272,7 +276,7 @@ TEST(ParseFloat64Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     double expectedValues[] = { 1.2, 5.0, -1.2345 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseFloat64(d[fieldName.data()]), expectedValues[i]);
@@ -355,7 +359,7 @@ TEST(ParseInt8Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     int8_t expectedValues[] = { 1, 5, -3, -128, 127 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseInt8(d[fieldName.data()]), expectedValues[i]);
@@ -422,7 +426,7 @@ TEST(ParseInt16Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     int16_t expectedValues[] = { 1, 5, -3, -32768, 32767 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseInt16(d[fieldName.data()]), expectedValues[i]);
@@ -488,8 +492,8 @@ TEST(ParseInt32Test, ValidInput)
         "x4": 2147483647
     })");
     ASSERT_FALSE(d.HasParseError());
-    int32_t expectedValues[] = { 1, 5, -3, -2147483648i32, 2147483647i32 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    int32_t expectedValues[] = { 1, 5, -3, -2147483648, 2147483647 };
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseInt32(d[fieldName.data()]), expectedValues[i]);
@@ -618,8 +622,8 @@ TEST(ParseInt64Test, ValidInput)
         "x4": 3000000000
     })");
     ASSERT_FALSE(d.HasParseError());
-    int64_t expectedValues[] = { 1, 5, -3, -3000000000i64, 3000000000i64 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    int64_t expectedValues[] = { 1, 5, -3, -3000000000, 3000000000 };
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseInt64(d[fieldName.data()]), expectedValues[i]);
@@ -669,7 +673,7 @@ TEST(ParseUInt8Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     uint8_t expectedValues[] = { 1, 5, 255 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseUInt8(d[fieldName.data()]), expectedValues[i]);
@@ -731,7 +735,7 @@ TEST(ParseUInt16Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     uint16_t expectedValues[] = { 1, 5, 65535 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseUInt16(d[fieldName.data()]), expectedValues[i]);
@@ -793,7 +797,7 @@ TEST(ParseUInt32Test, ValidInput)
     })");
     ASSERT_FALSE(d.HasParseError());
     uint32_t expectedValues[] = { 1, 5, 4294967295 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseUInt32(d[fieldName.data()]), expectedValues[i]);
@@ -919,8 +923,8 @@ TEST(ParseUInt64Test, ValidInput)
         "x2": 4294967296
     })");
     ASSERT_FALSE(d.HasParseError());
-    uint64_t expectedValues[] = { 1, 5, 4294967296ui64 };
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    uint64_t expectedValues[] = { 1, 5, 4294967296 };
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseUInt64(d[fieldName.data()]), expectedValues[i]);
@@ -1032,7 +1036,7 @@ TEST(ParseDmlTensorDataTypeTest, ValidInput)
         DML_TENSOR_DATA_TYPE_INT64
     };
 
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName1 = fmt::format("x{}", 2*i);
         auto fieldName2 = fmt::format("x{}", 2*i+1);
@@ -1097,7 +1101,7 @@ TEST(ParseDmlExecutionFlagsTest, ValidInputString)
         DML_EXECUTION_FLAG_DESCRIPTORS_VOLATILE,
     };
 
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName1 = fmt::format("x{}", 2*i);
         auto fieldName2 = fmt::format("x{}", 2*i+1);
@@ -1124,7 +1128,7 @@ TEST(ParseDmlExecutionFlagsTest, ValidInputArray)
         DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION | DML_EXECUTION_FLAG_DESCRIPTORS_VOLATILE,
     };
 
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
         EXPECT_EQ(ParseDmlExecutionFlags(d[fieldName.data()]), expectedValues[i]);
@@ -1614,7 +1618,7 @@ TEST(ParseModelResourceDesc, BufferArrayInitializer)
     constexpr float expectedValues[] = {1,2,3,4};
     ASSERT_EQ(desc.initialValues.size(), sizeof(expectedValues));
     float* floatData = reinterpret_cast<float*>(desc.initialValues.data());
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         EXPECT_EQ(floatData[i], expectedValues[i]);
     }
@@ -1642,7 +1646,7 @@ TEST(ParseModelResourceDesc, BufferArrayAtValidOffset)
     constexpr float expectedValues[] = {1,2,3,4};
     ASSERT_EQ(desc.initialValues.size(), sizeof(expectedValues));
     float* floatData = reinterpret_cast<float*>(desc.initialValues.data());
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         EXPECT_EQ(floatData[i], expectedValues[i]);
     }
@@ -1712,7 +1716,7 @@ TEST(ParseModelResourceDesc, BufferConstantInitializer)
     constexpr uint32_t expectedValues[] = {2,2,2,2,2,2};
     ASSERT_EQ(desc.initialValues.size(), sizeof(expectedValues));
     uint32_t* floatData = reinterpret_cast<uint32_t*>(desc.initialValues.data());
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         EXPECT_EQ(floatData[i], expectedValues[i]);
     }
@@ -1738,7 +1742,7 @@ TEST(ParseModelResourceDesc, BufferSequenceInitializer)
     constexpr float expectedValues[] = {3,5,7,9,11};
     ASSERT_EQ(desc.initialValues.size(), sizeof(expectedValues));
     float* floatData = reinterpret_cast<float*>(desc.initialValues.data());
-    for (size_t i = 0; i < ARRAYSIZE(expectedValues); i++)
+    for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         EXPECT_EQ(floatData[i], expectedValues[i]);
     }

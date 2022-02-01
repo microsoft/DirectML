@@ -5,7 +5,20 @@
 
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
-    cxxopts::Options options(PROJECT_NAME, fmt::format("{} version {}", PROJECT_NAME, PROJECT_VER));
+        auto banner = fmt::format(R"({} version {}
+  DirectML   : {}
+  D3D12      : {}
+  DXCompiler : {}
+  PIX        : {}
+)",
+        c_projectName, 
+        c_projectVersion,
+        c_directmlConfig,
+        c_d3d12Config,
+        c_dxcompilerConfig,
+        c_pixConfig);
+    
+    cxxopts::Options options(c_projectName, banner);
     options.add_options()
         (
             "m,model", 
@@ -47,6 +60,17 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Use a direct queue/lists (default is a compute queue/lists)", 
             cxxopts::value<bool>()
         )
+        // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
+        // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
+        // but precompilation requires the root signature to be in the HLSL source itself; to allow use of the
+        // DxDispatch-generated root signature we have to disable precompilation by defining `__XBOX_DISABLE_PRECOMPILE`
+        // for each DXC invocation. The `xbox_allow_precompile` switch allows users to opt out of this behavior
+        // and instead manually write root signatures in the HLSL source.
+        (
+            "xbox_allow_precompile",
+            "Disables automatically defining __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox",
+            cxxopts::value<bool>()
+            )
         ;
     
     options.positional_help("<PATH_TO_MODEL_JSON>");
@@ -88,6 +112,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("direct_queue") && result["direct_queue"].as<bool>()) 
     { 
         m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    }
+
+    if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())
+    {
+        m_forceDisablePrecompiledShadersOnXbox = false;
     }
 
     m_helpText = options.help();
