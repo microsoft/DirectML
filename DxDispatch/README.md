@@ -81,7 +81,7 @@ The default redistributable versions of components (e.g. nuget, archives):
 - **DX Compiler (archive)**: [December 2021 (v1.6.2112)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.6.2112)
 - **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.210818001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.210818001)
 
-Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=system` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
+Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
 
 # Building, Testing, and Installing
 
