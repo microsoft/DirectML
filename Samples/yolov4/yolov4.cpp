@@ -339,37 +339,50 @@ void Sample::GetModelPredictions(
     // values total.
     assert(anchors.size() == 6);
 
-    std::vector<float> tensorData = CopyReadbackHeap<float>(modelOutput.readback.Get());
-    TensorView<float> predTensor(tensorData, NchwExtents(modelOutput.desc.sizes));
-    float* pdata = tensorData.data();
+    // DirectML writes the final output data in NHWC, where the C channel contains the bounding box & probabilities 
+    // for each prediction.
+    const uint32_t predTensorN = modelOutput.desc.sizes[0];
+    const uint32_t predTensorH = modelOutput.desc.sizes[1];
+    const uint32_t predTensorW = modelOutput.desc.sizes[2];
+    const uint32_t predTensorC = modelOutput.desc.sizes[3];
 
     // YoloV4 predicts 3 boxes per scale, so we expect 3 separate predictions here
-    assert(predTensor.Sizes().n == 3);
-    
+    assert(predTensorN == 3);
+
     // Width should contain the bounding box x/y/w/h, a confidence score, the probability for max class, and the class index
-    assert(predTensor.Sizes().w == 7);
+    assert(predTensorC == 7);
+
+    struct PotentialPrediction
+    {
+        float bx;
+        float by;
+        float bw;
+        float bh;
+        float confidence;
+        float classMaxProbability;
+        float classIndexAsFloat;
+    };
+
+    // The output tensor should be large enough to hold the expected number of predictions.
+    assert(predTensorN * predTensorH * predTensorW * sizeof(PotentialPrediction) <= modelOutput.desc.totalTensorSizeInBytes);
+    std::vector<PotentialPrediction> tensorData = CopyReadbackHeap<PotentialPrediction>(modelOutput.readback.Get());
 
     // Scale the boxes to be relative to the original image size
     auto viewport = m_deviceResources->GetScreenViewport();
     float xScale = (float)viewport.Width / YoloV4Constants::c_inputWidth;
     float yScale = (float)viewport.Height / YoloV4Constants::c_inputHeight;
 
-    for (uint32_t n = 0; n < predTensor.Sizes().n; ++n)
+    uint32_t currentPredIndex = 0;
+    for (uint32_t n = 0; n < predTensorN; ++n)
     {
-        for (uint32_t h = 0; h < predTensor.Sizes().c; ++h)
+        for (uint32_t h = 0; h < predTensorH; ++h)
         {
-            for (uint32_t w = 0; w < predTensor.Sizes().h; ++w)
+            for (uint32_t w = 0; w < predTensorW; ++w)
             {
-                float bx = *pdata++;
-                float by = *pdata++;
-                float bw = *pdata++;
-                float bh = *pdata++;
-                float confidence = *pdata++;
-                float probability = *pdata++;
-                uint32_t classIndex = static_cast<uint32_t>(*pdata++);
+                const PotentialPrediction& currentPred = tensorData[currentPredIndex++];
 
                 // Discard boxes with low scores
-                float score = confidence * probability;
+                float score = currentPred.confidence * currentPred.classMaxProbability;
                 if (score < YoloV4Constants::c_scoreThreshold)
                 {
                     continue;
@@ -379,16 +392,16 @@ void Sample::GetModelPredictions(
 
                 // Apply xyScale. Need to apply offsets of half a grid cell here, to ensure the scaling is
                 // centered around zero.
-                bx = xyScale * (bx - 0.5f) + 0.5f;
-                by = xyScale * (by - 0.5f) + 0.5f;
+                float bx = xyScale * (currentPred.bx - 0.5f) + 0.5f;
+                float by = xyScale * (currentPred.by - 0.5f) + 0.5f;
 
                 // Transform the x/y from being relative to the grid cell, to being relative to the whole image
                 bx = (bx + (float)w) * stride;
                 by = (by + (float)h) * stride;
 
                 // Scale the w/h by the supplied anchors
-                bw *= anchors[n * 2];
-                bh *= anchors[n * 2 + 1];
+                float bw = currentPred.bw * anchors[n * 2];
+                float bh = currentPred.bh * anchors[n * 2 + 1];
 
                 // Convert x,y,w,h to xmin,ymin,xmax,ymax
                 float xmin = bx - bw / 2;
@@ -419,7 +432,7 @@ void Sample::GetModelPredictions(
                 pred.xmax = xmax;
                 pred.ymax = ymax;
                 pred.score = score;
-                pred.predictedClass = static_cast<uint32_t>(classIndex);
+                pred.predictedClass = static_cast<uint32_t>(currentPred.classIndexAsFloat);
                 out->push_back(pred);
             }
         }
