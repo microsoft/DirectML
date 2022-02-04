@@ -341,31 +341,38 @@ void Sample::GetModelPredictions(
 
     std::vector<float> tensorData = CopyReadbackHeap<float>(modelOutput.readback.Get());
     TensorView<float> predTensor(tensorData, NchwExtents(modelOutput.desc.sizes));
+    float* pdata = tensorData.data();
 
     // YoloV4 predicts 3 boxes per scale, so we expect 3 separate predictions here
     assert(predTensor.Sizes().n == 3);
     
-    // Channel should contain the bounding box x/y/w/h, a confidence score, followed by probabilities for each class
-    assert(predTensor.Sizes().c == 5 + YoloV4Constants::c_numClasses);
+    // Width should contain the bounding box x/y/w/h, a confidence score, the probability for max class, and the class index
+    assert(predTensor.Sizes().w == 7);
+
+    // Scale the boxes to be relative to the original image size
+    auto viewport = m_deviceResources->GetScreenViewport();
+    float xScale = (float)viewport.Width / YoloV4Constants::c_inputWidth;
+    float yScale = (float)viewport.Height / YoloV4Constants::c_inputHeight;
 
     for (uint32_t n = 0; n < predTensor.Sizes().n; ++n)
     {
-        for (uint32_t h = 0; h < predTensor.Sizes().h; ++h)
+        for (uint32_t h = 0; h < predTensor.Sizes().c; ++h)
         {
-            for (uint32_t w = 0; w < predTensor.Sizes().w; ++w)
+            for (uint32_t w = 0; w < predTensor.Sizes().h; ++w)
             {
-                float bx = predTensor(n, 0, h, w);
-                float by = predTensor(n, 1, h, w);
-                float bw = predTensor(n, 2, h, w);
-                float bh = predTensor(n, 3, h, w);
-                float confidence = predTensor(n, 4, h, w);
+                float bx = *pdata++;
+                float by = *pdata++;
+                float bw = *pdata++;
+                float bh = *pdata++;
+                float confidence = *pdata++;
+                float probability = *pdata++;
+                uint32_t classIndex = static_cast<uint32_t>(*pdata++);
 
-                // Copy the probabilities for each class
-                std::vector<float> probabilities;
-                probabilities.reserve(YoloV4Constants::c_numClasses);
-                for (uint32_t i = 5; i < predTensor.Sizes().c; ++i)
+                // Discard boxes with low scores
+                float score = confidence * probability;
+                if (score < YoloV4Constants::c_scoreThreshold)
                 {
-                    probabilities.push_back(predTensor(n, i, h, w));
+                    continue;
                 }
 
                 // We need to do some postprocessing on the raw values before we return them
@@ -389,12 +396,6 @@ void Sample::GetModelPredictions(
                 float xmax = bx + bw / 2;
                 float ymax = by + bh / 2;
 
-                auto viewport = m_deviceResources->GetScreenViewport();
-
-                // Scale the boxes to be relative to the original image size
-                float xScale = (float)viewport.Width / YoloV4Constants::c_inputWidth;
-                float yScale = (float)viewport.Height / YoloV4Constants::c_inputHeight;
-
                 xmin *= xScale;
                 ymin *= yScale;
                 xmax *= xScale;
@@ -408,15 +409,6 @@ void Sample::GetModelPredictions(
 
                 // Discard invalid boxes
                 if (xmax <= xmin || ymax <= ymin || IsInfOrNan({ xmin, ymin, xmax, ymax }))
-                {
-                    continue;
-                }
-
-                // Discard boxes with low scores
-                ptrdiff_t classIndex = std::max_element(probabilities.begin(), probabilities.end()) - probabilities.begin();
-                float probability = probabilities[classIndex];
-                float score = confidence * probability;
-                if (score < YoloV4Constants::c_scoreThreshold)
                 {
                     continue;
                 }

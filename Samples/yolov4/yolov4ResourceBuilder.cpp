@@ -296,21 +296,45 @@ dml::Expression DecodeModelOutput(dml::Expression output, uint32_t numClasses)
 
     // Split the new channel (of size 5+numClasses) into 4 different tensors with channels of 2, 2, 1+numClasses.
     // These represent the box xy, box wh, confidence+probabilities for each class.
-    std::vector<dml::Expression> split = dml::Split(output, 1, { 2, 2, 1 + numClasses });
-    assert(split.size() == 3);
+    std::vector<dml::Expression> split = dml::Split(output, 1, { 2, 2, 1, numClasses });
+    assert(split.size() == 4);
 
     // Convenience
     auto convXy = split[0];
     auto convWh = split[1];
-    auto convConfProb = split[2];
+    auto convConf = split[2];
+    auto convProb = split[3];
 
     // Apply final activations
     convXy = dml::ActivationSigmoid(convXy);
     convWh = dml::Exp(convWh);
-    convConfProb = dml::ActivationSigmoid(convConfProb);
+    convConf = dml::ActivationSigmoid(convConf);
+    convProb = dml::ActivationSigmoid(convProb);
 
+    // Compute the max and argmax of the probabilities.
+    auto probsMax = dml::Reduce(convProb, DML_REDUCE_FUNCTION_MAX, { 1 });
+    auto probsArgMax = dml::Cast(dml::Reduce(convProb, DML_REDUCE_FUNCTION_ARGMAX, { 1 }), DML_TENSOR_DATA_TYPE_FLOAT32); // so we can concat it
+
+    // Join the activated tensors.
     const uint32_t joinAxis = 1; // Join along channel
-    return dml::Join({ convXy, convWh, convConfProb }, joinAxis);
+    auto joined = dml::Join({ convXy, convWh, convConf, probsMax, probsArgMax }, joinAxis);
+
+    // Transpose from NCHW to NHWC for faster reading on the CPU.
+    dml::TensorDimensions sizes_nchw = joined.GetOutputDesc().sizes;
+    dml::TensorDimensions sizes_nhwc = {
+        sizes_nchw[0],
+        sizes_nchw[3],
+        sizes_nchw[2],
+        sizes_nchw[1]
+    };
+    dml::TensorStrides strides_nhwc = {
+        sizes_nchw[1] * sizes_nchw[2] * sizes_nchw[3],
+        sizes_nchw[3],
+        1,
+        sizes_nchw[2] * sizes_nchw[3]
+    };
+
+    return dml::Identity(dml::Reinterpret(joined, sizes_nhwc, strides_nhwc));
 }
 
 void Sample::CreateDirectMLResources()
