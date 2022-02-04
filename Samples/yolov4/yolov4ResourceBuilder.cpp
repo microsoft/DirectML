@@ -276,7 +276,7 @@ private:
     }
 };
 
-// Takes a tensor of size [1, 3 * (5 + numClasses), H, W] and returns a tensor of size [3, 5 + numClasses, H, W]. 
+// Takes a tensor of size [1, 3 * (5 + numClasses), H, W] and returns a tensor of size [3, H, W, 7]. 
 // Sigmoid activation is applied to all channels that represent probabilities (which are not all of them).
 dml::Expression DecodeModelOutput(dml::Expression output, uint32_t numClasses)
 {
