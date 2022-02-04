@@ -360,7 +360,7 @@ void Sample::GetModelPredictions(
         float bh;
         float confidence;
         float classMaxProbability;
-        float classIndexAsFloat;
+        uint32_t classIndex;
     };
 
     // The output tensor should be large enough to hold the expected number of predictions.
@@ -432,7 +432,7 @@ void Sample::GetModelPredictions(
                 pred.xmax = xmax;
                 pred.ymax = ymax;
                 pred.score = score;
-                pred.predictedClass = static_cast<uint32_t>(currentPred.classIndexAsFloat);
+                pred.predictedClass = currentPred.classIndex;
                 out->push_back(pred);
             }
         }

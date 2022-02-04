@@ -313,10 +313,10 @@ dml::Expression DecodeModelOutput(dml::Expression output, uint32_t numClasses)
     convProb = dml::ActivationSigmoid(convProb);
 
     // Compute the max and argmax of the probabilities. The argmax outputs UINT32 indices which
-    // are cast to float simply so they can be joined into the same output tensor.
+    // are reinterpreted as float so they can be joined into the same output tensor.
     auto convProbMax = dml::Reduce(convProb, DML_REDUCE_FUNCTION_MAX, { channelDim });
     auto convProbArgMax = dml::Reduce(convProb, DML_REDUCE_FUNCTION_ARGMAX, { channelDim });
-    convProbArgMax = dml::Cast(convProbArgMax, DML_TENSOR_DATA_TYPE_FLOAT32);
+    convProbArgMax = dml::Reinterpret(convProbArgMax, DML_TENSOR_DATA_TYPE_FLOAT32);
 
     // Join the tensors along channel dimension.
     auto joined = dml::Join({ convXy, convWh, convConf, convProbMax, convProbArgMax }, channelDim);
