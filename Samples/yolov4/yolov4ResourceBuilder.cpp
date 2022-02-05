@@ -276,7 +276,7 @@ private:
     }
 };
 
-// Takes a tensor of size [1, 3 * (5 + numClasses), H, W] and returns a tensor of size [3, 5 + numClasses, H, W]. 
+// Takes a tensor of size [1, 3 * (5 + numClasses), H, W] and returns a tensor of size [3, H, W, 7]. 
 // Sigmoid activation is applied to all channels that represent probabilities (which are not all of them).
 dml::Expression DecodeModelOutput(dml::Expression output, uint32_t numClasses)
 {
@@ -294,23 +294,38 @@ dml::Expression DecodeModelOutput(dml::Expression output, uint32_t numClasses)
     // Since this doesn't transform the data any, this can be accomplished with a simple reinterpret.
     output = dml::Reinterpret(output, { 3, numClasses + 5, outputSizes[2], outputSizes[3] }, dml::NullOpt);
 
-    // Split the new channel (of size 5+numClasses) into 4 different tensors with channels of 2, 2, 1+numClasses.
-    // These represent the box xy, box wh, confidence+probabilities for each class.
-    std::vector<dml::Expression> split = dml::Split(output, 1, { 2, 2, 1 + numClasses });
-    assert(split.size() == 3);
+    // Split the new channel (of size 5+numClasses) into 4 different tensors with channels of 2, 2, 1, numClasses.
+    // These represent the box xy, box wh, confidence, and probabilities for each class.
+    const uint32_t channelDim = 1;
+    std::vector<dml::Expression> split = dml::Split(output, channelDim, { 2, 2, 1, numClasses });
+    assert(split.size() == 4);
 
     // Convenience
     auto convXy = split[0];
     auto convWh = split[1];
-    auto convConfProb = split[2];
+    auto convConf = split[2];
+    auto convProb = split[3];
 
     // Apply final activations
     convXy = dml::ActivationSigmoid(convXy);
     convWh = dml::Exp(convWh);
-    convConfProb = dml::ActivationSigmoid(convConfProb);
+    convConf = dml::ActivationSigmoid(convConf);
+    convProb = dml::ActivationSigmoid(convProb);
 
-    const uint32_t joinAxis = 1; // Join along channel
-    return dml::Join({ convXy, convWh, convConfProb }, joinAxis);
+    // Compute the max and argmax of the probabilities. The argmax outputs UINT32 indices which
+    // are reinterpreted as float so they can be joined into the same output tensor.
+    auto convProbMax = dml::Reduce(convProb, DML_REDUCE_FUNCTION_MAX, { channelDim });
+    auto convProbArgMax = dml::Reduce(convProb, DML_REDUCE_FUNCTION_ARGMAX, { channelDim });
+    convProbArgMax = dml::Reinterpret(convProbArgMax, DML_TENSOR_DATA_TYPE_FLOAT32);
+
+    // Join the tensors along channel dimension.
+    auto joined = dml::Join({ convXy, convWh, convConf, convProbMax, convProbArgMax }, channelDim);
+
+    // Transpose from NCHW to NHWC for faster reading on the CPU (converts output from SoA to AoS).
+    dml::TensorDimensions sizesNchw = joined.GetOutputDesc().sizes;
+    dml::TensorDimensions sizesNhwc = { sizesNchw[0], sizesNchw[3], sizesNchw[2], sizesNchw[1] };
+    dml::TensorStrides stridesNhwc = { sizesNchw[1] * sizesNchw[2] * sizesNchw[3], sizesNchw[3], 1, sizesNchw[2] * sizesNchw[3] };
+    return dml::Identity(dml::Reinterpret(joined, sizesNhwc, stridesNhwc));
 }
 
 void Sample::CreateDirectMLResources()
