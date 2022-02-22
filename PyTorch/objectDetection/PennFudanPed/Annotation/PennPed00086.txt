@@ -1,0 +1,33 @@
+# Compatible with PASCAL Annotation Version 1.00
+Image filename : "PennFudanPed/PNGImages/PennPed00086.png"
+Image size (X x Y x C) : 474 x 354 x 3
+Database : "The Penn-Fudan-Pedestrian Database"
+Objects with ground truth : 5 { "PASpersonStanding" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" }
+# Note there may be some objects not included in the ground truth list for they are severe-occluded
+# or have very small size.
+# Top left pixel co-ordinates : (1, 1)
+# Details for pedestrian 1 ("PASpersonStanding")
+Original label for object 1 "PASpersonStanding" : "PennFudanPed"
+Bounding box for object 1 "PASpersonStanding" (Xmin, Ymin) - (Xmax, Ymax) : (8, 33) - (109, 253)
+Pixel mask for object 1 "PASpersonStanding" : "PennFudanPed/PedMasks/PennPed00086_mask.png"
+
+# Details for pedestrian 2 ("PASpersonWalking")
+Original label for object 2 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 2 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (208, 49) - (306, 318)
+Pixel mask for object 2 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00086_mask.png"
+
+# Details for pedestrian 3 ("PASpersonWalking")
+Original label for object 3 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 3 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (345, 32) - (457, 325)
+Pixel mask for object 3 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00086_mask.png"
+
+# Details for pedestrian 4 ("PASpersonWalking")
+Original label for object 4 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 4 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (73, 163) - (180, 353)
+Pixel mask for object 4 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00086_mask.png"
+
+# Details for pedestrian 5 ("PASpersonWalking")
+Original label for object 5 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 5 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (113, 65) - (164, 197)
+Pixel mask for object 5 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00086_mask.png"
+

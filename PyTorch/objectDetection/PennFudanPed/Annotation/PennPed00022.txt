@@ -1,0 +1,33 @@
+# Compatible with PASCAL Annotation Version 1.00
+Image filename : "PennFudanPed/PNGImages/PennPed00022.png"
+Image size (X x Y x C) : 925 x 486 x 3
+Database : "The Penn-Fudan-Pedestrian Database"
+Objects with ground truth : 5 { "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" }
+# Note there may be some objects not included in the ground truth list for they are severe-occluded
+# or have very small size.
+# Top left pixel co-ordinates : (1, 1)
+# Details for pedestrian 1 ("PASpersonWalking")
+Original label for object 1 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 1 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (30, 118) - (167, 413)
+Pixel mask for object 1 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00022_mask.png"
+
+# Details for pedestrian 2 ("PASpersonWalking")
+Original label for object 2 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 2 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (120, 149) - (257, 413)
+Pixel mask for object 2 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00022_mask.png"
+
+# Details for pedestrian 3 ("PASpersonWalking")
+Original label for object 3 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 3 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (216, 152) - (354, 416)
+Pixel mask for object 3 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00022_mask.png"
+
+# Details for pedestrian 4 ("PASpersonWalking")
+Original label for object 4 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 4 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (705, 129) - (839, 390)
+Pixel mask for object 4 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00022_mask.png"
+
+# Details for pedestrian 5 ("PASpersonWalking")
+Original label for object 5 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 5 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (345, 162) - (424, 342)
+Pixel mask for object 5 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00022_mask.png"
+

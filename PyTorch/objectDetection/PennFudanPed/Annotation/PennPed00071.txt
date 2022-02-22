@@ -1,0 +1,38 @@
+# Compatible with PASCAL Annotation Version 1.00
+Image filename : "PennFudanPed/PNGImages/PennPed00071.png"
+Image size (X x Y x C) : 767 x 379 x 3
+Database : "The Penn-Fudan-Pedestrian Database"
+Objects with ground truth : 6 { "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" "PASpersonWalking" }
+# Note there may be some objects not included in the ground truth list for they are severe-occluded
+# or have very small size.
+# Top left pixel co-ordinates : (1, 1)
+# Details for pedestrian 1 ("PASpersonWalking")
+Original label for object 1 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 1 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (49, 19) - (171, 361)
+Pixel mask for object 1 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+
+# Details for pedestrian 2 ("PASpersonWalking")
+Original label for object 2 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 2 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (292, 44) - (386, 305)
+Pixel mask for object 2 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+
+# Details for pedestrian 3 ("PASpersonWalking")
+Original label for object 3 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 3 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (476, 25) - (567, 302)
+Pixel mask for object 3 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+
+# Details for pedestrian 4 ("PASpersonWalking")
+Original label for object 4 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 4 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (600, 13) - (716, 306)
+Pixel mask for object 4 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+
+# Details for pedestrian 5 ("PASpersonWalking")
+Original label for object 5 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 5 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (567, 53) - (612, 180)
+Pixel mask for object 5 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+
+# Details for pedestrian 6 ("PASpersonWalking")
+Original label for object 6 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 6 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (709, 53) - (744, 174)
+Pixel mask for object 6 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00071_mask.png"
+

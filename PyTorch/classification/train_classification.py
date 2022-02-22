@@ -70,14 +70,17 @@ def train(dataloader, model, device, loss, learning_rate, momentum, weight_decay
             break;
         else:
             # Compute loss and perform backpropagation
-            batch_loss = loss(model(X), y)
-            # batch_loss = model(X).sum()
-            if torch.isinf(batch_loss.to("cpu")) or torch.isnan(batch_loss.to("cpu")):
-                print (model(X).to("cpu"))
-                print (y.to("cpu"))
-                print (X.shape)
-                print (y.shape)
-                exit()
+            if pred_num==2:
+                pred, _ = model(X)
+            elif pred_num==3:
+                pred, _, _ = model(X)
+            else:
+                pred = model(X)
+
+                # for segmentation models
+                # pred = model(X)['out']
+                # pred = pred.max(2).values.max(2).values
+            batch_loss = loss(pred, y)
             batch_loss.backward()
 
             if batch % optimize_after_batches == 0:
@@ -148,7 +151,7 @@ def main(path, batch_size, epochs, learning_rate,
     training_dataloader = dataloader_classification.create_training_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
     testing_dataloader = dataloader_classification.create_testing_dataloader(path, batch_size, input_size=299 if model_str == 'inception_v3' else 224)
 
-    trace_des_path = "E:\\xianz\\sheilk\\DirectML\\PyTorch\\classification\\trace\\train_" + model_str + "_" + device + "_trace.json"
+    trace_des_path = "E:\\xianz\\DirectML\\PyTorch\\classification\\trace\\train_" + model_str + "_" + device + "_trace.json"
     # Create the device
     device = select_device(device)
 

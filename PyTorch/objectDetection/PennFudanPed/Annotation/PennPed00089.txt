@@ -1,0 +1,18 @@
+# Compatible with PASCAL Annotation Version 1.00
+Image filename : "PennFudanPed/PNGImages/PennPed00089.png"
+Image size (X x Y x C) : 428 x 317 x 3
+Database : "The Penn-Fudan-Pedestrian Database"
+Objects with ground truth : 2 { "PASpersonStanding" "PASpersonWalking" }
+# Note there may be some objects not included in the ground truth list for they are severe-occluded
+# or have very small size.
+# Top left pixel co-ordinates : (1, 1)
+# Details for pedestrian 1 ("PASpersonStanding")
+Original label for object 1 "PASpersonStanding" : "PennFudanPed"
+Bounding box for object 1 "PASpersonStanding" (Xmin, Ymin) - (Xmax, Ymax) : (85, 25) - (165, 294)
+Pixel mask for object 1 "PASpersonStanding" : "PennFudanPed/PedMasks/PennPed00089_mask.png"
+
+# Details for pedestrian 2 ("PASpersonWalking")
+Original label for object 2 "PASpersonWalking" : "PennFudanPed"
+Bounding box for object 2 "PASpersonWalking" (Xmin, Ymin) - (Xmax, Ymax) : (140, 6) - (297, 309)
+Pixel mask for object 2 "PASpersonWalking" : "PennFudanPed/PedMasks/PennPed00089_mask.png"
+
