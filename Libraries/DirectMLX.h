@@ -3489,7 +3489,7 @@ namespace dml
         Expression count;
         Expression coordinates;
     };
-    inline NonZeroCoordinatesOutputs NonZeroCoordinates(Expression input)
+    inline NonZeroCoordinatesOutputs NonZeroCoordinates(Expression input, Optional<uint32_t> outputWidth = {})
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
@@ -3503,7 +3503,17 @@ namespace dml
             totalElements *= inputTensorSizes[i];
         }
         TensorDesc outputCountTensor(DML_TENSOR_DATA_TYPE_UINT32, outputCountSizes, builder->GetTensorPolicy());
-        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {totalElements, dimensionCount}, builder->GetTensorPolicy());
+
+        if (!outputWidth)
+        {
+            outputWidth = dimensionCount;
+        }
+        else
+        {
+            assert(*outputWidth <= dimensionCount);
+        }
+
+        TensorDesc outputCoordinatesTensor(DML_TENSOR_DATA_TYPE_UINT32, {totalElements, *outputWidth}, builder->GetTensorPolicy());
 
         DML_NONZERO_COORDINATES_OPERATOR_DESC desc = {};
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
