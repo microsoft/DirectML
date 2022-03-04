@@ -58,22 +58,22 @@ from PennFudanDataset import *
 # input(f"pid: {os.getpid()}")
 
 def get_instance_segmentation_model(num_classes, model_str='maskrcnn'):
-    # if model_str == 'maskrcnn':
-    #   # load an instance segmentation model pre-trained on COCO
-    #   model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+    if model_str == 'maskrcnn':
+      # load an instance segmentation model pre-trained on COCO
+      model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
 
-    #   # get the number of input features for the classifier
-    #   in_features = model.roi_heads.box_predictor.cls_score.in_features
-    #   # replace the pre-trained head with a new one
-    #   model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+      # get the number of input features for the classifier
+      in_features = model.roi_heads.box_predictor.cls_score.in_features
+      # replace the pre-trained head with a new one
+      model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
-    #   # now get the number of input features for the mask classifier
-    #   in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
-    #   hidden_layer = 256
-    #   # and replace the mask predictor with a new one
-    #   model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask,
-    #                                                     hidden_layer,
-    #                                                     num_classes)
+      # now get the number of input features for the mask classifier
+      in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
+      hidden_layer = 256
+      # and replace the mask predictor with a new one
+      model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask,
+                                                        hidden_layer,
+                                                        num_classes)
     if model_str == 'fastrcnn':
       # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
       model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(pretrained=True)
@@ -130,9 +130,9 @@ print (device)
 num_classes = 2
 
 # get the model using our helper function
-model = get_instance_segmentation_model(num_classes, 'fastrcnn')
+# model = get_instance_segmentation_model(num_classes, 'maskrcnn')
 
-# model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
+model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
 
 # move model to the right device
 model.to(device)
@@ -159,30 +159,28 @@ if __name__ == '__main__':
       model.train()
 
       for batch, (images, targets) in enumerate(data_loader):
-          images = list(image.to(device) for image in images)
-          targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-          for t in targets:
-            for k,v in t.items():
-              print (k)
-              print (v.to("cpu"))
+        #   images = list(image.to(device) for image in images)
+        #   targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        #   for t in targets:
+        #     for k,v in t.items():
+        #       print (k)
+        #       print (v.to("cpu"))
 
 
-          # images, boxes = torch.rand(1, 3, 600, 1200).to(device), torch.rand(1, 11, 4).sort().values.to(device)
-          # labels = torch.randint(1, 91, (1, 11)).to(device)
-          # images = list(image for image in images)
-          # targets = []
+          images, boxes = torch.rand(1, 3, 600, 1200).to(device), torch.rand(1, 11, 4).sort().values.to(device)
+          labels = torch.randint(1, 91, (1, 11)).to(device)
+          images = list(image for image in images)
+          targets = []
 
-          # for i in range(len(images)):
-          #   d = {}
-          #   d['boxes'] = boxes[i]
-          #   d['labels'] = labels[i]
-          #   targets.append(d)
+          for i in range(len(images)):
+            d = {}
+            d['boxes'] = boxes[i]
+            d['labels'] = labels[i]
+            targets.append(d)
 
           with profiler.profile(record_shapes=True, with_stack=True, profile_memory=True) as prof:
               with profiler.record_function("model_inference"):
                 loss_dict = model(images, targets)
-
-                # loss_dict = model(images, targets)
 
                 losses = sum(loss for loss in loss_dict.values())
 
@@ -197,6 +195,7 @@ if __name__ == '__main__':
                 #     print(loss_dict_reduced)
                 #     sys.exit(1)
 
+                print ("start backward!!")
                 optimizer.zero_grad()
                 losses.backward()
                 optimizer.step()
