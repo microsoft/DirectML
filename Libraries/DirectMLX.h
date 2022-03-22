@@ -23,6 +23,8 @@
 #include <type_traits>
 #include <functional>
 
+#include <wrl/client.h> // For Microsoft::WRL::ComPtr
+
 #if DMLX_USE_ABSEIL
     #if __cpp_lib_span
         #include <span>
@@ -624,6 +626,11 @@ namespace dml
         // For internal use only
         detail::NodeOutput* Impl() const { return m_nodeOutput; }
 
+        explicit operator bool() const
+        {
+            return m_nodeOutput != nullptr;
+        }
+
     private:
         detail::NodeOutput* m_nodeOutput; // weak; this is owned by the GraphBuilder
     };
@@ -646,7 +653,8 @@ namespace dml
 
         Microsoft::WRL::ComPtr<IDMLCompiledOperator> Compile(
             DML_EXECUTION_FLAGS flags,
-            Span<const Expression> outputs) const
+            Span<const Expression> outputs,
+            uint32_t inputCount = 0) const
         {
             detail::GraphDesc graph = m_graphBuilder->GetGraphDesc(outputs);
 
@@ -675,7 +683,7 @@ namespace dml
             }
 
             DML_GRAPH_DESC graphDesc = {};
-            graphDesc.InputCount = graph.inputCount;
+            graphDesc.InputCount = inputCount ? inputCount : graph.inputCount;
             graphDesc.OutputCount = graph.outputCount;
             graphDesc.NodeCount = static_cast<UINT>(graphNodes.size());
             graphDesc.Nodes = graphNodes.data();
@@ -1334,7 +1342,7 @@ namespace dml
         return output;
     }
 
-    inline Expression QuantizeLinear(Expression input, Expression scale, Expression zeroPoint)
+    inline Expression QuantizeLinear(Expression input, Expression scale, Expression zeroPoint, DML_TENSOR_DATA_TYPE outputDataType = DML_TENSOR_DATA_TYPE_UINT8)
     {
         assert(detail::HasSameOwner({ input, scale, zeroPoint }));
 
@@ -1343,7 +1351,7 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         TensorDesc scaleTensor = scale.Impl()->GetOutputDesc();
         TensorDesc zeroPointTensor = zeroPoint.Impl()->GetOutputDesc();
-        TensorDesc outputTensor(DML_TENSOR_DATA_TYPE_UINT8, inputTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputTensor(outputDataType, inputTensor.sizes, builder->GetTensorPolicy());
 
         DML_ELEMENT_WISE_QUANTIZE_LINEAR_OPERATOR_DESC desc = {};
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
@@ -2083,14 +2091,14 @@ namespace dml
         // Calculate output size, if not explicitly provided
         if (outputSizes.empty())
         {
-            outputSizes.push_back(inputTensor.sizes[0]); // N
-            outputSizes.push_back(inputTensor.sizes[1]); // C
-            for (size_t i = 0; i < windowSizes.size(); ++i)
-            {
-                uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
-                uint32_t outputSize = (paddedInputSize - windowSizes[i]) / strides[i] + 1;
-                outputSizes.push_back(outputSize);
-            }
+        outputSizes.push_back(inputTensor.sizes[0]); // N
+        outputSizes.push_back(inputTensor.sizes[1]); // C
+        for (size_t i = 0; i < windowSizes.size(); ++i)
+        {
+            uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
+            uint32_t outputSize = (paddedInputSize - windowSizes[i]) / strides[i] + 1;
+            outputSizes.push_back(outputSize);
+        }
         }
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
@@ -2163,15 +2171,15 @@ namespace dml
         // Calculate output size, if not explicitly provided
         if (outputSizes.empty())
         {
-            outputSizes.push_back(inputTensor.sizes[0]); // N
-            outputSizes.push_back(inputTensor.sizes[1]); // C
-            for (size_t i = 0; i < windowSize.size(); i++)
-            {
-                uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
-                uint32_t dilatedWindowSize = 1 + (windowSize[i] - 1) * dilations[i];
-                uint32_t outputSize = (dilatedWindowSize >= paddedInputSize) ? 1 : (paddedInputSize - dilatedWindowSize) / strides[i] + 1;
-                outputSizes.push_back(outputSize);
-            }
+        outputSizes.push_back(inputTensor.sizes[0]); // N
+        outputSizes.push_back(inputTensor.sizes[1]); // C
+        for (size_t i = 0; i < windowSize.size(); i++)
+        {
+            uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
+            uint32_t dilatedWindowSize = 1 + (windowSize[i] - 1) * dilations[i];
+            uint32_t outputSize = (dilatedWindowSize >= paddedInputSize) ? 1 : (paddedInputSize - dilatedWindowSize) / strides[i] + 1;
+            outputSizes.push_back(outputSize);
+        }
         }
 
         TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
