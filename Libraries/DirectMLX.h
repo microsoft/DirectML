@@ -658,6 +658,10 @@ namespace dml
         {
             detail::GraphDesc graph = m_graphBuilder->GetGraphDesc(outputs);
 
+            // If supplied, the requested number of inputs to the compiled operator can be larger than the actual
+            // number of input nodes on the graph (e.g. in the case of unused empty inputs), but never smaller.
+            assert(inputCount == 0 || inputCount >= graph.inputCount);
+
             std::vector<DML_GRAPH_NODE_DESC> graphNodes(graph.nodes.size());
             for (size_t i = 0; i < graphNodes.size(); ++i)
             {
