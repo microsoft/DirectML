@@ -2091,14 +2091,14 @@ namespace dml
         // Calculate output size, if not explicitly provided
         if (outputSizes.empty())
         {
-        outputSizes.push_back(inputTensor.sizes[0]); // N
-        outputSizes.push_back(inputTensor.sizes[1]); // C
-        for (size_t i = 0; i < windowSizes.size(); ++i)
-        {
-            uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
-            uint32_t outputSize = (paddedInputSize - windowSizes[i]) / strides[i] + 1;
-            outputSizes.push_back(outputSize);
-        }
+            outputSizes.push_back(inputTensor.sizes[0]); // N
+            outputSizes.push_back(inputTensor.sizes[1]); // C
+            for (size_t i = 0; i < windowSizes.size(); ++i)
+            {
+                uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
+                uint32_t outputSize = (paddedInputSize - windowSizes[i]) / strides[i] + 1;
+                outputSizes.push_back(outputSize);
+            }
         }
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
@@ -2171,15 +2171,15 @@ namespace dml
         // Calculate output size, if not explicitly provided
         if (outputSizes.empty())
         {
-        outputSizes.push_back(inputTensor.sizes[0]); // N
-        outputSizes.push_back(inputTensor.sizes[1]); // C
-        for (size_t i = 0; i < windowSize.size(); i++)
-        {
-            uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
-            uint32_t dilatedWindowSize = 1 + (windowSize[i] - 1) * dilations[i];
-            uint32_t outputSize = (dilatedWindowSize >= paddedInputSize) ? 1 : (paddedInputSize - dilatedWindowSize) / strides[i] + 1;
-            outputSizes.push_back(outputSize);
-        }
+            outputSizes.push_back(inputTensor.sizes[0]); // N
+            outputSizes.push_back(inputTensor.sizes[1]); // C
+            for (size_t i = 0; i < windowSize.size(); i++)
+            {
+                uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
+                uint32_t dilatedWindowSize = 1 + (windowSize[i] - 1) * dilations[i];
+                uint32_t outputSize = (dilatedWindowSize >= paddedInputSize) ? 1 : (paddedInputSize - dilatedWindowSize) / strides[i] + 1;
+                outputSizes.push_back(outputSize);
+            }
         }
 
         TensorDesc outputTensor(inputTensor.dataType, outputSizes, builder->GetTensorPolicy());
