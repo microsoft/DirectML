@@ -3173,19 +3173,15 @@ namespace dml
         desc.Direction = direction;
         desc.LinearBeforeReset = linearBeforeReset;
 
-        SmallVector<detail::NodeOutput*, 6> inputs = { input.Impl(), weight.Impl(), recurrence.Impl() };
-        if (bias)
+        detail::NodeOutput* const inputs[] =
         {
-            inputs.push_back(bias->Impl());
-        }
-        if (hiddenInit)
-        {
-            inputs.push_back(hiddenInit->Impl());
-        }
-        if (sequenceLengths)
-        {
-            inputs.push_back(sequenceLengths->Impl());
-        }
+            input.Impl(),
+            weight.Impl(),
+            recurrence.Impl(),
+            bias ? bias->Impl() : nullptr,
+            hiddenInit ? hiddenInit->Impl() : nullptr,
+            sequenceLengths ? sequenceLengths->Impl() : nullptr
+        };
 
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_GRU, &desc, inputs);
 
