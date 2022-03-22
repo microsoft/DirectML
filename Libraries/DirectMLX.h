@@ -1846,12 +1846,7 @@ namespace dml
         desc.GroupCount = groupCount;
         desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
 
-        SmallVector<detail::NodeOutput*, 3> inputs = { input.Impl(), filter.Impl() };
-        if (bias)
-        {
-            inputs.push_back(bias->Impl());
-        }
-
+        detail::NodeOutput* const inputs[] = { input.Impl(), filter.Impl(), bias ? bias->Impl() : nullptr };
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CONVOLUTION, &desc, inputs);
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
@@ -1964,12 +1959,7 @@ namespace dml
         desc.Beta = beta;
         desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
 
-        SmallVector<detail::NodeOutput*, 3> inputs = { a.Impl(), b.Impl() };
-        if (c)
-        {
-            inputs.push_back(c->Impl());
-        }
-
+        detail::NodeOutput* const inputs[] = { a.Impl(), b.Impl(), c ? c->Impl() : nullptr };
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_GEMM, &desc, inputs);
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
@@ -2941,13 +2931,7 @@ namespace dml
         desc.Epsilon = epsilon;
         desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
 
-        SmallVector<detail::NodeOutput*, 4> inputs = { input.Impl(), scale.Impl(), bias.Impl() };
-
-        if (fusedAdd)
-        {
-            inputs.push_back(fusedAdd->Impl());
-        }
-
+        detail::NodeOutput* const inputs[] = { input.Impl(), scale.Impl(), bias.Impl(), fusedAdd ? fusedAdd->Impl() : nullptr };
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_BATCH_NORMALIZATION_TRAINING, &desc, inputs);
         detail::NodeOutput* output         = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
         detail::NodeOutput* outputMean     = builder->CreateNodeOutput(node, 1, std::move(outputMeanTensor));
