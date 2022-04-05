@@ -4,7 +4,6 @@ import torch
 import torch.utils.data
 from PIL import Image
 
-
 class PennFudanDataset(torch.utils.data.Dataset):
     def __init__(self, root, transforms=None):
         self.root = root
@@ -121,8 +120,8 @@ if __name__ == "__main__":
 
     # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True).to(args.device)
     # use our dataset and defined transformations
-    dataset = PennFudanDataset('PennFudanPed', get_transform(train=True))
-    dataset_test = PennFudanDataset('PennFudanPed', get_transform(train=False))
+    dataset = PennFudanDataset('..\data\PennFudanPed', get_transform(train=True))
+    dataset_test = PennFudanDataset('..\data\PennFudanPed', get_transform(train=False))
 
     # split the dataset in train and test set
     torch.manual_seed(1)
