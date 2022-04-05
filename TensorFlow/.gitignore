@@ -4,3 +4,4 @@ __pycache__
 traces/
 !/op_report/data/traces
 *.xlsx
+saved_models/

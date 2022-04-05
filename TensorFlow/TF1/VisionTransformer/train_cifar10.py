@@ -82,7 +82,7 @@ if __name__ == "__main__":
         ],
     )
     
-file_path= './saved_models/Model_Cifar100'
+file_path= './saved_models/Model_Cifar10'
 checkpoint = ModelCheckpoint(file_path, monitor='val_Top-1-accuracy', verbose=1, save_best_only=True, mode='max')
 reduce_on_plateau = ReduceLROnPlateau(monitor="val_Top-1-accuracy", mode="max", factor=0.5, patience=PATIENCE, verbose=1,min_lr=0.00002)
 callbacks_list = [checkpoint, reduce_on_plateau]

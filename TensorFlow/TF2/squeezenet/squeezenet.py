@@ -15,7 +15,7 @@ tf.random.set_seed(1234)
 parser = argparse.ArgumentParser(description='Squeezenet model for TF2')
 
 parser.add_argument('--mode', type=str, default='train', help='Can be "train" or "test"')
-parser.add_argument('--checkpoint_dir', type=str, default='./tf2', help='Directory to store checkpoints during training')
+parser.add_argument('--checkpoint_dir', type=str, default='./', help='Directory to store checkpoints during training')
 parser.add_argument('--restore_checkpoint', action='store_true', help='Use this flag if you want to resume training from a previous checkpoint')
 parser.add_argument('--batch_size', type=int, default=32, help='Number of images per batch fed through network')
 parser.add_argument('--num_epochs', type=int, default=100, help='Number of passes through training data before stopping')
@@ -97,6 +97,7 @@ class SqueezeNet_CIFAR(Model):
         out = self.model(inputs)
         return out
 
+# Download and preprocess CIFAR-10 dataset
 def get_cifar10_data():
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
     x_train = x_train / 255.0
@@ -134,6 +135,7 @@ def main():
                 cbs = []
                 if args.tb_profile:
                     profile_dir = os.path.join(args.checkpoint_dir, "train/")
+                    # Previously-existing profiler directory will be deleted
                     if os.path.exists(profile_dir):
                         shutil.rmtree(profile_dir)
                     os.makedirs(profile_dir)

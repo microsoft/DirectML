@@ -130,5 +130,7 @@ class VisionTransformer(tf.keras.Model):
             x = transformer_encoder_block(x, training)
 
         x = self.layernorm(x)
-        res = self.classifier(x[:, 0])
+        x = self.classifier(x[:, 0])
+        x = self.flatten(x)
+        res = self.dropout(x)
         return res

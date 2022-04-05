@@ -11,7 +11,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 if __name__ == "__main__":
     
     #You can uncomment the below line to view DirectML Device Placement logs for the model's operators
-    tf.debugging.set_log_device_placement(True) 
+    # tf.debugging.set_log_device_placement(True) 
 
     IMAGE_SIZE= 32
     NUMBER_OF_CLASSES= 100
