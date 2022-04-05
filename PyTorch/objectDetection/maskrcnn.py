@@ -115,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=str, default='dml', help='The device to use for training.')
     parser.add_argument('--batch_size', type=int, default=2, metavar='N', help='Batch size to train with.')
     parser.add_argument('--epochs', type=int, default=10, metavar='N', help='The number of epochs to train for.')
+    parser.add_argument('--trace', type=bool, default=False, help='Trace performance.')
 
     args = parser.parse_args()
 
