@@ -7,4 +7,5 @@ data/cifar-10-python
 data/PennFudanPed
 data/PennFudanPed.zip
 objectDetection/PennFudanPed
+classificatio/traces
 checkpoints
