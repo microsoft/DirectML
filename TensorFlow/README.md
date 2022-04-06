@@ -4,10 +4,19 @@ For detailed instructions on getting started with TensorFlow with DirectML, see 
 
 ## Samples
 
-Two sample models are included in this repo to help you get started. These samples include both inference and training scripts, and you can either train the models from scratch or use the supplied pre-trained weights.
+Three sample models are included in this repo to help you get started. These samples include both inference and training scripts, and you can either train the models from scratch or use the supplied pre-trained weights.
 
-* [squeezenet - a small image classification model](./squeezenet)
-* [yolov3 - real-time object detection model](./yolov3)
+For users of the TensorFlow-DirectML package forked from TF 1.15, the TF1 versions of the models can be found below.
+
+* [squeezenet - a small image classification model](./TF1/squeezenet)
+* [VisionTransformer - a transformer-based image classification model](./TF1/VisionTransformer)
+* [yolov3 - real-time object detection model](./TF1/yolov3)
+
+For users of the TensorFlow-DirectML plugin package on TF 2.9+, the TF2 versions of the models can be found below.
+
+* [squeezenet - a small image classification model](./TF2/squeezenet)
+* [VisionTransformer - a transformer-based image classification model](./TF2/VisionTransformer)
+* [yolov3 - real-time object detection model](./TF2/yolov3)
 
 ## External Links
 
