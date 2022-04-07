@@ -48,11 +48,11 @@ flags.DEFINE_integer('weights_num_classes', None, 'specify num class for `weight
 def setup_model():
     if FLAGS.tiny:
         model = YoloV3Tiny(FLAGS.size, training=True,
-                           classes=FLAGS.num_classes)
+                           classes=FLAGS.num_classes, batch_norm=False)
         anchors = yolo_tiny_anchors
         anchor_masks = yolo_tiny_anchor_masks
     else:
-        model = YoloV3(FLAGS.size, training=True, classes=FLAGS.num_classes)
+        model = YoloV3(FLAGS.size, training=True, classes=FLAGS.num_classes, batch_norm=False)
         anchors = yolo_anchors
         anchor_masks = yolo_anchor_masks
 
@@ -65,10 +65,10 @@ def setup_model():
         # reset top layers
         if FLAGS.tiny:
             model_pretrained = YoloV3Tiny(
-                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes)
+                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes, batch_norm=False)
         else:
             model_pretrained = YoloV3(
-                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes)
+                FLAGS.size, training=True, classes=FLAGS.weights_num_classes or FLAGS.num_classes, batch_norm=False)
         model_pretrained.load_weights(FLAGS.weights)
 
         if FLAGS.transfer == 'darknet':

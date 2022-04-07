@@ -11,8 +11,6 @@ cl = " ".join([
     "python train.py",
     "--dataset", os.path.join("data", "voc2012_train.tfrecord"),
     "--val_dataset", os.path.join("data", "voc2012_val.tfrecord"),
-    "--num_samples 5717",
-    "--num_val_samples 5823",
     "--classes", os.path.join("data", "voc2012.names"),
     "--num_classes 20",
     "--mode eager_tf",

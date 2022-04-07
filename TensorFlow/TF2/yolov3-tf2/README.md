@@ -39,7 +39,7 @@ python detect_video.py --video <path> --output <path> --weights ./checkpoints/yo
 python detect_video.py --video 0
 ```
 
-Press the `Q` key to close the output window and stop the script. Sample images and videos can be found under [`data`](./data).
+Sample images and videos can be found under [`data`](./data).
 
 ## Training
 

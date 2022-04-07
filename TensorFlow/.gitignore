@@ -1,4 +1,4 @@
-/squeezenet/data
+TF1/squeezenet/data
 .vscode
 __pycache__
 traces/
