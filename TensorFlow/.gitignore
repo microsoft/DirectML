@@ -1,6 +1,7 @@
-/squeezenet/data
+TF1/squeezenet/data
 .vscode
 __pycache__
 traces/
 !/op_report/data/traces
 *.xlsx
+saved_models/

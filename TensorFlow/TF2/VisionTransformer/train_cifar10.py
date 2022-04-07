@@ -1,5 +1,5 @@
 import os
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
@@ -12,9 +12,6 @@ if __name__ == "__main__":
     
     #You can uncomment the below line to view DirectML Device Placement logs for the model's operators
     #tf.debugging.set_log_device_placement(True) 
-    
-    tf.disable_v2_behavior()
-    tf.enable_eager_execution() 
 
     IMAGE_SIZE= 32
     NUMBER_OF_CLASSES= 10
@@ -48,7 +45,7 @@ if __name__ == "__main__":
         train_dataset= train_dataset.shuffle(10000, reshuffle_each_iteration= True)
         augmentations = [random_hue_saturation, random_zoom_crop, random_brightness_contrast, flip_horizontal,flip_horizontal, flip_vertical]
         for aug in augmentations:
-            train_dataset = train_dataset.map(lambda x, y: (tf.cond(tf.random_uniform([], 0, 1) > 0.86, lambda: aug(x), lambda: x), y), num_parallel_calls=AUTOTUNE)
+            train_dataset = train_dataset.map(lambda x, y: (tf.cond(tf.random.uniform([], 0, 1) > 0.86, lambda: aug(x), lambda: x), y), num_parallel_calls=AUTOTUNE)
            
         train_dataset= train_dataset.cache()
         train_dataset=train_dataset.batch(BATCH_SIZE)
@@ -82,7 +79,7 @@ if __name__ == "__main__":
         ],
     )
     
-file_path= './saved_models/Model_Cifar100'
+file_path= './saved_models/Model_Cifar10'
 checkpoint = ModelCheckpoint(file_path, monitor='val_Top-1-accuracy', verbose=1, save_best_only=True, mode='max')
 reduce_on_plateau = ReduceLROnPlateau(monitor="val_Top-1-accuracy", mode="max", factor=0.5, patience=PATIENCE, verbose=1,min_lr=0.00002)
 callbacks_list = [checkpoint, reduce_on_plateau]
