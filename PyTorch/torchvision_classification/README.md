@@ -20,17 +20,21 @@ pip install -r pytorch\torchvision_classification\requirements.txt
 After installing the PyTorch on DirectML package (see [GPU accelerated ML training](..\readme.md)), open a console to the `root` directory and run the setup script to download and convert data:
 
 ```
-python pytorch\data\cifar.py
+python pytorch\data\dataset.py
 ```
 
-Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
+Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset and PennFudanPed dataset. The output of running it should look similar to the following:
 
 ```
->python pytorch\data\cifar.py
-Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
-Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
-170499072it [00:32, 5250164.09it/s]
-Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python
+>python pytorch\data\dataset.py
+Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz
+Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz
+170499072it [00:17, 9709154.90it/s]
+Extracting E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data
+Downloading PennFundaPed dataset
+
+100% [........................................................................] 53723336 / 53723336
+Extracted PennFundaPed dataset
 ```
 
 ## Training
@@ -38,24 +42,9 @@ Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:
 A helper script exists to train classification models with default data, batch size, and so on:
 
 ```
-python pytorch\torchvision_classification\train.py --model resnet18
+cd pytorch\objectDetection\maskrcnn
+python maskrcnn.py
 ```
-
-model names from list below can be used to train:
-- resnet18
-- alexnet
-- vgg16
-- squeezenet1_0
-- densenet161
-- inception_v3
-- googlenet
-- shufflenet_v2_x1_0
-- mobilenet_v2
-- mobilenet_v3_large
-- mobilenet_v3_small
-- resnext50_32x4d
-- wide_resnet50_2
-- mnasnet1_0
 
 The first few lines of output should look similar to the following (exact numbers may change):
 ```
