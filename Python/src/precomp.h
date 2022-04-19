@@ -22,6 +22,7 @@
 
 // ToDo: dxgi isn't available in WSL.
 #include <dxgi1_5.h>
+#include <dxgi1_6.h>
 #include <dxgidebug.h>
 
 #include <initguid.h>
