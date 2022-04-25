@@ -141,7 +141,7 @@ if __name__ == "__main__":
         dataset_test, batch_size=1, shuffle=False, num_workers=4,
         collate_fn=utils.collate_fn)
     
-    device = torch.device("dml") if args.device=='dml' else  torch.device('cuda') if args.device=='cuda' else torch.device('cpu')
+    device = torch.device(args.device)
 
     # our dataset has two classes only - background and person
     num_classes = 2

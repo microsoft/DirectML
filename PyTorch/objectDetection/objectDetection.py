@@ -68,5 +68,5 @@ if __name__ == '__main__':
 
     print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=1000))
     if args.save_trace:
-      trace_path = '_'.join([args.model, device, "trace.json"])
+      trace_path = '_'.join(["train", args.model, "dml", "trace.json"])
       prof.export_chrome_trace(trace_path)
