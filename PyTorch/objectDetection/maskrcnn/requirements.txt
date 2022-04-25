@@ -1,5 +1,3 @@
-pytorch-directml
-torchvision==0.9.0
 pycocotools
 wget
 requests
