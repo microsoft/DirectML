@@ -25,13 +25,13 @@ pip install -r pytorch\squeezenet\requirements.txt
 After installing the PyTorch on DirectML package (see [GPU accelerated ML training](..\readme.md)), open a console to the `root` directory and run the setup script to download and convert data:
 
 ```
-python pytorch\data\cifar.py
+python pytorch\data\dataset.py
 ```
 
 Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
 
 ```
->python pytorch\data\cifar.py
+>python pytorch\data\dataset.py
 Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
 Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
 170499072it [00:32, 5250164.09it/s]
