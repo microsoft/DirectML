@@ -22,7 +22,7 @@ After installing the PyTorch on DirectML package (see [GPU accelerated ML traini
 python pytorch\data\dataset.py
 ```
 
-Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
+Running `dataset.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
 
 ```
 >python pytorch\data\dataset.py
@@ -37,7 +37,7 @@ Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:
 A helper script exists to train Mask R-CNN with PennFudanPed data:
 
 ```
-
+cd pytorch\objectdetection\maskrcnn
 python .\maskrcnn.py
 ```
 

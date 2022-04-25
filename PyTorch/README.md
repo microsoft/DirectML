@@ -35,6 +35,7 @@ The following sample models are included in this repo to help you get started. T
 
 * [squeezenet - a small image classification model](./squeezenet)
 * [resnet50 - an image classification model](./resnet50)
+* [maskrcnn - an object detection model](./objectDetection/maskrcnn/)
 * *more coming soon*
 
 ## External Links
