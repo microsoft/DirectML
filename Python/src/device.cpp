@@ -13,17 +13,16 @@ using namespace pydml;
 using Microsoft::WRL::ComPtr;
 
 // An adapter called the "Microsoft Basic Render Driver" is always present. This adapter is a render-only device that has no display outputs.
-HRESULT IsWarpAdapter(IDXGIAdapter1* pAdapter, bool* isWarpAdapter)
+bool IsWarpAdapter(IDXGIAdapter1* pAdapter)
 {
     DXGI_ADAPTER_DESC1 pDesc;
-    ReturnIfFailed(pAdapter->GetDesc1(&pDesc));
-    // see here for documentation on filtering WARP adapter:
+    ThrowIfFailed(pAdapter->GetDesc1(&pDesc));
+    // See here for documentation on filtering WARP adapter:
     // https://docs.microsoft.com/en-us/windows/desktop/direct3ddxgi/d3d10-graphics-programming-guide-dxgi#new-info-about-enumerating-adapters-for-windows-8
     auto isBasicRenderDriverVendorId = pDesc.VendorId == 0x1414;
     auto isBasicRenderDriverDeviceId = pDesc.DeviceId == 0x8c;
     auto isSoftwareAdapter = pDesc.Flags == DXGI_ADAPTER_FLAG_SOFTWARE;
-    *isWarpAdapter = isSoftwareAdapter || (isBasicRenderDriverVendorId && isBasicRenderDriverDeviceId);
-    return S_OK;
+    return isSoftwareAdapter || (isBasicRenderDriverVendorId && isBasicRenderDriverDeviceId);
 }
 
 Device::Device(bool useGpu, bool useDebugLayer, DXGI_GPU_PREFERENCE gpuPreference) :
@@ -46,13 +45,11 @@ Device::Device(bool useGpu, bool useDebugLayer, DXGI_GPU_PREFERENCE gpuPreferenc
     if (m_useGpu)
     {
         ComPtr<IDXGIFactory6> spFactory;
-        ReturnIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&spFactory)));
+        ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&spFactory)));
         UINT i = 0;
         while (spFactory->EnumAdapterByGpuPreference(i, m_gpuPreference, IID_PPV_ARGS(&dxgiAdapter)) != DXGI_ERROR_NOT_FOUND)
         {
-            bool isWarpAdapter = false;
-            ReturnIfFailed(IsWarpAdapter(dxgiAdapter.Get(), &isWarpAdapter));
-            if (!isWarpAdapter)
+            if (!IsWarpAdapter(dxgiAdapter.Get()))
             {
                 break;
             }
