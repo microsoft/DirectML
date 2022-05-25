@@ -93,6 +93,7 @@ add_executable(
     src/dxdispatch/Device.cpp
     src/dxdispatch/main.cpp
     src/dxdispatch/DmlDispatchable.cpp
+    src/dxdispatch/OnnxDispatchable.cpp
     src/dxdispatch/Executor.cpp
     src/dxdispatch/CommandLineArgs.cpp
     src/dxdispatch/Logging.cpp
