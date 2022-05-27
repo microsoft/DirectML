@@ -1126,6 +1126,14 @@ Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const rapidjson::Valu
     return desc;
 }
 
+Model::OnnxDispatchableDesc ParseModelOnnxDispatchableDesc(const rapidjson::Value& object)
+{
+    Model::OnnxDispatchableDesc desc = {};
+    desc.sourcePath = ParseStringField(object, "sourcePath");
+
+    return desc;
+}
+
 Model::BufferBindingSource ParseBufferBindingSource(const rapidjson::Value& value)
 {
     Model::BufferBindingSource bindingSource = {};
@@ -1203,6 +1211,10 @@ Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const 
     if (!_stricmp(type.data(), "hlsl")) 
     { 
         desc.value = ParseModelHlslDispatchableDesc(object);
+    }
+    else if (!_stricmp(type.data(), "onnx"))
+    {
+        desc.value = ParseModelOnnxDispatchableDesc(object);
     }
     else
     {
