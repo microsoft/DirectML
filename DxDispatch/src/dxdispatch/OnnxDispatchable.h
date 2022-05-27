@@ -1,6 +1,7 @@
 #pragma once
 
 #include <onnxruntime_cxx_api.h>
+#include "dml_provider_factory.h"
 
 class OnnxDispatchable : public Dispatchable
 {
@@ -17,5 +18,9 @@ private:
     std::shared_ptr<Device> m_device;
     const Model::OnnxDispatchableDesc& m_desc;
     std::optional<Ort::Session> m_session;
-    std::optional<Ort::IoBinding> m_bindings;
+    const OrtDmlApi* m_ortDmlApi = nullptr;
+
+    std::optional<Ort::IoBinding> m_ioBindings;
+    std::vector<std::optional<Ort::Value>> m_tensors;
+    std::vector<Microsoft::WRL::ComPtr<IUnknown>> m_tensorWrappers;
 };

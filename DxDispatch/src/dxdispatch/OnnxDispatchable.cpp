@@ -5,13 +5,105 @@
 #include "Dispatchable.h"
 #include "OnnxDispatchable.h"
 
-#include <onnxruntime_cxx_api.h>
-#include "cpu_provider_factory.h"
-#include "dml_provider_factory.h"
-
 using Microsoft::WRL::ComPtr;
 
 #define THROW_IF_NOT_OK(status) {auto localStatus = (status); if (localStatus) throw E_FAIL;}
+
+template<typename T>
+using deleting_unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
+
+static std::string GetTensorName(size_t index, Ort::Session const& session, bool isInput)
+{
+    Ort::AllocatorWithDefaultOptions allocator;
+    char* name = isInput ? session.GetInputName(index, allocator) : session.GetOutputName(index, allocator);
+    std::string returnName(name);
+    allocator.Free(name); // Don't leak memory.
+    return returnName;
+}
+
+static size_t IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType dataType)
+{
+    switch (dataType)
+    {
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED:   return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:       return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:        return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING:      return false;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:      return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:       return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:     return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:       return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:      return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:      return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:       return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:   return false; // 32*2
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:  return false;
+    default: return 1;
+    }
+}
+
+static Ort::Value CreateTensorFromResource(
+    const OrtDmlApi* ortDmlApi,
+    Ort::MemoryInfo const& memoryInformation,
+    ID3D12Resource* d3dResource,
+    gsl::span<const int64_t> tensorDimensions,
+    ONNXTensorElementDataType elementDataType,
+    void** dmlEpResourceWrapper
+)
+{
+    *dmlEpResourceWrapper = nullptr;
+
+    void* dmlAllocatorResource;
+    THROW_IF_NOT_OK(ortDmlApi->CreateGPUAllocationFromD3DResource(d3dResource, &dmlAllocatorResource));
+    auto deleter = [&](void*) {ortDmlApi->FreeGPUAllocation(dmlAllocatorResource); };
+    deleting_unique_ptr<void> dmlAllocatorResourceCleanup(dmlAllocatorResource, deleter);
+
+    size_t tensorByteSize = static_cast<size_t>(d3dResource->GetDesc().Width);
+    Ort::Value newValue(
+        Ort::Value::CreateTensor(
+            memoryInformation,
+            dmlAllocatorResource,
+            tensorByteSize,
+            tensorDimensions.data(),
+            tensorDimensions.size(),
+            elementDataType
+        )
+    );
+    *dmlEpResourceWrapper = dmlAllocatorResource;
+    dmlAllocatorResourceCleanup.release();
+
+    return newValue;
+}
+
+static ID3D12Resource* GetResourceFromModelBinding(
+    const std::string& tensorName, 
+    const Dispatchable::Bindings& bindings)
+{
+    auto& bindingSources = bindings.find(tensorName)->second;
+
+    if (bindingSources.size() != 1)
+    {
+        throw std::invalid_argument("ONNX dispatchables' tensors must map to a single binding source.");
+    }
+
+    auto& bindingSource = bindingSources[0];
+
+    if (bindingSource.counterResource != nullptr)
+    {
+        throw std::invalid_argument("ONNX dispatchables do not support counter resources in bindings.");
+    }
+    
+    if (bindingSource.elementOffset != 0)
+    {
+        throw std::invalid_argument("ONNX dispatchables do not support binding offsets.");
+    }
+
+    return bindingSource.resource;
+}
 
 OnnxDispatchable::OnnxDispatchable(
     std::shared_ptr<Device> device, 
@@ -22,11 +114,8 @@ OnnxDispatchable::OnnxDispatchable(
 
 void OnnxDispatchable::Initialize()
 {
-    // TODO: support AddFreeDimensionOverrideByName overrides in json model
-
-    OrtApi const& ortApi = Ort::GetApi(); // Uses ORT_API_VERSION
-    const OrtDmlApi* ortDmlApi;
-    THROW_IF_NOT_OK(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
+    const OrtApi& ortApi = Ort::GetApi();
+    THROW_IF_NOT_OK(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
     Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
     
@@ -34,81 +123,85 @@ void OnnxDispatchable::Initialize()
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED); // Note ORT_ENABLE_BASIC is useful for debugging.
-    //ortApi.AddFreeDimensionOverrideByName(sessionOptions, "batch_size", 1);
+ 
+    // TODO: support AddFreeDimensionOverrideByName key/value pairs in json model
+    //ortApi.AddFreeDimensionOverrideByName(sessionOptions, "asdf", 1);
 
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProviderEx_DML(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 
     m_session = Ort::Session(ortEnvironment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
-    m_bindings = Ort::IoBinding::IoBinding(*m_session);
+    m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
 void OnnxDispatchable::Bind(const Bindings& bindings)
 {
-    m_bindings->ClearBoundInputs();
-    m_bindings->ClearBoundOutputs();
+    m_ioBindings->ClearBoundInputs();
+    m_ioBindings->ClearBoundOutputs();
+    m_tensors.clear();
+    m_tensorWrappers.clear();
 
     Ort::MemoryInfo memoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
     Ort::Allocator deviceAllocator(*m_session, memoryInformation);
 
-    std::vector<Ort::Value> inputTensors;
-    std::vector<Ort::Value> outputTensors;
-    std::vector<std::vector<std::byte>> inputTensorValues; // Preserve the values since the CPU tensor just lightly wraps them.
-    std::vector<std::vector<std::byte>> outputTensorValues;
-    std::vector<ComPtr<IUnknown>> inputTensorWrappers; // Preserve lifetime of tensors in the Ort::Value, which doesn't seem to hold a reference.
-    std::vector<ComPtr<IUnknown>> outputTensorWrappers;
+    auto inputCount = m_session->GetInputCount();
+    auto outputCount = m_session->GetOutputCount();
+    m_tensors.resize(inputCount + outputCount);
 
-    size_t const inputCount = m_session->GetInputCount();
-    size_t const outputCount = m_session->GetOutputCount();
-
-    OrtApi const& ortApi = Ort::GetApi(); // Uses ORT_API_VERSION
-    const OrtDmlApi* ortDmlApi;
-    THROW_IF_NOT_OK(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
-
-    // Loop though inputs and outputs.
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
-        bool const isInputTensor = (bindingPass == 0);
-        size_t const tensorCount = isInputTensor ? inputCount : outputCount;
+        const bool isInputTensor = (bindingPass == 0);
+        const size_t tensorCount = isInputTensor ? inputCount : outputCount;
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
-            OrtApi const& ortApi = Ort::GetApi(); // Uses ORT_API_VERSION
+            std::string tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
+            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
+            if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
+            {
+                throw std::runtime_error(fmt::format("Unknown binding type for '%s'", tensorName));
+            }
 
-            //BindValues(
-            //    tensorIndex,
-            //    isInputTensor,
-            //    session,
-            //    *ortDmlApi,
-            //    ioBinding,
-            //    memoryInformation,
-            //    deviceAllocator,
-            //    d3d12Device,
-            //    commandQueue,
-            //    commandAllocator,
-            //    commandList,
-            //    isInputTensor ? inputTensors : outputTensors,
-            //    isInputTensor ? inputTensorValues : outputTensorValues,
-            //    isInputTensor ? inputTensorWrappers : outputTensorWrappers
-            //);
+            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            ONNXTensorElementDataType const tensorDataType = shapeInfo.GetElementType();
+            if (!IsSupportedOnnxTensorElementDataType(tensorDataType))
+            {
+                throw std::runtime_error("Unsupported tensor data type");
+            }
+
+            std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+
+            auto resource = GetResourceFromModelBinding(tensorName, bindings);
+
+            std::optional<Ort::Value>& tensor = m_tensors[tensorIndex + bindingPass * inputCount];
+
+            // Create an ORT tensor from the existing D3D resource.
+            Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
+            tensor = CreateTensorFromResource(
+                m_ortDmlApi, 
+                memoryInformation, 
+                resource,
+                tensorShape,
+                tensorDataType,
+                &resourceWrapper);
+
+            m_tensorWrappers.push_back(std::move(resourceWrapper));
+
+            // Bind the tensor.
+            if (isInputTensor)
+            {
+                m_ioBindings->BindInput(tensorName.c_str(), *tensor);
+            }
+            else
+            {
+                m_ioBindings->BindOutput(tensorName.c_str(), *tensor);
+            }
         }
     }
 }
 
 void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
 {
-    //Ort::AllocatorWithDefaultOptions ortAllocator;
-    //char* inputName = session.GetInputName(0, ortAllocator);
-    //const std::array<const char*, 1> inputNames = { inputName };
-    //char* outputName = session.GetOutputName(0, ortAllocator);
-    //const std::array<const char*, 1> outputNames = { outputName };
-
-    //Ort::RunOptions runOptions;
-    //m_session->Run(
-    //    runOptions,
-    //    inputNames.data(),
-    //    &inputTensor,
-    //    1,
-    //    outputNames.data(),
-    //    &outputTensor,
-    //    1);
+    Ort::RunOptions runOptions;
+    m_session->Run(runOptions, *m_ioBindings);
+    m_ioBindings->SynchronizeOutputs();
 }
