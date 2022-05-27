@@ -51,6 +51,9 @@ add_d3d12_target(d3d12 CACHE_PREFIX DXD)
 include(cmake/directml.cmake)
 add_directml_target(directml CACHE_PREFIX DXD)
 
+include(cmake/onnxruntime.cmake)
+add_onnxruntime_target(onnxruntime CACHE_PREFIX DXD)
+
 # ==============================================================================
 # Model Library
 # ==============================================================================
@@ -93,7 +96,6 @@ add_executable(
     src/dxdispatch/Device.cpp
     src/dxdispatch/main.cpp
     src/dxdispatch/DmlDispatchable.cpp
-    src/dxdispatch/OnnxDispatchable.cpp
     src/dxdispatch/Executor.cpp
     src/dxdispatch/CommandLineArgs.cpp
     src/dxdispatch/Logging.cpp
@@ -102,6 +104,10 @@ add_executable(
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatch PRIVATE src/dxdispatch/HlslDispatchable.cpp)
+endif()
+
+if(NOT onnxruntime_type STREQUAL None)
+    target_sources(dxdispatch PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
@@ -126,6 +132,7 @@ target_link_libraries(
     pix
     gdk
     wil
+    onnxruntime
 )
 
 target_compile_features(dxdispatch PRIVATE cxx_std_17)

@@ -109,7 +109,16 @@
                     "repositoryUrl": "https://github.com/Microsoft/wil"
                 }
             }
-        }
+        },
+        {
+            "component": {
+                "type": "nuget",
+                "nuget": {
+                    "name": "Microsoft.ML.OnnxRuntime.DirectML",
+                    "version": "1.11.0"
+                }
+            }
+        },
     ],
     "Version": 1
 }

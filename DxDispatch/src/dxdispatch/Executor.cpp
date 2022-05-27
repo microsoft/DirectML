@@ -8,6 +8,7 @@
 #ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
 #endif
+#include "OnnxDispatchable.h"
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
@@ -51,6 +52,10 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 #else
                 m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value), args);
 #endif
+            }
+            else if (std::holds_alternative<Model::OnnxDispatchableDesc>(desc.value))
+            {
+                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value));
             }
             else
             {
