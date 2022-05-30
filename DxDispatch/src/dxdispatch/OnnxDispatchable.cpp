@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "OnnxDispatchable.h"
+#include "OnnxParsers.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -12,48 +13,13 @@ using Microsoft::WRL::ComPtr;
 template<typename T>
 using deleting_unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
 
-static std::string GetTensorName(size_t index, Ort::Session const& session, bool isInput)
-{
-    Ort::AllocatorWithDefaultOptions allocator;
-    char* name = isInput ? session.GetInputName(index, allocator) : session.GetOutputName(index, allocator);
-    std::string returnName(name);
-    allocator.Free(name); // Don't leak memory.
-    return returnName;
-}
-
-static size_t IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType dataType)
-{
-    switch (dataType)
-    {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED:   return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:        return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING:      return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:     return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:   return false; // 32*2
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:  return false;
-    default: return 1;
-    }
-}
-
 static Ort::Value CreateTensorFromResource(
     const OrtDmlApi* ortDmlApi,
     Ort::MemoryInfo const& memoryInformation,
     ID3D12Resource* d3dResource,
     gsl::span<const int64_t> tensorDimensions,
     ONNXTensorElementDataType elementDataType,
-    void** dmlEpResourceWrapper
-)
+    void** dmlEpResourceWrapper)
 {
     *dmlEpResourceWrapper = nullptr;
 
@@ -154,7 +120,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
-            std::string tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
+            std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
             if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
             {
@@ -162,8 +128,8 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             }
 
             Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-            ONNXTensorElementDataType const tensorDataType = shapeInfo.GetElementType();
-            if (!IsSupportedOnnxTensorElementDataType(tensorDataType))
+            const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+            if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
             {
                 throw std::runtime_error("Unsupported tensor data type");
             }

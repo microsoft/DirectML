@@ -61,6 +61,7 @@ add_library(
     model STATIC 
     src/model/JsonParsers.cpp 
     src/model/Model.cpp
+    src/model/OnnxParsers.cpp
 )
 
 target_link_libraries(
@@ -74,6 +75,7 @@ target_link_libraries(
     wil
     d3d12
     directml
+    onnxruntime
 )
 
 target_compile_features(model PRIVATE cxx_std_17)
@@ -88,6 +90,7 @@ get_target_property(d3d12_config d3d12 DX_COMPONENT_CONFIG)
 get_target_property(dxcompiler_config dxcompiler DX_COMPONENT_CONFIG)
 get_target_property(pix_config pix DX_COMPONENT_CONFIG)
 get_target_property(gdk_config gdk DX_COMPONENT_CONFIG)
+get_target_property(ort_config onnxruntime DX_COMPONENT_CONFIG)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
 
 add_executable(

@@ -6,23 +6,25 @@
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
         auto banner = fmt::format(R"({} version {}
-  DirectML   : {}
-  D3D12      : {}
-  DXCompiler : {}
-  PIX        : {}
+  DirectML     : {}
+  D3D12        : {}
+  DXCompiler   : {}
+  PIX          : {}
+  ONNX Runtime : {}
 )",
         c_projectName, 
         c_projectVersion,
         c_directmlConfig,
         c_d3d12Config,
         c_dxcompilerConfig,
-        c_pixConfig);
+        c_pixConfig,
+        c_ortConfig);
     
     cxxopts::Options options(c_projectName, banner);
     options.add_options()
         (
             "m,model", 
-            "Path to JSON model file", 
+            "Path to JSON/ONNX model file", 
             cxxopts::value<decltype(m_modelPath)>()
         )
         (
@@ -73,7 +75,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             )
         ;
     
-    options.positional_help("<PATH_TO_MODEL_JSON>");
+    options.positional_help("<PATH_TO_MODEL>");
 
     options.parse_positional({"model"});
     auto result = options.parse(argc, argv);

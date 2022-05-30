@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "JsonParsers.h"
+#include "OnnxParsers.h"
 #include "Executor.h"
 #include "CommandLineArgs.h"
 
@@ -48,11 +49,22 @@ int main(int argc, char** argv)
     Model model;
     try
     {
-        model = JsonParsers::ParseModel(args.ModelPath());
+        if (args.ModelPath().extension() == ".json")
+        {
+            model = JsonParsers::ParseModel(args.ModelPath());
+        }
+        else if (args.ModelPath().extension() == ".onnx")
+        {
+            model = OnnxParsers::ParseModel(args.ModelPath());
+        }
+        else
+        {
+            throw std::invalid_argument("Expected a .json or .onnx file");
+        }
     }
     catch (std::exception& e)
     {
-        LogError(fmt::format("Failed to parse the JSON model: {}", e.what()));
+        LogError(fmt::format("Failed to parse the model: {}", e.what()));
         return 1;
     }
 
