@@ -13,6 +13,7 @@ public:
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
     void Dispatch(const Model::DispatchCommand& args) final;
+    bool RecordsDispatchIntoCommandList() final { return false; }
 
 private:
     std::shared_ptr<Device> m_device;

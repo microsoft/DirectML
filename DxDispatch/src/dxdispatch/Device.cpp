@@ -194,6 +194,18 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         throw std::invalid_argument("Attempting to upload more data than the size of the buffer");
     }
 
+    auto defaultBuffer = CreateDefaultBuffer(totalSize);
+    if (!name.empty())
+    {
+        defaultBuffer->SetName(name.data());
+    }
+
+    if (data.empty())
+    {
+        // No need to create an upload resource if the source data is empty.
+        return defaultBuffer;
+    }
+
     auto uploadBuffer = CreateUploadBuffer(totalSize);
     uploadBuffer->SetName(L"Device::Upload");
     {
@@ -201,12 +213,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         THROW_IF_FAILED(uploadBuffer->Map(0, nullptr, &uploadBufferData));
         memcpy(uploadBufferData, data.data(), data.size());
         uploadBuffer->Unmap(0, nullptr);
-    }
-
-    auto defaultBuffer = CreateDefaultBuffer(totalSize);
-    if (!name.empty())
-    {
-        defaultBuffer->SetName(name.data());
     }
 
     {

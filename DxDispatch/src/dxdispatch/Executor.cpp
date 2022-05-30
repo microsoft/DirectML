@@ -27,7 +27,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 {
     // Initialize buffer resources.
     {
-        PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Initialize resources");
+        // PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Initialize resources");
         for (auto& desc : model.GetResourceDescs())
         {
             // Only buffers are supported right now.
@@ -155,17 +155,22 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
         try
         {
+            const bool recordsDispatchIntoCommandList = dispatchable->RecordsDispatchIntoCommandList();
+
             timer.Start();
             for (uint32_t iteration = 0; iteration < dispatchIterations; iteration++)
             {
                 dispatchable->Dispatch(command);
-                if (iteration != dispatchIterations - 1)
+                if (recordsDispatchIntoCommandList && iteration != dispatchIterations - 1)
                 {
                     auto uavBarrier = CD3DX12_RESOURCE_BARRIER::UAV(nullptr);
                     m_device->GetCommandList()->ResourceBarrier(1, &uavBarrier);
                 }
             }
-            m_device->DispatchAndWait();
+            if (recordsDispatchIntoCommandList)
+            {
+                m_device->DispatchAndWait();
+            }
             dispatchDurations.push_back(timer.End().DurationInMilliseconds() / dispatchIterations);
         }
         catch (const std::exception& e)
