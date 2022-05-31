@@ -33,14 +33,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
-            "b,benchmark", 
-            "Show benchmarking information", 
-            cxxopts::value<bool>()
-        )
-        (
-            "i,dispatch_repeat", 
-            "[Benchmarking only] The number of times to repeat each dispatch", 
-            cxxopts::value<uint32_t>()->default_value("128")
+            "i,dispatch_iterations", 
+            "The number of times to repeat each dispatch", 
+            cxxopts::value<uint32_t>()->default_value("1")
         )
         (
             "h,help", 
@@ -87,13 +82,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_debugLayersEnabled = result["debug"].as<bool>(); 
     }
     
-    if (result.count("benchmark")) 
-    { 
-        m_benchmarkingEnabled = result["benchmark"].as<bool>(); 
-        if (result.count("dispatch_repeat"))
-        {
-            m_benchmarkingDispatchRepeat = result["dispatch_repeat"].as<uint32_t>();
-        }
+    if (result.count("dispatch_iterations"))
+    {
+        m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
     }
 
     if (result.count("model")) 
