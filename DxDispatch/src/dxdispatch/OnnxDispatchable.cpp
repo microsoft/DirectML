@@ -134,7 +134,12 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                 throw std::runtime_error("Unsupported tensor data type");
             }
 
+            // Convert free dimensions (-1) to their minimum positive size (1).
             std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+            for (auto& dim : tensorShape)
+            {
+                dim = std::abs(dim);
+            }
 
             auto resource = GetResourceFromModelBinding(tensorName, bindings);
 
