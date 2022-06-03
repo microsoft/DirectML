@@ -128,7 +128,7 @@ endfunction()
 # -----------------------------------------------------------------------------
 function(init_directml_target_local target_name local_path)
     if(NOT IS_DIRECTORY "${local_path}")
-        message(FATAL_ERROR "'${local_path}' is not a directory.")
+        message(FATAL_ERROR "'${local_path}' is not a directory. You must set DXD_DIRECTML_LOCAL_PATH to a directory containing pre-built DirectML.")
     endif()
 
     # DirectML.dll is required.

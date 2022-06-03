@@ -31,8 +31,10 @@ function(init_onnxruntime_cache_variables prefix)
     endif()
 
     # <PREFIX>_ONNXRUNTIME_TYPE
-    if(TARGET_XBOX OR (TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$"))
+    if(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$")
         set(default_type nuget)
+    elseif(TARGET_XBOX)
+        set(default_type local)
     else()
         set(default_type none)
     endif()
@@ -40,7 +42,7 @@ function(init_onnxruntime_cache_variables prefix)
         "${default_type}" 
         CACHE STRING "ONNXRUNTIME dependency type"
     )
-    set_property(CACHE ${prefix}_ONNXRUNTIME_TYPE PROPERTY STRINGS nuget gdk none)
+    set_property(CACHE ${prefix}_ONNXRUNTIME_TYPE PROPERTY STRINGS nuget local none)
 
     # <PREFIX>_ONNXRUNTIME_NUGET_ID
     set(${prefix}_ONNXRUNTIME_NUGET_ID
@@ -58,6 +60,12 @@ function(init_onnxruntime_cache_variables prefix)
     set(${prefix}_ONNXRUNTIME_NUGET_HASH 
         17ac3a5b3f7b4566aee9f29f39859f8ed26eb18cfbdfd2f06cb05ed230b484e2
         CACHE STRING "SHA256 hash of the ONNX Runtime NuGet package (TYPE == nuget)."
+    )
+
+    # <PREFIX>_ONNXRUNTIME_LOCAL_PATH
+    set(${prefix}_ONNXRUNTIME_LOCAL_PATH
+        ""
+        CACHE STRING "Path to a local build of ONNX Runtime (TYPE == local)."
     )
 endfunction()
 
@@ -87,6 +95,50 @@ function(init_onnxruntime_target_nuget target_name pkg_id pkg_version pkg_hash)
 endfunction()
 
 # -----------------------------------------------------------------------------
+# Init using a local build.
+# -----------------------------------------------------------------------------
+function(init_onnxruntime_target_local target_name local_path)
+    if(NOT IS_DIRECTORY "${local_path}")
+        message(FATAL_ERROR "'${local_path}' is not a directory. You must set DXD_ONNXRUNTIME_LOCAL_PATH to a directory containing pre-built DirectML.")
+    endif()
+
+    # onnxruntime.dll is required.
+    set(onnxruntime_dll_path "${local_path}/bin/onnxruntime.dll")
+    if(NOT EXISTS ${onnxruntime_dll_path})
+        message(FATAL_ERROR "Could not find '${onnxruntime_dll_path}'")
+    endif()
+    target_append_redist_file(${target_name} ${onnxruntime_dll_path})
+
+    # onnxruntime_providers_shared.dll is required.
+    set(onnxruntime_providers_dll_path "${local_path}/bin/onnxruntime_providers_shared.dll")
+    if(NOT EXISTS ${onnxruntime_providers_dll_path})
+        message(FATAL_ERROR "Could not find '${onnxruntime_providers_dll_path}'")
+    endif()
+    target_append_redist_file(${target_name} ${onnxruntime_providers_dll_path})
+
+    # onnxruntime.lib is required.
+    set(onnxruntime_lib_path "${local_path}/lib/onnxruntime.lib")
+    if(NOT EXISTS ${onnxruntime_lib_path})
+        message(FATAL_ERROR "Could not find '${onnxruntime_lib_path}'")
+    endif()
+    target_link_libraries(${target_name} INTERFACE ${onnxruntime_lib_path})
+
+    # Include dir must exist with dml_provider_factory.h in it.
+    set(dml_provider_h "${local_path}/include/onnxruntime/core/providers/dml/dml_provider_factory.h")
+    if(NOT EXISTS ${dml_provider_h})
+        message(FATAL_ERROR "Could not find '${dml_provider_h}'")
+    endif()
+    
+    target_include_directories(${target_Name} INTERFACE
+        "${local_path}/include/onnxruntime/core/session"
+        "${local_path}/include/onnxruntime/core/providers/cpu"
+        "${local_path}/include/onnxruntime/core/providers/dml"
+    )
+
+    set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "Local")
+endfunction()
+
+# -----------------------------------------------------------------------------
 # Init as a stub dependency.
 # -----------------------------------------------------------------------------
 function(init_onnxruntime_target_stub target_name)
@@ -108,12 +160,15 @@ function(add_onnxruntime_target target_name)
     set(nuget_id "${${ARG_CACHE_PREFIX}_ONNXRUNTIME_NUGET_ID}")
     set(nuget_version "${${ARG_CACHE_PREFIX}_ONNXRUNTIME_NUGET_VERSION}")
     set(nuget_hash "${${ARG_CACHE_PREFIX}_ONNXRUNTIME_NUGET_HASH}")
+    set(local_path "${${ARG_CACHE_PREFIX}_ONNXRUNTIME_LOCAL_PATH}")
 
     # Initialize target based on type.
     add_library(${target_name} INTERFACE)
     string(TOLOWER "${type}" type)
     if(type STREQUAL nuget)
         init_onnxruntime_target_nuget(${target_name} ${nuget_id} ${nuget_version} ${nuget_hash})
+    elseif(type STREQUAL local)
+        init_onnxruntime_target_local(${target_name} "${local_path}")
     elseif(type STREQUAL none)
         init_onnxruntime_target_stub(${target_name})
     else()
