@@ -10,7 +10,6 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType)
 {
 #ifdef _GAMING_XBOX
-    Microsoft::WRL::ComPtr<ID3D12Device> device;
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
 
