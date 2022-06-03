@@ -71,7 +71,7 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
     <td><b>✅ <u>nuget</u></b></td>
   </tr>
   <tr>
-    <td>WSL2 - x64</td>
+    <td>Linux - x64 (WSL)</td>
     <td><b>✅ <u>nuget</u></b><br>✅ local</td>
     <td><b>✅ <u>wsl</u></b></td>
     <td>❌ none</td>
@@ -101,20 +101,27 @@ Configuration is done using CMake cache variables. For example, Direct3D can be 
 
 DxDispatch relies on several external dependencies that are downloaded when the project is configured. See [ThirdPartyNotices.txt](./ThirdPartyNotices.txt) for relevant license info.
 
-This project uses CMake so you may generate a build system of your choosing. However, some of the CMake scripts to fetch external dependencies currently assume a Visual Studio generator. Until this is resolved you'll want to stick with VS. Tested with the following configuration:
-- Microsoft Visual Studio 2019/2022
-- Windows SDK 10.0.19041.0 or newer
-
-Example from a terminal in the clone directory (change install location as desired):
-
-**Generate, Build, and Install:**
+Configure presets are listed configuration in [CMakePresets.json](CMakePresets.json):
 ```
-cmake . -B build -DCMAKE_INSTALL_PREFIX=c:/dxdispatch
-cmake --build build --target INSTALL
+> cmake --list-presets
+Available configure presets:
+
+  "win-x64"       - Windows x64
+  "win-x86"       - Windows x86
+  "win-arm64"     - Windows ARM64
+  "xbox-scarlett" - Xbox Scarlett
+  "linux-x64"     - Linux x64
 ```
 
-**Test**:
+To generate the project, provide one of the above names (e.g. `win-x64`) to cmake:
 ```
-cd build
-ctest .
+> cmake --preset <configure_preset_name>
+```
+
+You can build from the generated VS solution under `build\<configure_preset_name>\dxdispatch.sln`.
+
+To run tests (only supported on some platforms):
+```
+> cd build\<configure_preset_name>
+> ctest .
 ```

@@ -183,7 +183,7 @@ endif()
 # ==============================================================================
 # Tests
 # ==============================================================================
-if(TARGET_WINDOWS OR TARGET_WSL)
+if((TARGET_WINDOWS OR TARGET_WSL) AND (TARGET_ARCH MATCHES "^X64|X86$"))
     option(DXD_TESTS "Build DxDispatch tests" ON)
 else()
     option(DXD_TESTS "Build DxDispatch tests" OFF)
