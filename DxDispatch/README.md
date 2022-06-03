@@ -45,7 +45,7 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
     <th><a href="https://docs.microsoft.com/windows/win32/direct3d12/what-is-directx-12-">Direct3D 12</a></th>
     <th><a href="https://github.com/microsoft/DirectXShaderCompiler">DX Compiler</a><sup>+</sup></th>
     <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">PIX Event Runtime</a><sup>+</sup></th>
-    <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">ONNX Runtime</a><sup>+</sup></th>
+    <th><a href="https://onnxruntime.ai/">ONNX Runtime</a><sup>+</sup></th>
   </tr>
   <tr>
     <td>Windows - x64</td>
