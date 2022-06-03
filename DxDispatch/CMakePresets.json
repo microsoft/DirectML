@@ -62,6 +62,30 @@
             "configuration": "Release"
         },
         {
+            "name": "win-x86-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-x86",
+            "configuration": "Debug"
+        },
+        {
+            "name": "win-x86-release",
+            "displayName": "Release",
+            "configurePreset": "win-x86",
+            "configuration": "Release"
+        },
+        {
+            "name": "win-arm64-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-arm64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "win-arm64-release",
+            "displayName": "Release",
+            "configurePreset": "win-arm64",
+            "configuration": "Release"
+        },
+        {
             "name": "xbox-scarlett-debug",
             "displayName": "Debug",
             "configurePreset": "xbox-scarlett",

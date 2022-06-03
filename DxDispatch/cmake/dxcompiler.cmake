@@ -36,7 +36,7 @@ function(init_dxcompiler_cache_variables prefix)
     # <PREFIX>_DXCOMPILER_TYPE
     if(TARGET_XBOX)
         set(default_type gdk)
-    elseif(TARGET_WINDOWS)
+    elseif(TARGET_WINDOWS AND TARGET_ARCH STREQUAL X64)
         set(default_type archive)
     else()
         set(default_type none) # "source" type isn't implemented yet
