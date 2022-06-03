@@ -33,9 +33,9 @@ The exact system requirements vary depending on how you configure and run DxDisp
   - AMD: [Adrenalin 21.4.1 preview driver](https://www.amd.com/en/support/kb/release-notes/rn-rad-win-21-4-1-dx12-agility-sdk)
   - NVIDIA: drivers with version 466.11 or higher
 
-# DirectX Components
+# Features and DirectX Components
 
-DxDispatch tries to depend on redistributable versions of the various DX components. However, the build can be configured to use alternative sources when desired or necessary. Each component can use one of the available (✅) sources in the table below, with the <b><u>default</u></b> selection for each platform listed first. Not all configurations are tested, and some platforms don't include the optional<sup>+</sup> components.
+DxDispatch tries to depend on pre-built redistributable versions of its external dependencies. However, the build can be configured to use alternative sources when desired or necessary. Each component can use one of the available (✅) sources in the table below, with the <b><u>default</u></b> selection for each platform listed first. Not all configurations are tested, and some platforms don't include the optional<sup>+</sup> components.
 
 <table>
   <tr>
@@ -44,12 +44,14 @@ DxDispatch tries to depend on redistributable versions of the various DX compone
     <th><a href="https://docs.microsoft.com/windows/win32/direct3d12/what-is-directx-12-">Direct3D 12</a></th>
     <th><a href="https://github.com/microsoft/DirectXShaderCompiler">DX Compiler</a><sup>+</sup></th>
     <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">PIX Event Runtime</a><sup>+</sup></th>
+    <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">ONNX Runtime</a><sup>+</sup></th>
   </tr>
   <tr>
     <td>Windows - x64</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
     <td><b>✅ <u>archive</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
     <td><b>✅ <u>nuget</u></b></td>
   </tr>
   <tr>
@@ -58,12 +60,14 @@ DxDispatch tries to depend on redistributable versions of the various DX compone
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
     <td>❌ none</td>
     <td>❌ none</td>
+    <td><b>✅ <u>nuget</u></b></td>
   </tr>
   <tr>
     <td>Windows - ARM64</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
     <td>❌ none</td>
+    <td><b>✅ <u>nuget</u></b></td>
     <td><b>✅ <u>nuget</u></b></td>
   </tr>
   <tr>
@@ -72,6 +76,15 @@ DxDispatch tries to depend on redistributable versions of the various DX compone
     <td><b>✅ <u>wsl</u></b></td>
     <td>❌ none</td>
     <td>❌ none</td>
+    <td>❌ none</td>
+  </tr>
+  <tr>
+    <td>Xbox Scarlett</td>
+    <td><b>✅ <u>local</u></b></td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>local</u></b></td>
   </tr>
 </table>
 
@@ -80,6 +93,7 @@ The default redistributable versions of components (e.g. nuget, archives):
 - **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.4.10)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.4.10)
 - **DX Compiler (archive)**: [December 2021 (v1.6.2112)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.6.2112)
 - **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.210818001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.210818001)
+- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.11.0)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.11.0)
 
 Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
 

@@ -1,0 +1,77 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "vs2022",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": { 
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/${presetName}/install"
+            },
+            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }
+        },
+        { 
+            "name": "win-x64",
+            "displayName": "Windows x64",
+            "inherits": "vs2022",
+            "architecture": { "value": "x64", "strategy": "set" }
+        },
+        { 
+            "name": "win-x86",
+            "displayName": "Windows x86",
+            "inherits": "vs2022",
+            "architecture": { "value": "Win32", "strategy": "set" }
+        },
+        { 
+            "name": "win-arm64",
+            "displayName": "Windows ARM64",
+            "inherits": "vs2022",
+            "architecture": { "value": "arm64", "strategy": "set" }
+        },
+        { 
+            "name": "xbox-scarlett", 
+            "displayName": "Xbox Scarlett",
+            "inherits": "vs2022", 
+            "architecture": { "value": "Gaming.Xbox.Scarlett.x64", "strategy": "set" }
+        },
+        { 
+            "name": "linux-x64",
+            "displayName": "Linux x64",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": { 
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/${presetName}/install"
+            },
+            "architecture": { "value": "x64", "strategy": "external" },
+            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Linux" ] } }
+        }
+    ],
+
+    "buildPresets": [
+        {
+            "name": "win-x64-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-x64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "win-x64-release",
+            "displayName": "Release",
+            "configurePreset": "win-x64",
+            "configuration": "Release"
+        },
+        {
+            "name": "xbox-scarlett-debug",
+            "displayName": "Debug",
+            "configurePreset": "xbox-scarlett",
+            "configuration": "Debug"
+        },
+        {
+            "name": "xbox-scarlett-release",
+            "displayName": "Release",
+            "configurePreset": "xbox-scarlett",
+            "configuration": "Release"
+        }
+    ]
+}
