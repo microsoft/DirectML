@@ -129,7 +129,7 @@ function(init_onnxruntime_target_local target_name local_path)
         message(FATAL_ERROR "Could not find '${dml_provider_h}'")
     endif()
     
-    target_include_directories(${target_Name} INTERFACE
+    target_include_directories(${target_name} INTERFACE
         "${local_path}/include/onnxruntime/core/session"
         "${local_path}/include/onnxruntime/core/providers/cpu"
         "${local_path}/include/onnxruntime/core/providers/dml"
