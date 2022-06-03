@@ -1,10 +1,11 @@
 # DxDispatch
 
-DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders or DirectML operators), and commands to execute. The model abstraction makes it easy to experiment, but it also preserves low-level control and flexibility.
+DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders, DirectML operators, ONNX models), and commands to execute. The model abstraction makes it easy to experiment, but it also preserves low-level control and flexibility.
 
 Some of the things you can do with this tool:
 - Launch [DirectML](https://github.com/Microsoft/directml) operators to understand how they work with different inputs.
 - Run custom HLSL compute shaders that are compiled at runtime using the [DirectX Shader Compiler](https://github.com/Microsoft/DirectXShaderCompiler).
+- Run ONNX models using ONNX Runtime with the DirectML execution provider.
 - Debug binding and API usage issues. DxDispatch hooks into the Direct3D and DirectML debug layers and prints errors and warnings directly to the console; no need to attach a debugger.
 - Experiment with performance by benchmarking dispatches.
 - Take GPU or timing captures using [PIX on Windows](https://devblogs.microsoft.com/pix/download/). Labeled events and resources make it easy to correlate model objects to D3D objects.
