@@ -81,7 +81,8 @@ int main(int argc, char** argv)
         device = std::make_shared<Device>(
             adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 
-            args.CommandListType());
+            args.CommandListType(),
+            args.GetPixCaptureType());
         LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
     }
     catch (std::exception& e)

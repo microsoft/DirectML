@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PixCaptureHelper.h"
+
 class CommandLineArgs
 {
 public:
@@ -15,6 +17,7 @@ public:
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
+    PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
 
 private:
     bool m_showAdapters = false;
@@ -26,4 +29,5 @@ private:
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 };

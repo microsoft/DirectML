@@ -67,7 +67,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "xbox_allow_precompile",
             "Disables automatically defining __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox",
             cxxopts::value<bool>()
-            )
+        )
+        (
+            "c,pix_capture_type",
+            "Type of PIX captures to take: gpu, timing, or manual.",
+            cxxopts::value<std::string>()->default_value("manual")
+        )
         ;
     
     options.positional_help("<PATH_TO_MODEL>");
@@ -110,6 +115,27 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())
     {
         m_forceDisablePrecompiledShadersOnXbox = false;
+    }
+
+    if (result.count("pix_capture_type")) 
+    { 
+        auto pixCaptureTypeStr = result["pix_capture_type"].as<decltype(m_adapterSubstring)>(); 
+        if (pixCaptureTypeStr == "gpu")
+        {
+            m_pixCaptureType = PixCaptureType::ProgrammaticGpu;
+        }
+        else if (pixCaptureTypeStr == "timing")
+        {
+            m_pixCaptureType = PixCaptureType::ProgrammaticTiming;
+        }
+        else if (pixCaptureTypeStr == "manual")
+        {
+            m_pixCaptureType = PixCaptureType::Manual;
+        }
+        else
+        {
+            throw std::invalid_argument("Unexpected value for pix_capture_type. Must be 'gpu', 'timing', or 'manual'");
+        }
     }
 
     m_helpText = options.help();

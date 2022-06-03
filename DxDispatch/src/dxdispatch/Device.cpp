@@ -7,7 +7,7 @@ using Microsoft::WRL::ComPtr;
 static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 { 0x59da69, 0xb561, 0x43d9, { 0xa3, 0x9b, 0x33, 0x55, 0x7, 0x4b, 0x10, 0x82 } };
 
-Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType)
+Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, PixCaptureType pixCaptureType) : m_pixCaptureHelper(pixCaptureType)
 {
 #ifdef _GAMING_XBOX
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};

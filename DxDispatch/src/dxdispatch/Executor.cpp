@@ -145,6 +145,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
+        THROW_IF_FAILED(m_device->GetPixCaptureHelper().BeginCapturableWork(command.dispatchableName));
+
         for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
         {
             timer.Start();
@@ -173,6 +175,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             dispatchDurations.push_back(timer.End().DurationInMilliseconds());
         }
+
+        THROW_IF_FAILED(m_device->GetPixCaptureHelper().EndCapturableWork());
     }
     catch (const std::exception& e)
     {
