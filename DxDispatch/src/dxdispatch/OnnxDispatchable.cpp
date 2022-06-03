@@ -90,6 +90,8 @@ void OnnxDispatchable::Initialize()
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED); // Note ORT_ENABLE_BASIC is useful for debugging.
  
+    // need args here.
+
     // TODO: support AddFreeDimensionOverrideByName key/value pairs in json model
     //ortApi.AddFreeDimensionOverrideByName(sessionOptions, "asdf", 1);
 

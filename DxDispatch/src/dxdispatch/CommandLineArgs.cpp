@@ -73,6 +73,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Type of PIX captures to take: gpu, timing, or manual.",
             cxxopts::value<std::string>()->default_value("manual")
         )
+        (
+            "f,onnx_free_dim_overrides",
+            "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
         ;
     
     options.positional_help("<PATH_TO_MODEL>");
@@ -135,6 +140,22 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         else
         {
             throw std::invalid_argument("Unexpected value for pix_capture_type. Must be 'gpu', 'timing', or 'manual'");
+        }
+    }
+
+    if (result.count("onnx_free_dim_overrides"))
+    {
+        auto freeDimOverrides = result["onnx_free_dim_overrides"].as<std::vector<std::string>>(); 
+        for (auto& value : freeDimOverrides)
+        {
+            auto splitPos = value.find(":");
+            if (splitPos == std::string::npos)
+            {
+                throw std::invalid_argument("Expected ':' separating free dimension name and its value");
+            }
+            auto overrideName = value.substr(0, splitPos);
+            auto overrideValue = value.substr(splitPos + 1);
+            m_freeDimensionOverrides.emplace_back(overrideName, std::stoul(overrideValue));
         }
     }
 

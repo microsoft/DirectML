@@ -18,6 +18,7 @@ public:
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
+    gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionOverrides() const { return m_freeDimensionOverrides; }
 
 private:
     bool m_showAdapters = false;
@@ -30,4 +31,7 @@ private:
     uint32_t m_dispatchIterations = 1;
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
+
+    // [onnx models] Overrides for free dimensions. First value in pair the name, second value is the dimension size.
+    std::vector<std::pair<std::string, uint32_t>> m_freeDimensionOverrides;
 };
