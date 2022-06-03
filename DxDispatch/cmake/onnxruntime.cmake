@@ -37,7 +37,7 @@ function(init_onnxruntime_cache_variables prefix)
         set(default_type none)
     endif()
     set(${prefix}_ONNXRUNTIME_TYPE 
-        nuget
+        "${default_type}" 
         CACHE STRING "ONNXRUNTIME dependency type"
     )
     set_property(CACHE ${prefix}_ONNXRUNTIME_TYPE PROPERTY STRINGS nuget gdk none)
@@ -91,6 +91,7 @@ endfunction()
 # -----------------------------------------------------------------------------
 function(init_onnxruntime_target_stub target_name)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "None")
+    target_compile_definitions(${target_name} INTERFACE ONNXRUNTIME_NONE)
 endfunction()
 
 # -----------------------------------------------------------------------------

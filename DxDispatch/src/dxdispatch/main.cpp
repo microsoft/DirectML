@@ -4,7 +4,9 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "JsonParsers.h"
+#ifndef ONNXRUNTIME_NONE
 #include "OnnxParsers.h"
+#endif
 #include "Executor.h"
 #include "CommandLineArgs.h"
 
@@ -55,7 +57,11 @@ int main(int argc, char** argv)
         }
         else if (args.ModelPath().extension() == ".onnx")
         {
+#ifdef ONNXRUNTIME_NONE
+            throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+#else
             model = OnnxParsers::ParseModel(args.ModelPath());
+#endif
         }
         else
         {

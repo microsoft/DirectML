@@ -8,7 +8,9 @@
 #ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
 #endif
+#ifndef ONNXRUNTIME_NONE
 #include "OnnxDispatchable.h"
+#endif
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
@@ -55,7 +57,11 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             }
             else if (std::holds_alternative<Model::OnnxDispatchableDesc>(desc.value))
             {
+#ifdef DXCOMPILER_NONE
+                throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+#else
                 m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value));
+#endif
             }
             else
             {

@@ -53,6 +53,7 @@ add_directml_target(directml CACHE_PREFIX DXD)
 
 include(cmake/onnxruntime.cmake)
 add_onnxruntime_target(onnxruntime CACHE_PREFIX DXD)
+get_target_property(onnxruntime_type onnxruntime DX_COMPONENT_CONFIG)
 
 # ==============================================================================
 # Model Library
@@ -61,8 +62,11 @@ add_library(
     model STATIC 
     src/model/JsonParsers.cpp 
     src/model/Model.cpp
-    src/model/OnnxParsers.cpp
 )
+
+if(NOT onnxruntime_type STREQUAL None)
+    target_sources(model PRIVATE src/model/OnnxParsers.cpp)
+endif()
 
 target_link_libraries(
     model 

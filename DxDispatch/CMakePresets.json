@@ -38,7 +38,7 @@
         { 
             "name": "linux-x64",
             "displayName": "Linux x64",
-            "generator": "Ninja",
+            "generator": "Ninja Multi-Config",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": { 
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/${presetName}/install"
@@ -95,6 +95,18 @@
             "name": "xbox-scarlett-release",
             "displayName": "Release",
             "configurePreset": "xbox-scarlett",
+            "configuration": "Release"
+        },
+        {
+            "name": "linux-x64-debug",
+            "displayName": "Debug",
+            "configurePreset": "linux-x64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "linux-x64-release",
+            "displayName": "Release",
+            "configurePreset": "linux-x64",
             "configuration": "Release"
         }
     ]
