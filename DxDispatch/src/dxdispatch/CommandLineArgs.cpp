@@ -74,7 +74,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<std::string>()->default_value("manual")
         )
         (
-            "f,onnx_free_dim_overrides",
+            "f,onnx_free_dim_override",
             "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
@@ -143,9 +143,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     }
 
-    if (result.count("onnx_free_dim_overrides"))
+    if (result.count("onnx_free_dim_override"))
     {
-        auto freeDimOverrides = result["onnx_free_dim_overrides"].as<std::vector<std::string>>(); 
+        auto freeDimOverrides = result["onnx_free_dim_override"].as<std::vector<std::string>>(); 
         for (auto& value : freeDimOverrides)
         {
             auto splitPos = value.find(":");
