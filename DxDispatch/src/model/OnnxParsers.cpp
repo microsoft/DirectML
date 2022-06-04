@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "OnnxParsers.h"
 #include "DirectMLX.h"
+#include "dml_provider_factory.h"
 
 std::string OnnxParsers::GetTensorName(size_t index, Ort::Session const& session, bool isInput)
 {
@@ -87,6 +88,8 @@ Model OnnxParsers::ParseModel(const std::filesystem::path& filePath, gsl::span<c
     {
         ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
     }
+
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(sessionOptions, 0));
 
     Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch");
 
