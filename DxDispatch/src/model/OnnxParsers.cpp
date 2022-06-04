@@ -74,12 +74,19 @@ static uint32_t OnnxTensorDataTypeSize(ONNXTensorElementDataType dataType)
     }
 }
 
-Model OnnxParsers::ParseModel(const std::filesystem::path& filePath)
+Model OnnxParsers::ParseModel(const std::filesystem::path& filePath, gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides)
 {
+    const OrtApi& ortApi = Ort::GetApi();
+
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+
+    for (auto& freeDimOverride : freeDimOverrides)
+    {
+        ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
+    }
 
     Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch");
 

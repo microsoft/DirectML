@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 #ifdef ONNXRUNTIME_NONE
             throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
 #else
-            model = OnnxParsers::ParseModel(args.ModelPath());
+            model = OnnxParsers::ParseModel(args.ModelPath(), args.GetOnnxFreeDimensionOverrides());
 #endif
         }
         else
