@@ -38,6 +38,11 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
+    // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
+    // message.
+    auto pixCaptureHelper = std::make_unique<PixCaptureHelper>(args.GetPixCaptureType());
+
     if (args.ShowAdapters())
     {
         for (auto& adapter : Adapter::GetAll())
@@ -82,7 +87,7 @@ int main(int argc, char** argv)
             adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 
             args.CommandListType(),
-            args.GetPixCaptureType());
+            std::move(pixCaptureHelper));
         LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
     }
     catch (std::exception& e)

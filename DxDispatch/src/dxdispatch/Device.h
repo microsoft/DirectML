@@ -6,7 +6,7 @@
 class Device
 {
 public:
-    Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, PixCaptureType pixCaptureType);
+    Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper);
     ~Device();
 
     ID3D12Device2* D3D() { return m_d3d.Get(); }
@@ -14,7 +14,7 @@ public:
     ID3D12CommandQueue* GetCommandQueue() { return m_queue.Get(); }
     D3D12_COMMAND_LIST_TYPE GetCommandListType() const { return m_commandListType; }
     ID3D12GraphicsCommandList* GetCommandList() { return m_commandList.Get(); }
-    PixCaptureHelper& GetPixCaptureHelper() { return m_pixCaptureHelper; }
+    PixCaptureHelper& GetPixCaptureHelper() { return *m_pixCaptureHelper; }
 
 #ifndef DXCOMPILER_NONE
     IDxcUtils* GetDxcUtils();
@@ -67,7 +67,7 @@ private:
     void EnsureDxcInterfaces();
 
 private:
-    PixCaptureHelper m_pixCaptureHelper;
+    std::unique_ptr<PixCaptureHelper> m_pixCaptureHelper;
     Microsoft::WRL::ComPtr<ID3D12Device8> m_d3d;
 #ifndef _GAMING_XBOX
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> m_infoQueue;
