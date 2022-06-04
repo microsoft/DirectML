@@ -73,8 +73,9 @@ static ID3D12Resource* GetResourceFromModelBinding(
 
 OnnxDispatchable::OnnxDispatchable(
     std::shared_ptr<Device> device, 
-    const Model::OnnxDispatchableDesc& desc
-    ) : m_device(device), m_desc(desc)
+    const Model::OnnxDispatchableDesc& desc,
+    const CommandLineArgs& args
+    ) : m_device(device), m_desc(desc), m_args(args)
 {
 }
 
@@ -90,10 +91,10 @@ void OnnxDispatchable::Initialize()
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED); // Note ORT_ENABLE_BASIC is useful for debugging.
  
-    // need args here.
-
-    // TODO: support AddFreeDimensionOverrideByName key/value pairs in json model
-    //ortApi.AddFreeDimensionOverrideByName(sessionOptions, "asdf", 1);
+    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionOverrides())
+    {
+        ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
+    }
 
     Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProviderEx_DML(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 

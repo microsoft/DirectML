@@ -60,7 +60,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 #ifdef ONNXRUNTIME_NONE
                 throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
 #else
-                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value));
+                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args);
 #endif
             }
             else
