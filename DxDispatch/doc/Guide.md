@@ -13,6 +13,7 @@
   - [Dispatchables](#dispatchables)
     - [DirectML Operator](#directml-operator)
     - [HLSL Compute Shader](#hlsl-compute-shader)
+    - [ONNX Model](#onnx-model)
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
@@ -39,12 +40,13 @@ This guide is organized as follows:
 
 # Running the Program
 
-The most basic usage is to simply pass in the path to a JSON model. For example, this will run on of the examples:
+The most basic usage is to simply pass in the path to a JSON model. For example, this will run one of the DML operator examples:
 
 ```
 > dxdispatch.exe .\models\dml_reduce.json
 
 Running on 'NVIDIA GeForce RTX 2070 SUPER'
+Dispatch 'sum': 1.1294 ms average
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
@@ -52,20 +54,34 @@ Resource 'output': 6, 15, 24
 There are more options available to you. If you run the executable with no arguments (or `--help`) it will display the available options:
 
 ```
-dxdispatch version 0.1.0
-Usage:
-  dxdispatch [OPTION...] <PATH_TO_MODEL_JSON>
+dxdispatch version 0.6.0
+  DirectML     : NuGet (Microsoft.AI.DirectML.1.8.2)
+  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.602.0)
+  DXCompiler   : Release (v1.6.2112)
+  PIX          : NuGet (WinPixEventRuntime.1.0.220124001)
+  ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.11.0)
 
-  -d, --debug                Enable D3D and DML debug layers
-  -b, --benchmark            Show benchmarking information
-  -i, --dispatch_repeat arg  [Benchmarking only] The number of times to      
-                             repeat each dispatch (default: 128)
-  -h, --help                 Print command-line usage help
-  -a, --adapter arg          Substring to match a desired DirectX adapter    
-                             (default: )
-  -s, --show_adapters        Show all available DirectX adapters
-  -q, --direct_queue         Use a direct queue/lists (default is compute
-                             queue/lists)
+Usage:
+  dxdispatch [OPTION...] <PATH_TO_MODEL>
+
+  -d, --debug                   Enable D3D and DML debug layers
+  -i, --dispatch_iterations arg
+                                The number of times to repeat each dispatch
+                                (default: 1)
+  -h, --help                    Print command-line usage help
+  -a, --adapter arg             Substring to match a desired DirectX adapter
+                                (default: )
+  -s, --show_adapters           Show all available DirectX adapters
+  -q, --direct_queue            Use a direct queue/lists (default is a
+                                compute queue/lists)
+      --xbox_allow_precompile   Disables automatically defining
+                                __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
+  -c, --pix_capture_type arg    Type of PIX captures to take: gpu, timing, or
+                                manual. (default: manual)
+  -f, --onnx_free_dim_override arg
+                                List of free dimension overrides by name
+                                (ONNX models only). Can be repeated. Example: -f
+                                foo:3 -f bar:5 (default: )
 ```
 
 
@@ -257,7 +273,7 @@ You can initialize a buffer is using an array of elements with different types a
 
 ## Dispatchables
 
-Dispatchables are objects that can be written into a D3D command list. The model supports two types of dispatchables: DirectML operators and custom HLSL compute shaders.
+Dispatchables are objects that can be executed on a D3D command queue. The model supports three types of dispatchables: DirectML operators, custom HLSL compute shaders, and serialized ONNX models.
 
 ### DirectML Operator
 
@@ -297,7 +313,7 @@ The example below shows how to reference the shader in the JSON model:
 ```json
 {
     "type": "hlsl",
-    "sourcePath": "models/add_fp16.hlsl",
+    "sourcePath": "models/hlsl_add_fp16.hlsl",
     "compiler": "dxc",
     "compilerArgs": 
     [
@@ -309,7 +325,7 @@ The example below shows how to reference the shader in the JSON model:
 }
 ```
 
-The contents of `models/add_fp16.hlsl` could, for example, point at the following contents:
+The contents of `models/hlsl_add_fp16.hlsl` could, for example, point at the following contents:
 
 ```c
 StructuredBuffer<float16_t> inputA;
@@ -333,6 +349,71 @@ void CSMain(uint3 dtid : SV_DispatchThreadID)
 - A single descriptor table will reference all shader resources (buffers). SRVs, UAVs, and CBVs will be created automatically by reflecting the HLSL source and using appropriate views. You have some control over these views when binding (discussed later).
 - You may declare shader resources using any type of buffer view, but textures are not supported. Arrays of resources (e.g. `Buffer<float> inputs[2];`), including unbounded arrays, are not yet supported. This is on the backlog though!
 - If you declare a resource in HLSL but do not reference it in the shader program then it will likely be optimized away! Binding failures will result if you try to bind a buffer in the model to an unused shader input.
+
+### ONNX Model
+
+You can execute ONNX models using ONNX Runtime with the DirectML execution provider using an ONNX dispatchable. The example below shows how to reference an ONNX model in the JSON model.
+
+```json
+{
+    "resources": 
+    {
+        "A0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "B0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
+        "A1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "B1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
+        "Out": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 12, "value": 0 } }
+    },
+
+    "dispatchables": 
+    {
+        "gemm": { "type": "onnx", "sourcePath": "models/onnx_gemm.onnx" }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "gemm",
+            "bindings": 
+            {
+                "A0": "A0",
+                "B0": "B0",
+                "A1": "A1",
+                "B1": "B1",
+                "add": "Out"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}
+```
+
+Resources in the JSON model are bound to the ONNX model's input/output tensors. The `onnx_gemm.onnx` example has four inputs and one output:
+
+![ONNX model binding](images/onnx_model.png)
+
+The above DxDispatch JSON model is executed like any other model:
+
+```
+> dxdispatch.exe .\models\onnx_gemm.json
+```
+
+However, as a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to defining buffer resources for each ONNX input/output tensor with uninitialized values, dispatching the ONNX model once, and not issuing and print commands. This convenience is primarily intended for benchmarking and debugging.
+
+```
+> dxdispatch.exe .\models\onnx_gemm.onnx
+```
+
+Some ONNX models have "free" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These free dimensions become -1 unless they are explicitly given a value. You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
+
+```
+> dxdispatch.exe some_model.onnx -f seq_len:100
+```
 
 ## Commands
 ### Dispatch
@@ -630,33 +711,51 @@ The debug layers won't catch everything, but they can be extremely helpful. Keep
 
 ## Benchmarking
 
-The `--benchmark` option gives you a simple way to measure the elapsed time of a dispatch. It's usually better to profile using a dedicated tool like PIX, but this option can be useful for quickly scripting multiple executions with different arguments (e.g. problem size).
+DxDispatch shows the time taken for the CPU and GPU to synchronize after each dispatchable is executed. It's important to recognize that executing a small operation (e.g. summing 32 elements) on the GPU is extremely inefficient, so these times may not reflect real-world performance when several expensive operations are being computed in parallel.
 
 ```
-> dxdispatch.exe .\models\dml_reduce.json -b
+> dxdispatch.exe .\models\dml_reduce.json
 
 Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 0.00671445 ms
+Dispatch 'sum': 1.1053 ms average
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
 
-When `--benchmark` mode is enabled each dispatch command will record the multiple instances of the same dispatchable into the same command list and divide the total execution duration by the number of instances. The default is 256 times, but you can control this with `--dispatch_repeat <i>`. For example, the following invocation will record the DML reduce operator 1000 times:
+Additionally, the first dispatch is often slower, so you may find it better to run a dispatchable multiple times to get a more accurate measurement. The `-i <iterations>` option will repeat each dispatch the given number of times:
 
 ```
-> dxdispatch.exe .\models\dml_reduce.json -b -i 1000
+> dxdispatch.exe .\models\dml_reduce.json -i 100
 
 Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 0.00562345 ms
+Dispatch 'sum': 0.1483 ms average
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
 
-A larger number of repeats may give a more accurate time. This is a very simplistic benchmarking technique and may be improved in the future.
+It's usually better to profile using a dedicated tool like PIX, but this option can be useful for quickly scripting multiple executions with different arguments (e.g. problem size). This built-in measurement becomes more useful and accurate when dispatching large workloads like ONNX models.
+
+```
+> dxdispatch.exe vgg16-12.onnx -i 5
+
+Running on 'NVIDIA GeForce RTX 2070 SUPER'
+Dispatch 'vgg16-12.onnx': 9.6295 ms average
+```
 
 ## GPU Captures in PIX
 
-For a deeper look into performance you'll want to use a dedicated profiling tool like [PIX](https://devblogs.microsoft.com/pix/introduction/). Hardware vendors also provide their own profiling tools that should also be compatible. Using these tools is outside the scope of this guide, but as an example here's a GPU capture with PIX:
+For a deeper look into performance you'll want to use a dedicated profiling tool like [PIX](https://devblogs.microsoft.com/pix/introduction/). Hardware vendors also provide their own profiling tools that should also be compatible. Using these tools is outside the scope of this guide, but there is a command-line option to record a GPU capture for PIX:
+
+```
+> dxdispatch.exe vgg16-12.onnx -c gpu
+Dispatch 'vgg16-12.onnx': 1870.3969 ms average
+```
+
+The above command takes significantly longer as PIX is tracing all the D3D calls, so the dispatch measurement time is not reflective of real performance. However, you can now open the capture file (in this example `dxdispatch_vgg16-12.onnx.wpix` will be created) and run analysis on it. Note the GPU execution time (~9.47ms) is similar to the CPU measurement shown early (~9.6295 ms).
+
+![](images/pix_gpu_capture2.png)
+
+The `-c` option tells DxDispatch to take a GPU capture for every single dispatch, but you can take captures manually from the PIX UI. Specify the command-line options *without* `-c`, launch the executable suspended, and then click either the GPU or timing capture buttons. This is necessary for taking timing captures since PIX for Windows does not currently support programmatic timing captures.
 
 ![](images/pix_gpu_capture0.png)
 
@@ -664,23 +763,19 @@ You'll notice that resources and dispatches are labeled with the names of object
 
 ![](images/pix_gpu_capture1.png)
 
-The image below shows some of the occupancy and timing data captured (the dml_reduce.json model was modified to have ~4M elements, since reducing 9 elements is not interesting enough for profiling). As you might expect, reduction has low arithmetic complexity and thus the ALU/FMA pipes are not too busy; however, there is good occupancy on the cores and some degree of L1 cache hits. Reduction is memory-bandwidth bound.
-
-![](images/pix_gpu_capture2.png)
-
 ## Shader Debugging in PIX
 
 The profiling examples in the previous example used a DML operator, but of course you can profile your custom shaders using the same approach. HLSL dispatchables can also be debugged and modified on the fly in PIX. Make sure to add `-Zi` (or `-Zs`) and `-Od` to your HLSL dispatchable arguments, which will disable optimizations produce a PDB for your compiled shader. You can then launch your HLSL model, step through it, and even make changes all within PIX:
 
 ![](images/pix_shader_debug.png)
 
-Below is a modified version of `add_fp16.json` used in the example above. Within PIX you may need to resolve the PDB path (should be generated in the working directory from which dxdispatch.exe was launched).
+Below is a modified version of `hlsl_add_fp16.json` used in the example above. Within PIX you may need to resolve the PDB path (should be generated in the working directory from which dxdispatch.exe was launched).
 
 ```json
 "add": 
 {
     "type": "hlsl",
-    "sourcePath": "models/add_fp16.hlsl",
+    "sourcePath": "models/hlsl_add_fp16.hlsl",
     "compiler": "dxc",
     "compilerArgs": 
     [

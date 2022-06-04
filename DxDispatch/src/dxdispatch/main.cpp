@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     {
         for (auto& adapter : Adapter::GetAll())
         {
-            LogInfo(adapter.GetDetailedDescription());
+            LogInfo(adapter.GetDetailedDescription() + "\n");
         }
 
         return 0;
