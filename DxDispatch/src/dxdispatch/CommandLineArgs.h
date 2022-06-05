@@ -29,7 +29,11 @@ private:
     std::filesystem::path m_modelPath;
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
+#ifdef _GAMING_XBOX
+    D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+#else
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+#endif
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 
     // [onnx models] Overrides for free dimensions. First value in pair the name, second value is the dimension size.

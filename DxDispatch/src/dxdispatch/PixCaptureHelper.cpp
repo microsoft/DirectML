@@ -68,7 +68,7 @@ HRESULT PixCaptureHelper::BeginCapturableWork(std::string commandName)
 
         case PixCaptureType::Manual:
         {
-            return E_NOTIMPL;
+            return S_OK;
         }
 
         case PixCaptureType::None:
@@ -106,7 +106,7 @@ HRESULT PixCaptureHelper::EndCapturableWork()
 
         case PixCaptureType::Manual:
         {
-            return E_NOTIMPL;
+            return S_OK;
         }
 
         case PixCaptureType::None:

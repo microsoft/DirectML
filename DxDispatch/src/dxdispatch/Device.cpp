@@ -17,8 +17,11 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
     {
         params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
     }
-    // Enable the instrumented driver.
-    //params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
+    if (m_pixCaptureHelper->GetPixCaptureType() != PixCaptureType::None)
+    {
+        // Enable the instrumented driver.
+        params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
+    }
 
     params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
     params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);

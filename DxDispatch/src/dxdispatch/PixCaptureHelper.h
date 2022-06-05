@@ -27,6 +27,7 @@ public:
 
     HRESULT BeginCapturableWork(std::string commandName);
     HRESULT EndCapturableWork();
+    PixCaptureType GetPixCaptureType() const { return m_captureType; }
 
 private:
     PixCaptureType m_captureType;
