@@ -55,7 +55,7 @@ HRESULT PixCaptureHelper::BeginCapturableWork(std::string commandName)
             captureParams.TimingCaptureParameters.CaptureCpuSamples = TRUE;
             captureParams.TimingCaptureParameters.CpuSamplesPerSecond = 4000;
             captureParams.TimingCaptureParameters.CaptureStorage = PIXCaptureParameters::Memory;
-            captureParams.TimingCaptureParameters.FileName = captureName.c_str();
+            captureParams.TimingCaptureParameters.FileName = captureName.data();
             captureParams.TimingCaptureParameters.MaximumToolingMemorySizeMb = 4096;
             return PIXBeginCapture(PIX_CAPTURE_TIMING, &captureParams);
         }

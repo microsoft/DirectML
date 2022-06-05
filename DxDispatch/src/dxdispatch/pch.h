@@ -21,6 +21,7 @@
 #include <chrono>
 #include <functional>
 #include <numeric>
+#include <thread>
 
 #ifndef _WIN32
 #include <wsl/winadapter.h>
