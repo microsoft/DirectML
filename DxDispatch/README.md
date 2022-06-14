@@ -79,14 +79,14 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
     <td>❌ none</td>
     <td>❌ none</td>
   </tr>
-  <tr>
+  <!-- <tr>
     <td>Xbox Scarlett</td>
     <td><b>✅ <u>local</u></b></td>
     <td><b>✅ <u>gdk</u></b></td>
     <td><b>✅ <u>gdk</u></b></td>
     <td><b>✅ <u>gdk</u></b></td>
     <td><b>✅ <u>local</u></b></td>
-  </tr>
+  </tr> -->
 </table>
 
 The default redistributable versions of components (e.g. nuget, archives):
