@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='Squeezenet model for TF2')
 parser.add_argument('--mode', type=str, default='train', help='Can be "train" or "test"')
 parser.add_argument('--checkpoint_dir', type=str, default='./', help='Directory to store checkpoints during training')
 parser.add_argument('--restore_checkpoint', action='store_true', help='Use this flag if you want to resume training from a previous checkpoint')
-parser.add_argument('--batch_size', type=int, default=32, help='Number of images per batch fed through network')
+parser.add_argument('--batch_size', type=int, default=512, help='Number of images per batch fed through network')
 parser.add_argument('--num_epochs', type=int, default=100, help='Number of passes through training data before stopping')
 parser.add_argument("--log_device_placement", action="store_true", help="Print the operator device placement on the pre-optimized graph")
 parser.add_argument('--device', type=str, default='CPU:0' if not gpu_available else 'GPU:0', help='Specify manually to use non-DML GPU device eg. CPU:0')
@@ -127,7 +127,7 @@ def main():
                 model = SqueezeNet()
 
             if args.restore_checkpoint or args.mode == 'test':
-                model.load_weights(ckpt_dir)
+                model.load_weights(ckpt_dir).expect_partial()
 
             if args.mode == 'train':
                 x_train, y_train = train_dataset
@@ -144,15 +144,15 @@ def main():
                                                             save_weights_only=True,
                                                             verbose=1)
                 cbs.append(cp_callback)
-                model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+                model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.04, epsilon=1.0), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
                 history = model.fit(x_train, y_train, epochs=num_epochs, shuffle=False, batch_size=batch_size, validation_data=test_dataset, callbacks=cbs)
                 train_loss = history.history['loss']
                 train_acc = history.history['accuracy']
 
             if args.mode == 'test':
                 x_test, y_test = test_dataset
-                model.compile(optimizer="Adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
-                loss, acc = model.evaluate(x_test, y_test, verbose=2)
+                model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.04, epsilon=1.0), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+                loss, acc = model.evaluate(x_test, y_test, batch_size=batch_size, verbose=2)
 
     except RuntimeError as e:
         print(e)
