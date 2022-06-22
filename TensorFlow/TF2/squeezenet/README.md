@@ -7,10 +7,10 @@ To run the SqueezeNet training script using the TensorFlow-DirectML plugin, foll
 Run the following commands to set up a conda environment with the correct packages installed to run the squeezenet.py script on the TFDML plugin. These assume that you are running from the directory containing the squeezenet.py script and the TFDML plugin wheel.
 
 ```
-    conda create --name tfdml_plugin python=3.7
+    conda create --name tfdml_plugin
     conda activate tfdml_plugin
-    pip install tf-nightly-cpu==2.9.0.dev20220329
-    pip install <tfdml plugin>
+    pip install tf-nightly-cpu
+    pip install tensorflow-directml-plugin
 ```
 
 ## Sample
