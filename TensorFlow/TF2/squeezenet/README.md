@@ -9,7 +9,7 @@ Run the following commands to set up a conda environment with the correct packag
 ```
     conda create --name tfdml_plugin
     conda activate tfdml_plugin
-    pip install tf-nightly-cpu
+    pip install tensorflow-cpu
     pip install tensorflow-directml-plugin
 ```
 
