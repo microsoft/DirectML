@@ -13,5 +13,9 @@ namespace OnnxParsers
 
     // Generates a DxDispatch model that has appropriate resources for an ONNX model's
     // inputs and outputs. The resources will be initialized with random values.
-    Model ParseModel(const std::filesystem::path& filePath, gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides);
+    Model ParseModel(
+        IDMLDevice* device,
+        ID3D12CommandQueue* queue,
+        const std::filesystem::path& filePath, 
+        gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides);
 }

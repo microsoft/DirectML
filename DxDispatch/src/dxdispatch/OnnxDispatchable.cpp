@@ -8,8 +8,6 @@
 
 using Microsoft::WRL::ComPtr;
 
-#define THROW_IF_NOT_OK(status) {auto localStatus = (status); if (localStatus) throw E_FAIL;}
-
 template<typename T>
 using deleting_unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
 
@@ -24,7 +22,7 @@ static Ort::Value CreateTensorFromResource(
     *dmlEpResourceWrapper = nullptr;
 
     void* dmlAllocatorResource;
-    THROW_IF_NOT_OK(ortDmlApi->CreateGPUAllocationFromD3DResource(d3dResource, &dmlAllocatorResource));
+    Ort::ThrowOnError(ortDmlApi->CreateGPUAllocationFromD3DResource(d3dResource, &dmlAllocatorResource));
     auto deleter = [&](void*) {ortDmlApi->FreeGPUAllocation(dmlAllocatorResource); };
     deleting_unique_ptr<void> dmlAllocatorResourceCleanup(dmlAllocatorResource, deleter);
 
@@ -87,7 +85,7 @@ OnnxDispatchable::OnnxDispatchable(
 void OnnxDispatchable::Initialize()
 {
     const OrtApi& ortApi = Ort::GetApi();
-    THROW_IF_NOT_OK(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
+    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
     Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
     
@@ -101,7 +99,9 @@ void OnnxDispatchable::Initialize()
         ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
     }
 
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProviderEx_DML(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
+    const OrtDmlApi* ortDmlApi;
+    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
+    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 
     m_session = Ort::Session(ortEnvironment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);

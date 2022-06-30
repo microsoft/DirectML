@@ -3,8 +3,6 @@
 #include "DirectMLX.h"
 #include "dml_provider_factory.h"
 
-#define THROW_IF_NOT_OK(status) {auto localStatus = (status); if (localStatus) throw E_FAIL;}
-
 std::string OnnxParsers::GetTensorName(size_t index, Ort::Session const& session, bool isInput)
 {
     Ort::AllocatorWithDefaultOptions allocator;
@@ -77,7 +75,11 @@ static uint32_t OnnxTensorDataTypeSize(ONNXTensorElementDataType dataType)
     }
 }
 
-Model OnnxParsers::ParseModel(const std::filesystem::path& filePath, gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides)
+Model OnnxParsers::ParseModel(
+    IDMLDevice* device,
+    ID3D12CommandQueue* queue,
+    const std::filesystem::path& filePath, 
+    gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides)
 {
     const OrtApi& ortApi = Ort::GetApi();
 
@@ -92,8 +94,8 @@ Model OnnxParsers::ParseModel(const std::filesystem::path& filePath, gsl::span<c
     }
 
     const OrtDmlApi* ortDmlApi;
-    THROW_IF_NOT_OK(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
-    ortDmlApi->SessionOptionsAppendExecutionProvider_DML(sessionOptions, 0);
+    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
+    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, device, queue));
 
     Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch");
 
