@@ -57,13 +57,13 @@ function(init_d3d12_cache_variables prefix)
 
     # <PREFIX>_D3D12_NUGET_VERSION
     set(${prefix}_D3D12_NUGET_VERSION
-        1.4.10
+        1.602.0
         CACHE STRING "Version of the D3D12 NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_D3D12_NUGET_HASH
     set(${prefix}_D3D12_NUGET_HASH 
-        8e7fc23973aedcc1d98584c7b260d0073b6fa6da3552da386566410ccea0ad26
+        50ce89aac1b7ac0b74bd26bacb1a0126d05e65c4d7f2f4f05c4bcc956eea531f
         CACHE STRING "SHA256 hash of the D3D12 NuGet package (TYPE == nuget)."
     )
 
@@ -82,7 +82,7 @@ function(init_d3d12_target_nuget target_name pkg_id pkg_version pkg_hash)
         message(FATAL_ERROR "The NuGet version of D3D12 only works on Windows")
     endif()
 
-    if(NOT pkg_version MATCHES "[0-9]+\.([0-9])+\.[0-9]+.*")
+    if(NOT pkg_version MATCHES "[0-9]+\\.([0-9]+)\\.[0-9]+.*")
         message(FATAL_ERROR "Could not parse D3D12 package version")
     endif()
     set(agility_sdk_version ${CMAKE_MATCH_1})

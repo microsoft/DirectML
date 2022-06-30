@@ -11,7 +11,7 @@
 # - PIX_TYPE
 #       nuget  : Use NuGet distribution of PIX event runtime.
 #       gdk    : Use GDK distribution of PIX event runtime.
-#       none   : No dependeny on PIX event runtime (stub target).
+#       none   : No dependency on PIX event runtime (stub target).
 #
 # - PIX_NUGET_ID : ID of the PIX event runtime NuGet package (TYPE == nuget).
 # - PIX_NUGET_VERSION : Version of the PIX event runtime NuGet package (TYPE == nuget).
@@ -53,13 +53,13 @@ function(init_pix_cache_variables prefix)
 
     # <PREFIX>_PIX_NUGET_VERSION
     set(${prefix}_PIX_NUGET_VERSION
-        1.0.210818001
+        1.0.220124001
         CACHE STRING "Version of the PIX event runtime NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_PIX_NUGET_HASH
     set(${prefix}_PIX_NUGET_HASH 
-        70910c2d58b555693ba340b2f5e92dcb2f3d54690ee98130d2ebf7aef5730307
+        5b194b1ee6596a00ae3caedf7b70204d3a6c737e91333d7f971baec46b9666d9
         CACHE STRING "SHA256 hash of the PIX event runtime NuGet package (TYPE == nuget)."
     )
 endfunction()

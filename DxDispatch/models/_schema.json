@@ -229,6 +229,20 @@
             "required": [ "desc" ]
         },
 
+        "onnxDispatchable": 
+        {
+            "type": "object",
+            "properties": 
+            {
+                "sourcePath": 
+                {
+                    "type": "string",
+                    "description": "Path to the ONNX model file"
+                }
+            },
+            "required": [ "sourcePath" ]
+        },
+
         "dispatchable": 
         {
             "type": "object",
@@ -243,7 +257,13 @@
             "required": ["type"],
             "if": { "properties": { "type": { "const": "hlsl" } } },
             "then": { "$ref": "#/$defs/hlslDispatchable" },
-            "else": { "$ref": "#/$defs/dmlDispatchable" }
+            "else": { 
+                "if": { "properties": { "type": { "const": "onnx" } } },
+                "then": { "$ref": "#/$defs/onnxDispatchable" },
+                "else": { 
+                    "$ref": "#/$defs/dmlDispatchable" 
+                }
+            }
         },
         
         "binding": 

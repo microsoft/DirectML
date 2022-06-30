@@ -134,5 +134,5 @@ namespace JsonParsers
     Model::Command ParseModelCommand(const rapidjson::Value& object);
 
     Model ParseModel(const rapidjson::Document& doc);
-    Model ParseModel(std::string filePath);
+    Model ParseModel(const std::filesystem::path& filePath);
 }

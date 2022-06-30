@@ -1126,6 +1126,14 @@ Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const rapidjson::Valu
     return desc;
 }
 
+Model::OnnxDispatchableDesc ParseModelOnnxDispatchableDesc(const rapidjson::Value& object)
+{
+    Model::OnnxDispatchableDesc desc = {};
+    desc.sourcePath = ParseStringField(object, "sourcePath");
+
+    return desc;
+}
+
 Model::BufferBindingSource ParseBufferBindingSource(const rapidjson::Value& value)
 {
     Model::BufferBindingSource bindingSource = {};
@@ -1203,6 +1211,10 @@ Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const 
     if (!_stricmp(type.data(), "hlsl")) 
     { 
         desc.value = ParseModelHlslDispatchableDesc(object);
+    }
+    else if (!_stricmp(type.data(), "onnx"))
+    {
+        desc.value = ParseModelOnnxDispatchableDesc(object);
     }
     else
     {
@@ -1349,18 +1361,18 @@ Model ParseModel(const rapidjson::Document& doc)
     return {std::move(resources), std::move(operators), std::move(commands), std::move(allocator)};
 }
 
-Model ParseModel(std::string filePath)
+Model ParseModel(const std::filesystem::path& filePath)
 {
     if (!std::filesystem::exists(filePath))
     {
-        throw std::invalid_argument(fmt::format("Model does not exist. Path given: '{}'.", filePath));
+        throw std::invalid_argument(fmt::format("Model does not exist. Path given: '{}'.", filePath.string()));
     }
     if (std::filesystem::is_directory(filePath))
     {
-        throw std::invalid_argument(fmt::format("Model must be a JSON file, not a directory. Path given: '{}'", filePath));
+        throw std::invalid_argument(fmt::format("Model must be a JSON file, not a directory. Path given: '{}'", filePath.string()));
     }
 
-    std::ifstream ifs(filePath);
+    std::ifstream ifs(filePath.string());
     rapidjson::IStreamWrapper isw(ifs);
     rapidjson::Document doc;
 

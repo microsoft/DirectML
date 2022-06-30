@@ -13,7 +13,7 @@
 #       archive : Use a GitHub release archive.
 #       gdk     : Use a GDK distribution of DXCompiler.
 #       source  : Build DXCompiler from source.
-#       none    : No dependeny on DXCompiler (stub target).
+#       none    : No dependency on DXCompiler (stub target).
 #
 # - DXCOMPILER_ARCHIVE_URL : URL of the GitHub release archive (TYPE == archive).
 # - DXCOMPILER_ARCHIVE_HASH : SHA256 hash of the GitHub release archive (TYPE == archive).
@@ -36,7 +36,7 @@ function(init_dxcompiler_cache_variables prefix)
     # <PREFIX>_DXCOMPILER_TYPE
     if(TARGET_XBOX)
         set(default_type gdk)
-    elseif(TARGET_WINDOWS)
+    elseif(TARGET_WINDOWS AND TARGET_ARCH STREQUAL X64)
         set(default_type archive)
     else()
         set(default_type none) # "source" type isn't implemented yet

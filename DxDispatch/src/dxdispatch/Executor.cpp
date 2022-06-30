@@ -8,6 +8,9 @@
 #ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
 #endif
+#ifndef ONNXRUNTIME_NONE
+#include "OnnxDispatchable.h"
+#endif
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
@@ -26,7 +29,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 {
     // Initialize buffer resources.
     {
-        PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Initialize resources");
+        PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "Initialize resources");
         for (auto& desc : model.GetResourceDescs())
         {
             // Only buffers are supported right now.
@@ -35,9 +38,9 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             auto wName = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(desc.name);
             m_resources[desc.name] = std::move(device->Upload(bufferDesc.sizeInBytes, bufferDesc.initialValues, wName));
         }
-        device->DispatchAndWait();
-        device->PrintDebugLayerMessages();
     }
+    device->DispatchAndWait();
+    device->PrintDebugLayerMessages();
 
     // Create dispatchables.
     for (auto& desc : model.GetDispatchableDescs())
@@ -50,6 +53,14 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 throw std::invalid_argument("HLSL dispatchables require DXCompiler");
 #else
                 m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value), args);
+#endif
+            }
+            else if (std::holds_alternative<Model::OnnxDispatchableDesc>(desc.value))
+            {
+#ifdef ONNXRUNTIME_NONE
+                throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+#else
+                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args);
 #endif
             }
             else
@@ -80,7 +91,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 
     // Compile/initialize dispatchables.
     {
-        PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Initialize dispatchables");
+        PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Initialize dispatchables");
         for (auto& dispatchable : m_dispatchables)
         {
             try
@@ -95,6 +106,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 throw std::invalid_argument(fmt::format("ERROR while initializing '{}': {}", dispatchable.first, e.what()));
             }
         }
+        PIXEndEvent(m_device->GetCommandQueue());
     }
 }
 
@@ -108,94 +120,78 @@ void Executor::Run()
 
 void Executor::operator()(const Model::DispatchCommand& command)
 {
-    uint32_t executeIterations = m_commandLineArgs.BenchmarkingEnabled() ? 4 : 1;
-    std::vector<double> executeAverages;
+    auto& dispatchable = m_dispatchables[command.dispatchableName];
 
-    for (uint32_t executeIteration = 0; executeIteration < executeIterations; executeIteration++)
+    // DML and HLSL dispatchables write into the DxDispatch device command list; ONNX dispatchables use
+    // a command list owned by the DML execution provider in onnxruntime.dll.
+    const bool dispatchableUsesDeviceCommandList = dispatchable->RecordsDispatchIntoCommandList();
+
+    Timer timer;
+    std::vector<double> dispatchDurations;
+
+    Dispatchable::Bindings bindings;
+    try
     {
-        PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Dispatch '%s'", command.dispatchableName.c_str());
+        bindings = ResolveBindings(command.bindings);
+    }
+    catch (const std::exception& e)
+    {
+        LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
+        m_device->PrintDebugLayerMessages();
+        return;
+    }
 
-        auto& dispatchable = m_dispatchables[command.dispatchableName];
-        
-        Dispatchable::Bindings bindings;
-        try
-        {
-            bindings = ResolveBindings(command.bindings);
-        }
-        catch (const std::exception& e)
-        {
-            LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
-            m_device->PrintDebugLayerMessages();
-            return;
-        }
+    // Dispatch
+    PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
+    try
+    {
+        THROW_IF_FAILED(m_device->GetPixCaptureHelper().BeginCapturableWork(command.dispatchableName));
 
-        PIXBeginEvent(PIX_COLOR(128,255,0), L"Dispatch");
-
-        Timer timer;
-        std::vector<double> dispatchDurations;
-        uint32_t dispatchIterations = m_commandLineArgs.BenchmarkingEnabled() ? 
-            m_commandLineArgs.BenchmarkingDispatchRepeat() : 
-            1;
-
-        try
-        {
-            dispatchable->Bind(bindings);
-        }
-        catch (const std::exception& e)
-        {
-            LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
-            m_device->PrintDebugLayerMessages();
-            return;
-        }
-
-        try
+        for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
         {
             timer.Start();
-            for (uint32_t iteration = 0; iteration < dispatchIterations; iteration++)
+
+            try
             {
-                dispatchable->Dispatch(command);
-                if (iteration != dispatchIterations - 1)
-                {
-                    auto uavBarrier = CD3DX12_RESOURCE_BARRIER::UAV(nullptr);
-                    m_device->GetCommandList()->ResourceBarrier(1, &uavBarrier);
-                }
+                dispatchable->Bind(bindings);
             }
-            m_device->DispatchAndWait();
-            dispatchDurations.push_back(timer.End().DurationInMilliseconds() / dispatchIterations);
-        }
-        catch (const std::exception& e)
-        {
-            LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
-            m_device->PrintDebugLayerMessages();
-            return;
+            catch (const std::exception& e)
+            {
+                LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
+                m_device->PrintDebugLayerMessages();
+                return;
+            }
+
+            PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Dispatch '%s'", command.dispatchableName.c_str());
+            
+            dispatchable->Dispatch(command);
+            
+            if (dispatchableUsesDeviceCommandList)
+            {
+                m_device->DispatchAndWait();
+            }
+
+            PIXEndEvent(m_device->GetCommandQueue());
+
+            dispatchDurations.push_back(timer.End().DurationInMilliseconds());
         }
 
-        PIXEndEvent();
-
-        if (m_commandLineArgs.BenchmarkingEnabled())
-        {
-            double avgDispatch = 0;
-            for (auto& dur : dispatchDurations) 
-            { 
-                avgDispatch += dur; 
-            } 
-            avgDispatch /= dispatchDurations.size();
-
-            executeAverages.push_back(avgDispatch);
-        }
+        THROW_IF_FAILED(m_device->GetPixCaptureHelper().EndCapturableWork());
     }
-
-    if (m_commandLineArgs.BenchmarkingEnabled())
+    catch (const std::exception& e)
     {
-        // Assuming multiple times, skip the first since it warms up the pipeline.
-        int skipped = executeAverages.empty() ? 0 : 1;
-        double avgTime = std::accumulate(
-            executeAverages.begin() + skipped, 
-            executeAverages.end(), 
-            0.0) / (executeAverages.size() - skipped);
-
-        LogInfo(fmt::format("Dispatch '{}': {} ms", command.dispatchableName, avgTime));
+        LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
+        m_device->PrintDebugLayerMessages();
+        return;
     }
+    PIXEndEvent();
+
+    // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
+    int skipped = (dispatchDurations.size() > 1) ? 1 : 0;
+    double totalTime = std::accumulate(dispatchDurations.begin() + skipped, dispatchDurations.end(), 0.0);
+    double avgTime = totalTime / (dispatchDurations.size() - skipped);
+
+    LogInfo(fmt::format("Dispatch '{}': {:.4f} ms average", command.dispatchableName, avgTime));
 }
 
 template <typename T>

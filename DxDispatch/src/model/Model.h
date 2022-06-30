@@ -86,10 +86,15 @@ public:
         std::vector<std::string> compilerArgs;
     };
 
+    struct OnnxDispatchableDesc
+    {
+        std::filesystem::path sourcePath;
+    };
+
     struct DispatchableDesc
     {
         std::string name;
-        std::variant<DmlDispatchableDesc, HlslDispatchableDesc> value;
+        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc> value;
     };
 
     // COMMANDS

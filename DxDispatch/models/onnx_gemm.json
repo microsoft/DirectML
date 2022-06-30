@@ -1,0 +1,62 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A0": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4, 5, 6 ]
+        },
+        "B0": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+        },
+        "A1": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4, 5, 6 ]
+        },
+        "B1": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ]
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 12, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "gemm": 
+        {
+            "type": "onnx",
+            "sourcePath": "models/onnx_gemm.onnx"
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "gemm",
+            "bindings": 
+            {
+                "A0": "A0",
+                "B0": "B0",
+                "A1": "A1",
+                "B1": "B1",
+                "add": "Out"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}

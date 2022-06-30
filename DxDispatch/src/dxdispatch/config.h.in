@@ -8,3 +8,4 @@ static constexpr auto c_d3d12Config = "@d3d12_config@";
 static constexpr auto c_dxcompilerConfig = "@dxcompiler_config@";
 static constexpr auto c_pixConfig = "@pix_config@";
 static constexpr auto c_gdkConfig = "@gdk_config@";
+static constexpr auto c_ortConfig = "@ort_config@";

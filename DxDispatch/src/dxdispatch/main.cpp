@@ -4,6 +4,9 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "JsonParsers.h"
+#ifndef ONNXRUNTIME_NONE
+#include "OnnxParsers.h"
+#endif
 #include "Executor.h"
 #include "CommandLineArgs.h"
 
@@ -35,11 +38,16 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
+    // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
+    // message.
+    auto pixCaptureHelper = std::make_unique<PixCaptureHelper>(args.GetPixCaptureType());
+
     if (args.ShowAdapters())
     {
         for (auto& adapter : Adapter::GetAll())
         {
-            LogInfo(adapter.GetDetailedDescription());
+            LogInfo(adapter.GetDetailedDescription() + "\n");
         }
 
         return 0;
@@ -48,11 +56,26 @@ int main(int argc, char** argv)
     Model model;
     try
     {
-        model = JsonParsers::ParseModel(args.ModelPath());
+        if (args.ModelPath().extension() == ".json")
+        {
+            model = JsonParsers::ParseModel(args.ModelPath());
+        }
+        else if (args.ModelPath().extension() == ".onnx")
+        {
+#ifdef ONNXRUNTIME_NONE
+            throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+#else
+            model = OnnxParsers::ParseModel(args.ModelPath(), args.GetOnnxFreeDimensionOverrides());
+#endif
+        }
+        else
+        {
+            throw std::invalid_argument("Expected a .json or .onnx file");
+        }
     }
     catch (std::exception& e)
     {
-        LogError(fmt::format("Failed to parse the JSON model: {}", e.what()));
+        LogError(fmt::format("Failed to parse the model: {}", e.what()));
         return 1;
     }
 
@@ -63,7 +86,8 @@ int main(int argc, char** argv)
         device = std::make_shared<Device>(
             adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 
-            args.CommandListType());
+            args.CommandListType(),
+            std::move(pixCaptureHelper));
         LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
     }
     catch (std::exception& e)

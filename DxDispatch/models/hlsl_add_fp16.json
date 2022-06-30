@@ -34,7 +34,7 @@
         "add": 
         {
             "type": "hlsl",
-            "sourcePath": "models/add_fp16.hlsl",
+            "sourcePath": "models/hlsl_add_fp16.hlsl",
             "compiler": "dxc",
             "compilerArgs": 
             [

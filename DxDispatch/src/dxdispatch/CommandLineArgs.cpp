@@ -6,23 +6,25 @@
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
         auto banner = fmt::format(R"({} version {}
-  DirectML   : {}
-  D3D12      : {}
-  DXCompiler : {}
-  PIX        : {}
+  DirectML     : {}
+  D3D12        : {}
+  DXCompiler   : {}
+  PIX          : {}
+  ONNX Runtime : {}
 )",
         c_projectName, 
         c_projectVersion,
         c_directmlConfig,
         c_d3d12Config,
         c_dxcompilerConfig,
-        c_pixConfig);
+        c_pixConfig,
+        c_ortConfig);
     
     cxxopts::Options options(c_projectName, banner);
     options.add_options()
         (
             "m,model", 
-            "Path to JSON model file", 
+            "Path to JSON/ONNX model file", 
             cxxopts::value<decltype(m_modelPath)>()
         )
         (
@@ -31,14 +33,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
-            "b,benchmark", 
-            "Show benchmarking information", 
-            cxxopts::value<bool>()
-        )
-        (
-            "i,dispatch_repeat", 
-            "[Benchmarking only] The number of times to repeat each dispatch", 
-            cxxopts::value<uint32_t>()->default_value("128")
+            "i,dispatch_iterations", 
+            "The number of times to repeat each dispatch", 
+            cxxopts::value<uint32_t>()->default_value("1")
         )
         (
             "h,help", 
@@ -70,10 +67,20 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "xbox_allow_precompile",
             "Disables automatically defining __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox",
             cxxopts::value<bool>()
-            )
+        )
+        (
+            "c,pix_capture_type",
+            "Type of PIX captures to take: gpu, timing, or manual.",
+            cxxopts::value<std::string>()->default_value("manual")
+        )
+        (
+            "f,onnx_free_dim_override",
+            "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
         ;
     
-    options.positional_help("<PATH_TO_MODEL_JSON>");
+    options.positional_help("<PATH_TO_MODEL>");
 
     options.parse_positional({"model"});
     auto result = options.parse(argc, argv);
@@ -85,13 +92,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_debugLayersEnabled = result["debug"].as<bool>(); 
     }
     
-    if (result.count("benchmark")) 
-    { 
-        m_benchmarkingEnabled = result["benchmark"].as<bool>(); 
-        if (result.count("dispatch_repeat"))
-        {
-            m_benchmarkingDispatchRepeat = result["dispatch_repeat"].as<uint32_t>();
-        }
+    if (result.count("dispatch_iterations"))
+    {
+        m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
     }
 
     if (result.count("model")) 
@@ -117,6 +120,46 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())
     {
         m_forceDisablePrecompiledShadersOnXbox = false;
+    }
+
+    if (result.count("pix_capture_type")) 
+    { 
+        auto pixCaptureTypeStr = result["pix_capture_type"].as<decltype(m_adapterSubstring)>(); 
+        if (pixCaptureTypeStr == "gpu")
+        {
+            m_pixCaptureType = PixCaptureType::ProgrammaticGpu;
+        }
+        else if (pixCaptureTypeStr == "timing")
+        {
+            m_pixCaptureType = PixCaptureType::ProgrammaticTiming;
+#ifndef _GAMING_XBOX
+            throw std::invalid_argument("Programmatic timing captures are not supported");
+#endif
+        }
+        else if (pixCaptureTypeStr == "manual")
+        {
+            m_pixCaptureType = PixCaptureType::Manual;
+        }
+        else
+        {
+            throw std::invalid_argument("Unexpected value for pix_capture_type. Must be 'gpu', 'timing', or 'manual'");
+        }
+    }
+
+    if (result.count("onnx_free_dim_override"))
+    {
+        auto freeDimOverrides = result["onnx_free_dim_override"].as<std::vector<std::string>>(); 
+        for (auto& value : freeDimOverrides)
+        {
+            auto splitPos = value.find(":");
+            if (splitPos == std::string::npos)
+            {
+                throw std::invalid_argument("Expected ':' separating free dimension name and its value");
+            }
+            auto overrideName = value.substr(0, splitPos);
+            auto overrideValue = value.substr(splitPos + 1);
+            m_freeDimensionOverrides.emplace_back(overrideName, std::stoul(overrideValue));
+        }
     }
 
     m_helpText = options.help();

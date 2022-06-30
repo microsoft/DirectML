@@ -52,13 +52,13 @@ function(init_directml_cache_variables prefix)
 
     # <PREFIX>_DIRECTML_NUGET_VERSION
     set(${prefix}_DIRECTML_NUGET_VERSION
-        1.8.0
+        1.8.2
         CACHE STRING "Version of the DirectML NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_DIRECTML_NUGET_HASH
     set(${prefix}_DIRECTML_NUGET_HASH 
-        63cc7491e300bc3d7af7638605eac70889f5eb4617459dad5942696bb8f3c25b
+        a58141244b075cc3abfdc247310224b68b64ddd2aaac25ea04ed703deb5d4f9b
         CACHE STRING "SHA256 hash of the DirectML NuGet package (TYPE == nuget)."
     )
 
@@ -128,7 +128,7 @@ endfunction()
 # -----------------------------------------------------------------------------
 function(init_directml_target_local target_name local_path)
     if(NOT IS_DIRECTORY "${local_path}")
-        message(FATAL_ERROR "'${local_path}' is not a directory.")
+        message(FATAL_ERROR "'${local_path}' is not a directory. You must set DXD_DIRECTML_LOCAL_PATH to a directory containing pre-built DirectML.")
     endif()
 
     # DirectML.dll is required.

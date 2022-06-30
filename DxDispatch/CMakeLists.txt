@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.5.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.6.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -51,6 +51,10 @@ add_d3d12_target(d3d12 CACHE_PREFIX DXD)
 include(cmake/directml.cmake)
 add_directml_target(directml CACHE_PREFIX DXD)
 
+include(cmake/onnxruntime.cmake)
+add_onnxruntime_target(onnxruntime CACHE_PREFIX DXD)
+get_target_property(onnxruntime_type onnxruntime DX_COMPONENT_CONFIG)
+
 # ==============================================================================
 # Model Library
 # ==============================================================================
@@ -59,6 +63,10 @@ add_library(
     src/model/JsonParsers.cpp 
     src/model/Model.cpp
 )
+
+if(NOT onnxruntime_type STREQUAL None)
+    target_sources(model PRIVATE src/model/OnnxParsers.cpp)
+endif()
 
 target_link_libraries(
     model 
@@ -71,6 +79,7 @@ target_link_libraries(
     wil
     d3d12
     directml
+    onnxruntime
 )
 
 target_compile_features(model PRIVATE cxx_std_17)
@@ -85,6 +94,7 @@ get_target_property(d3d12_config d3d12 DX_COMPONENT_CONFIG)
 get_target_property(dxcompiler_config dxcompiler DX_COMPONENT_CONFIG)
 get_target_property(pix_config pix DX_COMPONENT_CONFIG)
 get_target_property(gdk_config gdk DX_COMPONENT_CONFIG)
+get_target_property(ort_config onnxruntime DX_COMPONENT_CONFIG)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
 
 add_executable(
@@ -96,11 +106,16 @@ add_executable(
     src/dxdispatch/Executor.cpp
     src/dxdispatch/CommandLineArgs.cpp
     src/dxdispatch/Logging.cpp
+    src/dxdispatch/PixCaptureHelper.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatch PRIVATE src/dxdispatch/HlslDispatchable.cpp)
+endif()
+
+if(NOT onnxruntime_type STREQUAL None)
+    target_sources(dxdispatch PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
@@ -125,6 +140,7 @@ target_link_libraries(
     pix
     gdk
     wil
+    onnxruntime
 )
 
 target_compile_features(dxdispatch PRIVATE cxx_std_17)
@@ -172,7 +188,7 @@ endif()
 # ==============================================================================
 # Tests
 # ==============================================================================
-if(TARGET_WINDOWS OR TARGET_WSL)
+if((TARGET_WINDOWS OR TARGET_WSL) AND (TARGET_ARCH MATCHES "^X64|X86$"))
     option(DXD_TESTS "Build DxDispatch tests" ON)
 else()
     option(DXD_TESTS "Build DxDispatch tests" OFF)

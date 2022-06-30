@@ -7,10 +7,9 @@ using Microsoft::WRL::ComPtr;
 static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 { 0x59da69, 0xb561, 0x43d9, { 0xa3, 0x9b, 0x33, 0x55, 0x7, 0x4b, 0x10, 0x82 } };
 
-Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType)
+Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
 {
 #ifdef _GAMING_XBOX
-    Microsoft::WRL::ComPtr<ID3D12Device> device;
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
 
@@ -18,8 +17,11 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
     {
         params.ProcessDebugFlags = D3D12_PROCESS_DEBUG_FLAG_DEBUG_LAYER_ENABLED;
     }
-    // Enable the instrumented driver.
-    //params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
+    if (m_pixCaptureHelper->GetPixCaptureType() != PixCaptureType::None)
+    {
+        // Enable the instrumented driver.
+        params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_INSTRUMENTED;
+    }
 
     params.GraphicsCommandQueueRingSizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
     params.GraphicsScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
@@ -85,6 +87,8 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
         IID_GRAPHICS_PPV_ARGS(m_commandList.ReleaseAndGetAddressOf())));
 
     THROW_IF_FAILED(m_dml->CreateCommandRecorder(IID_PPV_ARGS(&m_commandRecorder)));
+
+    m_pixCaptureHelper->Initialize(m_queue.Get());
 }
 
 Device::~Device()
@@ -194,6 +198,18 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         throw std::invalid_argument("Attempting to upload more data than the size of the buffer");
     }
 
+    auto defaultBuffer = CreateDefaultBuffer(totalSize);
+    if (!name.empty())
+    {
+        defaultBuffer->SetName(name.data());
+    }
+
+    if (data.empty())
+    {
+        // No need to create an upload resource if the source data is empty.
+        return defaultBuffer;
+    }
+
     auto uploadBuffer = CreateUploadBuffer(totalSize);
     uploadBuffer->SetName(L"Device::Upload");
     {
@@ -201,12 +217,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         THROW_IF_FAILED(uploadBuffer->Map(0, nullptr, &uploadBufferData));
         memcpy(uploadBufferData, data.data(), data.size());
         uploadBuffer->Unmap(0, nullptr);
-    }
-
-    auto defaultBuffer = CreateDefaultBuffer(totalSize);
-    if (!name.empty())
-    {
-        defaultBuffer->SetName(name.data());
     }
 
     {
