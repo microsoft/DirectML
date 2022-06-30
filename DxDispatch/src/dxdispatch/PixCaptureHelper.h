@@ -19,7 +19,7 @@ enum class PixCaptureType
 class PixCaptureHelper
 {
 public:
-    // Must be constructed *before* the D3D device: Windows PIX gpu capture library needs to load first.
+    // Must be constructed *before* the D3D device: Windows PIX GPU capture library needs to load first.
     PixCaptureHelper(PixCaptureType captureType);
 
     // Must be called *after* the D3D device when a command queue is available.

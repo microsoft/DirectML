@@ -13,7 +13,7 @@
 #       archive : Use a GitHub release archive.
 #       gdk     : Use a GDK distribution of DXCompiler.
 #       source  : Build DXCompiler from source.
-#       none    : No dependeny on DXCompiler (stub target).
+#       none    : No dependency on DXCompiler (stub target).
 #
 # - DXCOMPILER_ARCHIVE_URL : URL of the GitHub release archive (TYPE == archive).
 # - DXCOMPILER_ARCHIVE_HASH : SHA256 hash of the GitHub release archive (TYPE == archive).

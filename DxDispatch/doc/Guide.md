@@ -409,7 +409,7 @@ However, as a convenience, you can also skip writing the JSON model altogether a
 > dxdispatch.exe .\models\onnx_gemm.onnx
 ```
 
-Some ONNX models have "free" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These free dimensions become -1 unless they are explicitly given a value. You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
+Some ONNX models have "free" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These free dimensions become 1 unless they are explicitly given a value. You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
 
 ```
 > dxdispatch.exe some_model.onnx -f seq_len:100

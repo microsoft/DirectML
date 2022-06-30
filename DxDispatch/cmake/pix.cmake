@@ -11,7 +11,7 @@
 # - PIX_TYPE
 #       nuget  : Use NuGet distribution of PIX event runtime.
 #       gdk    : Use GDK distribution of PIX event runtime.
-#       none   : No dependeny on PIX event runtime (stub target).
+#       none   : No dependency on PIX event runtime (stub target).
 #
 # - PIX_NUGET_ID : ID of the PIX event runtime NuGet package (TYPE == nuget).
 # - PIX_NUGET_VERSION : Version of the PIX event runtime NuGet package (TYPE == nuget).

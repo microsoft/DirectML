@@ -12,7 +12,7 @@
 #
 # - WIL_TYPE
 #       source  : Build against WIL source repository.
-#       none    : No dependeny on WIL (stub target).
+#       none    : No dependency on WIL (stub target).
 #
 # - WIL_SOURCE_TAG : Git commit/tag hash of the WIL repo  (TYPE == source).
 # =============================================================================

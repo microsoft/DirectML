@@ -10,7 +10,7 @@
 #
 # - ONNXRUNTIME_TYPE
 #       nuget  : Use NuGet distribution of ONNX Runtime.
-#       none   : No dependeny on ONNX Runtime (stub target).
+#       none   : No dependency on ONNX Runtime (stub target).
 #
 # - ONNXRUNTIME_NUGET_ID : ID of the ONNX Runtime NuGet package (TYPE == nuget).
 # - ONNXRUNTIME_NUGET_VERSION : Version of the ONNX Runtime NuGet package (TYPE == nuget).

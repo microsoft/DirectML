@@ -49,7 +49,12 @@ static ID3D12Resource* GetResourceFromModelBinding(
     const std::string& tensorName, 
     const Dispatchable::Bindings& bindings)
 {
-    auto& bindingSources = bindings.find(tensorName)->second;
+    auto binding = bindings.find(tensorName);
+    if (binding == bindings.end())
+    {
+        throw std::runtime_error(fmt::format("Could not find binding for tensor '%s'", tensorName));
+    }
+    auto& bindingSources = binding->second;
 
     if (bindingSources.size() != 1)
     {
