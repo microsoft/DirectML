@@ -53,6 +53,24 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    std::shared_ptr<Device> device;
+    try
+    {
+        Adapter adapter = Adapter::Select(args.AdapterSubstring());
+        device = std::make_shared<Device>(
+            adapter.GetAdapter(), 
+            args.DebugLayersEnabled(), 
+            args.CommandListType(),
+            std::move(pixCaptureHelper)
+        );
+        LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
+    }
+    catch (std::exception& e)
+    {
+        LogError(fmt::format("Failed to create a device: {}", e.what()));
+        return 1;
+    }
+
     Model model;
     try
     {
@@ -65,7 +83,12 @@ int main(int argc, char** argv)
 #ifdef ONNXRUNTIME_NONE
             throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
 #else
-            model = OnnxParsers::ParseModel(args.ModelPath(), args.GetOnnxFreeDimensionOverrides());
+            model = OnnxParsers::ParseModel(
+                device->DML(), 
+                device->GetCommandQueue(),
+                args.ModelPath(), 
+                args.GetOnnxFreeDimensionOverrides()
+            );
 #endif
         }
         else
@@ -76,23 +99,6 @@ int main(int argc, char** argv)
     catch (std::exception& e)
     {
         LogError(fmt::format("Failed to parse the model: {}", e.what()));
-        return 1;
-    }
-
-    std::shared_ptr<Device> device;
-    try
-    {
-        Adapter adapter = Adapter::Select(args.AdapterSubstring());
-        device = std::make_shared<Device>(
-            adapter.GetAdapter(), 
-            args.DebugLayersEnabled(), 
-            args.CommandListType(),
-            std::move(pixCaptureHelper));
-        LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
-    }
-    catch (std::exception& e)
-    {
-        LogError(fmt::format("Failed to create a device: {}", e.what()));
         return 1;
     }
 

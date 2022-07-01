@@ -9,6 +9,8 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 
 Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
 {
+    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
+
 #ifdef _GAMING_XBOX
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
     params.Version = D3D12_SDK_VERSION;
@@ -35,6 +37,8 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
         THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&d3dDebug)));
         d3dDebug->EnableDebugLayer();
         d3dDebug->SetEnableGPUBasedValidation(true);
+
+        dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
     }
 
     THROW_IF_FAILED(D3D12CreateDevice(
@@ -54,12 +58,6 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
         &queueDesc, 
         IID_GRAPHICS_PPV_ARGS(m_queue.ReleaseAndGetAddressOf())));
     m_commandListType = queueDesc.Type;
-
-    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
-    if (debugLayersEnabled)
-    {
-        dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
-    }
 
     THROW_IF_FAILED(DMLCreateDevice1(
         m_d3d.Get(), 
