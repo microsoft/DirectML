@@ -50,7 +50,7 @@ static ID3D12Resource* GetResourceFromModelBinding(
     auto binding = bindings.find(tensorName);
     if (binding == bindings.end())
     {
-        throw std::runtime_error(fmt::format("Could not find binding for tensor '%s'", tensorName));
+        throw std::runtime_error(fmt::format("Could not find binding for tensor '{}'", tensorName));
     }
     auto& bindingSources = binding->second;
 
@@ -132,7 +132,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
             if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
             {
-                throw std::runtime_error(fmt::format("Unknown binding type for '%s'", tensorName));
+                throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
             }
 
             Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
