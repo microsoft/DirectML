@@ -116,21 +116,18 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
 
-    if (result.count("queue_type")) 
-    { 
-        auto queueTypeStr = result["queue_type"].as<std::string>();
-        if (queueTypeStr == "direct")
-        {
-            m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        }
-        else if (queueTypeStr == "compute")
-        {
-            m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        else
-        {
-            throw std::invalid_argument("Unexpected value for queue_type. Must be 'compute' or 'direct'");
-        }
+    auto queueTypeStr = result["queue_type"].as<std::string>();
+    if (queueTypeStr == "direct")
+    {
+        m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    }
+    else if (queueTypeStr == "compute")
+    {
+        m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    }
+    else
+    {
+        throw std::invalid_argument("Unexpected value for queue_type. Must be 'compute' or 'direct'");
     }
 
     if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())

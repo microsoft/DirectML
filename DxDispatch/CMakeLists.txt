@@ -168,9 +168,9 @@ if(TARGET_XBOX)
     # Copy MSVC/UCRT redist files matching the current toolset to the build output directory. Not all of the DLLs
     # are necessary but this approach is simple and should avoid missing dependencies.
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
-    set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
-    set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
-    set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+    # set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
+    # set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
+    # set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
     add_custom_command(
         TARGET dxdispatch 
