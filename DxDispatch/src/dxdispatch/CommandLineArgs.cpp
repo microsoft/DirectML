@@ -53,9 +53,13 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
-            "q,direct_queue", 
-            "Use a direct queue/lists (default is a compute queue/lists)", 
-            cxxopts::value<bool>()
+            "q,queue_type", 
+            "Type of command queue/list to use ('compute' or 'direct')", 
+#ifdef _GAMING_XBOX
+            cxxopts::value<std::string>()->default_value("direct")
+#else
+            cxxopts::value<std::string>()->default_value("compute")
+#endif
         )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
@@ -112,9 +116,21 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
 
-    if (result.count("direct_queue") && result["direct_queue"].as<bool>()) 
+    if (result.count("queue_type")) 
     { 
-        m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        auto queueTypeStr = result["queue_type"].as<std::string>();
+        if (queueTypeStr == "direct")
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        else if (queueTypeStr == "compute")
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        else
+        {
+            throw std::invalid_argument("Unexpected value for queue_type. Must be 'compute' or 'direct'");
+        }
     }
 
     if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())
@@ -124,7 +140,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
     if (result.count("pix_capture_type")) 
     { 
-        auto pixCaptureTypeStr = result["pix_capture_type"].as<decltype(m_adapterSubstring)>(); 
+        auto pixCaptureTypeStr = result["pix_capture_type"].as<std::string>();
         if (pixCaptureTypeStr == "gpu")
         {
             m_pixCaptureType = PixCaptureType::ProgrammaticGpu;
