@@ -105,7 +105,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LEAKY_RELU") || !strcmp(valueString, "ACTIVATION_LEAKY_RELU")) { return DML_OPERATOR_ACTIVATION_LEAKY_RELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LINEAR") || !strcmp(valueString, "ACTIVATION_LINEAR")) { return DML_OPERATOR_ACTIVATION_LINEAR; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX") || !strcmp(valueString, "ACTIVATION_LOG_SOFTMAX")) { return DML_OPERATOR_ACTIVATION_LOG_SOFTMAX; }
-    if (!strcmp(valueString, "DML_OPERAOTR_ACTIVATION_LOG_SOFTMAX1") || !strcmp(valueString, "DML_OPERAOTR_ACTIVATION_LOG_SOFTMAX1")) { return DML_OPERAOTR_ACTIVATION_LOG_SOFTMAX1; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1") || !strcmp(valueString, "ACTIVATION_LOG_SOFTMAX1")) { return DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU") || !strcmp(valueString, "ACTIVATION_PARAMETERIZED_RELU")) { return DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS") || !strcmp(valueString, "ACTIVATION_PARAMETRIC_SOFTPLUS")) { return DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_RELU") || !strcmp(valueString, "ACTIVATION_RELU")) { return DML_OPERATOR_ACTIVATION_RELU; }
@@ -216,9 +216,9 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1") || !strcmp(valueString, "ELEMENT_WISE_CLIP_GRAD1")) { return DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1; }
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_NEGATE") || !strcmp(valueString, "ELEMENT_WISE_NEGATE")) { return DML_OPERATOR_ELEMENT_WISE_NEGATE; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_GELU") || !strcmp(valueString, "ACTIVATION_GELU")) { return DML_OPERATOR_ACTIVATION_GELU; }
-    if (!strcmp(valueString, "DML_RESAMPLE2") || !strcmp(valueString, "DML_RESAMPLE2")) { return DML_RESAMPLE2; }
-    if (!strcmp(valueString, "DML_RESAMPLE_GRAD1") || !strcmp(valueString, "DML_RESAMPLE_GRAD1")) { return DML_RESAMPLE_GRAD1; }
-    if (!strcmp(valueString, "DML_DIAGONAL_MATRIX1") || !strcmp(valueString, "DML_DIAGONAL_MATRIX1")) { return DML_DIAGONAL_MATRIX1; }
+    if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE2") || !strcmp(valueString, "RESAMPLE2")) { return DML_OPERATOR_RESAMPLE2; }
+    if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(valueString, "RESAMPLE_GRAD1")) { return DML_OPERATOR_RESAMPLE_GRAD1; }
+    if (!strcmp(valueString, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(valueString, "DIAGONAL_MATRIX1")) { return DML_OPERATOR_DIAGONAL_MATRIX1; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_OPERATOR_TYPE.", valueString));
 }
 
