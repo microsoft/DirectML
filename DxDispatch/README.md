@@ -90,7 +90,7 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
 </table>
 
 The default redistributable versions of components (e.g. nuget, archives):
-- **DirectML (nuget)**: [Microsoft.AI.DirectML (1.8.2)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.8.2)
+- **DirectML (nuget)**: [Microsoft.AI.DirectML (1.9.0)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0)
 - **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.602.0)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.602.0)
 - **DX Compiler (archive)**: [December 2021 (v1.6.2112)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.6.2112)
 - **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.220124001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.220124001)
