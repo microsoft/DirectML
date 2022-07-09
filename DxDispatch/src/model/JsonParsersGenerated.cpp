@@ -99,11 +99,13 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_ELU") || !strcmp(valueString, "ACTIVATION_ELU")) { return DML_OPERATOR_ACTIVATION_ELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_CELU") || !strcmp(valueString, "ACTIVATION_CELU")) { return DML_OPERATOR_ACTIVATION_CELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_HARDMAX") || !strcmp(valueString, "ACTIVATION_HARDMAX")) { return DML_OPERATOR_ACTIVATION_HARDMAX; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_HARDMAX1") || !strcmp(valueString, "ACTIVATION_HARDMAX1")) { return DML_OPERATOR_ACTIVATION_HARDMAX1; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_HARD_SIGMOID") || !strcmp(valueString, "ACTIVATION_HARD_SIGMOID")) { return DML_OPERATOR_ACTIVATION_HARD_SIGMOID; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_IDENTITY") || !strcmp(valueString, "ACTIVATION_IDENTITY")) { return DML_OPERATOR_ACTIVATION_IDENTITY; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LEAKY_RELU") || !strcmp(valueString, "ACTIVATION_LEAKY_RELU")) { return DML_OPERATOR_ACTIVATION_LEAKY_RELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LINEAR") || !strcmp(valueString, "ACTIVATION_LINEAR")) { return DML_OPERATOR_ACTIVATION_LINEAR; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX") || !strcmp(valueString, "ACTIVATION_LOG_SOFTMAX")) { return DML_OPERATOR_ACTIVATION_LOG_SOFTMAX; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1") || !strcmp(valueString, "ACTIVATION_LOG_SOFTMAX1")) { return DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU") || !strcmp(valueString, "ACTIVATION_PARAMETERIZED_RELU")) { return DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS") || !strcmp(valueString, "ACTIVATION_PARAMETRIC_SOFTPLUS")) { return DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_RELU") || !strcmp(valueString, "ACTIVATION_RELU")) { return DML_OPERATOR_ACTIVATION_RELU; }
@@ -111,6 +113,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SCALED_TANH") || !strcmp(valueString, "ACTIVATION_SCALED_TANH")) { return DML_OPERATOR_ACTIVATION_SCALED_TANH; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SIGMOID") || !strcmp(valueString, "ACTIVATION_SIGMOID")) { return DML_OPERATOR_ACTIVATION_SIGMOID; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SOFTMAX") || !strcmp(valueString, "ACTIVATION_SOFTMAX")) { return DML_OPERATOR_ACTIVATION_SOFTMAX; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SOFTMAX1") || !strcmp(valueString, "ACTIVATION_SOFTMAX1")) { return DML_OPERATOR_ACTIVATION_SOFTMAX1; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SOFTPLUS") || !strcmp(valueString, "ACTIVATION_SOFTPLUS")) { return DML_OPERATOR_ACTIVATION_SOFTPLUS; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SOFTSIGN") || !strcmp(valueString, "ACTIVATION_SOFTSIGN")) { return DML_OPERATOR_ACTIVATION_SOFTSIGN; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_TANH") || !strcmp(valueString, "ACTIVATION_TANH")) { return DML_OPERATOR_ACTIVATION_TANH; }
@@ -212,6 +215,10 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_CLIP1") || !strcmp(valueString, "ELEMENT_WISE_CLIP1")) { return DML_OPERATOR_ELEMENT_WISE_CLIP1; }
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1") || !strcmp(valueString, "ELEMENT_WISE_CLIP_GRAD1")) { return DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1; }
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_NEGATE") || !strcmp(valueString, "ELEMENT_WISE_NEGATE")) { return DML_OPERATOR_ELEMENT_WISE_NEGATE; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_GELU") || !strcmp(valueString, "ACTIVATION_GELU")) { return DML_OPERATOR_ACTIVATION_GELU; }
+    if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE2") || !strcmp(valueString, "RESAMPLE2")) { return DML_OPERATOR_RESAMPLE2; }
+    if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(valueString, "RESAMPLE_GRAD1")) { return DML_OPERATOR_RESAMPLE_GRAD1; }
+    if (!strcmp(valueString, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(valueString, "DIAGONAL_MATRIX1")) { return DML_OPERATOR_DIAGONAL_MATRIX1; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_OPERATOR_TYPE.", valueString));
 }
 
@@ -2141,7 +2148,7 @@ DML_OPERATOR_DESC* ParseDmlBatchNormalizationTrainingGradOperatorDesc(const rapi
     desc->OutputGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputGradientTensor", allocator, true);
     desc->OutputScaleGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputScaleGradientTensor", allocator, true);
     desc->OutputBiasGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputBiasGradientTensor", allocator, true);
-    desc->Epsilon = ParseFloat32Field(value, "Epsilon", false);
+    desc->Epsilon = ParseFloat32Field(value, "Epsilon", true);
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_BATCH_NORMALIZATION_TRAINING_GRAD;
     opDesc->Desc = desc;
@@ -3898,6 +3905,82 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_BATCH_NORMALIZATI
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlResample2OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_RESAMPLE2_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->InterpolationMode = ParseDmlInterpolationModeField(value, "InterpolationMode", true, {});
+    desc->RoundingDirection = ParseDmlAxisDirectionField(value, "RoundingDirection", true, {});
+    desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
+    desc->Scales = AsPointer(ParseFloat32ArrayField(value, "Scales", allocator, true));
+    desc->InputPixelOffsets = AsPointer(ParseFloat32ArrayField(value, "InputPixelOffsets", allocator, true));
+    desc->OutputPixelOffsets = AsPointer(ParseFloat32ArrayField(value, "OutputPixelOffsets", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_RESAMPLE2;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_RESAMPLE2_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlResampleGrad1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_RESAMPLE_GRAD1_OPERATOR_DESC>();
+    desc->InputGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputGradientTensor", allocator, true);
+    desc->OutputGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputGradientTensor", allocator, true);
+    desc->InterpolationMode = ParseDmlInterpolationModeField(value, "InterpolationMode", true, {});
+    desc->RoundingDirection = ParseDmlAxisDirectionField(value, "RoundingDirection", true, {});
+    desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
+    desc->Scales = AsPointer(ParseFloat32ArrayField(value, "Scales", allocator, true));
+    desc->InputPixelOffsets = AsPointer(ParseFloat32ArrayField(value, "InputPixelOffsets", allocator, true));
+    desc->OutputPixelOffsets = AsPointer(ParseFloat32ArrayField(value, "OutputPixelOffsets", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_RESAMPLE_GRAD1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_RESAMPLE_GRAD1_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputGradientTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputGradientTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlDiagonalMatrix1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_DIAGONAL_MATRIX1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, false);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->ValueDataType = ParseDmlTensorDataTypeField(value, "ValueDataType", true, {});
+    desc->Value = *ParseDmlScalarUnionField(value, "Value", "ValueDataType", allocator, true);
+    desc->DiagonalFillBegin = ParseInt32Field(value, "DiagonalFillBegin", true);
+    desc->DiagonalFillEnd = ParseInt32Field(value, "DiagonalFillEnd", true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_DIAGONAL_MATRIX1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_DIAGONAL_MATRIX1_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, false});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlActivationEluOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
@@ -3953,6 +4036,28 @@ DML_OPERATOR_DESC* ParseDmlActivationHardmaxOperatorDesc(const rapidjson::Value&
 }
  
 Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_HARDMAX_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlActivationHardmax1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_HARDMAX1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->AxisCount = ParseUInt32Field(value, "AxisCount", true);
+    desc->Axes = AsPointer(ParseUInt32ArrayField(value, "Axes", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_HARDMAX1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_HARDMAX1_OPERATOR_DESC& desc)
 {
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
@@ -4058,6 +4163,28 @@ DML_OPERATOR_DESC* ParseDmlActivationLogSoftmaxOperatorDesc(const rapidjson::Val
 }
  
 Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_LOG_SOFTMAX_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlActivationLogSoftmax1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_LOG_SOFTMAX1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->AxisCount = ParseUInt32Field(value, "AxisCount", true);
+    desc->Axes = AsPointer(ParseUInt32ArrayField(value, "Axes", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_LOG_SOFTMAX1_OPERATOR_DESC& desc)
 {
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
@@ -4213,6 +4340,28 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_SOFTMA
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlActivationSoftmax1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_SOFTMAX1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->AxisCount = ParseUInt32Field(value, "AxisCount", true);
+    desc->Axes = AsPointer(ParseUInt32ArrayField(value, "Axes", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_SOFTMAX1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_SOFTMAX1_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlActivationSoftplusOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
@@ -4310,6 +4459,26 @@ DML_OPERATOR_DESC* ParseDmlActivationShrinkOperatorDesc(const rapidjson::Value& 
 }
  
 Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_SHRINK_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlActivationGeluOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_GELU_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_GELU;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_GELU_OPERATOR_DESC& desc)
 {
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
@@ -4479,14 +4648,19 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_ELEMENT_WISE_QUANTIZED_LINEAR_ADD") || !strcmp(type, "ELEMENT_WISE_QUANTIZED_LINEAR_ADD")) return ParseDmlElementWiseQuantizedLinearAddOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ROI_ALIGN_GRAD") || !strcmp(type, "ROI_ALIGN_GRAD")) return ParseDmlRoiAlignGradOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_BATCH_NORMALIZATION_TRAINING") || !strcmp(type, "BATCH_NORMALIZATION_TRAINING")) return ParseDmlBatchNormalizationTrainingOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_RESAMPLE2") || !strcmp(type, "RESAMPLE2")) return ParseDmlResample2OperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(type, "RESAMPLE_GRAD1")) return ParseDmlResampleGrad1OperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(type, "DIAGONAL_MATRIX1")) return ParseDmlDiagonalMatrix1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_ELU") || !strcmp(type, "ACTIVATION_ELU")) return ParseDmlActivationEluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_CELU") || !strcmp(type, "ACTIVATION_CELU")) return ParseDmlActivationCeluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARDMAX") || !strcmp(type, "ACTIVATION_HARDMAX")) return ParseDmlActivationHardmaxOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARDMAX1") || !strcmp(type, "ACTIVATION_HARDMAX1")) return ParseDmlActivationHardmax1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARD_SIGMOID") || !strcmp(type, "ACTIVATION_HARD_SIGMOID")) return ParseDmlActivationHardSigmoidOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_IDENTITY") || !strcmp(type, "ACTIVATION_IDENTITY")) return ParseDmlActivationIdentityOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_LEAKY_RELU") || !strcmp(type, "ACTIVATION_LEAKY_RELU")) return ParseDmlActivationLeakyReluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_LINEAR") || !strcmp(type, "ACTIVATION_LINEAR")) return ParseDmlActivationLinearOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX") || !strcmp(type, "ACTIVATION_LOG_SOFTMAX")) return ParseDmlActivationLogSoftmaxOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1") || !strcmp(type, "ACTIVATION_LOG_SOFTMAX1")) return ParseDmlActivationLogSoftmax1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU") || !strcmp(type, "ACTIVATION_PARAMETERIZED_RELU")) return ParseDmlActivationParameterizedReluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS") || !strcmp(type, "ACTIVATION_PARAMETRIC_SOFTPLUS")) return ParseDmlActivationParametricSoftplusOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_RELU") || !strcmp(type, "ACTIVATION_RELU")) return ParseDmlActivationReluOperatorDesc(descValue, fused, allocator);
@@ -4494,11 +4668,13 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SCALED_TANH") || !strcmp(type, "ACTIVATION_SCALED_TANH")) return ParseDmlActivationScaledTanhOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SIGMOID") || !strcmp(type, "ACTIVATION_SIGMOID")) return ParseDmlActivationSigmoidOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SOFTMAX") || !strcmp(type, "ACTIVATION_SOFTMAX")) return ParseDmlActivationSoftmaxOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SOFTMAX1") || !strcmp(type, "ACTIVATION_SOFTMAX1")) return ParseDmlActivationSoftmax1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SOFTPLUS") || !strcmp(type, "ACTIVATION_SOFTPLUS")) return ParseDmlActivationSoftplusOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SOFTSIGN") || !strcmp(type, "ACTIVATION_SOFTSIGN")) return ParseDmlActivationSoftsignOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_TANH") || !strcmp(type, "ACTIVATION_TANH")) return ParseDmlActivationTanhOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU") || !strcmp(type, "ACTIVATION_THRESHOLDED_RELU")) return ParseDmlActivationThresholdedReluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SHRINK") || !strcmp(type, "ACTIVATION_SHRINK")) return ParseDmlActivationShrinkOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_GELU") || !strcmp(type, "ACTIVATION_GELU")) return ParseDmlActivationGeluOperatorDesc(descValue, fused, allocator);
     throw std::invalid_argument("Unknown operator type.");
 }
 
@@ -4642,14 +4818,19 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_ELEMENT_WISE_QUANTIZED_LINEAR_ADD: return GetBindPoints(*reinterpret_cast<const DML_ELEMENT_WISE_QUANTIZED_LINEAR_ADD_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ROI_ALIGN_GRAD: return GetBindPoints(*reinterpret_cast<const DML_ROI_ALIGN_GRAD_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_BATCH_NORMALIZATION_TRAINING: return GetBindPoints(*reinterpret_cast<const DML_BATCH_NORMALIZATION_TRAINING_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_RESAMPLE2: return GetBindPoints(*reinterpret_cast<const DML_RESAMPLE2_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_RESAMPLE_GRAD1: return GetBindPoints(*reinterpret_cast<const DML_RESAMPLE_GRAD1_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_DIAGONAL_MATRIX1: return GetBindPoints(*reinterpret_cast<const DML_DIAGONAL_MATRIX1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_ELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_ELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_CELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_CELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_HARDMAX: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARDMAX_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_HARDMAX1: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARDMAX1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_HARD_SIGMOID: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARD_SIGMOID_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_IDENTITY: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_IDENTITY_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_LEAKY_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_LEAKY_RELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_LINEAR: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_LINEAR_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_LOG_SOFTMAX: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_LOG_SOFTMAX_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_LOG_SOFTMAX1: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_LOG_SOFTMAX1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_PARAMETERIZED_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_PARAMETERIZED_RELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_PARAMETRIC_SOFTPLUS: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_PARAMETRIC_SOFTPLUS_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_RELU_OPERATOR_DESC*>(desc.Desc));
@@ -4657,11 +4838,13 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_ACTIVATION_SCALED_TANH: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SCALED_TANH_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SIGMOID: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SIGMOID_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SOFTMAX: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SOFTMAX_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_SOFTMAX1: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SOFTMAX1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SOFTPLUS: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SOFTPLUS_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SOFTSIGN: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SOFTSIGN_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_TANH: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_TANH_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_THRESHOLDED_RELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SHRINK: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SHRINK_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_GELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_GELU_OPERATOR_DESC*>(desc.Desc));
     default: throw std::invalid_argument("Unknown operator type.");
     }
 }
