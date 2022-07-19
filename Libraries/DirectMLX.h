@@ -2007,8 +2007,8 @@ namespace dml
     inline Expression Reduce(
         Expression input, 
         DML_REDUCE_FUNCTION function, 
-        DML_TENSOR_DATA_TYPE targetDataType = DML_TENSOR_DATA_TYPE_UNKNOWN, 
-        Span<const uint32_t> axes = {})
+        Span<const uint32_t> axes = {},
+        DML_TENSOR_DATA_TYPE outputDataType = DML_TENSOR_DATA_TYPE_UINT32)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
@@ -2043,16 +2043,7 @@ namespace dml
 
         // All reductions other than ARGMIN and ARGMAX produce an output with the same type
         // as the input.
-        DML_TENSOR_DATA_TYPE outputDataType;
-        if (function == DML_REDUCE_FUNCTION_ARGMIN || function == DML_REDUCE_FUNCTION_ARGMAX)
-        {
-            // Default to UINT32 if the output type wasn't specified
-            if (targetDataType = DML_TENSOR_DATA_TYPE_UNKNOWN) {
-                targetDataType = DML_TENSOR_DATA_TYPE_UINT32;
-            }
-            outputDataType = targetDataType;
-        }
-        else
+        if (function != DML_REDUCE_FUNCTION_ARGMIN && function != DML_REDUCE_FUNCTION_ARGMAX)
         {
             outputDataType = inputTensor.dataType;
         }
