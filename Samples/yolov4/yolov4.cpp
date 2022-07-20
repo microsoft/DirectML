@@ -289,11 +289,6 @@ void Sample::Update(DX::StepTimer const& timer)
                 m_player->Play();
             }
         }
-
-        const float TriggerR = pad.triggers.right;
-        const float TriggerL = pad.triggers.left;
-        const float ThumbLeftX = pad.thumbSticks.leftX;
-        const float ThumbLeftY = pad.thumbSticks.leftY;
     }
     else
     {
@@ -344,7 +339,9 @@ void Sample::GetModelPredictions(
     const uint32_t predTensorN = modelOutput.desc.sizes[0];
     const uint32_t predTensorH = modelOutput.desc.sizes[1];
     const uint32_t predTensorW = modelOutput.desc.sizes[2];
+#if _DEBUG
     const uint32_t predTensorC = modelOutput.desc.sizes[3];
+#endif
 
     // YoloV4 predicts 3 boxes per scale, so we expect 3 separate predictions here
     assert(predTensorN == 3);
