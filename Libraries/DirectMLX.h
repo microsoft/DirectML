@@ -2004,7 +2004,11 @@ namespace dml
     // ---------------------------------------------------------------------------------------------------------------
 
     // If `axes` is not specified, by default this reduces the entire tensor to single element.
-    inline Expression Reduce(Expression input, DML_REDUCE_FUNCTION function, Span<const uint32_t> axes = {})
+    inline Expression Reduce(
+        Expression input, 
+        DML_REDUCE_FUNCTION function, 
+        Span<const uint32_t> axes = {},
+        DML_TENSOR_DATA_TYPE outputDataType = DML_TENSOR_DATA_TYPE_UNKNOWN)
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
@@ -2037,16 +2041,19 @@ namespace dml
             }
         }
 
-        // ARGMIN and ARGMAX reduction produce a UINT32 output; all other reductions produce an output with the same
-        // type as the input.
-        DML_TENSOR_DATA_TYPE outputDataType;
-        if (function == DML_REDUCE_FUNCTION_ARGMIN || function == DML_REDUCE_FUNCTION_ARGMAX)
+        // All reductions other than ARGMIN and ARGMAX produce an output with the same type
+        // as the input.
+        if (outputDataType == DML_TENSOR_DATA_TYPE_UNKNOWN) 
         {
-            outputDataType = DML_TENSOR_DATA_TYPE_UINT32;
-        }
-        else
-        {
-            outputDataType = inputTensor.dataType;
+            if (function == DML_REDUCE_FUNCTION_ARGMIN || function == DML_REDUCE_FUNCTION_ARGMAX)
+            {
+                // Default to UINT32 if the output type wasn't specified
+                outputDataType = DML_TENSOR_DATA_TYPE_UINT32;
+            }
+            else
+            {
+                outputDataType = inputTensor.dataType;
+            }
         }
 
         TensorDesc outputTensor(outputDataType, std::move(outputSizes), builder->GetTensorPolicy());
