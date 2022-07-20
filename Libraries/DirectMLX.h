@@ -2043,17 +2043,17 @@ namespace dml
 
         // All reductions other than ARGMIN and ARGMAX produce an output with the same type
         // as the input.
-        if (function == DML_REDUCE_FUNCTION_ARGMIN || function == DML_REDUCE_FUNCTION_ARGMAX)
+        if (outputDataType == DML_TENSOR_DATA_TYPE_UNKNOWN) 
         {
-            // Default to UINT32 if the output type wasn't specified
-            if (outputDataType = DML_TENSOR_DATA_TYPE_UNKNOWN) 
+            if (function == DML_REDUCE_FUNCTION_ARGMIN || function == DML_REDUCE_FUNCTION_ARGMAX)
             {
+                // Default to UINT32 if the output type wasn't specified
                 outputDataType = DML_TENSOR_DATA_TYPE_UINT32;
             }
-        }
-        else
-        {
-            outputDataType = inputTensor.dataType;
+            else
+            {
+                outputDataType = inputTensor.dataType;
+            }
         }
 
         TensorDesc outputTensor(outputDataType, std::move(outputSizes), builder->GetTensorPolicy());
