@@ -1,3 +1,14 @@
+---
+page_type: sample
+languages:
+- cpp
+products:
+- windows
+- xbox
+name: DirectML YOLOv4 sample
+urlFragment: DirectML-YOLOv4
+---
+
 # YOLOv4 sample
 
 Implements the YOLOv4 real-time object detection model using DirectML and DirectMLX.

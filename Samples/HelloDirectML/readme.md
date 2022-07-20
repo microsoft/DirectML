@@ -1,3 +1,14 @@
+---
+page_type: sample
+languages:
+- cpp
+products:
+- windows
+- xbox
+name: HelloDirectML
+urlFragment: HelloDirectML
+---
+
 # HelloDirectML sample
 
 A minimal but complete DirectML sample that demonstrates how to initialize D3D12 and DirectML, create and compile an operator, execute the operator on the GPU, and retrieve the results.
