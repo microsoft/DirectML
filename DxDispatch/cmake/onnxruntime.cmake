@@ -52,13 +52,13 @@ function(init_onnxruntime_cache_variables prefix)
 
     # <PREFIX>_ONNXRUNTIME_NUGET_VERSION
     set(${prefix}_ONNXRUNTIME_NUGET_VERSION
-        1.11.0
+        1.12.1
         CACHE STRING "Version of the ONNX Runtime NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_ONNXRUNTIME_NUGET_HASH
     set(${prefix}_ONNXRUNTIME_NUGET_HASH 
-        17ac3a5b3f7b4566aee9f29f39859f8ed26eb18cfbdfd2f06cb05ed230b484e2
+        6a8c53904c6169d910e39ebbceac953060e8c5b41a6303dff63ba99a09686bbd
         CACHE STRING "SHA256 hash of the ONNX Runtime NuGet package (TYPE == nuget)."
     )
 

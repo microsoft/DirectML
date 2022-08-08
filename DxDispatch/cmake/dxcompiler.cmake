@@ -49,19 +49,19 @@ function(init_dxcompiler_cache_variables prefix)
 
     # <PREFIX>_DXCOMPILER_ARCHIVE_URL
     set(${prefix}_DXCOMPILER_ARCHIVE_URL 
-        https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.6.2112/dxc_2021_12_08.zip 
+        https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2207/dxc_2022_07_18.zip
         CACHE STRING "URL of the GitHub release archive (TYPE == archive)."
     )
 
     # <PREFIX>_DXCOMPILER_ARCHIVE_HASH
     set(${prefix}_DXCOMPILER_ARCHIVE_HASH 
-        21bd1b79db4c394d0f624f98354dd4544ac1e7a168f81346704e289bd308d6ef 
+        6f421070f85c407f8c7daa456ca40460c52632fceabc7e4a02aef36d3c4b8837 
         CACHE STRING "SHA256 hash of the GitHub release archive (TYPE == archive)."
     )
     
     # <PREFIX>_DXCOMPILER_SOURCE_TAG
     set(${prefix}_DXCOMPILER_SOURCE_TAG 
-        v1.6.2112 
+        v1.7.2207
         CACHE STRING "Git commit/tag hash of the GitHub repo (TYPE == source)."
     )
 endfunction()
@@ -70,7 +70,7 @@ endfunction()
 # Init using GitHub release archive.
 # -----------------------------------------------------------------------------
 function(init_dxcompiler_target_archive target_name url hash)
-    if(NOT(TARGET_WINDOWS AND TARGET_ARCH STREQUAL X64))
+    if(NOT(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$"))
         message(FATAL_ERROR "DXCompiler release archives aren't supported on this platform.")
     endif()
 
@@ -83,9 +83,9 @@ function(init_dxcompiler_target_archive target_name url hash)
     FetchContent_MakeAvailable(${content})
 
     target_include_directories(${target_name} INTERFACE "${${content}_SOURCE_DIR}/inc")
-    target_link_libraries(${target_name} INTERFACE "${${content}_SOURCE_DIR}/lib/x64/dxcompiler.lib")
-    target_append_redist_file(${target_name} "${${content}_SOURCE_DIR}/bin/x64/dxcompiler.dll")
-    target_append_redist_file(${target_name} "${${content}_SOURCE_DIR}/bin/x64/dxil.dll")
+    target_link_libraries(${target_name} INTERFACE "${${content}_SOURCE_DIR}/lib/${TARGET_ARCH}/dxcompiler.lib")
+    target_append_redist_file(${target_name} "${${content}_SOURCE_DIR}/bin/${TARGET_ARCH}/dxcompiler.dll")
+    target_append_redist_file(${target_name} "${${content}_SOURCE_DIR}/bin/${TARGET_ARCH}/dxil.dll")
 
     cmake_path(GET url PARENT_PATH release_tag)
     cmake_path(GET release_tag FILENAME release_tag)
