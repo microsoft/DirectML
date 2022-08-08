@@ -38,6 +38,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()->default_value("1")
         )
         (
+            "t,milliseconds_to_run",
+            "Specifies the total time to run the test for.",
+            cxxopts::value<uint32_t>()->default_value("600000")
+        )
+        (
             "h,help", 
             "Print command-line usage help", 
             cxxopts::value<bool>()
@@ -99,6 +104,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("dispatch_iterations"))
     {
         m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
+    }
+    
+    if (result.count("milliseconds_to_run"))
+    {
+        m_timeToRun = result["milliseconds_to_run"].as<uint32_t>();
+        m_dispatchIterations = INT32_MAX;   // override the "iterations" setting
     }
 
     if (result.count("model")) 

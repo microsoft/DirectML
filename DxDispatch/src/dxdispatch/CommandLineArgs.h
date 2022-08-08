@@ -16,6 +16,7 @@ public:
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
+    float TimeToRun() const { return m_timeToRun; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionOverrides() const { return m_freeDimensionOverrides; }
@@ -29,6 +30,7 @@ private:
     std::filesystem::path m_modelPath;
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
+    float m_timeToRun = 600000;
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 

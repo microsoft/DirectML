@@ -128,6 +128,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     Timer timer;
     std::vector<double> dispatchDurations;
+    double totalDuration = 0.0;
 
     Dispatchable::Bindings bindings;
     try
@@ -173,7 +174,14 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             PIXEndEvent(m_device->GetCommandQueue());
 
-            dispatchDurations.push_back(timer.End().DurationInMilliseconds());
+            double duration = timer.End().DurationInMilliseconds();
+            dispatchDurations.push_back(duration);
+
+            totalDuration += duration;
+            if (totalDuration > m_commandLineArgs.TimeToRun())
+            {
+                break;
+            }
         }
 
         THROW_IF_FAILED(m_device->GetPixCaptureHelper().EndCapturableWork());
@@ -190,8 +198,11 @@ void Executor::operator()(const Model::DispatchCommand& command)
     int skipped = (dispatchDurations.size() > 1) ? 1 : 0;
     double totalTime = std::accumulate(dispatchDurations.begin() + skipped, dispatchDurations.end(), 0.0);
     double avgTime = totalTime / (dispatchDurations.size() - skipped);
-
-    LogInfo(fmt::format("Dispatch '{}': {:.4f} ms average", command.dispatchableName, avgTime));
+    
+    std::sort(dispatchDurations.begin(), dispatchDurations.end());
+    uint32_t iterations = dispatchDurations.size();
+    double medianTime = dispatchDurations[iterations / 2];
+    LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms average, {:.4f} ms median", command.dispatchableName, iterations, avgTime, medianTime));
 }
 
 template <typename T>
