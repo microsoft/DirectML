@@ -259,6 +259,6 @@ if(DXD_TESTS)
     add_test(test_dml_upsample_2d dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_upsample_2d.json)
     set_tests_properties(test_dml_upsample_2d PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'output': 1, 1.25, 1.75, 2, 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3, 3.25, 3.75, 4")
 
-    add_test(test_owned_by_dml dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/owned_by_dml.json)
+    add_test(test_owned_by_dml dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_owned_tensors.json)
     set_tests_properties(test_owned_by_dml PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 6, 10, -2")
 endif()
