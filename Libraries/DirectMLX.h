@@ -3774,6 +3774,15 @@ namespace dml
     }
 #endif
 
+#if DML_TARGET_VERSION >= 0x5000
+
+    inline Expression Negate(Expression input)
+    {
+        return detail::ElementWiseUnary<DML_OPERATOR_ELEMENT_WISE_NEGATE, DML_ELEMENT_WISE_NEGATE_OPERATOR_DESC>(input);
+    }
+
+#endif // DML_TARGET_VERSION >= 0x5000
+
     // Reinterprets the memory of a tensor with a different type and dimensions (analogously to using
     // reinterpret_cast to access raw bits). Note that this is different to the DML Cast operator, which performs
     // a type cast on the contents of a tensor (analogously to static_cast). The total tensor size of the output
@@ -3858,7 +3867,16 @@ namespace dml
     // Unary
     inline Expression operator~(Expression input) { return dml::BitNot(input); }
     inline Expression operator+(Expression input) { return dml::Identity(input); }
+
+#if DML_TARGET_VERSION >= 0x5000
+
+    inline Expression operator-(Expression input) { return dml::Negate(input); }
+
+#else
+
     inline Expression operator-(Expression input) { return dml::Identity(input, DML_SCALE_BIAS{ -1.0f, 0.0f }); }
+
+#endif // DML_TARGET_VERSION >= 0x5000
 
     // Logical
     inline Expression operator!(Expression a) { return dml::LogicalNot(a); }
