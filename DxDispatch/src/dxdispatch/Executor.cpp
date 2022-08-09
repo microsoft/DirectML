@@ -178,7 +178,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
             dispatchDurations.push_back(duration);
 
             totalDuration += duration;
-            if (totalDuration > m_commandLineArgs.TimeToRun())
+            if (m_commandLineArgs.TimeToRunInMilliseconds() &&
+                totalDuration > m_commandLineArgs.TimeToRunInMilliseconds().value())
             {
                 break;
             }

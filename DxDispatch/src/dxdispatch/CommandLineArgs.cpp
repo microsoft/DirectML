@@ -39,8 +39,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "t,milliseconds_to_run",
-            "Specifies the total time to run the test for.",
-            cxxopts::value<uint32_t>()->default_value("600000")
+            "Specifies the total time to run the test for. Overrides dispatch_iterations",
+            cxxopts::value<uint32_t>()
         )
         (
             "h,help", 
@@ -108,8 +108,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     
     if (result.count("milliseconds_to_run"))
     {
-        m_timeToRun = result["milliseconds_to_run"].as<uint32_t>();
-        m_dispatchIterations = INT32_MAX;   // override the "iterations" setting
+        m_timeToRunInMilliseconds.emplace(result["milliseconds_to_run"].as<uint32_t>());
+        m_dispatchIterations = std::numeric_limits<uint32_t>::max();   // override the "iterations" setting
     }
 
     if (result.count("model")) 
