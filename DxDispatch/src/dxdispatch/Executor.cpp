@@ -195,15 +195,18 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     PIXEndEvent();
 
+    uint32_t iterations = dispatchDurations.size();
     // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
-    int skipped = (dispatchDurations.size() > 1) ? 1 : 0;
+    int skipped = (iterations > 1) ? 1 : 0;
     double totalTime = std::accumulate(dispatchDurations.begin() + skipped, dispatchDurations.end(), 0.0);
     double avgTime = totalTime / (dispatchDurations.size() - skipped);
     
     std::sort(dispatchDurations.begin(), dispatchDurations.end());
-    uint32_t iterations = dispatchDurations.size();
     double medianTime = dispatchDurations[iterations / 2];
-    LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms average, {:.4f} ms median", command.dispatchableName, iterations, avgTime, medianTime));
+    double minTime = dispatchDurations[0];
+    double maxTime = dispatchDurations[iterations - 1];
+    LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+        command.dispatchableName, iterations, avgTime, minTime, medianTime, maxTime));
 }
 
 template <typename T>
