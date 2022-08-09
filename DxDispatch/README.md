@@ -119,9 +119,15 @@ To generate the project, provide one of the above names (e.g. `win-x64`) to cmak
 > cmake --preset <configure_preset_name>
 ```
 
-You can build from the generated VS solution under `build\<configure_preset_name>\dxdispatch.sln`.
+You can build from the generated VS solution under `build\<configure_preset_name>\dxdispatch.sln`. 
 
-To run tests (only supported on some platforms):
+Alternatively, build from the command line by using `--build` option and appending the build configuration to the preset name (e.g. the `win-x64` configure preset has the build presets named `win-x64-release` and `win-x64-debug`).
+
+```
+> cmake --build --preset <configure_preset_name>-(release|debug)
+```
+
+To run tests, change your working directory to the build folder and execute `ctest` (only supported on some platforms). You need to specify the build configuration (release or debug) since the presets use VS, which is a multi-configuration generator:
 ```
 > cd build\<configure_preset_name>
 > ctest -C Release .
