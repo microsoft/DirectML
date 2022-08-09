@@ -124,5 +124,5 @@ You can build from the generated VS solution under `build\<configure_preset_name
 To run tests (only supported on some platforms):
 ```
 > cd build\<configure_preset_name>
-> ctest .
+> ctest -C Release .
 ```

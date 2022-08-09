@@ -223,42 +223,24 @@ if(DXD_TESTS)
         add_dependencies(jsontests dxdispatch)
     endif()
 
-    add_test(test_dml_convolution dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_convolution.json)
-    set_tests_properties(test_dml_convolution PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'output': 6, 8, 12, 14")
+    function(model_test model_name expected_output)
+        add_test(NAME test_${model_name} COMMAND dxdispatch models/${model_name}.json WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_tests_properties(test_${model_name} PROPERTIES PASS_REGULAR_EXPRESSION ${expected_output})
+    endfunction()
 
-    add_test(test_dml_cumulative_product dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_cumulative_product.json)
-    set_tests_properties(test_dml_cumulative_product PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 2, 8, 64, 192")
-
-    add_test(test_dml_element_wise_add dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_element_wise_add.json)
-    set_tests_properties(test_dml_element_wise_add PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 6, 10, -2")
-
-    add_test(test_dml_element_wise_add1 dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_element_wise_add1.json)
-    set_tests_properties(test_dml_element_wise_add1 PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 6, 10, -0.432332")
-
-    add_test(test_dml_element_wise_clip dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_element_wise_clip.json)
-    set_tests_properties(test_dml_element_wise_clip PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'A': -2.5, -2.5, -2, -1, 0, 1, 2, 2.5, 2.5")
-
-    add_test(test_dml_element_wise_identity dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_element_wise_identity.json)
-    set_tests_properties(test_dml_element_wise_identity PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 12, 14, 16")
-
-    add_test(test_dml_fill_value_sequence dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_fill_value_sequence.json)
-    set_tests_properties(test_dml_fill_value_sequence PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 3.2, 4.7, 6.2, 7.7, 9.2")
-
-    add_test(test_dml_join dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_join.json)
-    set_tests_properties(test_dml_join PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 1, 2, 3, 100, 115, 5, 6, 7, 8, 9")
-
-    add_test(test_dml_reduce dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_reduce.json)
-    set_tests_properties(test_dml_reduce PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'output': 6, 15, 24")
-
-    add_test(test_dml_slice dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_slice.json)
-    set_tests_properties(test_dml_slice PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'output': 7, 9, 12, 14, 17, 19")
-
-    add_test(test_dml_split dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_split.json)
-    set_tests_properties(test_dml_split PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out1': 1, 2\nResource 'Out2': 3, 4\nResource 'Out3': 5, 6")
-
-    add_test(test_dml_upsample_2d dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_upsample_2d.json)
-    set_tests_properties(test_dml_upsample_2d PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'output': 1, 1.25, 1.75, 2, 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3, 3.25, 3.75, 4")
-
-    add_test(test_owned_by_dml dxdispatch ${CMAKE_CURRENT_SOURCE_DIR}/models/dml_owned_tensors.json)
-    set_tests_properties(test_owned_by_dml PROPERTIES PASS_REGULAR_EXPRESSION "Resource 'Out': 6, 10, -2")
+    model_test(dml_convolution "Resource 'output': 6, 8, 12, 14")
+    model_test(dml_cumulative_product "Resource 'Out': 2, 8, 64, 192")
+    model_test(dml_element_wise_add "Resource 'Out': 6, 10, -2")
+    model_test(dml_element_wise_add1 "Resource 'Out': 6, 10, -0.432332")
+    model_test(dml_element_wise_clip "Resource 'A': -2.5, -2.5, -2, -1, 0, 1, 2, 2.5, 2.5")
+    model_test(dml_element_wise_identity "Resource 'Out': 12, 14, 16")
+    model_test(dml_fill_value_sequence "Resource 'Out': 3.2, 4.7, 6.2, 7.7, 9.2")
+    model_test(dml_join "Resource 'Out': 1, 2, 3, 100, 115, 5, 6, 7, 8, 9")
+    model_test(dml_reduce "Resource 'output': 6, 15, 24")
+    model_test(dml_slice "Resource 'output': 7, 9, 12, 14, 17, 19")
+    model_test(dml_split "Resource 'Out1': 1, 2\nResource 'Out2': 3, 4\nResource 'Out3': 5, 6")
+    model_test(dml_upsample_2d "Resource 'output': 1, 1.25, 1.75, 2, 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3, 3.25, 3.75, 4")
+    model_test(dml_owned_tensors "Resource 'Out': 6, 10, -2")
+    model_test(hlsl_add_fp32 "Resource 'Out': 2, 7, 6, 11, 2, 7")
+    model_test(onnx_gemm "Resource 'Out': 22, 28, 34, 40, 46, 60, 74, 88, 70, 92, 114, 136")
 endif()
