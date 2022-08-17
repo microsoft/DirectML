@@ -14,7 +14,7 @@
                 "type": "nuget",
                 "nuget": {
                     "name": "Microsoft.Direct3D.D3D12",
-                    "version": "1.4.10"
+                    "version": "1.606.3"
                 }
             }
         },
@@ -23,7 +23,7 @@
                 "type": "nuget",
                 "nuget": {
                     "name": "Microsoft.AI.DirectML",
-                    "version": "1.8.0"
+                    "version": "1.9.0"
                 }
             }
         },
@@ -32,8 +32,8 @@
                 "type": "other",
                 "other": {
                     "name": "DirectX Shader Compiler",
-                    "version": "2021_12_08",
-                    "downloadUrl": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.6.2112/dxc_2021_12_08.zip"
+                    "version": "2022_07_18",
+                    "downloadUrl": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2207/dxc_2022_07_18.zip"
                 }
             }
         },
@@ -88,7 +88,7 @@
                 "type": "nuget",
                 "nuget": {
                     "name": "WinPixEventRuntime",
-                    "version": "1.0.210818001"
+                    "version": "1.0.220124001"
                 }
             }
         },
@@ -115,7 +115,7 @@
                 "type": "nuget",
                 "nuget": {
                     "name": "Microsoft.ML.OnnxRuntime.DirectML",
-                    "version": "1.11.0"
+                    "version": "1.12.1"
                 }
             }
         },
