@@ -5,17 +5,17 @@
     {
         "A": 
         {
-            "initialValuesDataType": "FLOAT16",
+            "initialValuesDataType": "FLOAT32",
             "initialValues": [ 1, 2, 4, 8, -2, -3 ]
         },
         "B": 
         {
-            "initialValuesDataType": "FLOAT16",
+            "initialValuesDataType": "FLOAT32",
             "initialValues": [ 1, 5, 2, 3, 4, 10 ]
         },
         "Out": 
         {
-            "initialValuesDataType": "FLOAT16",
+            "initialValuesDataType": "FLOAT32",
             "initialValues": { "valueCount": 6, "value": 0 }
         },
         "Constants": 
@@ -41,8 +41,7 @@
                 "-T", "cs_6_2",
                 "-E", "CSMain",
                 "-D", "NUM_THREADS=6",
-                "-D", "T=float16_t",
-                "-enable-16bit-types"
+                "-D", "T=float"
             ]
         }
     },

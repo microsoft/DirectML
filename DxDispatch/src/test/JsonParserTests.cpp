@@ -622,7 +622,7 @@ TEST(ParseInt64Test, ValidInput)
         "x4": 3000000000
     })");
     ASSERT_FALSE(d.HasParseError());
-    int64_t expectedValues[] = { 1, 5, -3, -3000000000, 3000000000 };
+    int64_t expectedValues[] = { 1, 5, -3, -3000000000LL, 3000000000LL };
     for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);

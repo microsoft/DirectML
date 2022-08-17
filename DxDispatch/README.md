@@ -67,7 +67,7 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
     <td>Windows - ARM64</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
-    <td>❌ none</td>
+    <td><b>✅ <u>archive</u></b></td>
     <td><b>✅ <u>nuget</u></b></td>
     <td><b>✅ <u>nuget</u></b></td>
   </tr>
@@ -91,10 +91,10 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
 
 The default redistributable versions of components (e.g. nuget, archives):
 - **DirectML (nuget)**: [Microsoft.AI.DirectML (1.9.0)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0)
-- **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.602.0)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.602.0)
-- **DX Compiler (archive)**: [December 2021 (v1.6.2112)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.6.2112)
+- **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.606.3)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.606.3)
+- **DX Compiler (archive)**: [July 2022 (v1.7.2207)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2207)
 - **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.220124001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.220124001)
-- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.11.0)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.11.0)
+- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.12.1)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.12.1)
 
 Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
 
@@ -119,10 +119,16 @@ To generate the project, provide one of the above names (e.g. `win-x64`) to cmak
 > cmake --preset <configure_preset_name>
 ```
 
-You can build from the generated VS solution under `build\<configure_preset_name>\dxdispatch.sln`.
+You can build from the generated VS solution under `build\<configure_preset_name>\dxdispatch.sln`. 
 
-To run tests (only supported on some platforms):
+Alternatively, build from the command line by using `--build` option and appending the build configuration to the preset name (e.g. the `win-x64` configure preset has the build presets named `win-x64-release` and `win-x64-debug`).
+
+```
+> cmake --build --preset <configure_preset_name>-(release|debug)
+```
+
+To run tests, change your working directory to the build folder and execute `ctest` (only supported on some platforms). You need to specify the build configuration (release or debug) since the presets use VS, which is a multi-configuration generator:
 ```
 > cd build\<configure_preset_name>
-> ctest .
+> ctest -C Release .
 ```
