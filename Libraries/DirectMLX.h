@@ -3421,13 +3421,222 @@ namespace dml
     // TODO: QuantizedLinearMatrixMultiply
     // 
 
-    // 
-    // TODO: ConvolutionInteger
-    // 
+    inline Expression ConvolutionInteger(
+        Expression input,
+        Optional<Expression> inputZeroPoint,
+        Expression filter,
+        Optional<Expression> filterZeroPoint,
+        Span<const uint32_t> strides = {},
+        Span<const uint32_t> dilations = {},
+        Span<const uint32_t> startPadding = {},
+        Span<const uint32_t> endPadding = {},
+        uint32_t groupCount = 1,
+        TensorDimensions outputSizes = {})
+    {
+        assert(detail::HasSameOwner({ input, filter }));
+        assert(!inputZeroPoint || detail::HasSameOwner({ input, *inputZeroPoint }));
+        assert(!filterZeroPoint || detail::HasSameOwner({ filter, *filterZeroPoint }));
 
-    // 
-    // TODO: QuantizedLinearConvolution
-    // 
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc filterTensor = filter.Impl()->GetOutputDesc();
+
+        TensorDesc inputZeroPointTensor;
+        if (inputZeroPoint) { inputZeroPointTensor = inputZeroPoint->Impl()->GetOutputDesc(); }
+
+        TensorDesc filterZeroPointTensor;
+        if (filterZeroPoint) { filterZeroPointTensor = filterZeroPoint->Impl()->GetOutputDesc(); }
+
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
+
+        // todo: support 1d convolution?
+        assert(dimensionCount == 4);
+        uint32_t spatialDimensionCount = dimensionCount - 2;
+
+        const uint32_t defaultStridesAndDilations[2] = { 1, 1 };
+        const uint32_t defaultPadding[2] = { 0, 0 };
+
+        assert(strides.empty() || strides.size() == spatialDimensionCount);
+        assert(dilations.empty() || dilations.size() == spatialDimensionCount);
+        assert(startPadding.empty() || startPadding.size() == spatialDimensionCount);
+        assert(endPadding.empty() || endPadding.size() == spatialDimensionCount);
+        assert(outputSizes.empty() || outputSizes.size() == inputTensor.sizes.size());
+
+        strides = strides.empty() ? Span<const uint32_t>{ defaultStridesAndDilations } : strides;
+        dilations = dilations.empty() ? Span<const uint32_t>{ defaultStridesAndDilations } : dilations;
+        startPadding = startPadding.empty() ? Span<const uint32_t>{ defaultPadding } : startPadding;
+        endPadding = endPadding.empty() ? Span<const uint32_t>{ defaultPadding } : endPadding;
+
+        if (outputSizes.empty())
+        {
+            outputSizes.push_back(inputTensor.sizes[0]); // output[N] = input[N]
+            outputSizes.push_back(filterTensor.sizes[0]); // output[C] = filter[N]
+
+            for (uint32_t dim = 0; dim < spatialDimensionCount; ++dim)
+            {
+                uint32_t inputSize = inputTensor.sizes[dim + 2];
+                uint32_t paddedSize = inputSize + startPadding[dim] + endPadding[dim];
+
+                uint32_t windowSize = filterTensor.sizes[dim + 2];
+                uint32_t kernelSize = 1 + (windowSize - 1) * dilations[dim];
+
+                assert(kernelSize <= paddedSize);
+                assert(strides[dim] != 0);
+
+                outputSizes.push_back(1 + (paddedSize - kernelSize) / strides[dim]);
+            }
+        }
+
+        TensorDesc outputTensor(DML_TENSOR_DATA_TYPE_INT32, std::move(outputSizes), builder->GetTensorPolicy());
+
+        DML_CONVOLUTION_INTEGER_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.FilterTensor = filterTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputZeroPointTensor = inputZeroPoint ? inputZeroPointTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.FilterZeroPointTensor = filterZeroPoint ? filterZeroPointTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.DimensionCount = spatialDimensionCount;
+        desc.Strides = strides.data();
+        desc.Dilations = dilations.data();
+        desc.StartPadding = startPadding.data();
+        desc.EndPadding = endPadding.data();
+        desc.GroupCount = groupCount;
+
+        detail::NodeOutput* const inputs[] = {
+            input.Impl(),
+            inputZeroPoint ? inputZeroPoint->Impl() : nullptr,
+            filter.Impl(),
+            filterZeroPoint ? filterZeroPoint->Impl() : nullptr
+        };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_CONVOLUTION_INTEGER, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output; 
+    }
+
+    inline Expression QuantizedLinearConvolution(
+        Expression input,
+        Expression inputScale,
+        Optional<Expression> inputZeroPoint,
+        Expression filter,
+        Expression filterScale,
+        Optional<Expression> filterZeroPoint,
+        Optional<Expression> bias,
+        Expression outputScale,
+        Optional<Expression> outputZeroPoint,
+        DML_TENSOR_DATA_TYPE outputDataType, // INT8 or UINT8, must match outputZeroPoint dtype if present
+        Span <const uint32_t> strides = {},
+        Span<const uint32_t> dilations = {},
+        Span<const uint32_t> startPadding = {},
+        Span<const uint32_t> endPadding = {},
+        uint32_t groupCount = 1,
+        TensorDimensions outputSizes = {})
+    {
+        assert(detail::HasSameOwner({input, inputScale, filter, filterScale, outputScale}));
+        assert(!inputZeroPoint || detail::HasSameOwner({ input, *inputZeroPoint}));
+        assert(!filterZeroPoint || detail::HasSameOwner({ input, *filterZeroPoint}));
+        assert(!bias || detail::HasSameOwner({ input, *bias}));
+        assert(!outputZeroPoint || detail::HasSameOwner({ input, *outputZeroPoint}));
+
+        if (outputZeroPoint) {
+            assert(outputZeroPoint->GetOutputDesc().dataType == outputDataType);
+        }
+
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        const auto getOptional = [](Optional<Expression>& e) {
+            if (e) return e->Impl()->GetOutputDesc();
+            return TensorDesc{};
+        };
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        TensorDesc inputScaleTensor = inputScale.Impl()->GetOutputDesc();
+        TensorDesc inputZeroPointTensor = getOptional(inputZeroPoint);
+        TensorDesc filterTensor = filter.Impl()->GetOutputDesc();
+        TensorDesc filterScaleTensor = filterScale.Impl()->GetOutputDesc();
+        TensorDesc filterZeroPointTensor = getOptional(filterZeroPoint);
+        TensorDesc biasTensor = getOptional(bias);
+        TensorDesc outputScaleTensor = outputScale.Impl()->GetOutputDesc();
+        TensorDesc outputZeroPointTensor = getOptional(outputZeroPoint);
+
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
+
+        // todo: suppord 1d convolution?
+        assert(dimensionCount == 4);
+        const uint32_t spatialDimensionCount = dimensionCount - 2;
+
+        const uint32_t defaultStridesAndDilations[2] = { 1, 1 };
+        const uint32_t defaultPadding[2] = { 1, 1 };
+
+        assert(strides.empty() || strides.size() == spatialDimensionCount);
+        assert(dilations.empty() || dilations.size() == spatialDimensionCount);
+        assert(startPadding.empty() || startPadding.size() == spatialDimensionCount);
+        assert(endPadding.empty() || endPadding.size() == spatialDimensionCount);
+        assert(outputSizes.empty() || outputSizes.size() == inputTensor.sizes.size());
+
+        strides = strides.empty() ? Span<const uint32_t>{ defaultStridesAndDilations } : strides;
+        dilations = dilations.empty() ? Span<const uint32_t>{ defaultStridesAndDilations } : dilations;
+        startPadding = startPadding.empty() ? Span<const uint32_t>{ defaultPadding } : startPadding;
+        endPadding = endPadding.empty() ? Span<const uint32_t>{ defaultPadding } : endPadding;
+
+        if (outputSizes.empty())
+        {
+            outputSizes.push_back(inputTensor.sizes[0]); // output[N] = input[N]
+            outputSizes.push_back(filterTensor.sizes[0]); // output[C] = filter[N]
+
+            for (uint32_t dim = 0; dim < spatialDimensionCount; ++dim)
+            {
+                uint32_t inputSize = inputTensor.sizes[dim + 2];
+                uint32_t paddedSize = inputSize + startPadding[dim] + endPadding[dim];
+
+                uint32_t windowSize = filterTensor.sizes[dim + 2];
+                uint32_t kernelSize = 1 + (windowSize - 1) * dilations[dim];
+
+                assert(kernelSize <= paddedSize);
+                assert(strides[dim] != 0);
+
+                outputSizes.push_back(1 + (paddedSize - kernelSize) / strides[dim]);
+            }
+        }
+
+        TensorDesc outputTensor(outputDataType, std::move(outputSizes), builder->GetTensorPolicy());
+
+        DML_QUANTIZED_LINEAR_CONVOLUTION_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputScaleTensor = inputScaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.InputZeroPointTensor = inputZeroPoint ? inputZeroPointTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.FilterTensor = filterTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.FilterScaleTensor = filterScaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.FilterZeroPointTensor = filterZeroPoint ? filterZeroPointTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.BiasTensor = bias ? biasTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.OutputScaleTensor = outputScaleTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.OutputZeroPointTensor = outputZeroPoint ? outputZeroPointTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+
+        desc.DimensionCount = spatialDimensionCount;
+        desc.Strides = strides.data();
+        desc.Dilations = dilations.data();
+        desc.StartPadding = startPadding.data();
+        desc.EndPadding = endPadding.data();
+        desc.GroupCount = groupCount;
+        
+        detail::NodeOutput* const inputs[] = {
+            input.Impl(),
+            inputScale.Impl(),
+            inputZeroPoint ? inputZeroPoint->Impl() : nullptr,
+            filter.Impl(),
+            filterScale.Impl(),
+            filterZeroPoint ? filterZeroPoint->Impl() : nullptr,
+            bias ? bias->Impl() : nullptr,
+            outputScale.Impl(),
+            outputZeroPoint ? outputZeroPoint->Impl() : nullptr,
+        };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_QUANTIZED_LINEAR_CONVOLUTION, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
 
     // 
     // TODO: ReluGrad
