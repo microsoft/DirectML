@@ -1,0 +1,43 @@
+name: $(Date:yyMMdd-HHmm)$(Rev:.r).$(SourceBranchName)
+
+pr: none
+
+stages:
+- stage: buildStage
+  displayName: Build
+  jobs:
+  - job: build
+    displayName: Build
+    strategy:
+    matrix:
+      win_x64_release:
+        poolName: DirectML_BuildPool
+        configurePreset: win-x64
+        buildPreset: win-x64-release
+      win_x86_release:
+        poolName: DirectML_BuildPool
+        configurePreset: win-x86
+        buildPreset: win-x86-release
+      win_arm64_release:
+        poolName: DirectML_BuildPool
+        configurePreset: win-arm64
+        buildPreset: win-arm64-release
+      # linux-x64-release: TODO
+    pool: $(poolName)
+    steps:
+    # - powershell: |
+    #     $Url = 'https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-windows-x86_64.zip'
+    #     $DownloadPath = '$(Build.StagingDirectory)/cmake.zip'
+    #     (New-Object System.Net.WebClient).DownloadFile($Url, $DownloadPath)
+    #     Expand-Archive $DownloadPath -DestinationPath cmake
+    #     echo "##vso[task.prependpath]$InstallDir/cmake-3.22.1-windows-x86_64/bin"
+    #   displayName: Download CMake
+    #   workingDirectory: $(Build.StagingDirectory)
+
+    - powershell: |
+        cmake --preset $(configurePreset)
+      displayName: Configure
+
+    - powershell: |
+        cmake --build --preset $(buildPreset)
+      displayName: Build
