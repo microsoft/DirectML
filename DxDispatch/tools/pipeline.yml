@@ -61,7 +61,9 @@ stages:
     - powershell: |
         & '$(findCmake.path)' --preset $(configurePreset)
       displayName: Configure
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
     - powershell: |
         & '$(findCmake.path)' --build --preset $(buildPreset)
       displayName: Build
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
