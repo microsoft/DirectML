@@ -55,6 +55,7 @@ stages:
               throw "Did not find cmake.exe in VS installation."
           }
 
+          Write-Host "CMake found at '$CMakePath'"
           Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
 
     - powershell: |
