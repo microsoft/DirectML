@@ -2,9 +2,11 @@ name: $(Date:yyMMdd-HHmm)$(Rev:.r).$(SourceBranchName)
 
 pr: 
   branches:
-    include: main
+    include: 
+    - main
   paths:
-    include: DxDispatch
+    include: 
+    - DxDispatch
 
 trigger: none
 
