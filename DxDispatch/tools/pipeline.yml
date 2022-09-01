@@ -3,7 +3,7 @@ name: $(Date:yyMMdd-HHmm)$(Rev:.r).$(SourceBranchName)
 pr: 
   branches:
     include: 
-    - main
+    - master
   paths:
     include: 
     - DxDispatch
@@ -58,9 +58,9 @@ stages:
           Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
 
     - powershell: |
-        $(findCmake.path) --preset $(configurePreset)
+        & '$(findCmake.path)' --preset $(configurePreset)
       displayName: Configure
 
     - powershell: |
-        $(findCmake.path) --build --preset $(buildPreset)
+        & '$(findCmake.path)' --build --preset $(buildPreset)
       displayName: Build
