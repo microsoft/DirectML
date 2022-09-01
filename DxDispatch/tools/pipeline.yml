@@ -9,20 +9,20 @@ stages:
   - job: build
     displayName: Build
     strategy:
-    matrix:
-      win_x64_release:
-        poolName: DirectML_BuildPool
-        configurePreset: win-x64
-        buildPreset: win-x64-release
-      win_x86_release:
-        poolName: DirectML_BuildPool
-        configurePreset: win-x86
-        buildPreset: win-x86-release
-      win_arm64_release:
-        poolName: DirectML_BuildPool
-        configurePreset: win-arm64
-        buildPreset: win-arm64-release
-      # linux-x64-release: TODO
+      matrix:
+        win_x64_release:
+          poolName: DirectML_BuildPool
+          configurePreset: win-x64
+          buildPreset: win-x64-release
+        win_x86_release:
+          poolName: DirectML_BuildPool
+          configurePreset: win-x86
+          buildPreset: win-x86-release
+        win_arm64_release:
+          poolName: DirectML_BuildPool
+          configurePreset: win-arm64
+          buildPreset: win-arm64-release
+        # linux-x64-release: TODO
     pool: $(poolName)
     steps:
     # - powershell: |
