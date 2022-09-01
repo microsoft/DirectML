@@ -31,19 +31,34 @@ stages:
         # linux-x64-release: TODO
     pool: $(poolName)
     steps:
-    # - powershell: |
-    #     $Url = 'https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-windows-x86_64.zip'
-    #     $DownloadPath = '$(Build.StagingDirectory)/cmake.zip'
-    #     (New-Object System.Net.WebClient).DownloadFile($Url, $DownloadPath)
-    #     Expand-Archive $DownloadPath -DestinationPath cmake
-    #     echo "##vso[task.prependpath]$InstallDir/cmake-3.22.1-windows-x86_64/bin"
-    #   displayName: Download CMake
-    #   workingDirectory: $(Build.StagingDirectory)
+    - task: PowerShell@2
+      name: findCMake
+      displayName: Find CMake
+      inputs:
+        targetType: inline
+        script: |
+          curl.exe -L -o vswhere.exe https://github.com/microsoft/vswhere/releases/download/3.0.3/vswhere.exe
+
+          # Find VS 2022
+          $VsPath = .\vswhere.exe -version '[17.0,18.0)' -property installationPath
+          if (!$VsPath)
+          {
+              throw "Did not find VS 2022 installation."
+          }
+
+          # Find cmake.exe within VS 2022 installation.
+          $CMakePath = Join-Path $VsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+          if (!(Test-Path $CMakePath))
+          {
+              throw "Did not find cmake.exe in VS installation."
+          }
+
+          Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
 
     - powershell: |
-        cmake --preset $(configurePreset)
+        $(findCmake.path) --preset $(configurePreset)
       displayName: Configure
 
     - powershell: |
-        cmake --build --preset $(buildPreset)
+        $(findCmake.path) --build --preset $(buildPreset)
       displayName: Build
