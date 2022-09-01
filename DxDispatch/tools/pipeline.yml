@@ -2,6 +2,8 @@ name: $(Date:yyMMdd-HHmm)$(Rev:.r).$(SourceBranchName)
 
 pr: none
 
+trigger: none
+
 stages:
 - stage: buildStage
   displayName: Build
