@@ -82,6 +82,8 @@ stages:
         sudo apt install ninja-build
       displayName: Install Ninja
     - script: |
+        export CC=/usr/bin/clang
+        export CXX=/usr/bin/clang++
         cmake --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
