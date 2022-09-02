@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "DxModules.h"
 
+#ifndef WIN32
+#include <dlfcn.h>
+#endif
+
 Module::Module(const char* moduleName)
 {
     if (!moduleName)
@@ -11,7 +15,7 @@ Module::Module(const char* moduleName)
 #ifdef WIN32
     m_module.reset(LoadLibraryA(moduleName));
 #else
-    m_ptr = dlopen(moduleName.data, RTLD_LAZY);
+    m_module = dlopen(moduleName, RTLD_LAZY);
 #endif
 }
 

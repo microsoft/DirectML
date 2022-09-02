@@ -126,6 +126,10 @@ if(WIN32)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
 endif()
 
+if(TARGET_WSL)
+    target_link_libraries(dxdispatch PRIVATE -ldl)
+endif()
+
 target_include_directories(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(
