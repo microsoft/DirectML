@@ -75,19 +75,19 @@ stages:
           imageName: ubuntu-latest
           configurePreset: linux-x64
           buildPreset: linux-x64-release
-      pool:
-        vmImage: $(imageName)
-      steps:
-      - script: |
-          cmake --preset $(configurePreset)
-        displayName: Configure
-        workingDirectory: $(Build.SourcesDirectory)/DxDispatch
-      - script: |
-          cmake --build --preset $(buildPreset) --target install
-        displayName: Build
-        workingDirectory: $(Build.SourcesDirectory)/DxDispatch
-      - task: PublishBuildArtifacts@1
-        displayName: Publish
-        inputs:
-          PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
-          ArtifactName: $(buildPreset)
+    pool:
+      vmImage: $(imageName)
+    steps:
+    - script: |
+        cmake --preset $(configurePreset)
+      displayName: Configure
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+    - script: |
+        cmake --build --preset $(buildPreset) --target install
+      displayName: Build
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+    - task: PublishBuildArtifacts@1
+      displayName: Publish
+      inputs:
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
+        ArtifactName: $(buildPreset)
