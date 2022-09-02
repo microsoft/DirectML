@@ -72,7 +72,7 @@ stages:
     strategy:
       matrix:
         ubuntu_release:
-          imageName: ubuntu-latest
+          imageName: ubuntu-20.04
           configurePreset: linux-x64
           buildPreset: linux-x64-release
     pool:
@@ -95,4 +95,4 @@ stages:
       displayName: Publish
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
-        ArtifactName: $(buildPreset)
+        ArtifactName: $(imageName)-release
