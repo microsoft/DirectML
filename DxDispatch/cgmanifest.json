@@ -1,124 +1,125 @@
 {
-    "Registrations": [
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "302302b30839505703d37fb82f536c53cf9172fa",
-                    "repositoryUrl": "https://github.com/jarro2783/cxxopts"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "nuget",
-                "nuget": {
-                    "name": "Microsoft.Direct3D.D3D12",
-                    "version": "1.606.3"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "nuget",
-                "nuget": {
-                    "name": "Microsoft.AI.DirectML",
-                    "version": "1.9.0"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "other",
-                "other": {
-                    "name": "DirectX Shader Compiler",
-                    "version": "2022_07_18",
-                    "downloadUrl": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2207/dxc_2022_07_18.zip"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "da7aedbc4a81e9c3bbc80bcface65c91e62fd205",
-                    "repositoryUrl": "https://github.com/microsoft/DirectX-Headers"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "7bdf0628b1276379886c7f6dda2cef2b3b374f0b",
-                    "repositoryUrl": "https://github.com/fmtlib/fmt"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "c1cbb41b428f15e53454682a45f03ea31f1da0a7",
-                    "repositoryUrl": "https://github.com/microsoft/GSL"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "703bd9caab50b139428cea1aaff9974ebee5742e",
-                    "repositoryUrl": "https://github.com/google/googletest"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "other",
-                "other": {
-                    "name": "Half",
-                    "version": "2.1.0",
-                    "downloadUrl": "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "nuget",
-                "nuget": {
-                    "name": "WinPixEventRuntime",
-                    "version": "1.0.220124001"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "f54b0e47a08782a6131cc3d60f94d038fa6e0a51",
-                    "repositoryUrl": "https://github.com/Tencent/rapidjson"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "git",
-                "git": {
-                    "commitHash": "2e225973d6c2ecf17fb4d376ddbeedb6db7dd82f",
-                    "repositoryUrl": "https://github.com/Microsoft/wil"
-                }
-            }
-        },
-        {
-            "component": {
-                "type": "nuget",
-                "nuget": {
-                    "name": "Microsoft.ML.OnnxRuntime.DirectML",
-                    "version": "1.12.1"
-                }
-            }
-        },
-    ],
-    "Version": 1
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json",
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "302302b30839505703d37fb82f536c53cf9172fa",
+          "repositoryUrl": "https://github.com/jarro2783/cxxopts"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "nuget",
+        "nuget": {
+          "name": "Microsoft.Direct3D.D3D12",
+          "version": "1.606.3"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "nuget",
+        "nuget": {
+          "name": "Microsoft.AI.DirectML",
+          "version": "1.9.0"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "other",
+        "other": {
+          "name": "DirectX Shader Compiler",
+          "version": "2022_07_18",
+          "downloadUrl": "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2207/dxc_2022_07_18.zip"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "da7aedbc4a81e9c3bbc80bcface65c91e62fd205",
+          "repositoryUrl": "https://github.com/microsoft/DirectX-Headers"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "7bdf0628b1276379886c7f6dda2cef2b3b374f0b",
+          "repositoryUrl": "https://github.com/fmtlib/fmt"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "c1cbb41b428f15e53454682a45f03ea31f1da0a7",
+          "repositoryUrl": "https://github.com/microsoft/GSL"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "703bd9caab50b139428cea1aaff9974ebee5742e",
+          "repositoryUrl": "https://github.com/google/googletest"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "other",
+        "other": {
+          "name": "Half",
+          "version": "2.1.0",
+          "downloadUrl": "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "nuget",
+        "nuget": {
+          "name": "WinPixEventRuntime",
+          "version": "1.0.220124001"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "f54b0e47a08782a6131cc3d60f94d038fa6e0a51",
+          "repositoryUrl": "https://github.com/Tencent/rapidjson"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "commitHash": "2e225973d6c2ecf17fb4d376ddbeedb6db7dd82f",
+          "repositoryUrl": "https://github.com/Microsoft/wil"
+        }
+      }
+    },
+    {
+      "component": {
+        "type": "nuget",
+        "nuget": {
+          "name": "Microsoft.ML.OnnxRuntime.DirectML",
+          "version": "1.12.1"
+        }
+      }
+    }
+  ],
+  "Version": 1
 }
