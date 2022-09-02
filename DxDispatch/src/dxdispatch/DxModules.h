@@ -35,12 +35,12 @@ protected:
 #endif
 };
 
-// Wraps d3d12.dll / libd3d12.so
+// Wraps d3d12.dll / libd3d12.so. Not used for Xbox.
 class D3d12Module : public Module
 {
 public:
 #if defined(_GAMING_XBOX)
-    D3d12Module(const char* moduleName = "d3d12_xs.dll");
+    D3d12Module(const char* moduleName = nullptr);
 #elif defined(WIN32)
     D3d12Module(const char* moduleName = "d3d12.dll");
 #else
@@ -72,7 +72,7 @@ private:
     decltype(&D3D12SerializeVersionedRootSignature) m_d3d12SerializeVersionedRootSignature = nullptr;
 };
 
-// Wraps dxcore.dll / libdxcore.so
+// Wraps dxcore.dll / libdxcore.so. Not used for Xbox.
 class DxCoreModule : public Module
 {
 public:
