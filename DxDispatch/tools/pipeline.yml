@@ -64,7 +64,7 @@ stages:
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
-        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(buildPreset)
 
   - job: build_linux
@@ -79,6 +79,9 @@ stages:
       vmImage: $(imageName)
     steps:
     - script: |
+        sudo apt install ninja-build
+      displayName: Install Ninja
+    - script: |
         cmake --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
@@ -89,5 +92,5 @@ stages:
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
-        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(buildPreset)
