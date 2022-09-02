@@ -110,7 +110,7 @@ function(init_d3d12_target_nuget target_name pkg_id pkg_version pkg_hash)
     target_link_libraries(${target_name} INTERFACE 
         Microsoft::DirectX-Headers 
         Microsoft::DirectX-Guids 
-        d3d12.lib 
+        # d3d12.lib 
         dxcore.lib
     )
     

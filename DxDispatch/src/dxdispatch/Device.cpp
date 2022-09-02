@@ -9,6 +9,8 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 
 Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
 {
+    m_d3dModule = std::make_unique<D3d12Module>(L"d3d12.dll");
+
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
 
 #ifdef _GAMING_XBOX
@@ -34,14 +36,14 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
     if (debugLayersEnabled)
     {
         ComPtr<ID3D12Debug3> d3dDebug;
-        THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&d3dDebug)));
+        THROW_IF_FAILED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&d3dDebug)));
         d3dDebug->EnableDebugLayer();
         d3dDebug->SetEnableGPUBasedValidation(true);
 
         dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
     }
 
-    THROW_IF_FAILED(D3D12CreateDevice(
+    THROW_IF_FAILED(m_d3dModule->CreateDevice(
         adapter, 
         D3D_FEATURE_LEVEL_11_0, 
         IID_PPV_ARGS(&m_d3d)));

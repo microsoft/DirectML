@@ -159,7 +159,7 @@ void HlslDispatchable::CreateRootSignatureAndBindingMap()
 
     ComPtr<ID3DBlob> rootSignatureBlob;
     ComPtr<ID3DBlob> rootSignatureErrors;
-    HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSigDesc, &rootSignatureBlob, &rootSignatureErrors);
+    HRESULT hr = m_device->D3DModule()->SerializeVersionedRootSignature(&rootSigDesc, &rootSignatureBlob, &rootSignatureErrors);
     if (FAILED(hr))
     {
         if (rootSignatureErrors)
