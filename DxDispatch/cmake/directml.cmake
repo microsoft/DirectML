@@ -99,7 +99,6 @@ function(init_directml_target_nuget target_name pkg_id pkg_version pkg_hash)
         target_append_redist_file(${target_name} "${bin_path}/DirectML.Debug.dll")
     else()
         set(bin_path ${${content}_SOURCE_DIR}/bin/x64-linux)
-        target_link_libraries(${target_name} INTERFACE -L${bin_path} directml.so)
         target_append_redist_file(${target_name} "${bin_path}/libdirectml.so")
     endif()
 
