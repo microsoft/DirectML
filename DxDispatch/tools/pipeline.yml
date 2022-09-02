@@ -64,6 +64,6 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
     - powershell: |
-        & '$(findCmake.path)' --build --preset $(buildPreset)
+        & '$(findCmake.path)' --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
