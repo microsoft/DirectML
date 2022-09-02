@@ -95,3 +95,22 @@ private:
     using DXCoreCreateAdapterFactoryFn = HRESULT __stdcall(REFIID, void**);
     DXCoreCreateAdapterFactoryFn* m_dxCoreCreateAdapterFactory = nullptr;
 };
+
+// Wraps directml.dll / libdirectml.so.
+class DmlModule : public Module
+{
+public:
+#if defined(WIN32)
+    DmlModule(const char* moduleName = "directml.dll");
+#else
+    DmlModule(const char* moduleName = "libdirectml.so");
+#endif
+
+    inline HRESULT CreateDevice1(ID3D12Device* d3d12Device, DML_CREATE_DEVICE_FLAGS flags, DML_FEATURE_LEVEL minimumFeatureLevel, REFIID riid, void** device)
+    {
+        return InvokeSymbol(m_dmlCreateDevice1, d3d12Device, flags, minimumFeatureLevel, riid, device);
+    }
+
+private:
+    decltype(&DMLCreateDevice1) m_dmlCreateDevice1 = nullptr;
+};

@@ -75,6 +75,7 @@ private:
 #ifndef _GAMING_XBOX
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> m_infoQueue;
 #endif
+    std::unique_ptr<DmlModule> m_dmlModule;
     Microsoft::WRL::ComPtr<IDMLDevice1> m_dml;
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;

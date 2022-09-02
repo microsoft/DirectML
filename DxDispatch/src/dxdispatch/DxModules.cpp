@@ -69,3 +69,11 @@ DxCoreModule::DxCoreModule(const char* moduleName) : Module(moduleName)
         InitSymbol(&m_dxCoreCreateAdapterFactory, "DXCoreCreateAdapterFactory");
     }
 }
+
+DmlModule::DmlModule(const char* moduleName) : Module(moduleName)
+{
+    if (m_module)
+    {
+        InitSymbol(&m_dmlCreateDevice1, "DMLCreateDevice1");
+    }
+}

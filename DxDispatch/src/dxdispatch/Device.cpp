@@ -10,6 +10,7 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
 {
     m_d3dModule = std::make_unique<D3d12Module>();
+    m_dmlModule = std::make_unique<DmlModule>();
 
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -61,7 +62,7 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
         IID_GRAPHICS_PPV_ARGS(m_queue.ReleaseAndGetAddressOf())));
     m_commandListType = queueDesc.Type;
 
-    THROW_IF_FAILED(DMLCreateDevice1(
+    THROW_IF_FAILED(m_dmlModule->CreateDevice1(
         m_d3d.Get(), 
         dmlCreateDeviceFlags, 
         DML_FEATURE_LEVEL_5_0, 
