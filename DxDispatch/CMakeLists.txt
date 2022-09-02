@@ -107,7 +107,7 @@ add_executable(
     src/dxdispatch/CommandLineArgs.cpp
     src/dxdispatch/Logging.cpp
     src/dxdispatch/PixCaptureHelper.cpp
-    src/dxdispatch/D3d12Module.cpp
+    src/dxdispatch/DxModules.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 

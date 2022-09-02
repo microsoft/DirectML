@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "D3D12Module.h"
+#include "DxModules.h"
 
 D3d12Module::D3d12Module(std::wstring_view moduleName)
 {
@@ -52,4 +52,23 @@ HRESULT D3d12Module::SerializeVersionedRootSignature(
     RETURN_HR_IF_NULL(E_FAIL, m_module.get());
     RETURN_HR_IF_NULL(E_FAIL, m_d3d12SerializeVersionedRootSignature);
     return m_d3d12SerializeVersionedRootSignature(rootSignature, blob, errorBlob);
+}
+
+DxCoreModule::DxCoreModule(std::wstring_view moduleName)
+{
+    m_module.reset(LoadLibraryW(moduleName.data()));
+
+    if (m_module)
+    {
+        m_dxCoreCreateAdapterFactory = reinterpret_cast<DXCoreCreateAdapterFactoryFn*>(
+            GetProcAddress(m_module.get(), "DXCoreCreateAdapterFactory")
+            );
+    }
+}
+
+HRESULT DxCoreModule::CreateAdapterFactory(REFIID riid, void** factory)
+{
+    RETURN_HR_IF_NULL(E_FAIL, m_module.get());
+    RETURN_HR_IF_NULL(E_FAIL, m_dxCoreCreateAdapterFactory);
+    return m_dxCoreCreateAdapterFactory(riid, factory);
 }

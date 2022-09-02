@@ -1,17 +1,19 @@
 #pragma once
 
+#include "DxModules.h"
+
 class Adapter
 {
 public:
     Adapter() = default;
-    Adapter(IAdapter* adapter);
+    Adapter(IAdapter* adapter, std::shared_ptr<DxCoreModule>);
 
     IAdapter* GetAdapter() { return m_adapter.Get(); }
     std::string_view GetDescription() const { return m_description; }
     std::string GetDetailedDescription() const;
 
-    static Adapter Select(std::string_view adapterSubstring = {});
-    static std::vector<Adapter> GetAll();
+    static Adapter Select(std::shared_ptr<DxCoreModule> module, std::string_view adapterSubstring = {});
+    static std::vector<Adapter> GetAll(std::shared_ptr<DxCoreModule> module);
 
 private:
 #ifndef _GAMING_XBOX
@@ -44,6 +46,7 @@ private:
 #endif
 
 private:
+    std::shared_ptr<DxCoreModule> m_dxCoreModule;
     Microsoft::WRL::ComPtr<IAdapter> m_adapter;
     std::string m_description;
     std::string m_driverVersion;

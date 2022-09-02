@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PixCaptureHelper.h"
-#include "D3d12Module.h"
+#include "DxModules.h"
 
 // Simplified abstraction for submitting work to a device with a single command queue. Not thread safe.
 class Device

@@ -42,10 +42,11 @@ int main(int argc, char** argv)
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
     auto pixCaptureHelper = std::make_unique<PixCaptureHelper>(args.GetPixCaptureType());
+    auto dxCoreModule = std::make_shared<DxCoreModule>(L"dxcore.dll");
 
     if (args.ShowAdapters())
     {
-        for (auto& adapter : Adapter::GetAll())
+        for (auto& adapter : Adapter::GetAll(dxCoreModule))
         {
             LogInfo(adapter.GetDetailedDescription() + "\n");
         }
@@ -56,7 +57,7 @@ int main(int argc, char** argv)
     std::shared_ptr<Device> device;
     try
     {
-        Adapter adapter = Adapter::Select(args.AdapterSubstring());
+        Adapter adapter = Adapter::Select(dxCoreModule, args.AdapterSubstring());
         device = std::make_shared<Device>(
             adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 

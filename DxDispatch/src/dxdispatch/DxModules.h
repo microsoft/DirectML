@@ -1,5 +1,6 @@
 #pragma once
 
+// Wraps d3d12.dll / libd3d12.so
 class D3d12Module
 {
 public:
@@ -28,4 +29,21 @@ private:
     decltype(&D3D12CreateDevice) m_d3d12CreateDevice = nullptr;
     decltype(&D3D12GetDebugInterface) m_d3d12GetDebugInterface = nullptr;
     decltype(&D3D12SerializeVersionedRootSignature) m_d3d12SerializeVersionedRootSignature = nullptr;
+};
+
+// Wraps dxcore.dll / libdxcore.so
+class DxCoreModule
+{
+public:
+    DxCoreModule(std::wstring_view moduleName);
+
+    HRESULT CreateAdapterFactory(REFIID riid, void** factory);
+
+private:
+    // DXCoreCreateAdapterFactory has a C++ overload so we must be explicit in
+    // the function signature.
+    using DXCoreCreateAdapterFactoryFn = HRESULT __stdcall(REFIID, void**);
+
+    wil::unique_hmodule m_module;
+    DXCoreCreateAdapterFactoryFn* m_dxCoreCreateAdapterFactory = nullptr;
 };
