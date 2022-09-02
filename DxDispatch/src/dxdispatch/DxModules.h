@@ -1,61 +1,95 @@
 #pragma once
 
+class Module
+{
+public:
+    explicit Module(const char* moduleName);
+    Module(const Module&) = delete;
+    Module(Module&& other);
+    Module& operator=(Module&& other);
+    ~Module();
+
+    void* GetSymbol(const char* name);
+
+    template <typename T>
+    void InitSymbol(T* functionPtrPtr, const char* name)
+    {
+        *functionPtrPtr = reinterpret_cast<T>(GetSymbol(name));
+    }
+
+    template <typename T, typename... Args>
+    auto InvokeSymbol(T functionPtr, Args&&... args)
+    {
+        RETURN_HR_IF_NULL(E_FAIL, m_module);
+        RETURN_HR_IF_NULL(E_FAIL, functionPtr);
+        return functionPtr(std::forward<Args>(args)...);
+    }
+
+protected:
+#ifdef WIN32
+    wil::unique_hmodule m_module;
+#else
+    void* m_module = nullptr;
+#endif
+};
+
 // Wraps d3d12.dll / libd3d12.so
-class D3d12Module
+class D3d12Module : public Module
 {
 public:
 #if defined(_GAMING_XBOX)
-    D3d12Module(std::wstring_view moduleName = nullptr);
+    D3d12Module(const char* moduleName = "d3d12_xs.dll");
 #elif defined(WIN32)
-    D3d12Module(std::wstring_view moduleName = L"d3d12.dll");
+    D3d12Module(const char* moduleName = "d3d12.dll");
 #else
-    D3d12Module(std::wstring_view moduleName = L"libd3d12.so");
+    D3d12Module(const char* moduleName = "libd3d12.so");
 #endif
 
-    HRESULT CreateDevice(
-        IUnknown* adapter,
-        D3D_FEATURE_LEVEL minimumFeatureLevel,
-        REFIID riid,
-        void** device
-    );
+    inline HRESULT CreateDevice(IUnknown* adapter, D3D_FEATURE_LEVEL minimumFeatureLevel, REFIID riid, void** device)
+    {
+        return InvokeSymbol(m_d3d12CreateDevice, adapter, minimumFeatureLevel, riid, device);
+    }
 
-    HRESULT GetDebugInterface(
-        REFIID riid,
-        void** debug
-    );
+    inline HRESULT GetDebugInterface(REFIID riid, void** debug)
+    {
+        return InvokeSymbol(m_d3d12GetDebugInterface, riid, debug);
+    }
 
-    HRESULT SerializeVersionedRootSignature(
+    inline HRESULT SerializeVersionedRootSignature(
         const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* rootSignature,
         ID3DBlob** blob,
         ID3DBlob** errorBlob
-    );
+        )
+    {
+        return InvokeSymbol(m_d3d12SerializeVersionedRootSignature, rootSignature, blob, errorBlob);
+    }
 
 private:
-    wil::unique_hmodule m_module;
     decltype(&D3D12CreateDevice) m_d3d12CreateDevice = nullptr;
     decltype(&D3D12GetDebugInterface) m_d3d12GetDebugInterface = nullptr;
     decltype(&D3D12SerializeVersionedRootSignature) m_d3d12SerializeVersionedRootSignature = nullptr;
 };
 
 // Wraps dxcore.dll / libdxcore.so
-class DxCoreModule
+class DxCoreModule : public Module
 {
 public:
 #if defined(_GAMING_XBOX)
-    DxCoreModule(std::wstring_view moduleName = nullptr);
+    DxCoreModule(const char* moduleName = nullptr);
 #elif defined(WIN32)
-    DxCoreModule(std::wstring_view moduleName = L"dxcore.dll");
+    DxCoreModule(const char* moduleName = "dxcore.dll");
 #else
-    DxCoreModule(std::wstring_view moduleName = L"libdxcore.so");
+    DxCoreModule(const char* moduleName = "libdxcore.so");
 #endif
 
-    HRESULT CreateAdapterFactory(REFIID riid, void** factory);
+    inline HRESULT CreateAdapterFactory(REFIID riid, void** factory)
+    {
+        return InvokeSymbol(m_dxCoreCreateAdapterFactory, riid, factory);
+    }
 
 private:
     // DXCoreCreateAdapterFactory has a C++ overload so we must be explicit in
     // the function signature.
     using DXCoreCreateAdapterFactoryFn = HRESULT __stdcall(REFIID, void**);
-
-    wil::unique_hmodule m_module;
     DXCoreCreateAdapterFactoryFn* m_dxCoreCreateAdapterFactory = nullptr;
 };
