@@ -14,24 +14,20 @@ stages:
 - stage: buildStage
   displayName: Build
   jobs:
-  - job: build
-    displayName: Build
+  - job: build_windows
+    displayName: Build Windows
     strategy:
       matrix:
         win_x64_release:
-          poolName: DirectML_BuildPool
           configurePreset: win-x64
           buildPreset: win-x64-release
         win_x86_release:
-          poolName: DirectML_BuildPool
           configurePreset: win-x86
           buildPreset: win-x86-release
         win_arm64_release:
-          poolName: DirectML_BuildPool
           configurePreset: win-arm64
           buildPreset: win-arm64-release
-        # linux-x64-release: TODO
-    pool: $(poolName)
+    pool: DirectML_BuildPool
     steps:
     - task: PowerShell@2
       name: findCMake
@@ -57,13 +53,41 @@ stages:
 
           Write-Host "CMake found at '$CMakePath'"
           Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
-
     - powershell: |
         & '$(findCmake.path)' --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
-
     - powershell: |
         & '$(findCmake.path)' --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+    - task: PublishBuildArtifacts@1
+      displayName: Publish
+      inputs:
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
+        ArtifactName: $(buildPreset)
+
+  - job: build_linux
+    displayName: Build Linux
+    strategy:
+      matrix:
+        ubuntu_release:
+          imageName: ubuntu-latest
+          configurePreset: linux-x64
+          buildPreset: linux-x64-release
+      pool:
+        vmImage: $(imageName)
+      steps:
+      - script: |
+          cmake --preset $(configurePreset)
+        displayName: Configure
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+      - script: |
+          cmake --build --preset $(buildPreset) --target install
+        displayName: Build
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+      - task: PublishBuildArtifacts@1
+        displayName: Publish
+        inputs:
+          PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/$(configurePreset)/install/bin
+          ArtifactName: $(buildPreset)
