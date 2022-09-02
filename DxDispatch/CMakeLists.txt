@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.8.1 LANGUAGES CXX)
+project(dxdispatch VERSION 0.9.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
