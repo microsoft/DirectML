@@ -32,7 +32,7 @@ public:
 private:
     PixCaptureType m_captureType;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
-#ifndef _GAMING_XBOX
+#if !defined(_GAMING_XBOX) && !defined(PIX_NONE)
     wil::unique_hmodule m_gpuCaptureLibrary;
     Microsoft::WRL::ComPtr<ID3D12SharingContract> m_sharingContract;
 #endif
