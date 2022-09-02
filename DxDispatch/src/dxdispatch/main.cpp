@@ -42,7 +42,8 @@ int main(int argc, char** argv)
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
     auto pixCaptureHelper = std::make_unique<PixCaptureHelper>(args.GetPixCaptureType());
-    auto dxCoreModule = std::make_shared<DxCoreModule>(L"dxcore.dll");
+
+    std::shared_ptr<DxCoreModule> dxCoreModule = std::make_shared<DxCoreModule>();
 
     if (args.ShowAdapters())
     {

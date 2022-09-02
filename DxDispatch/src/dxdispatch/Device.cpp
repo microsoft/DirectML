@@ -9,7 +9,7 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 
 Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
 {
-    m_d3dModule = std::make_unique<D3d12Module>(L"d3d12.dll");
+    m_d3dModule = std::make_unique<D3d12Module>();
 
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
 

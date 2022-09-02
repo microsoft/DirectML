@@ -3,6 +3,7 @@
 
 D3d12Module::D3d12Module(std::wstring_view moduleName)
 {
+#ifndef _GAMING_XBOX
    m_module.reset(LoadLibraryW(moduleName.data()));
 
    if (m_module)
@@ -19,6 +20,7 @@ D3d12Module::D3d12Module(std::wstring_view moduleName)
            GetProcAddress(m_module.get(), "D3D12SerializeVersionedRootSignature")
            );
    }
+#endif
 }
 
 HRESULT D3d12Module::CreateDevice(
@@ -28,9 +30,13 @@ HRESULT D3d12Module::CreateDevice(
    void** device
    )
 {
+#ifdef _GAMING_XBOX
+    return D3D12CreateDevice(adapter, minimumFeatureLevel, riid, device);
+#else
    RETURN_HR_IF_NULL(E_FAIL, m_module.get());
    RETURN_HR_IF_NULL(E_FAIL, m_d3d12CreateDevice);
    return m_d3d12CreateDevice(adapter, minimumFeatureLevel, riid, device);
+#endif
 }
 
 HRESULT D3d12Module::GetDebugInterface(
@@ -38,9 +44,13 @@ HRESULT D3d12Module::GetDebugInterface(
    void** debug
    )
 {
+#ifdef _GAMING_XBOX
+    return E_FAIL;
+#else
    RETURN_HR_IF_NULL(E_FAIL, m_module.get());
    RETURN_HR_IF_NULL(E_FAIL, m_d3d12GetDebugInterface);
    return m_d3d12GetDebugInterface(riid, debug);
+#endif
 }
 
 HRESULT D3d12Module::SerializeVersionedRootSignature(
@@ -49,9 +59,13 @@ HRESULT D3d12Module::SerializeVersionedRootSignature(
     ID3DBlob** errorBlob
     )
 {
+#ifdef _GAMING_XBOX
+    return D3D12SerializeVersionedRootSignature(rootSignature, blob, errorBlob);
+#else
     RETURN_HR_IF_NULL(E_FAIL, m_module.get());
     RETURN_HR_IF_NULL(E_FAIL, m_d3d12SerializeVersionedRootSignature);
     return m_d3d12SerializeVersionedRootSignature(rootSignature, blob, errorBlob);
+#endif
 }
 
 DxCoreModule::DxCoreModule(std::wstring_view moduleName)

@@ -4,7 +4,13 @@
 class D3d12Module
 {
 public:
-    D3d12Module(std::wstring_view moduleName);
+#if defined(_GAMING_XBOX)
+    D3d12Module(std::wstring_view moduleName = nullptr);
+#elif defined(WIN32)
+    D3d12Module(std::wstring_view moduleName = L"d3d12.dll");
+#else
+    D3d12Module(std::wstring_view moduleName = L"libd3d12.so");
+#endif
 
     HRESULT CreateDevice(
         IUnknown* adapter,
@@ -35,7 +41,13 @@ private:
 class DxCoreModule
 {
 public:
-    DxCoreModule(std::wstring_view moduleName);
+#if defined(_GAMING_XBOX)
+    DxCoreModule(std::wstring_view moduleName = nullptr);
+#elif defined(WIN32)
+    DxCoreModule(std::wstring_view moduleName = L"dxcore.dll");
+#else
+    DxCoreModule(std::wstring_view moduleName = L"libdxcore.so");
+#endif
 
     HRESULT CreateAdapterFactory(REFIID riid, void** factory);
 
