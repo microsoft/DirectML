@@ -20,8 +20,10 @@ public:
     template <typename T, typename... Args>
     auto InvokeSymbol(T functionPtr, Args&&... args)
     {
-        RETURN_HR_IF_NULL(E_FAIL, m_module);
-        RETURN_HR_IF_NULL(E_FAIL, functionPtr);
+        if (!m_module || !functionPtr)
+        {
+            return E_FAIL;
+        }
         return functionPtr(std::forward<Args>(args)...);
     }
 
