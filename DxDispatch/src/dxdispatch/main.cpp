@@ -89,7 +89,8 @@ int main(int argc, char** argv)
                 device->DML(), 
                 device->GetCommandQueue(),
                 args.ModelPath(), 
-                args.GetOnnxFreeDimensionOverrides()
+                args.GetOnnxFreeDimensionNameOverrides(),
+                args.GetOnnxFreeDimensionDenotationOverrides()
             );
 #endif
         }

@@ -94,9 +94,14 @@ void OnnxDispatchable::Initialize()
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED); // Note ORT_ENABLE_BASIC is useful for debugging.
  
-    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionOverrides())
+    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionNameOverrides())
     {
-        ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
+        Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+    }
+
+    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionDenotationOverrides())
+    {
+        Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
     }
 
     const OrtDmlApi* ortDmlApi;

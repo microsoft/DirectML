@@ -79,7 +79,8 @@ Model OnnxParsers::ParseModel(
     IDMLDevice* device,
     ID3D12CommandQueue* queue,
     const std::filesystem::path& filePath, 
-    gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides)
+    gsl::span<const std::pair<std::string, uint32_t>> freeDimNameOverrides,
+    gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides)
 {
     const OrtApi& ortApi = Ort::GetApi();
 
@@ -88,9 +89,14 @@ Model OnnxParsers::ParseModel(
     sessionOptions.DisableMemPattern();
     sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
 
-    for (auto& freeDimOverride : freeDimOverrides)
+    for (auto& freeDimOverride : freeDimNameOverrides)
     {
-        ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second);
+        Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+    }
+
+    for (auto& freeDimOverride : freeDimDenotationOverrides)
+    {
+        Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
     }
 
     const OrtDmlApi* ortDmlApi;
