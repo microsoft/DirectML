@@ -159,7 +159,11 @@ void HlslDispatchable::CreateRootSignatureAndBindingMap()
 
     ComPtr<ID3DBlob> rootSignatureBlob;
     ComPtr<ID3DBlob> rootSignatureErrors;
+#ifdef _GAMING_XBOX
     HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSigDesc, &rootSignatureBlob, &rootSignatureErrors);
+#else
+    HRESULT hr = m_device->D3DModule()->SerializeVersionedRootSignature(&rootSigDesc, &rootSignatureBlob, &rootSignatureErrors);
+#endif
     if (FAILED(hr))
     {
         if (rootSignatureErrors)

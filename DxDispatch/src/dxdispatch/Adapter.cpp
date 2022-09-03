@@ -3,7 +3,8 @@
 
 using Microsoft::WRL::ComPtr;
 
-Adapter::Adapter(IAdapter* adapter) : m_adapter(adapter)
+Adapter::Adapter(IAdapter* adapter, std::shared_ptr<DxCoreModule> dxCoreModule) 
+    : m_adapter(adapter), m_dxCoreModule(std::move(dxCoreModule))
 {
 #ifdef _GAMING_XBOX
     assert(adapter == nullptr);
@@ -63,7 +64,7 @@ std::string Adapter::GetDetailedDescription() const
         );
 }
 
-std::vector<Adapter> Adapter::GetAll()
+std::vector<Adapter> Adapter::GetAll(std::shared_ptr<DxCoreModule> module)
 {
     std::vector<Adapter> adapters;
 
@@ -71,7 +72,7 @@ std::vector<Adapter> Adapter::GetAll()
     adapters.emplace_back(nullptr);
 #else
     ComPtr<IDXCoreAdapterFactory> adapterFactory;
-    THROW_IF_FAILED(DXCoreCreateAdapterFactory(adapterFactory.GetAddressOf()));
+    THROW_IF_FAILED(module->CreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
 
     ComPtr<IDXCoreAdapterList> adapterList;
     GUID attributes[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE };
@@ -80,9 +81,9 @@ std::vector<Adapter> Adapter::GetAll()
         attributes,
         adapterList.GetAddressOf()));
 
-    DXCoreAdapterPreference preferences[] = { 
-        DXCoreAdapterPreference::Hardware, 
-        DXCoreAdapterPreference::HighPerformance 
+    DXCoreAdapterPreference preferences[] = {
+        DXCoreAdapterPreference::Hardware,
+        DXCoreAdapterPreference::HighPerformance
     };
     THROW_IF_FAILED(adapterList->Sort(_countof(preferences), preferences));
 
@@ -92,16 +93,16 @@ std::vector<Adapter> Adapter::GetAll()
     {
         ComPtr<IDXCoreAdapter> dxcoreAdapter;
         THROW_IF_FAILED(adapterList->GetAdapter(i, dxcoreAdapter.ReleaseAndGetAddressOf()));
-        adapters.emplace_back(dxcoreAdapter.Get());
+        adapters.emplace_back(dxcoreAdapter.Get(), module);
     }
 #endif
 
     return adapters;
 }
 
-Adapter Adapter::Select(std::string_view adapterSubstring)
+Adapter Adapter::Select(std::shared_ptr<DxCoreModule> module, std::string_view adapterSubstring)
 {
-    auto adapters = Adapter::GetAll();
+    auto adapters = Adapter::GetAll(module);
 
     for (auto& adapter : adapters)
     {

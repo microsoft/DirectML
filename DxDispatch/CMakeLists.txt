@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.8.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.9.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -107,6 +107,7 @@ add_executable(
     src/dxdispatch/CommandLineArgs.cpp
     src/dxdispatch/Logging.cpp
     src/dxdispatch/PixCaptureHelper.cpp
+    src/dxdispatch/DxModules.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
@@ -123,6 +124,10 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 if(WIN32)
     target_sources(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
+endif()
+
+if(TARGET_WSL)
+    target_link_libraries(dxdispatch PRIVATE -ldl)
 endif()
 
 target_include_directories(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -241,6 +246,10 @@ if(DXD_TESTS)
     model_test(dml_split "Resource 'Out1': 1, 2\nResource 'Out2': 3, 4\nResource 'Out3': 5, 6")
     model_test(dml_upsample_2d "Resource 'output': 1, 1.25, 1.75, 2, 1.5, 1.75, 2.25, 2.5, 2.5, 2.75, 3.25, 3.5, 3, 3.25, 3.75, 4")
     model_test(dml_owned_tensors "Resource 'Out': 6, 10, -2")
-    model_test(hlsl_add_fp32 "Resource 'Out': 2, 7, 6, 11, 2, 7")
-    model_test(onnx_gemm "Resource 'Out': 22, 28, 34, 40, 46, 60, 74, 88, 70, 92, 114, 136")
+    if(NOT dxcompiler_type STREQUAL None)
+        model_test(hlsl_add_fp32 "Resource 'Out': 2, 7, 6, 11, 2, 7")
+    endif()
+    if(NOT onnxruntime_type STREQUAL None)
+        model_test(onnx_gemm "Resource 'Out': 22, 28, 34, 40, 46, 60, 74, 88, 70, 92, 114, 136")
+    endif()
 endif()

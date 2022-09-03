@@ -110,8 +110,6 @@ function(init_d3d12_target_nuget target_name pkg_id pkg_version pkg_hash)
     target_link_libraries(${target_name} INTERFACE 
         Microsoft::DirectX-Headers 
         Microsoft::DirectX-Guids 
-        d3d12.lib 
-        dxcore.lib
     )
     
     target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_VERSION=${agility_sdk_version})
@@ -156,7 +154,6 @@ function(init_d3d12_target_winsdk target_name)
         message(FATAL_ERROR "The SDK version of D3D12 only works on Windows")
     endif()
 
-    target_link_libraries(${target_name} INTERFACE d3d12.lib dxcore.lib)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "Windows SDK")
 endfunction()
 
@@ -164,7 +161,7 @@ endfunction()
 # Init using WSL system libraries and open-source headers.
 # -----------------------------------------------------------------------------
 function(init_d3d12_target_wsl target_name)
-    target_link_libraries(${target_name} INTERFACE Microsoft::DirectX-Headers Microsoft::DirectX-Guids d3d12.so dxcore.so)
+    target_link_libraries(${target_name} INTERFACE Microsoft::DirectX-Headers Microsoft::DirectX-Guids)
     target_link_directories(${target_name} INTERFACE /usr/lib/wsl/lib)
     target_include_directories(${target_name} INTERFACE ${dxheaders_SOURCE_DIR}/include/directx)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "WSL")
