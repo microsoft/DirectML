@@ -94,6 +94,8 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
 
 Device::~Device()
 {
+    // Intentionally leak d3d12 module to avoid order-of-destruction issues with PIX wrapper.
+    m_d3dModule.release();
 }
 
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
