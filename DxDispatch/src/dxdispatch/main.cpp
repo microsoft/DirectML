@@ -41,9 +41,10 @@ int main(int argc, char** argv)
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
-    auto pixCaptureHelper = std::make_unique<PixCaptureHelper>(args.GetPixCaptureType());
-
-    std::shared_ptr<DxCoreModule> dxCoreModule = std::make_shared<DxCoreModule>();
+    auto pixCaptureHelper = std::make_shared<PixCaptureHelper>(args.GetPixCaptureType());
+    auto dxCoreModule = std::make_shared<DxCoreModule>();
+    auto d3dModule = std::make_shared<D3d12Module>();
+    auto dmlModule = std::make_shared<DmlModule>();
 
     if (args.ShowAdapters())
     {
@@ -63,7 +64,9 @@ int main(int argc, char** argv)
             adapter.GetAdapter(), 
             args.DebugLayersEnabled(), 
             args.CommandListType(),
-            std::move(pixCaptureHelper)
+            pixCaptureHelper,
+            d3dModule,
+            dmlModule
         );
         LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
     }
@@ -115,6 +118,9 @@ int main(int argc, char** argv)
         LogError(fmt::format("Failed to execute the model: {}", e.what()));
         return 1;
     }
+
+    // Ensure remaining D3D references are released before the D3D module is released.
+    pixCaptureHelper = nullptr;
 
     return 0;
 }

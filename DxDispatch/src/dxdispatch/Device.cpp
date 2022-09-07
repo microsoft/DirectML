@@ -7,11 +7,17 @@ using Microsoft::WRL::ComPtr;
 static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 { 0x59da69, 0xb561, 0x43d9, { 0xa3, 0x9b, 0x33, 0x55, 0x7, 0x4b, 0x10, 0x82 } };
 
-Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper) : m_pixCaptureHelper(std::move(pixCaptureHelper))
+Device::Device(
+    IAdapter* adapter, 
+    bool debugLayersEnabled, 
+    D3D12_COMMAND_LIST_TYPE commandListType, 
+    std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
+    std::shared_ptr<D3d12Module> d3dModule,
+    std::shared_ptr<DmlModule> dmlModule
+    ) : m_pixCaptureHelper(std::move(pixCaptureHelper)),
+        m_d3dModule(std::move(d3dModule)),
+        m_dmlModule(std::move(dmlModule))
 {
-    m_d3dModule = std::make_unique<D3d12Module>();
-    m_dmlModule = std::make_unique<DmlModule>();
-
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
 
 #ifdef _GAMING_XBOX
@@ -94,8 +100,6 @@ Device::Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TY
 
 Device::~Device()
 {
-    // Intentionally leak d3d12 module to avoid order-of-destruction issues with PIX wrapper.
-    m_d3dModule.release();
 }
 
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
