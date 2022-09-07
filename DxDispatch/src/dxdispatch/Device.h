@@ -7,7 +7,14 @@
 class Device
 {
 public:
-    Device(IAdapter* adapter, bool debugLayersEnabled, D3D12_COMMAND_LIST_TYPE commandListType, std::unique_ptr<PixCaptureHelper> pixCaptureHelper);
+    Device(
+        IAdapter* adapter, 
+        bool debugLayersEnabled, 
+        D3D12_COMMAND_LIST_TYPE commandListType, 
+        std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
+        std::shared_ptr<D3d12Module> d3dModule,
+        std::shared_ptr<DmlModule> dmlModule
+        );
     ~Device();
 
     D3d12Module* D3DModule() { return m_d3dModule.get(); }
@@ -69,13 +76,13 @@ private:
     void EnsureDxcInterfaces();
 
 private:
-    std::unique_ptr<PixCaptureHelper> m_pixCaptureHelper;
-    std::unique_ptr<D3d12Module> m_d3dModule;
+    std::shared_ptr<PixCaptureHelper> m_pixCaptureHelper;
+    std::shared_ptr<D3d12Module> m_d3dModule;
     Microsoft::WRL::ComPtr<ID3D12Device8> m_d3d;
 #ifndef _GAMING_XBOX
     Microsoft::WRL::ComPtr<ID3D12InfoQueue> m_infoQueue;
 #endif
-    std::unique_ptr<DmlModule> m_dmlModule;
+    std::shared_ptr<DmlModule> m_dmlModule;
     Microsoft::WRL::ComPtr<IDMLDevice1> m_dml;
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;

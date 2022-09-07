@@ -19,7 +19,8 @@ public:
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
-    gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionOverrides() const { return m_freeDimensionOverrides; }
+    gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_freeDimensionNameOverrides; }
+    gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_freeDimensionDenotationOverrides; }
 
 private:
     bool m_showAdapters = false;
@@ -34,6 +35,11 @@ private:
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 
-    // [onnx models] Overrides for free dimensions. First value in pair the name, second value is the dimension size.
-    std::vector<std::pair<std::string, uint32_t>> m_freeDimensionOverrides;
+    // [onnx models] Overrides for free dimensions by name. 
+    // The first value in the pair is the name, and the second value is the dimension size.
+    std::vector<std::pair<std::string, uint32_t>> m_freeDimensionNameOverrides;
+
+    // [onnx models] Overrides for free dimensions by denotation. 
+    // The first value in the pair is the denotation, and the second value is the dimension size.
+    std::vector<std::pair<std::string, uint32_t>> m_freeDimensionDenotationOverrides;
 };

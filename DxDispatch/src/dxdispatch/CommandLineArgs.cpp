@@ -83,8 +83,13 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<std::string>()->default_value("manual")
         )
         (
-            "f,onnx_free_dim_override",
+            "f,onnx_free_dim_name_override",
             "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
+        (
+            "F,onnx_free_dim_denotation_override",
+            "List of free dimension overrides by denotation (ONNX models only). Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         ;
@@ -170,21 +175,27 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     }
 
-    if (result.count("onnx_free_dim_override"))
+    auto ParseFreeDimensionOverrides = [&](const char* parameterName, std::vector<std::pair<std::string, uint32_t>>& overrides)
     {
-        auto freeDimOverrides = result["onnx_free_dim_override"].as<std::vector<std::string>>(); 
-        for (auto& value : freeDimOverrides)
+        if (result.count(parameterName))
         {
-            auto splitPos = value.find(":");
-            if (splitPos == std::string::npos)
+            auto freeDimOverrides = result[parameterName].as<std::vector<std::string>>(); 
+            for (auto& value : freeDimOverrides)
             {
-                throw std::invalid_argument("Expected ':' separating free dimension name and its value");
+                auto splitPos = value.find(":");
+                if (splitPos == std::string::npos)
+                {
+                    throw std::invalid_argument("Expected ':' separating name/denotation and its value");
+                }
+                auto overrideName = value.substr(0, splitPos);
+                auto overrideValue = value.substr(splitPos + 1);
+                overrides.emplace_back(overrideName, std::stoul(overrideValue));
             }
-            auto overrideName = value.substr(0, splitPos);
-            auto overrideValue = value.substr(splitPos + 1);
-            m_freeDimensionOverrides.emplace_back(overrideName, std::stoul(overrideValue));
         }
-    }
+    };
+
+    ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_freeDimensionNameOverrides);
+    ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_freeDimensionDenotationOverrides);
 
     m_helpText = options.help();
 }

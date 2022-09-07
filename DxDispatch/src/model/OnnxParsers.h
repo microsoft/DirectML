@@ -17,5 +17,6 @@ namespace OnnxParsers
         IDMLDevice* device,
         ID3D12CommandQueue* queue,
         const std::filesystem::path& filePath, 
-        gsl::span<const std::pair<std::string, uint32_t>> freeDimOverrides);
+        gsl::span<const std::pair<std::string, uint32_t>> freeDimNameOverrides,
+        gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides);
 }
