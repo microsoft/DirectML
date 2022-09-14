@@ -4,6 +4,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                | Feature level                                                                                                                | First available in OS                                    | Redistributable                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [1.9.1](#directml-191) | [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                      | [Microsoft.AI.DirectML.1.9.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.1) |
 | [1.9.0](#directml-190) | [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                      | [Microsoft.AI.DirectML.1.9.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0) |
 | [1.8.2](#directml-182) | [DML_FEATURE_LEVEL_5_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_0) | TBD                                                      | [Microsoft.AI.DirectML.1.8.2](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.8.2) |
 | [1.8.1](#directml-181) | [DML_FEATURE_LEVEL_5_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_0) | TBD                                                      | [Microsoft.AI.DirectML.1.8.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.8.1) |
@@ -19,6 +20,11 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.1.0](#directml-110) | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
 | [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
 
+# DirectML 1.9.1
+- UINT64 support for OneHot operator.
+- Improve FP32 convolution performance on NVIDIA graphics card.
+- Improve Concat performance on Intel DG2 and NVIDIA graphics cards.
+- Fix bugs in LSTM and Split node when executing within DML Graph.
 # DirectML 1.9.0
 
 - Introduces [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1)
