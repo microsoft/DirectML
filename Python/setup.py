@@ -14,7 +14,7 @@ from distutils.version import LooseVersion
 
 dml_feed_url = 'https://api.nuget.org/v3/index.json'
 dml_resource_id = 'microsoft.ai.directml'
-dml_resource_version = '1.7.0'
+dml_resource_version = '1.9.1'
 
 dependency_dir = 'dependencies'
 dml_bin_path = f'{dependency_dir}/{dml_resource_id}.{dml_resource_version}/bin/x64-win/'
