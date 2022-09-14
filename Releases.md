@@ -21,10 +21,13 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
 
 # DirectML 1.9.1
-- UINT64 support for OneHot operator.
-- Improve FP32 convolution performance on NVIDIA graphics card.
-- Improve Concat performance on Intel DG2 and NVIDIA graphics cards.
-- Fix bugs in LSTM and Split node when executing within DML Graph.
+
+- Fixed bug in OneHot operator when using large uint64 indices. 
+- Improve FP32 convolution performance.
+- Improve Join operator performance.
+- Fix bug with unconnected split nodes when executing in DML graph.
+- Fix identity node optimization when near end of DML graph.
+
 # DirectML 1.9.0
 
 - Introduces [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1)
