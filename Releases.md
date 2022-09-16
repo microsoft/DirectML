@@ -22,9 +22,9 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 # DirectML 1.9.1
 
-- Fixed bug in OneHot operator when using large uint64 indices. 
+- Fixed bug in DML_OPERATOR_ONE_HOT operator when using large uint64 indices. 
 - Improve FP32 convolution performance.
-- Improve Join operator performance.
+- Improve DML_OPERATOR_JOIN operator performance.
 - Fix bug with unconnected split nodes when executing in DML graph.
 - Fix identity node optimization when near end of DML graph.
 
