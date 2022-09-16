@@ -119,7 +119,7 @@ void MapNumPyArrayDataTypeToDml(
     DML_TENSOR_DATA_TYPE resolvedDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
     uint32_t elementByteSize = 0;
 
-    #if !(defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM) || defined(_M_ARM64))
+    #if !(defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM) || defined(_M_ARM64) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)))
     // Technically ARM machines can accept either, but the vast majority of ARM machines
     // default to logical endian, including all 2021 Windows ones and Android phones.
     static_assert(false, "Double check that endianness is specified correctly for this architecture when using '='.");
@@ -409,11 +409,11 @@ public:
         return { token, tokenType };
     }
 
-    std::unordered_map<std::u8string_view, std::u8string_view> ReadDictionary()
+    std::map<std::u8string_view, std::u8string_view> ReadDictionary()
     {
         int indentLevel = 0;
 
-        std::unordered_map<std::u8string_view, std::u8string_view> map;
+        std::map<std::u8string_view, std::u8string_view> map;
         std::u8string_view currentKey;
         std::u8string_view currentValue;
         bool haveKey = false;
@@ -630,7 +630,7 @@ void ReadNpy(
     size_t dataByteOffset = dictionaryOffset + dictionaryLength;
 
     PythonDictionaryLexer lexer(fileData.subrange(dictionaryOffset, dataByteOffset));
-    std::unordered_map<std::u8string_view, std::u8string_view> dictionary = lexer.ReadDictionary();
+    std::map<std::u8string_view, std::u8string_view> dictionary = lexer.ReadDictionary();
 
     bool isBackwardsEndian = false;
     bool hasIncreasingStrides = false;
