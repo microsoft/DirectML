@@ -7,11 +7,14 @@
 #include "directml_guids.h"
 #endif
 
+#include <numeric>
+#include <charconv>
 #include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <filesystem>
 #include <variant>
+#include <codecvt>
 #include <fstream>
 #include <deque>
 #include <optional>

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Adapter.h"
+#include "DeferCleanup.h"
 #include "Device.h"
 #include "Model.h"
 #include "Dispatchable.h"
@@ -45,6 +46,10 @@ int main(int argc, char** argv)
     auto dxCoreModule = std::make_shared<DxCoreModule>();
     auto d3dModule = std::make_shared<D3d12Module>();
     auto dmlModule = std::make_shared<DmlModule>();
+
+    // Ensure remaining D3D references are released before the D3D module is released,
+    // regardless of normal exit or excetion.
+    auto deferredCleanup = DeferCleanup([&]() {pixCaptureHelper = nullptr; });
 
     if (args.ShowAdapters())
     {
@@ -118,9 +123,6 @@ int main(int argc, char** argv)
         LogError(fmt::format("Failed to execute the model: {}", e.what()));
         return 1;
     }
-
-    // Ensure remaining D3D references are released before the D3D module is released.
-    pixCaptureHelper = nullptr;
 
     return 0;
 }

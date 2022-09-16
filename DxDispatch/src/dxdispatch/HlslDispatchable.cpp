@@ -189,7 +189,7 @@ void HlslDispatchable::CompileWithDxc()
 
     ComPtr<IDxcBlobEncoding> source;
     THROW_IF_FAILED(m_device->GetDxcUtils()->LoadFile(
-        m_desc.sourcePath.c_str(), 
+        m_desc.sourcePath.c_str(),
         nullptr, 
         &source));
 
@@ -261,7 +261,7 @@ void HlslDispatchable::CompileWithDxc()
         &pdbName)))
     {
         // TODO: store this in a temp directory?
-        FILE* fp = NULL;
+        FILE* fp = nullptr;
         _wfopen_s(&fp, pdbName->GetStringPointer(), L"wb");
         fwrite(pdbBlob->GetBufferPointer(), pdbBlob->GetBufferSize(), 1, fp);
         fclose(fp);

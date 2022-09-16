@@ -492,7 +492,7 @@ TEST(ParseInt32Test, ValidInput)
         "x4": 2147483647
     })");
     ASSERT_FALSE(d.HasParseError());
-    int32_t expectedValues[] = { 1, 5, -3, -2147483648l, 2147483647 };
+    int32_t expectedValues[] = { 1, 5, -3, INT32_MIN, INT32_MAX };
     for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);

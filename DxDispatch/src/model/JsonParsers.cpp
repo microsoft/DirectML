@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "JsonParsers.h"
+#include "StdSupport.h"
+#include "NpyReaderWriter.h"
 
 #ifndef WIN32
 #define _stricmp strcasecmp
@@ -1015,6 +1017,38 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
     }
 }
 
+std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFromFile(const rapidjson::Value& object)
+{
+    auto fileName = ParseStringField(object, "sourcePath");
+    auto wFileName = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(fileName);
+
+    std::ifstream file(wFileName.c_str(), std::ifstream::ate | std::ifstream::binary);
+    if (!file.is_open())
+    {
+        throw std::ios::failure(fmt::format("Given NPY filename '{}' could not be opened.", fileName));
+    }
+
+    size_t fileSize = file.tellg();
+    file.seekg(0);
+    std::vector<std::byte> allBytes(fileSize);
+    file.read(reinterpret_cast<char*>(allBytes.data()), fileSize);
+
+    DML_TENSOR_DATA_TYPE tensorDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
+
+    // Check for NumPy array files. Otherwise read it as raw file data, such as a .dat file.
+    auto majusculeFileName = fileName;
+    std::for_each(majusculeFileName.begin(), majusculeFileName.end(), [](auto& c) {c = std::toupper(c);});
+    if (ends_with(majusculeFileName, std::string_view(".NPY")))
+    {
+        std::vector<int32_t> dimensions;
+        std::vector<std::byte> arrayByteData;
+        ReadNpy(allBytes, /*out*/ tensorDataType, /*out*/ dimensions, /*out*/ arrayByteData);
+        allBytes = std::move(arrayByteData);
+    }
+
+    return {std::move(allBytes), tensorDataType};
+}
+
 Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
 {
     if (!object.IsObject())
@@ -1023,12 +1057,20 @@ Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
     }
 
     Model::BufferDesc buffer = {};
-    buffer.initialValuesDataType = ParseDmlTensorDataTypeField(object, "initialValuesDataType");
+    buffer.initialValuesDataType = ParseDmlTensorDataTypeField(object, "initialValuesDataType", /*required*/ false);
+
+    auto ensureInitialValuesDataType = [&]()
+    {
+        if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+        {
+            throw std::invalid_argument("Field 'initialValuesDataType' is required."); 
+        }
+    };
 
     auto initialValuesField = object.FindMember("initialValues");
     if (initialValuesField == object.MemberEnd())
     {
-        throw std::invalid_argument("Field 'InitialValues' is required."); 
+        throw std::invalid_argument("Field 'initialValuesDataType' is required."); 
     }
 
     if (initialValuesField->value.IsArray())
@@ -1046,11 +1088,33 @@ Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
     {
         if (initialValuesField->value.HasMember("value")) 
         {
+            ensureInitialValuesDataType();
             buffer.initialValues = GenerateInitialValuesFromConstant(buffer.initialValuesDataType, initialValuesField->value);
         }
         else if (initialValuesField->value.HasMember("valueStart"))
         {
+            ensureInitialValuesDataType();
             buffer.initialValues = GenerateInitialValuesFromSequence(buffer.initialValuesDataType, initialValuesField->value);
+        }
+        else if (initialValuesField->value.HasMember("sourcePath"))
+        {
+            auto [initialValues, initialValuesDataType] = GenerateInitialValuesFromFile(initialValuesField->value);
+
+            // Depending on the file type (.npy vs .dat), the file may have an explict data type.
+            // Use the data type if present, else require initialValuesDataType if not.
+            if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+            {
+                buffer.initialValuesDataType = initialValuesDataType;
+            }
+            else if (initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+            {
+                auto fileName = ParseStringField(object, "sourcePath");
+                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName));
+            }
+            ensureInitialValuesDataType();
+
+            buffer.initialValues = std::move(initialValues);
+            ensureInitialValuesDataType(); // Raw data requires 'initialValuesDataType'. Typed data already had a type.
         }
         else
         {
