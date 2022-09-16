@@ -499,7 +499,6 @@ public:
 
             case TokenType::Number:
                 {
-                    //char8_t const* endptr = token.end();
                     uint32_t value = 0;
                     std::from_chars(ToChar(token.begin()), ToChar(token.end()), /*out*/ value);
                     numbers.push_back(value);

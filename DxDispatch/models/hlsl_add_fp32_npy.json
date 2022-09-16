@@ -5,12 +5,10 @@
     {
         "A": 
         {
-            "__initialValuesDataType": "FLOAT32",
             "initialValues": { "sourcePath": "models/hlsl_add_fp32.npy" }
         },
         "B": 
         {
-            "__initialValuesDataType": "FLOAT32",
             "initialValues": { "sourcePath": "models/hlsl_add_fp32.npy" }
         },
         "Out": 
