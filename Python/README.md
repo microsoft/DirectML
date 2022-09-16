@@ -5,6 +5,8 @@ PyDirectML is an open source Python binding library for DirectML written to faci
 - Binding support through NumPy arrays
 
 ## Build and Installation
+Prerequisite: [requests](https://pypi.org/project/requests/)
+
     python setup.py install
 
 ## Usage
