@@ -88,8 +88,8 @@ inline UINT64 DMLCalcBufferTensorSize(
     UINT64 minimumImpliedSizeInBytes = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = 1;
-        for (UINT i = 0; i < dimensionCount; ++i)
+        minimumImpliedSizeInBytes = sizes[0];
+        for (UINT i = 1; i < dimensionCount; ++i)
         {
             minimumImpliedSizeInBytes *= sizes[i];
         }
@@ -103,7 +103,7 @@ inline UINT64 DMLCalcBufferTensorSize(
             indexOfLastElement += (sizes[i] - 1) * strides[i];
         }
 
-        minimumImpliedSizeInBytes = (indexOfLastElement + 1) * elementSizeInBytes;
+        minimumImpliedSizeInBytes = (static_cast<UINT64>(indexOfLastElement) + 1) * elementSizeInBytes;
     }
 
     // Round up to the nearest 4 bytes.
