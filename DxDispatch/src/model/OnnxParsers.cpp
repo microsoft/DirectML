@@ -113,9 +113,20 @@ Model OnnxParsers::ParseModel(
     BucketAllocator allocator;
 
     // Create resources.
-    std::vector<Model::ResourceDesc> resources;
+    std::vector<Model::ResourceDesc> resources(inputCount + outputCount);
     Model::Bindings bindings;
 
+    // DxDispatch requires pre-allocated input and output resources that are bound at execution time.
+    // However, some ONNX models have output shapes that aren't fully known until the model is exected.
+    // As a workaround, this function will run the model once to determine the necessary size of output
+    // resources. This is inefficient (and unfortunate), and perhaps in the future there will be a way 
+    // to reflect the output buffer sizes without actually running the ONNX model.
+    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<Ort::Value> inputData;
+    std::vector<const char*> inputNames(inputCount);
+    std::vector<const char*> outputNames(outputCount);
+
+    size_t resourceIndex = 0;
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
         const bool isInputTensor = (bindingPass == 0);
@@ -127,7 +138,7 @@ Model OnnxParsers::ParseModel(
 
             resourceDesc.name = OnnxParsers::GetTensorName(tensorIndex, session, isInputTensor);
             Ort::TypeInfo typeInfo = isInputTensor ? session.GetInputTypeInfo(tensorIndex) : session.GetOutputTypeInfo(tensorIndex);
-            
+
             if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
             {
                 throw std::invalid_argument("Unsupported non-tensor input/output in ONNX model");
@@ -142,13 +153,17 @@ Model OnnxParsers::ParseModel(
 
             uint64_t elementCount = 1;
             std::vector<uint32_t> sizes;
+            std::vector<int64_t> sizesInt64;
             for (auto dim : shapeInfo.GetShape())
             {
                 // std::abs to convert free dimensions (-1) to their minimum size of 1.
                 sizes.push_back(std::abs(dim));
+                sizesInt64.push_back(std::abs(dim));
                 elementCount *= sizes.back();
             }
 
+            // NOTE: the output buffer size may be inaccurate here. It will be rewritten
+            // after OrtSession::Run.
             Model::BufferDesc bufferDesc = {};
             bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
             bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
@@ -165,8 +180,49 @@ Model OnnxParsers::ParseModel(
                 OnnxTensorDataTypeSize(tensorDataType)
             }};
 
-            resources.emplace_back(std::move(resourceDesc));
+            resources[resourceIndex] = std::move(resourceDesc);
+
+            if (isInputTensor)
+            {
+                inputNames[tensorIndex] = resources[resourceIndex].name.c_str();
+
+                // The default allocator doesn't have to be freed.
+                auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
+                inputData.emplace_back(Ort::Value::CreateTensor(allocator, sizesInt64.data(), sizesInt64.size(), tensorDataType));
+            }
+            else
+            {
+                outputNames[tensorIndex] = resources[resourceIndex].name.c_str();
+            }
+
+            resourceIndex++;
         }
+    }
+
+    // Run the model to get true output sizes, then overwrite the resource descs.
+    auto outputValues = session.Run(Ort::RunOptions{ nullptr }, inputNames.data(), inputData.data(), inputNames.size(), outputNames.data(), outputNames.size());
+    for (size_t outputIndex = 0; outputIndex < outputCount; ++outputIndex)
+    {
+        auto shapeInfo = outputValues[outputIndex].GetTypeInfo().GetTensorTypeAndShapeInfo();
+
+        std::vector<uint32_t> sizes;
+        for (auto dim : shapeInfo.GetShape())
+        {
+            assert(dim >= 1);
+            sizes.push_back(std::abs(dim));
+        }
+
+        Model::BufferDesc bufferDesc = {};
+        bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(shapeInfo.GetElementType());
+        bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
+            bufferDesc.initialValuesDataType,
+            sizes.size(),
+            sizes.data(),
+            nullptr
+        );
+
+        size_t resourceIndex = outputIndex + inputCount;
+        resources[resourceIndex].value = std::move(bufferDesc);
     }
 
     // Create dispatchable.
