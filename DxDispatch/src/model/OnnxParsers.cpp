@@ -133,37 +133,47 @@ Model OnnxParsers::ParseModel(
                 throw std::invalid_argument("Unsupported non-tensor input/output in ONNX model");
             }
 
-            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-            const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-            if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
+            // DxDispatch's execution model assumes that all resources can be pre-allocated and
+            // bound to a dispatchable before its executed. While it's possible to pre-allocate 
+            // ONNX input tensors, the output tensors might not be fully known until after the 
+            // execution provider manipulates and executes the ONNX model. Consequently, ONNX
+            // dispatchables have special logic to let the execution provider allocate outputs
+            // if the user doesn't explicitly bind something in a JSON model (i.e. not the
+            // case here since the inputs are generated).
+            if (isInputTensor)
             {
-                throw std::invalid_argument("Unsupported tensor data type in ONNX model");
+                Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+                const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+                if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
+                {
+                    throw std::invalid_argument("Unsupported tensor data type in ONNX model");
+                }
+
+                uint64_t elementCount = 1;
+                std::vector<uint32_t> sizes;
+                for (auto dim : shapeInfo.GetShape())
+                {
+                    // std::abs to convert free dimensions (-1) to their minimum size of 1.
+                    sizes.push_back(std::abs(dim));
+                    elementCount *= sizes.back();
+                }
+
+                Model::BufferDesc bufferDesc = {};
+                bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
+                bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
+                    bufferDesc.initialValuesDataType,
+                    sizes.size(),
+                    sizes.data(),
+                    nullptr
+                );
+
+                resourceDesc.value = bufferDesc;
+                bindings[resourceDesc.name] = { Model::BufferBindingSource{
+                    resourceDesc.name,
+                    elementCount,
+                    OnnxTensorDataTypeSize(tensorDataType)
+                }};
             }
-
-            uint64_t elementCount = 1;
-            std::vector<uint32_t> sizes;
-            for (auto dim : shapeInfo.GetShape())
-            {
-                // std::abs to convert free dimensions (-1) to their minimum size of 1.
-                sizes.push_back(std::abs(dim));
-                elementCount *= sizes.back();
-            }
-
-            Model::BufferDesc bufferDesc = {};
-            bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
-            bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
-                bufferDesc.initialValuesDataType,
-                sizes.size(),
-                sizes.data(),
-                nullptr
-            );
-
-            resourceDesc.value = bufferDesc;
-            bindings[resourceDesc.name] = {Model::BufferBindingSource{
-                resourceDesc.name, 
-                elementCount, 
-                OnnxTensorDataTypeSize(tensorDataType)
-            }};
 
             resources.emplace_back(std::move(resourceDesc));
         }

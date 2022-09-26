@@ -118,7 +118,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
     m_ioBindings->ClearBoundOutputs();
     m_tensors.clear();
     m_tensorWrappers.clear();
-
+    m_memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo memoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
     Ort::Allocator deviceAllocator(*m_session, memoryInformation);
 
@@ -177,7 +177,9 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             }
             else
             {
-                m_ioBindings->BindOutput(tensorName.c_str(), *tensor);
+                // TODO: if no binding, let the EP allocate on the fly.
+                m_ioBindings->BindOutput(tensorName.c_str(), *m_memoryInfo);
+                //m_ioBindings->BindOutput(tensorName.c_str(), *tensor);
             }
         }
     }
