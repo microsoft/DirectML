@@ -204,16 +204,19 @@ Model OnnxParsers::ParseModel(
     for (size_t outputIndex = 0; outputIndex < outputCount; ++outputIndex)
     {
         auto shapeInfo = outputValues[outputIndex].GetTypeInfo().GetTensorTypeAndShapeInfo();
+        auto tensorDataType = shapeInfo.GetElementType();
 
+        uint64_t elementCount = 1;
         std::vector<uint32_t> sizes;
         for (auto dim : shapeInfo.GetShape())
         {
             assert(dim >= 1);
             sizes.push_back(std::abs(dim));
+            elementCount *= sizes.back();
         }
 
         Model::BufferDesc bufferDesc = {};
-        bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(shapeInfo.GetElementType());
+        bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
         bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
             bufferDesc.initialValuesDataType,
             sizes.size(),
@@ -223,6 +226,12 @@ Model OnnxParsers::ParseModel(
 
         size_t resourceIndex = outputIndex + inputCount;
         resources[resourceIndex].value = std::move(bufferDesc);
+
+        bindings[resources[resourceIndex].name] = { Model::BufferBindingSource{
+            resources[resourceIndex].name,
+            elementCount,
+            OnnxTensorDataTypeSize(tensorDataType)
+        }};
     }
 
     // Create dispatchable.
