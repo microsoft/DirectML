@@ -23,9 +23,8 @@ private:
     std::optional<Ort::Session> m_session;
     const OrtDmlApi* m_ortDmlApi = nullptr;
     const CommandLineArgs& m_args;
-    std::optional<Ort::MemoryInfo> m_memoryInfo;
 
     std::optional<Ort::IoBinding> m_ioBindings;
-    std::vector<std::optional<Ort::Value>> m_inputTensors;
+    std::vector<Ort::Value> m_tensors;
     std::vector<Microsoft::WRL::ComPtr<IUnknown>> m_tensorWrappers;
 };

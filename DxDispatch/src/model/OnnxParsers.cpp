@@ -134,12 +134,13 @@ Model OnnxParsers::ParseModel(
             }
 
             // DxDispatch's execution model assumes that all resources can be pre-allocated and
-            // bound to a dispatchable before its executed. While it's possible to pre-allocate 
+            // bound to a dispatchable before it is executed. While it's possible to pre-allocate 
             // ONNX input tensors, the output tensors might not be fully known until after the 
-            // execution provider manipulates and executes the ONNX model. Consequently, ONNX
-            // dispatchables have special logic to let the execution provider allocate outputs
-            // if the user doesn't explicitly bind something in a JSON model (i.e. not the
-            // case here since the inputs are generated).
+            // execution provider manipulates and executes the ONNX model. This parsing logic 
+            // leaves the DxDispatch model outputs unbound/unset, which in turn means the ONNX
+            // dispatchable will defer to the execution provider to allocate outputs on the fly.
+            // This behavior is acceptable since we don't care about outputs when parsing ONNX
+            // files directly: the inputs are generated with random/unintialized data.
             if (isInputTensor)
             {
                 Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
@@ -173,9 +174,9 @@ Model OnnxParsers::ParseModel(
                     elementCount,
                     OnnxTensorDataTypeSize(tensorDataType)
                 }};
-            }
 
-            resources.emplace_back(std::move(resourceDesc));
+                resources.emplace_back(std::move(resourceDesc));
+            }
         }
     }
 
