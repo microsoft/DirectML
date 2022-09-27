@@ -124,7 +124,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
     auto inputCount = m_session->GetInputCount();
     auto outputCount = m_session->GetOutputCount();
-    m_tensors.resize(inputCount + outputCount);
 
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
@@ -134,50 +133,59 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
             std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
-            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
-            if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
+
+            // Input tensors must be always be bound. Outputs are optional.
+            if (isInputTensor || bindings.find(tensorName) != bindings.end())
             {
-                throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
-            }
+                Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
+                if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
+                {
+                    throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
+                }
 
-            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-            const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-            if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-            {
-                throw std::runtime_error("Unsupported tensor data type");
-            }
+                Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+                const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+                if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
+                {
+                    throw std::runtime_error("Unsupported tensor data type");
+                }
 
-            // Convert free dimensions (-1) to their minimum positive size (1).
-            std::vector<int64_t> tensorShape = shapeInfo.GetShape();
-            for (auto& dim : tensorShape)
-            {
-                dim = std::abs(dim);
-            }
+                // Convert free dimensions (-1) to their minimum positive size (1).
+                std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+                for (auto& dim : tensorShape)
+                {
+                    dim = std::abs(dim);
+                }
 
-            auto resource = GetResourceFromModelBinding(tensorName, bindings);
+                auto resource = GetResourceFromModelBinding(tensorName, bindings);
 
-            std::optional<Ort::Value>& tensor = m_tensors[tensorIndex + bindingPass * inputCount];
+                // Create an ORT tensor from the existing D3D resource.
+                Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
+                m_tensors.emplace_back(CreateTensorFromResource(
+                    m_ortDmlApi,
+                    memoryInformation,
+                    resource,
+                    tensorShape,
+                    tensorDataType,
+                    &resourceWrapper));
 
-            // Create an ORT tensor from the existing D3D resource.
-            Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-            tensor = CreateTensorFromResource(
-                m_ortDmlApi, 
-                memoryInformation, 
-                resource,
-                tensorShape,
-                tensorDataType,
-                &resourceWrapper);
+                m_tensorWrappers.push_back(std::move(resourceWrapper));
 
-            m_tensorWrappers.push_back(std::move(resourceWrapper));
-
-            // Bind the tensor.
-            if (isInputTensor)
-            {
-                m_ioBindings->BindInput(tensorName.c_str(), *tensor);
+                // Bind the tensor.
+                if (isInputTensor)
+                {
+                    m_ioBindings->BindInput(tensorName.c_str(), m_tensors.back());
+                }
+                else
+                {
+                    m_ioBindings->BindOutput(tensorName.c_str(), m_tensors.back());
+                }
             }
             else
             {
-                m_ioBindings->BindOutput(tensorName.c_str(), *tensor);
+                // Let the execution provider allocate the output.
+                assert(!isInputTensor);
+                m_ioBindings->BindOutput(tensorName.c_str(), memoryInformation);
             }
         }
     }

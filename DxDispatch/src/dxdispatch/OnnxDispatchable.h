@@ -25,6 +25,6 @@ private:
     const CommandLineArgs& m_args;
 
     std::optional<Ort::IoBinding> m_ioBindings;
-    std::vector<std::optional<Ort::Value>> m_tensors;
+    std::vector<Ort::Value> m_tensors;
     std::vector<Microsoft::WRL::ComPtr<IUnknown>> m_tensorWrappers;
 };
