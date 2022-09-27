@@ -116,72 +116,64 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 {
     m_ioBindings->ClearBoundInputs();
     m_ioBindings->ClearBoundOutputs();
-    m_tensors.clear();
+    m_inputTensors.clear();
     m_tensorWrappers.clear();
     m_memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo memoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
     Ort::Allocator deviceAllocator(*m_session, memoryInformation);
 
     auto inputCount = m_session->GetInputCount();
-    auto outputCount = m_session->GetOutputCount();
-    m_tensors.resize(inputCount + outputCount);
+    m_inputTensors.resize(inputCount);
 
-    for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
+    // Bind input tensors.
+    for (size_t tensorIndex = 0; tensorIndex < inputCount; ++tensorIndex)
     {
-        const bool isInputTensor = (bindingPass == 0);
-        const size_t tensorCount = isInputTensor ? inputCount : outputCount;
-
-        for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
+        std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, /*isInputTensor*/true);
+        Ort::TypeInfo typeInfo = m_session->GetInputTypeInfo(tensorIndex);
+        if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
         {
-            std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
-            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
-            if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
-            {
-                throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
-            }
-
-            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-            const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-            if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-            {
-                throw std::runtime_error("Unsupported tensor data type");
-            }
-
-            // Convert free dimensions (-1) to their minimum positive size (1).
-            std::vector<int64_t> tensorShape = shapeInfo.GetShape();
-            for (auto& dim : tensorShape)
-            {
-                dim = std::abs(dim);
-            }
-
-            auto resource = GetResourceFromModelBinding(tensorName, bindings);
-
-            std::optional<Ort::Value>& tensor = m_tensors[tensorIndex + bindingPass * inputCount];
-
-            // Create an ORT tensor from the existing D3D resource.
-            Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-            tensor = CreateTensorFromResource(
-                m_ortDmlApi, 
-                memoryInformation, 
-                resource,
-                tensorShape,
-                tensorDataType,
-                &resourceWrapper);
-
-            m_tensorWrappers.push_back(std::move(resourceWrapper));
-
-            // Bind the tensor.
-            if (isInputTensor)
-            {
-                m_ioBindings->BindInput(tensorName.c_str(), *tensor);
-            }
-            else
-            {
-                // TODO: if no binding, let the EP allocate on the fly.
-                m_ioBindings->BindOutput(tensorName.c_str(), *m_memoryInfo);
-                //m_ioBindings->BindOutput(tensorName.c_str(), *tensor);
-            }
+            throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
         }
+
+        Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+        const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+        if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
+        {
+            throw std::runtime_error("Unsupported tensor data type");
+        }
+
+        // Convert free dimensions (-1) to their minimum positive size (1).
+        std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+        for (auto& dim : tensorShape)
+        {
+            dim = std::abs(dim);
+        }
+
+        auto resource = GetResourceFromModelBinding(tensorName, bindings);
+
+        std::optional<Ort::Value>& tensor = m_inputTensors[tensorIndex];
+
+        // Create an ORT tensor from the existing D3D resource.
+        Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
+        tensor = CreateTensorFromResource(
+            m_ortDmlApi, 
+            memoryInformation, 
+            resource,
+            tensorShape,
+            tensorDataType,
+            &resourceWrapper);
+
+        m_tensorWrappers.push_back(std::move(resourceWrapper));
+
+        // Bind the tensor.
+        m_ioBindings->BindInput(tensorName.c_str(), *tensor);
+    }
+
+    // Bind outputs by name only; let the execution provider allocate the output resource.
+    for (size_t tensorIndex = 0; tensorIndex < m_session->GetOutputCount(); ++tensorIndex)
+    {
+        std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, /*isInputTensor*/false);
+        m_ioBindings->BindOutput(tensorName.c_str(), *m_memoryInfo);
     }
 }
 
@@ -190,4 +182,6 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
     Ort::RunOptions runOptions;
     m_session->Run(runOptions, *m_ioBindings);
     m_ioBindings->SynchronizeOutputs();
+
+    // TODO: need to copy to model output resource if one is bound.
 }
