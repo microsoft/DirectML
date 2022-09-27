@@ -169,7 +169,7 @@ Model OnnxParsers::ParseModel(
                 );
 
                 resourceDesc.value = bufferDesc;
-                bindings[resourceDesc.name] = { Model::BufferBindingSource{
+                bindings[resourceDesc.name] = {Model::BufferBindingSource{
                     resourceDesc.name,
                     elementCount,
                     OnnxTensorDataTypeSize(tensorDataType)
