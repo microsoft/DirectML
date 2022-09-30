@@ -69,7 +69,7 @@ std::vector<Adapter> Adapter::GetAll(std::shared_ptr<DxCoreModule> module)
     std::vector<Adapter> adapters;
 
 #ifdef _GAMING_XBOX
-    adapters.emplace_back();
+    adapters.emplace_back(nullptr, nullptr);
 #else
     ComPtr<IDXCoreAdapterFactory> adapterFactory;
     THROW_IF_FAILED(module->CreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
