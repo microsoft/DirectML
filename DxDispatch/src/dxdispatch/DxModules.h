@@ -47,10 +47,12 @@ public:
     D3d12Module(const char* moduleName = "libd3d12.so");
 #endif
 
+#ifndef _GAMING_XBOX
     inline HRESULT CreateDevice(IUnknown* adapter, D3D_FEATURE_LEVEL minimumFeatureLevel, REFIID riid, void** device)
     {
         return InvokeSymbol(m_d3d12CreateDevice, adapter, minimumFeatureLevel, riid, device);
     }
+#endif
 
     inline HRESULT GetDebugInterface(REFIID riid, void** debug)
     {
