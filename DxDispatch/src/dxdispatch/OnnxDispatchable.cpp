@@ -119,8 +119,8 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
     m_tensors.clear();
     m_tensorWrappers.clear();
 
-    Ort::MemoryInfo memoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
-    Ort::Allocator deviceAllocator(*m_session, memoryInformation);
+    Ort::MemoryInfo cpuMemoryInformation = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    Ort::MemoryInfo dmlMemoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 
     auto inputCount = m_session->GetInputCount();
     auto outputCount = m_session->GetOutputCount();
@@ -130,17 +130,19 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
         const bool isInputTensor = (bindingPass == 0);
         const size_t tensorCount = isInputTensor ? inputCount : outputCount;
 
+
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
+            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
             std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
 
             // Input tensors must be always be bound. Outputs are optional.
             if (isInputTensor || bindings.find(tensorName) != bindings.end())
             {
-                Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
+                // TODO: allocate tensor inputs on CPU if unsupported type for DML 
                 if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
                 {
-                    throw std::runtime_error(fmt::format("Unknown binding type for '{}'", tensorName));
+                    continue;
                 }
 
                 Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
@@ -163,7 +165,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                 Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
                 m_tensors.emplace_back(CreateTensorFromResource(
                     m_ortDmlApi,
-                    memoryInformation,
+                    dmlMemoryInformation,
                     resource,
                     tensorShape,
                     tensorDataType,
@@ -183,9 +185,28 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             }
             else
             {
-                // Let the execution provider allocate the output.
                 assert(!isInputTensor);
-                m_ioBindings->BindOutput(tensorName.c_str(), memoryInformation);
+
+                if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
+                {
+                    Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+                    const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+                    if (OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
+                    {
+                        // Let the DML execution provider allocate the output.
+                        m_ioBindings->BindOutput(tensorName.c_str(), dmlMemoryInformation);
+                    }
+                    else
+                    {
+                        // Fall back to allocating on the CPU for types unsupported by DML.
+                        m_ioBindings->BindOutput(tensorName.c_str(), cpuMemoryInformation);
+                    }
+                }
+                else
+                {
+                    // Fall back to allocating on the CPU for non-tensor outputs.
+                    m_ioBindings->BindOutput(tensorName.c_str(), cpuMemoryInformation);
+                }
             }
         }
     }
