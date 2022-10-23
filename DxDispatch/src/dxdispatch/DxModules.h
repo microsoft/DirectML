@@ -27,6 +27,12 @@ public:
         return functionPtr(std::forward<Args>(args)...);
     }
 
+#ifdef WIN32
+    HMODULE GetHandle() const { return m_module.get(); }
+#else
+    void* GetHandle() const { return m_module; }
+#endif
+
 protected:
 #ifdef WIN32
     wil::unique_hmodule m_module;

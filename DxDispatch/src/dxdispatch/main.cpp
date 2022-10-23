@@ -9,15 +9,19 @@
 #endif
 #include "Executor.h"
 #include "CommandLineArgs.h"
+#include "ModuleInfo.h"
+#include "config.h"
 
 using Microsoft::WRL::ComPtr;
 
-#if !defined(_GAMING_XBOX) && defined(WIN32)
-// Needed for DX12 agility SDK. Xbox uses DX12.x from the GDK.
-// https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = DIRECT3D_AGILITY_SDK_VERSION; }
-extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = DIRECT3D_AGILITY_SDK_PATH; }
-#endif
+void PrintModuleInfo(std::string name, const ModuleInfo& loadedModuleInfo, std::string_view configVersion)
+{
+    std::cout << name << ":\n";
+    std::cout << "- Configure Version : " << configVersion << std::endl;
+    std::wcout << L"- Loaded Path       : " << loadedModuleInfo.path << std::endl;
+    std::wcout << L"- Loaded Version    : " << loadedModuleInfo.version << std::endl;
+    std::cout << std::endl;
+}
 
 int main(int argc, char** argv)
 {
@@ -32,12 +36,6 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (args.PrintHelp())
-    {
-        LogInfo(args.HelpText());
-        return 0;
-    }
-
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
@@ -45,6 +43,28 @@ int main(int argc, char** argv)
     auto dxCoreModule = std::make_shared<DxCoreModule>();
     auto d3dModule = std::make_shared<D3d12Module>();
     auto dmlModule = std::make_shared<DmlModule>();
+
+    if (args.PrintHelp())
+    {
+        LogInfo(args.HelpText());
+        return 0;
+    }
+
+    if (args.ShowDependencies())
+    {
+        // D3D12.dll lazily loads D3D12Core.dll. Calling any exported function forces D3D12Core.dll to load
+        // so its version can be printed, and GetDebugInterface is inexpensive.
+        ComPtr<ID3D12Debug> debug;
+        d3dModule->GetDebugInterface(IID_PPV_ARGS(&debug));
+
+        PrintModuleInfo("DirectML", GetModuleInfo("directml"), c_directmlConfig);
+        PrintModuleInfo("D3D12", GetModuleInfo("d3d12core"), c_d3d12Config);// TODO: need to get version of loaded d3d12core.dll, not the shim
+        PrintModuleInfo("DXCompiler", GetModuleInfo("dxcompiler"), c_dxcompilerConfig);
+        PrintModuleInfo("PIX", GetModuleInfo("winpixeventruntime"), c_pixConfig);
+        PrintModuleInfo("ONNX Runtime", GetModuleInfo("onnxruntime"), c_ortConfig);
+
+        return 0;
+    }
 
     if (args.ShowAdapters())
     {

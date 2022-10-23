@@ -5,20 +5,7 @@
 
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
-        auto banner = fmt::format(R"({} version {}
-  DirectML     : {}
-  D3D12        : {}
-  DXCompiler   : {}
-  PIX          : {}
-  ONNX Runtime : {}
-)",
-        c_projectName, 
-        c_projectVersion,
-        c_directmlConfig,
-        c_d3d12Config,
-        c_dxcompilerConfig,
-        c_pixConfig,
-        c_ortConfig);
+    auto banner = fmt::format(R"({} version {})", c_projectName, c_projectVersion);
     
     cxxopts::Options options(c_projectName, banner);
     options.add_options()
@@ -55,6 +42,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "s,show_adapters", 
             "Show all available DirectX adapters", 
+            cxxopts::value<bool>()
+        )
+        (
+            "S,show_dependencies",
+            "Show version info for dependencies including DirectX components",
             cxxopts::value<bool>()
         )
         (
@@ -130,6 +122,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("show_adapters")) 
     { 
         m_showAdapters = result["show_adapters"].as<bool>(); 
+    }
+
+    if (result.count("show_dependencies"))
+    {
+        m_showDependencies = result["show_dependencies"].as<bool>();
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();

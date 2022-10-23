@@ -108,6 +108,7 @@ add_executable(
     src/dxdispatch/Logging.cpp
     src/dxdispatch/PixCaptureHelper.cpp
     src/dxdispatch/DxModules.cpp
+    src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
@@ -123,6 +124,7 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
     target_sources(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_link_libraries(dxdispatch PRIVATE version.lib)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
 endif()
 
