@@ -7,6 +7,19 @@ using Microsoft::WRL::ComPtr;
 static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 { 0x59da69, 0xb561, 0x43d9, { 0xa3, 0x9b, 0x33, 0x55, 0x7, 0x4b, 0x10, 0x82 } };
 
+// Callback to log D3D12/DirectML debug messages.
+#ifdef _GAMING_XBOX
+static void DebugMessageCallback( void* context, void* commandList, DWORD messageId, const CHAR* message)
+{
+    LogError(message);
+}
+#else
+static void DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
+{
+    LogError(message);
+}
+#endif
+
 Device::Device(
     IAdapter* adapter, 
     bool debugLayersEnabled, 
@@ -18,7 +31,7 @@ Device::Device(
         m_d3dModule(std::move(d3dModule)),
         m_dmlModule(std::move(dmlModule))
 {
-    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = DML_CREATE_DEVICE_FLAG_NONE;
+    DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
 #ifdef _GAMING_XBOX
     D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
@@ -39,6 +52,11 @@ Device::Device(
     params.ComputeScratchMemorySizeBytes = static_cast<UINT>(D3D12XBOX_DEFAULT_SIZE_BYTES);
 
     THROW_IF_FAILED(D3D12XboxCreateDevice(adapter, &params, IID_GRAPHICS_PPV_ARGS(m_d3d.ReleaseAndGetAddressOf())));
+
+    if (debugLayerEnabled)
+    {
+        m_d3d->SetDebugCallbackX(DebugMessageCallback, /*context*/nullptr);
+    }
 #else // !_GAMING_XBOX
     if (debugLayersEnabled)
     {
@@ -46,14 +64,23 @@ Device::Device(
         THROW_IF_FAILED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&d3dDebug)));
         d3dDebug->EnableDebugLayer();
         d3dDebug->SetEnableGPUBasedValidation(true);
-
-        dmlCreateDeviceFlags |= DML_CREATE_DEVICE_FLAG_DEBUG;
     }
 
     THROW_IF_FAILED(m_d3dModule->CreateDevice(
         adapter, 
         D3D_FEATURE_LEVEL_11_0, 
         IID_PPV_ARGS(&m_d3d)));
+
+    if (debugLayersEnabled)
+    {
+        THROW_IF_FAILED(m_d3d->QueryInterface(m_infoQueue.GetAddressOf()));
+        DWORD callbackCookie = 0;
+        m_infoQueue->RegisterMessageCallback(
+            DebugMessageCallback, 
+            D3D12_MESSAGE_CALLBACK_FLAG_NONE, 
+            nullptr, 
+            &callbackCookie);
+    }
 #endif
 
     THROW_IF_FAILED(m_d3d->CreateFence(
@@ -73,14 +100,6 @@ Device::Device(
         dmlCreateDeviceFlags, 
         DML_FEATURE_LEVEL_5_0, 
         IID_PPV_ARGS(&m_dml)));
-
-#ifndef _GAMING_XBOX
-    if (debugLayersEnabled)
-    {
-        THROW_IF_FAILED(m_d3d->QueryInterface(m_infoQueue.GetAddressOf()));
-        m_infoQueue->ClearStoredMessages();
-    }
-#endif
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(
         m_commandListType,
@@ -116,7 +135,7 @@ ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
         &heapProps, 
         heapFlags, 
         &resourceDesc, 
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, 
+        D3D12_RESOURCE_STATE_COMMON, 
         nullptr, 
         IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
 
@@ -170,26 +189,6 @@ void Device::WaitForGpuWorkToComplete()
     uint64_t nextFenceValue = m_fence->GetCompletedValue() + 1;
     THROW_IF_FAILED(m_queue->Signal(m_fence.Get(), nextFenceValue));
     THROW_IF_FAILED(m_fence->SetEventOnCompletion(nextFenceValue, nullptr));
-}
-
-void Device::PrintDebugLayerMessages()
-{
-#if !defined(_GAMING_XBOX) && defined(WIN32)
-    if (m_infoQueue)
-    {
-        auto numMessages = m_infoQueue->GetNumStoredMessages();
-        for (uint64_t i = 0; i < numMessages; i++)
-        {
-            SIZE_T messageLength = 0;
-            THROW_IF_FAILED(m_infoQueue->GetMessageA(i, nullptr, &messageLength));
-            std::vector<std::byte> buffer(messageLength);
-            D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(buffer.data());
-            THROW_IF_FAILED(m_infoQueue->GetMessageA(i, message, &messageLength));
-            LogError(message->pDescription);
-        }
-        m_infoQueue->ClearStoredMessages();
-    }
-#endif
 }
 
 void Device::RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable)

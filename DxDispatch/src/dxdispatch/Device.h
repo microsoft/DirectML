@@ -56,8 +56,6 @@ public:
 
     void DispatchAndWait();
 
-    void PrintDebugLayerMessages();
-    
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
@@ -80,7 +78,7 @@ private:
     std::shared_ptr<D3d12Module> m_d3dModule;
     Microsoft::WRL::ComPtr<ID3D12Device8> m_d3d;
 #ifndef _GAMING_XBOX
-    Microsoft::WRL::ComPtr<ID3D12InfoQueue> m_infoQueue;
+    Microsoft::WRL::ComPtr<ID3D12InfoQueue1> m_infoQueue;
 #endif
     std::shared_ptr<DmlModule> m_dmlModule;
     Microsoft::WRL::ComPtr<IDMLDevice1> m_dml;
