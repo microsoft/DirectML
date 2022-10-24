@@ -139,7 +139,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             // Input tensors must be always be bound. Outputs are optional.
             if (isInputTensor || bindings.find(tensorName) != bindings.end())
             {
-                // TODO: allocate tensor inputs on CPU if unsupported type for DML 
                 if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
                 {
                     continue;
