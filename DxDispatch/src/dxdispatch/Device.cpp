@@ -15,7 +15,7 @@ static bool DebugMessageCallback(void* context, void* commandList, DWORD message
     return true;
 }
 #else
-static void DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
+static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
 {
     LogError(message);
 }
