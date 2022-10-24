@@ -130,7 +130,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
         const bool isInputTensor = (bindingPass == 0);
         const size_t tensorCount = isInputTensor ? inputCount : outputCount;
 
-
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
@@ -186,26 +185,18 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             {
                 assert(!isInputTensor);
 
+                bool isDmlSupportedType = false;
+
                 if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
                 {
                     Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
                     const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-                    if (OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-                    {
-                        // Let the DML execution provider allocate the output.
-                        m_ioBindings->BindOutput(tensorName.c_str(), dmlMemoryInformation);
-                    }
-                    else
-                    {
-                        // Fall back to allocating on the CPU for types unsupported by DML.
-                        m_ioBindings->BindOutput(tensorName.c_str(), cpuMemoryInformation);
-                    }
+                    isDmlSupportedType = OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType);
+
                 }
-                else
-                {
-                    // Fall back to allocating on the CPU for non-tensor outputs.
-                    m_ioBindings->BindOutput(tensorName.c_str(), cpuMemoryInformation);
-                }
+
+                // Let the execution provider allocate the output.
+                m_ioBindings->BindOutput(tensorName.c_str(), isDmlSupportedType ? dmlMemoryInformation : cpuMemoryInformation);
             }
         }
     }
