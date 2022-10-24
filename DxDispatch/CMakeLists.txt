@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.9.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.10.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -125,6 +125,7 @@ add_executable(
     src/dxdispatch/DxModules.cpp
     src/dxdispatch/DxModules.h
     src/dxdispatch/DeferCleanup.h
+    src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
@@ -140,6 +141,7 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
     target_sources(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_link_libraries(dxdispatch PRIVATE version.lib)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
 endif()
 

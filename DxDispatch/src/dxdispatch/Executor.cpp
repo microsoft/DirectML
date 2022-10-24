@@ -40,7 +40,6 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         }
     }
     device->DispatchAndWait();
-    device->PrintDebugLayerMessages();
 
     // Create dispatchables.
     for (auto& desc : model.GetDispatchableDescs())
@@ -75,7 +74,6 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 catch (const std::exception& e)
                 {
                     LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
-                    m_device->PrintDebugLayerMessages();
                     return;
                 }
 
@@ -84,7 +82,6 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         }
         catch(const std::exception& e)
         {
-            device->PrintDebugLayerMessages();
             throw std::invalid_argument(fmt::format("ERROR creating dispatchable '{}': {}", desc.name, e.what()));
         }
     }
@@ -102,7 +99,6 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             }
             catch (const std::exception& e)
             {
-                m_device->PrintDebugLayerMessages();
                 throw std::invalid_argument(fmt::format("ERROR while initializing '{}': {}", dispatchable.first, e.what()));
             }
         }
@@ -138,7 +134,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
     catch (const std::exception& e)
     {
         LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
-        m_device->PrintDebugLayerMessages();
         return;
     }
 
@@ -159,7 +154,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
             catch (const std::exception& e)
             {
                 LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
-                m_device->PrintDebugLayerMessages();
                 return;
             }
 
@@ -190,7 +184,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
     catch (const std::exception& e)
     {
         LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
-        m_device->PrintDebugLayerMessages();
         return;
     }
     PIXEndEvent();
@@ -268,7 +261,6 @@ void Executor::operator()(const Model::PrintCommand& command)
     catch (const std::exception& e)
     {
         LogError(fmt::format("Failed to print resource: {}", e.what()));
-        m_device->PrintDebugLayerMessages();
     }
 }
 

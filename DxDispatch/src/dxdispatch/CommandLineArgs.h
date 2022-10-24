@@ -9,6 +9,7 @@ public:
     CommandLineArgs(int argc, char** argv);
 
     bool ShowAdapters() const { return m_showAdapters; }
+    bool ShowDependencies() const { return m_showDependencies; }
     bool PrintHelp() const { return m_printHelp; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
@@ -24,6 +25,7 @@ public:
 
 private:
     bool m_showAdapters = false;
+    bool m_showDependencies = false;
     bool m_printHelp = false;
     bool m_debugLayersEnabled = false;
     bool m_forceDisablePrecompiledShadersOnXbox = true;

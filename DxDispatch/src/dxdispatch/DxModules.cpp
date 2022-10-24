@@ -5,6 +5,13 @@
 #include <dlfcn.h>
 #endif
 
+#if !defined(_GAMING_XBOX) && defined(WIN32)
+// Needed for DX12 agility SDK. Xbox uses DX12.x from the GDK.
+// https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = DIRECT3D_AGILITY_SDK_VERSION; }
+extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = DIRECT3D_AGILITY_SDK_PATH; }
+#endif
+
 Module::Module(const char* moduleName)
 {
     if (!moduleName)

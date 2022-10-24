@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ModuleInfo.h"
+
 class Module
 {
 public:
@@ -27,6 +29,12 @@ public:
         return functionPtr(std::forward<Args>(args)...);
     }
 
+#ifdef WIN32
+    HMODULE GetHandle() const { return m_module.get(); }
+#else
+    void* GetHandle() const { return m_module; }
+#endif
+
 protected:
 #ifdef WIN32
     wil::unique_hmodule m_module;
@@ -40,17 +48,18 @@ class D3d12Module : public Module
 {
 public:
 #if defined(_GAMING_XBOX)
+    // Intentionally set to null; D3D12 is dynamically linked for Xbox.
     D3d12Module(const char* moduleName = nullptr);
-#elif defined(WIN32)
-    D3d12Module(const char* moduleName = "d3d12.dll");
 #else
-    D3d12Module(const char* moduleName = "libd3d12.so");
+    D3d12Module(const char* moduleName = c_direct3dModuleName);
 #endif
 
+#ifndef _GAMING_XBOX
     inline HRESULT CreateDevice(IUnknown* adapter, D3D_FEATURE_LEVEL minimumFeatureLevel, REFIID riid, void** device)
     {
         return InvokeSymbol(m_d3d12CreateDevice, adapter, minimumFeatureLevel, riid, device);
     }
+#endif
 
     inline HRESULT GetDebugInterface(REFIID riid, void** debug)
     {
@@ -76,13 +85,7 @@ private:
 class DxCoreModule : public Module
 {
 public:
-#if defined(_GAMING_XBOX)
-    DxCoreModule(const char* moduleName = nullptr);
-#elif defined(WIN32)
-    DxCoreModule(const char* moduleName = "dxcore.dll");
-#else
-    DxCoreModule(const char* moduleName = "libdxcore.so");
-#endif
+    DxCoreModule(const char* moduleName = c_dxcoreModuleName);
 
     inline HRESULT CreateAdapterFactory(REFIID riid, void** factory)
     {
@@ -100,11 +103,7 @@ private:
 class DmlModule : public Module
 {
 public:
-#if defined(WIN32)
-    DmlModule(const char* moduleName = "directml.dll");
-#else
-    DmlModule(const char* moduleName = "libdirectml.so");
-#endif
+    DmlModule(const char* moduleName = c_directmlModuleName);
 
     inline HRESULT CreateDevice1(ID3D12Device* d3d12Device, DML_CREATE_DEVICE_FLAGS flags, DML_FEATURE_LEVEL minimumFeatureLevel, REFIID riid, void** device)
     {

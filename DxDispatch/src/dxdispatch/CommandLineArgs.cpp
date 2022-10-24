@@ -58,6 +58,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
+            "S,show_dependencies",
+            "Show version info for dependencies including DirectX components",
+            cxxopts::value<bool>()
+        )
+        (
             "q,queue_type", 
             "Type of command queue/list to use ('compute' or 'direct')", 
 #ifdef _GAMING_XBOX
@@ -130,6 +135,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("show_adapters")) 
     { 
         m_showAdapters = result["show_adapters"].as<bool>(); 
+    }
+
+    if (result.count("show_dependencies"))
+    {
+        m_showDependencies = result["show_dependencies"].as<bool>();
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();
