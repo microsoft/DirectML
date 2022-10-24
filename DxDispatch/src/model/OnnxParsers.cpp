@@ -130,7 +130,7 @@ Model OnnxParsers::ParseModel(
             
             if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
             {
-                throw std::invalid_argument("Unsupported non-tensor input/output in ONNX model");
+                continue;
             }
 
             // DxDispatch's execution model assumes that all resources can be pre-allocated and
