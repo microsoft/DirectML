@@ -72,6 +72,7 @@ Device::Device(
         D3D_FEATURE_LEVEL_11_0, 
         IID_PPV_ARGS(&m_d3d)));
 
+#ifdef _WIN32
     if (debugLayersEnabled)
     {
         THROW_IF_FAILED(m_d3d->QueryInterface(m_infoQueue.GetAddressOf()));
@@ -82,7 +83,8 @@ Device::Device(
             nullptr, 
             &callbackCookie);
     }
-#endif
+#endif // _WIN32
+#endif // !_GAMING_XBOX
 
     THROW_IF_FAILED(m_d3d->CreateFence(
         0, 
