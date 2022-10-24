@@ -19,9 +19,9 @@ struct LanguageAndCodePage
     WORD codePage;
 };
 
-std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
+std::optional<ModuleInfo> GetModuleInfo(gsl::czstring<> moduleName)
 {
-    auto moduleHandle = GetModuleHandleA(moduleName.c_str());
+    auto moduleHandle = GetModuleHandleA(moduleName);
     if (!moduleHandle)
     {
         return std::nullopt;
@@ -73,14 +73,14 @@ std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
 
 #else // !_WIN32
 
-std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
+std::optional<ModuleInfo> GetModuleInfo(gsl::czstring<> moduleName)
 {
     return std::nullopt;
 }
 
 #endif
 
-void PrintModuleInfo(std::string name, const std::optional<ModuleInfo>& loadedModuleInfo, std::string_view configVersion)
+void PrintModuleInfo(std::string_view name, const std::optional<ModuleInfo>& loadedModuleInfo, std::string_view configVersion)
 {
     std::cout << name << ":\n";
     std::cout << "- Configured Version : " << configVersion << std::endl;
@@ -100,17 +100,9 @@ void PrintModuleInfo(std::string name, const std::optional<ModuleInfo>& loadedMo
 
 void PrintDependencies()
 {
-        PrintModuleInfo("DirectML", GetModuleInfo("directml"), c_directmlConfig);
-
-#ifdef _GAMING_XBOX_SCARLETT
-        PrintModuleInfo("D3D12", GetModuleInfo("d3d12_xs"), c_d3d12Config);
-        PrintModuleInfo("DXCompiler", GetModuleInfo("dxcompiler_xs"), c_dxcompilerConfig);
-        PrintModuleInfo("PIX", GetModuleInfo("pixevt"), c_pixConfig);
-#else
-        PrintModuleInfo("D3D12", GetModuleInfo("d3d12core"), c_d3d12Config);
-        PrintModuleInfo("DXCompiler", GetModuleInfo("dxcompiler"), c_dxcompilerConfig);
-        PrintModuleInfo("PIX", GetModuleInfo("winpixeventruntime"), c_pixConfig);
-#endif
-
-        PrintModuleInfo("ONNX Runtime", GetModuleInfo("onnxruntime"), c_ortConfig);
+        PrintModuleInfo("DirectML", GetModuleInfo(c_directmlModuleName), c_directmlConfig);
+        PrintModuleInfo("D3D12", GetModuleInfo(c_direct3dCoreModuleName), c_d3d12Config);
+        PrintModuleInfo("DXCompiler", GetModuleInfo(c_dxcompilerModuleName), c_dxcompilerConfig);
+        PrintModuleInfo("PIX", GetModuleInfo(c_pixModuleName), c_pixConfig);
+        PrintModuleInfo("ONNX Runtime", GetModuleInfo(c_ortModuleName), c_ortConfig);
 }

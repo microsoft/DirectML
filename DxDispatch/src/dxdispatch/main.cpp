@@ -50,7 +50,6 @@ int main(int argc, char** argv)
 #endif
 
         PrintDependencies();
-        return 0;
     }
 
     if (args.ShowAdapters())
@@ -59,71 +58,72 @@ int main(int argc, char** argv)
         {
             LogInfo(adapter.GetDetailedDescription() + "\n");
         }
-
-        return 0;
     }
 
-    std::shared_ptr<Device> device;
-    try
+    if (!args.ModelPath().empty())
     {
-        Adapter adapter = Adapter::Select(dxCoreModule, args.AdapterSubstring());
-        device = std::make_shared<Device>(
-            adapter.GetAdapter(), 
-            args.DebugLayersEnabled(), 
-            args.CommandListType(),
-            pixCaptureHelper,
-            d3dModule,
-            dmlModule
-        );
-        LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
-    }
-    catch (std::exception& e)
-    {
-        LogError(fmt::format("Failed to create a device: {}", e.what()));
-        return 1;
-    }
-
-    Model model;
-    try
-    {
-        if (args.ModelPath().extension() == ".json")
+        std::shared_ptr<Device> device;
+        try
         {
-            model = JsonParsers::ParseModel(args.ModelPath());
-        }
-        else if (args.ModelPath().extension() == ".onnx")
-        {
-#ifdef ONNXRUNTIME_NONE
-            throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
-#else
-            model = OnnxParsers::ParseModel(
-                device->DML(), 
-                device->GetCommandQueue(),
-                args.ModelPath(), 
-                args.GetOnnxFreeDimensionNameOverrides(),
-                args.GetOnnxFreeDimensionDenotationOverrides()
+            Adapter adapter = Adapter::Select(dxCoreModule, args.AdapterSubstring());
+            device = std::make_shared<Device>(
+                adapter.GetAdapter(), 
+                args.DebugLayersEnabled(), 
+                args.CommandListType(),
+                pixCaptureHelper,
+                d3dModule,
+                dmlModule
             );
-#endif
+            LogInfo(fmt::format("Running on '{}'", adapter.GetDescription()));
         }
-        else
+        catch (std::exception& e)
         {
-            throw std::invalid_argument("Expected a .json or .onnx file");
+            LogError(fmt::format("Failed to create a device: {}", e.what()));
+            return 1;
         }
-    }
-    catch (std::exception& e)
-    {
-        LogError(fmt::format("Failed to parse the model: {}", e.what()));
-        return 1;
-    }
 
-    try
-    {
-        Executor executor{model, device, args};
-        executor.Run();
-    }
-    catch (std::exception& e)
-    {
-        LogError(fmt::format("Failed to execute the model: {}", e.what()));
-        return 1;
+        Model model;
+        try
+        {
+            if (args.ModelPath().extension() == ".json")
+            {
+                model = JsonParsers::ParseModel(args.ModelPath());
+            }
+            else if (args.ModelPath().extension() == ".onnx")
+            {
+    #ifdef ONNXRUNTIME_NONE
+                throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+    #else
+                model = OnnxParsers::ParseModel(
+                    device->DML(), 
+                    device->GetCommandQueue(),
+                    args.ModelPath(), 
+                    args.GetOnnxFreeDimensionNameOverrides(),
+                    args.GetOnnxFreeDimensionDenotationOverrides()
+                );
+    #endif
+            }
+            else
+            {
+                throw std::invalid_argument("Expected a .json or .onnx file");
+            }
+        }
+        catch (std::exception& e)
+        {
+            LogError(fmt::format("Failed to parse the model: {}", e.what()));
+            return 1;
+        }
+
+        try
+        {
+            Executor executor{model, device, args};
+            executor.Run();
+        }
+        catch (std::exception& e)
+        {
+            LogError(fmt::format("Failed to execute the model: {}", e.what()));
+            return 1;
+        }
     }
 
     // Ensure remaining D3D references are released before the D3D module is released.
