@@ -19,7 +19,9 @@ void PrintModuleInfo(std::string name, const ModuleInfo& loadedModuleInfo, std::
     std::cout << name << ":\n";
     std::cout << "- Configure Version : " << configVersion << std::endl;
     std::wcout << L"- Loaded Path       : " << loadedModuleInfo.path << std::endl;
+#if defined(_WIN32) && !defined(_GAMING_XBOX)
     std::wcout << L"- Loaded Version    : " << loadedModuleInfo.version << std::endl;
+#endif
     std::cout << std::endl;
 }
 
@@ -52,10 +54,12 @@ int main(int argc, char** argv)
 
     if (args.ShowDependencies())
     {
+#ifndef _GAMING_XBOX
         // D3D12.dll lazily loads D3D12Core.dll. Calling any exported function forces D3D12Core.dll to load
         // so its version can be printed, and GetDebugInterface is inexpensive.
         ComPtr<ID3D12Debug> debug;
         d3dModule->GetDebugInterface(IID_PPV_ARGS(&debug));
+#endif
 
         PrintModuleInfo("DirectML", GetModuleInfo("directml"), c_directmlConfig);
         PrintModuleInfo("D3D12", GetModuleInfo("d3d12core"), c_d3d12Config);// TODO: need to get version of loaded d3d12core.dll, not the shim

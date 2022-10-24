@@ -1,8 +1,16 @@
 #include "pch.h"
 #include "ModuleInfo.h"
-#include <wil/win32_helpers.h>
 
 #ifdef _WIN32
+
+#ifdef _GAMING_XBOX
+// QueryUnbiasedInterruptTime is not declared in WINAPI_PARTITION_GAMES
+// Undefining _APISETREALTIME_ will avoid a few win32_helpers declarations
+// that won't work in WINAPI_PARTITION_GAMES.
+#undef _APISETREALTIME_
+#endif
+
+#include <wil/win32_helpers.h>
 
 struct LanguageAndCodePage
 {
@@ -19,6 +27,7 @@ ModuleInfo GetModuleInfo(std::string moduleName)
     moduleInfo.path = wil::GetModuleFileNameW(moduleHandle).get();
     moduleInfo.version = L"Unknown";
 
+#ifndef _GAMING_XBOX
     DWORD versionInfoHandle = 0;
     auto versionInfoSizeInBytes = GetFileVersionInfoSizeW(moduleInfo.path.data(), &versionInfoHandle);
     if (versionInfoSizeInBytes)
@@ -54,11 +63,12 @@ ModuleInfo GetModuleInfo(std::string moduleName)
             }
         }
     }
+#endif
 
     return moduleInfo;
 }
 
-#else
+#else // !_WIN32
 
 ModuleInfo GetModuleInfo(std::string moduleName)
 {
