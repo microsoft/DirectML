@@ -82,7 +82,7 @@ Device::Device(
             nullptr, 
             &callbackCookie);
     }
-#endif
+#endif // !_GAMING_XBOX
 
     THROW_IF_FAILED(m_d3d->CreateFence(
         0, 
