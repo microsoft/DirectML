@@ -73,10 +73,9 @@ std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
 
 #else // !_WIN32
 
-ModuleInfo GetModuleInfo(std::string moduleName)
+std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
 {
-    ModuleInfo moduleInfo = {};
-    return moduleInfo;
+    return std::nullopt;
 }
 
 #endif
