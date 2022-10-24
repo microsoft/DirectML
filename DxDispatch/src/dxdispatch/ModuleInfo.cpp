@@ -77,3 +77,14 @@ ModuleInfo GetModuleInfo(std::string moduleName)
 }
 
 #endif
+
+void PrintModuleInfo(std::string name, const ModuleInfo& loadedModuleInfo, std::string_view configVersion)
+{
+    std::cout << name << ":\n";
+    std::cout << "- Configure Version : " << configVersion << std::endl;
+#if defined(_WIN32) && !defined(_GAMING_XBOX)
+    std::wcout << L"- Loaded Path       : " << loadedModuleInfo.path << std::endl;
+    std::wcout << L"- Loaded Version    : " << loadedModuleInfo.version << std::endl;
+#endif
+    std::cout << std::endl;
+}
