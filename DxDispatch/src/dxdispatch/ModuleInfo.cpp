@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ModuleInfo.h"
+#include "config.h"
 
 #ifdef _WIN32
 
@@ -18,14 +19,16 @@ struct LanguageAndCodePage
     WORD codePage;
 };
 
-ModuleInfo GetModuleInfo(std::string moduleName)
+std::optional<ModuleInfo> GetModuleInfo(std::string moduleName)
 {
-    // get modules loaded into memory and match with moduleName
     auto moduleHandle = GetModuleHandleA(moduleName.c_str());
+    if (!moduleHandle)
+    {
+        return std::nullopt;
+    }
 
     ModuleInfo moduleInfo = {};
     moduleInfo.path = wil::GetModuleFileNameW(moduleHandle).get();
-    moduleInfo.version = L"Unknown";
 
 #ifndef _GAMING_XBOX
     DWORD versionInfoHandle = 0;
@@ -78,13 +81,37 @@ ModuleInfo GetModuleInfo(std::string moduleName)
 
 #endif
 
-void PrintModuleInfo(std::string name, const ModuleInfo& loadedModuleInfo, std::string_view configVersion)
+void PrintModuleInfo(std::string name, const std::optional<ModuleInfo>& loadedModuleInfo, std::string_view configVersion)
 {
     std::cout << name << ":\n";
-    std::cout << "- Configure Version : " << configVersion << std::endl;
-#if defined(_WIN32) && !defined(_GAMING_XBOX)
-    std::wcout << L"- Loaded Path       : " << loadedModuleInfo.path << std::endl;
-    std::wcout << L"- Loaded Version    : " << loadedModuleInfo.version << std::endl;
-#endif
+    std::cout << "- Configured Version : " << configVersion << std::endl;
+    if (loadedModuleInfo)
+    {
+        if (!loadedModuleInfo->path.empty())
+        {
+            std::wcout << L"- Loaded Path        : " << loadedModuleInfo->path << std::endl;
+        }
+        if (!loadedModuleInfo->version.empty())
+        {
+            std::wcout << L"- Loaded Version     : " << loadedModuleInfo->version << std::endl;
+        }
+    }
     std::cout << std::endl;
+}
+
+void PrintDependencies()
+{
+        PrintModuleInfo("DirectML", GetModuleInfo("directml"), c_directmlConfig);
+
+#ifdef _GAMING_XBOX_SCARLETT
+        PrintModuleInfo("D3D12", GetModuleInfo("d3d12_xs"), c_d3d12Config);
+        PrintModuleInfo("DXCompiler", GetModuleInfo("dxcompiler_xs"), c_dxcompilerConfig);
+        PrintModuleInfo("PIX", GetModuleInfo("pixevt"), c_pixConfig);
+#else
+        PrintModuleInfo("D3D12", GetModuleInfo("d3d12core"), c_d3d12Config);
+        PrintModuleInfo("DXCompiler", GetModuleInfo("dxcompiler"), c_dxcompilerConfig);
+        PrintModuleInfo("PIX", GetModuleInfo("winpixeventruntime"), c_pixConfig);
+#endif
+
+        PrintModuleInfo("ONNX Runtime", GetModuleInfo("onnxruntime"), c_ortConfig);
 }

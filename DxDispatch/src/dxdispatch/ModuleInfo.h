@@ -6,6 +6,6 @@ struct ModuleInfo
     std::wstring version;
 };
 
-ModuleInfo GetModuleInfo(std::string moduleName);
+std::optional<ModuleInfo> GetModuleInfo(std::string moduleName);
 
-void PrintModuleInfo(std::string name, const ModuleInfo& loadedModuleInfo, std::string_view configVersion);
+void PrintDependencies();
