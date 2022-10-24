@@ -9,9 +9,10 @@ static const GUID PIX_EVAL_CAPTURABLE_WORK_GUID =
 
 // Callback to log D3D12/DirectML debug messages.
 #ifdef _GAMING_XBOX
-static void DebugMessageCallback( void* context, void* commandList, DWORD messageId, const CHAR* message)
+static bool DebugMessageCallback(void* context, void* commandList, DWORD messageId, const CHAR* message)
 {
     LogError(message);
+    return true;
 }
 #else
 static void DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
@@ -53,7 +54,7 @@ Device::Device(
 
     THROW_IF_FAILED(D3D12XboxCreateDevice(adapter, &params, IID_GRAPHICS_PPV_ARGS(m_d3d.ReleaseAndGetAddressOf())));
 
-    if (debugLayerEnabled)
+    if (debugLayersEnabled)
     {
         m_d3d->SetDebugCallbackX(DebugMessageCallback, /*context*/nullptr);
     }
