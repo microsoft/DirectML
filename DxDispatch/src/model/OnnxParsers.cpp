@@ -17,14 +17,14 @@ bool OnnxParsers::IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType
     switch (dataType)
     {
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED:   return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:        return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING:      return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:     return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
