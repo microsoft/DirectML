@@ -147,7 +147,8 @@ Model OnnxParsers::ParseModel(
                 const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
                 if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
                 {
-                    throw std::invalid_argument("Unsupported tensor data type in ONNX model");
+                    // Let the CPU execution provider allocate the input.
+                    continue;
                 }
 
                 uint64_t elementCount = 1;

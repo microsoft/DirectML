@@ -20,6 +20,7 @@ public:
 private:
     std::shared_ptr<Device> m_device;
     const Model::OnnxDispatchableDesc& m_desc;
+    std::optional<Ort::Env> m_environment;
     std::optional<Ort::Session> m_session;
     const OrtDmlApi* m_ortDmlApi = nullptr;
     const CommandLineArgs& m_args;
