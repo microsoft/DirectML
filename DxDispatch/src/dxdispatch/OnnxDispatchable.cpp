@@ -87,8 +87,8 @@ void OnnxDispatchable::Initialize()
     const OrtApi& ortApi = Ort::GetApi();
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
-    Ort::Env ortEnvironment(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
-    
+    m_environment = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
+
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
@@ -108,7 +108,7 @@ void OnnxDispatchable::Initialize()
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 
-    m_session = Ort::Session(ortEnvironment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
+    m_session = Ort::Session(*m_environment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
@@ -136,7 +136,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
             std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
 
             // Input tensors must be always be bound. Outputs are optional.
-            if (isInputTensor || bindings.find(tensorName) != bindings.end())
+            if (isInputTensor)
             {
                 if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
                 {
@@ -145,10 +145,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
                 Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
                 const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-                if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-                {
-                    throw std::runtime_error("Unsupported tensor data type");
-                }
 
                 // Convert free dimensions (-1) to their minimum positive size (1).
                 std::vector<int64_t> tensorShape = shapeInfo.GetShape();
@@ -157,19 +153,30 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                     dim = std::abs(dim);
                 }
 
-                auto resource = GetResourceFromModelBinding(tensorName, bindings);
+                if (bindings.find(tensorName) == bindings.end())
+                {
+                    // Create an ORT tensor on the CPU.
+                    auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
+                    m_tensors.emplace_back(Ort::Value::CreateTensor(
+                        allocator, 
+                        tensorShape.data(),
+                        tensorShape.size(), 
+                        tensorDataType));
+                }
+                else
+                {
+                    // Create an ORT tensor from the existing D3D resource.
+                    Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
+                    m_tensors.emplace_back(CreateTensorFromResource(
+                        m_ortDmlApi,
+                        dmlMemoryInformation,
+                        GetResourceFromModelBinding(tensorName, bindings),
+                        tensorShape,
+                        tensorDataType,
+                        &resourceWrapper));
 
-                // Create an ORT tensor from the existing D3D resource.
-                Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-                m_tensors.emplace_back(CreateTensorFromResource(
-                    m_ortDmlApi,
-                    dmlMemoryInformation,
-                    resource,
-                    tensorShape,
-                    tensorDataType,
-                    &resourceWrapper));
-
-                m_tensorWrappers.push_back(std::move(resourceWrapper));
+                    m_tensorWrappers.push_back(std::move(resourceWrapper));
+                }
 
                 // Bind the tensor.
                 if (isInputTensor)

@@ -17,20 +17,20 @@ bool OnnxParsers::IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType
     switch (dataType)
     {
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED:   return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:        return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING:      return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:     return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return true;
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return false; // DML supports this, but most DML EP kernels don't.
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:   return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:  return false;
     default: return false;
@@ -147,7 +147,8 @@ Model OnnxParsers::ParseModel(
                 const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
                 if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
                 {
-                    throw std::invalid_argument("Unsupported tensor data type in ONNX model");
+                    // Let the CPU execution provider allocate the input.
+                    continue;
                 }
 
                 uint64_t elementCount = 1;
