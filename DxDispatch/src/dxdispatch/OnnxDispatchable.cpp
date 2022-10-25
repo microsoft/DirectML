@@ -114,18 +114,20 @@ void OnnxDispatchable::Initialize()
 
 void OnnxDispatchable::Bind(const Bindings& bindings)
 {
+    // This table summarizes the resource bindings provided to the ONNX Runtime session:
+    //
     // Kind   | Type       | DXD Binding    | DML Supported Data Type | ORT binding
     // -------|------------|----------------|-------------------------|----------------------------------
     // input  | tensor     | true           | *                       | pre-allocated DX resource
-    // input  | tensor     | false          | true                    | explicit DX resource
-    // input  | tensor     | false          | false                   | explicit CPU resource
+    // input  | tensor     | false          | true                    | explicit DX resource (uninitialized values)
+    // input  | tensor     | false          | false                   | explicit CPU resource (uninitialized values)
     // input  | non-tensor | *              | *                       | none
     // output | tensor     | true           | *                       | pre-allocated DX resource
     // output | tensor     | false          | true                    | implicit DX resource
     // output | tensor     | false          | false                   | implicit CPU resource
     // output | non-tensor | *              | *                       | implicit CPU resource
     //
-    // - "DXD Binding" refers to the binding specified in a JSON model or by OnnxParsers::ParseModel. 
+    // - "DXD Binding" refers to the binding specified in a DxDispatch JSON model or created by OnnxParsers::ParseModel. 
     // - "ORT Binding" refers to the final binding passed to the ONNX Runtime session.
     // - OnnxParsers::ParseModel is configured to create DXD bindings only for tensor-type inputs with a DML supported data type.
     // - A pre-allocated DX resource is a buffer that is created by DxDispatch (independently of the ONNX model/session).
