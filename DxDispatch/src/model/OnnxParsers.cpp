@@ -6,9 +6,8 @@
 std::string OnnxParsers::GetTensorName(size_t index, Ort::Session const& session, bool isInput)
 {
     Ort::AllocatorWithDefaultOptions allocator;
-    char* name = isInput ? session.GetInputName(index, allocator) : session.GetOutputName(index, allocator);
-    std::string returnName(name);
-    allocator.Free(name); // Don't leak memory.
+    auto name = isInput ? session.GetInputNameAllocated(index, allocator) : session.GetOutputNameAllocated(index, allocator);
+    std::string returnName(name.get());
     return returnName;
 }
 
