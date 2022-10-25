@@ -30,7 +30,7 @@ bool OnnxParsers::IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return false; // DML supports this, but most DML EP kernels don't.
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return true;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:   return false;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:  return false;
     default: return false;
