@@ -114,6 +114,25 @@ void OnnxDispatchable::Initialize()
 
 void OnnxDispatchable::Bind(const Bindings& bindings)
 {
+    // Kind   | Type       | DXD Binding    | DML Supported Data Type | ORT binding
+    // -------|------------|----------------|-------------------------|----------------------------------
+    // input  | tensor     | true           | *                       | pre-allocated DX resource
+    // input  | tensor     | false          | true                    | explicit cpu resource - TODO: maybe explicit DX?
+    // input  | tensor     | false          | false                   | explicit cpu resource
+    // input  | non-tensor | *              | *                       | none
+    // output | tensor     | true           | *                       | pre-allocated DX resource
+    // output | tensor     | false          | true                    | implicit DX resource
+    // output | tensor     | false          | false                   | implicit CPU resource
+    // output | non-tensor | *              | *                       | implicit CPU resource
+    //
+    // - "DXD Binding" refers to the binding specified in a JSON model or by OnnxParsers::ParseModel. 
+    // - "ORT Binding" refers to the final binding passed to the ONNX Runtime session.
+    // - OnnxParsers::ParseModel is configured to create DXD bindings only for tensor-type inputs with a DML supported data type.
+    // - A pre-allocated DX resource is a buffer that is created by DxDispatch (independently of the ONNX model/session).
+    // - An explicit ORT binding means creating an Ort::Value and storing it in m_tensors.
+    // - An implicit ORT binding means passing an Ort::MemoryInfo to Ort::IoBinding::BindOutput, which lets the underlying
+    //   execution provider allocate as necessary. This is useful when outputs have dynamic shapes that can't be pre-allocated.
+
     m_ioBindings->ClearBoundInputs();
     m_ioBindings->ClearBoundOutputs();
     m_tensors.clear();
@@ -151,10 +170,23 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                 tensorDataType = shapeInfo.GetElementType();
                 isDmlSupportedType = OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType);
 
-                if (bindings.find(tensorName) != bindings.end())
+                if (bindings.find(tensorName) == bindings.end())
                 {
-                    // A pre-allocated DX resource was bound, so create an an ORT tensor from 
-                    // the existing D3D resource specified in the bindings.
+                    // No DXD binding exists, so allocate input tensors on the CPU.
+                    // Outputs are implicitly allocated using memInfo to handle dynamic shapes.
+                    if (isInputTensor)
+                    {
+                        auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
+                        m_tensors.emplace_back(Ort::Value::CreateTensor(
+                            allocator, 
+                            tensorShape.data(),
+                            tensorShape.size(), 
+                            tensorDataType));
+                    }
+                }
+                else
+                {
+                    // A DXD binding exists, so wrap the pre-allocated DX resource.
                     Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
                     m_tensors.emplace_back(CreateTensorFromResource(
                         m_ortDmlApi,
@@ -174,17 +206,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                 {
                     // Don't bind non-tensor inputs.
                     continue;
-                }
-
-                if (bindings.find(tensorName) == bindings.end())
-                {
-                    // No pre-allocated DX resource was bound, so allocate the input tensor on the CPU.
-                    auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
-                    m_tensors.emplace_back(Ort::Value::CreateTensor(
-                        allocator, 
-                        tensorShape.data(),
-                        tensorShape.size(), 
-                        tensorDataType));
                 }
 
                 // Bind the input tensor.
