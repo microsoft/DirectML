@@ -154,6 +154,12 @@ Model OnnxParsers::ParseModel(
                 elementCount *= sizes.back();
             }
 
+            // Scalars have empty shapes.
+            if (sizes.empty())
+            {
+                sizes.push_back(1);
+            }
+
             // It's best to pre-allocate DX resources for efficiency: the resource can be allocated once and bound without 
             // incurring any copies or repeated allocations. It's safe to pre-allocate a resource so long as there are no 
             // remaining free dimensions and DML supports the tensor data type; otherwise, allocation will occur in the
