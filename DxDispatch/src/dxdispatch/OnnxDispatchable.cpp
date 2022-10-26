@@ -129,7 +129,6 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
     //
     // - "DXD Binding" refers to the binding specified in a DxDispatch JSON model or created by OnnxParsers::ParseModel. 
     // - "ORT Binding" refers to the final binding passed to the ONNX Runtime session.
-    // - OnnxParsers::ParseModel is configured to create DXD bindings only for tensor-type inputs with a DML supported data type.
     // - A pre-allocated DX resource is a buffer that is created by DxDispatch (independently of the ONNX model/session).
     // - An explicit ORT binding means creating an Ort::Value and storing it in m_tensors.
     // - An implicit ORT binding means passing an Ort::MemoryInfo to Ort::IoBinding::BindOutput, which lets the underlying
