@@ -154,10 +154,10 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
         {
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
             std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
+            bool isDmlSupportedType = false;
 
             std::vector<int64_t> tensorShape;
-            bool isDmlSupportedType = false;
-            ONNXTensorElementDataType tensorDataType = ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED;
+
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
                 Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
@@ -168,8 +168,8 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                     dim = std::abs(dim);
                 }
 
-                tensorDataType = shapeInfo.GetElementType();
-                isDmlSupportedType = OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType);
+                auto dataTypeInfo = OnnxParsers::GetDataTypeInfo(shapeInfo.GetElementType());
+                isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
                 if (bindings.find(tensorName) == bindings.end())
                 {
@@ -183,7 +183,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                             std::vector<uint32_t> sizes;
                             for (auto& dimSize : tensorShape) { sizes.push_back(static_cast<uint32_t>(dimSize)); }
                             auto resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
-                                OnnxParsers::ConvertOnnxTensorDataType(tensorDataType),
+                                dataTypeInfo.dmlDataType,
                                 sizes.size(),
                                 sizes.data(),
                                 nullptr
@@ -196,7 +196,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                                 dmlMemoryInformation,
                                 resource.Get(),
                                 tensorShape,
-                                tensorDataType,
+                                dataTypeInfo.onnxDataType,
                                 &resourceWrapper));
 
                             m_tensorWrappers.push_back(std::move(resourceWrapper));
@@ -208,7 +208,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                                 allocator, 
                                 tensorShape.data(),
                                 tensorShape.size(), 
-                                tensorDataType));
+                                dataTypeInfo.onnxDataType));
                         }
                     }
                 }
@@ -221,7 +221,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
                         dmlMemoryInformation,
                         GetResourceFromModelBinding(tensorName, bindings),
                         tensorShape,
-                        tensorDataType,
+                        dataTypeInfo.onnxDataType,
                         &resourceWrapper));
 
                     m_tensorWrappers.push_back(std::move(resourceWrapper));
