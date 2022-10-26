@@ -132,33 +132,31 @@ Model OnnxParsers::ParseModel(
                 continue;
             }
 
-            // DxDispatch's execution model assumes that all resources can be pre-allocated and
-            // bound to a dispatchable before it is executed. While it's possible to pre-allocate 
-            // ONNX input tensors, the output tensors might not be fully known until after the 
-            // execution provider manipulates and executes the ONNX model. This parsing logic 
-            // leaves the DxDispatch model outputs unbound/unset, which in turn means the ONNX
-            // dispatchable will defer to the execution provider to allocate outputs on the fly.
-            // This behavior is acceptable since we don't care about outputs when parsing ONNX
-            // files directly: the inputs are generated with random/unintialized data.
-            if (isInputTensor)
+            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
+
+            bool hasFreeDimensions = false;
+            uint64_t elementCount = 1;
+            std::vector<uint32_t> sizes;
+            for (auto dim : shapeInfo.GetShape())
             {
-                Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-                const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-                if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-                {
-                    // Let the CPU execution provider allocate the input.
-                    continue;
-                }
+                // ONNX models may have dynamic shapes where some dimensions are not statically defined in the model.
+                // These dimensions may be specified at runtime (e.g., using -f option in dxdispatch.exe). Dimensions
+                // that are neither statically defined nor provided at runtime are "free dimensions" with an invalid 
+                // size of -1. It's safe to fix free dimensions to size 1 for inputs; however, it is NOT safe to do this
+                // for outputs, which may have symbolic dimensions computed as a part of running the model.
+                hasFreeDimensions = hasFreeDimensions || (dim == -1 && !isInputTensor);
+                sizes.push_back(std::abs(dim));
+                elementCount *= sizes.back();
+            }
 
-                uint64_t elementCount = 1;
-                std::vector<uint32_t> sizes;
-                for (auto dim : shapeInfo.GetShape())
-                {
-                    // std::abs to convert free dimensions (-1) to their minimum size of 1.
-                    sizes.push_back(std::abs(dim));
-                    elementCount *= sizes.back();
-                }
-
+            // It's best to pre-allocate DX resources for efficiency: the resource can be allocated once and bound without 
+            // incurring any copies or repeated allocations. It's safe to pre-allocate a resource so long as there are no 
+            // remaining free dimensions and DML supports the tensor data type; otherwise, allocation will occur in the
+            // OnnxDispatchable itself (either at binding or execution time). Unsupported tensor data types will be placed
+            // on the CPU.
+            if (!hasFreeDimensions && IsSupportedOnnxTensorElementDataType(tensorDataType))
+            {
                 Model::BufferDesc bufferDesc = {};
                 bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
                 bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
