@@ -92,7 +92,8 @@ void OnnxDispatchable::Initialize()
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
-    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED); // Note ORT_ENABLE_BASIC is useful for debugging.
+    sessionOptions.DisableCpuMemArena();
+    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL); // Note ORT_ENABLE_BASIC is useful for debugging.
  
     for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionNameOverrides())
     {
