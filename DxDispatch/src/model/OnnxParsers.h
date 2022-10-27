@@ -7,9 +7,14 @@ namespace OnnxParsers
 {
     std::string GetTensorName(size_t index, Ort::Session const& session, bool isInput);
 
-    bool IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType dataType);
+    struct DataTypeInfo
+    {
+        ONNXTensorElementDataType onnxDataType;
+        DML_TENSOR_DATA_TYPE dmlDataType;
+        uint32_t sizeInBytes;
+    };
 
-    DML_TENSOR_DATA_TYPE ConvertOnnxTensorDataType(ONNXTensorElementDataType dataType);
+    DataTypeInfo GetDataTypeInfo(ONNXTensorElementDataType dataType);
 
     // Generates a DxDispatch model that has appropriate resources for an ONNX model's
     // inputs and outputs. The resources will be initialized with random values.

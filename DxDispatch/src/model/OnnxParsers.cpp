@@ -11,67 +11,71 @@ std::string OnnxParsers::GetTensorName(size_t index, Ort::Session const& session
     return returnName;
 }
 
-bool OnnxParsers::IsSupportedOnnxTensorElementDataType(ONNXTensorElementDataType dataType)
+OnnxParsers::DataTypeInfo OnnxParsers::GetDataTypeInfo(ONNXTensorElementDataType dataType)
 {
-    switch (dataType)
-    {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED:   return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:        return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:        return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING:      return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:     return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16:    return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:       return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:      return true;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64:   return false;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128:  return false;
-    default: return false;
-    }
-}
+    DataTypeInfo info = {};
+    info.onnxDataType = dataType;
+    info.dmlDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
 
-DML_TENSOR_DATA_TYPE OnnxParsers::ConvertOnnxTensorDataType(ONNXTensorElementDataType dataType)
-{
     switch (dataType)
     {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   return DML_TENSOR_DATA_TYPE_UINT8;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:    return DML_TENSOR_DATA_TYPE_INT8;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:  return DML_TENSOR_DATA_TYPE_UINT16;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:   return DML_TENSOR_DATA_TYPE_INT16;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: return DML_TENSOR_DATA_TYPE_FLOAT16;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   return DML_TENSOR_DATA_TYPE_INT32;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:  return DML_TENSOR_DATA_TYPE_UINT32;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:   return DML_TENSOR_DATA_TYPE_FLOAT32;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:  return DML_TENSOR_DATA_TYPE_UINT64;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:   return DML_TENSOR_DATA_TYPE_INT64;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:  return DML_TENSOR_DATA_TYPE_FLOAT64;
-    default: throw std::invalid_argument("Unsupported tensor type");
-    }
-}
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT8;
+        info.sizeInBytes = 1;
+        break;
 
-static uint32_t OnnxTensorDataTypeSize(ONNXTensorElementDataType dataType)
-{
-    switch (dataType)
-    {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   return 1;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:    return 1;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:  return 2;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:   return 2;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: return 2;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   return 4;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:  return 4;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:   return 4;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:  return 8;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:   return 8;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:  return 8;
-    default: throw std::invalid_argument("Unsupported tensor type");
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT8;
+        info.sizeInBytes = 1;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
+        info.sizeInBytes = 8;
+        break;
     }
+
+    return info;
 }
 
 Model OnnxParsers::ParseModel(
@@ -132,35 +136,39 @@ Model OnnxParsers::ParseModel(
                 continue;
             }
 
-            // DxDispatch's execution model assumes that all resources can be pre-allocated and
-            // bound to a dispatchable before it is executed. While it's possible to pre-allocate 
-            // ONNX input tensors, the output tensors might not be fully known until after the 
-            // execution provider manipulates and executes the ONNX model. This parsing logic 
-            // leaves the DxDispatch model outputs unbound/unset, which in turn means the ONNX
-            // dispatchable will defer to the execution provider to allocate outputs on the fly.
-            // This behavior is acceptable since we don't care about outputs when parsing ONNX
-            // files directly: the inputs are generated with random/unintialized data.
-            if (isInputTensor)
+            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
+
+            bool hasFreeDimensions = false;
+            uint64_t elementCount = 1;
+            std::vector<uint32_t> sizes;
+            for (auto dim : shapeInfo.GetShape())
             {
-                Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-                const ONNXTensorElementDataType tensorDataType = shapeInfo.GetElementType();
-                if (!OnnxParsers::IsSupportedOnnxTensorElementDataType(tensorDataType))
-                {
-                    // Let the CPU execution provider allocate the input.
-                    continue;
-                }
+                // ONNX models may have dynamic shapes where some dimensions are not statically defined in the model.
+                // These dimensions may be specified at runtime (e.g., using -f option in dxdispatch.exe). Dimensions
+                // that are neither statically defined nor provided at runtime are "free dimensions" with an invalid 
+                // size of -1. It's safe to fix free dimensions to size 1 for inputs; however, it is NOT safe to do this
+                // for outputs, which may have symbolic dimensions computed as a part of running the model.
+                hasFreeDimensions = hasFreeDimensions || (dim == -1 && !isInputTensor);
+                sizes.push_back(std::abs(dim));
+                elementCount *= sizes.back();
+            }
 
-                uint64_t elementCount = 1;
-                std::vector<uint32_t> sizes;
-                for (auto dim : shapeInfo.GetShape())
-                {
-                    // std::abs to convert free dimensions (-1) to their minimum size of 1.
-                    sizes.push_back(std::abs(dim));
-                    elementCount *= sizes.back();
-                }
+            // Scalars have empty shapes.
+            if (sizes.empty())
+            {
+                sizes.push_back(1);
+            }
 
+            // It's best to pre-allocate DX resources for efficiency: the resource can be allocated once and bound without 
+            // incurring any copies or repeated allocations. It's safe to pre-allocate a resource so long as there are no 
+            // remaining free dimensions and DML supports the tensor data type; otherwise, allocation will occur in the
+            // OnnxDispatchable itself (either at binding or execution time). Unsupported tensor data types will be placed
+            // on the CPU.
+            if (!hasFreeDimensions && dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+            {
                 Model::BufferDesc bufferDesc = {};
-                bufferDesc.initialValuesDataType = ConvertOnnxTensorDataType(tensorDataType);
+                bufferDesc.initialValuesDataType = dataTypeInfo.dmlDataType;
                 bufferDesc.sizeInBytes = DMLCalcBufferTensorSize(
                     bufferDesc.initialValuesDataType,
                     sizes.size(),
@@ -172,7 +180,7 @@ Model OnnxParsers::ParseModel(
                 bindings[resourceDesc.name] = {Model::BufferBindingSource{
                     resourceDesc.name,
                     elementCount,
-                    OnnxTensorDataTypeSize(tensorDataType)
+                    dataTypeInfo.sizeInBytes
                 }};
 
                 resources.emplace_back(std::move(resourceDesc));
