@@ -43,6 +43,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()
         )
         (
+            "v,verbose_timings",
+            "Print verbose timing information",
+            cxxopts::value<bool>()
+        )
+        (
             "h,help", 
             "Print command-line usage help", 
             cxxopts::value<bool>()
@@ -135,6 +140,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("show_adapters")) 
     { 
         m_showAdapters = result["show_adapters"].as<bool>(); 
+    }
+
+    if (result.count("verbose_timings"))
+    {
+        m_verboseTimings = result["verbose_timings"].as<bool>();
     }
 
     if (result.count("show_dependencies"))
