@@ -301,6 +301,15 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
     return outputBuffer;
 }
 
+void Device::ExecuteCommandList()
+{
+    THROW_IF_FAILED(m_commandList->Close());
+
+    ID3D12CommandList* commandLists[] = { m_commandList.Get() };
+    m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
+    THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+}
+
 void Device::DispatchAndWait()
 {
     THROW_IF_FAILED(m_commandList->Close());

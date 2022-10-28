@@ -54,6 +54,7 @@ public:
     // Waits for all work submitted to this device's queue to complete.
     void WaitForGpuWorkToComplete();
 
+    void ExecuteCommandList();
     void DispatchAndWait();
 
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);

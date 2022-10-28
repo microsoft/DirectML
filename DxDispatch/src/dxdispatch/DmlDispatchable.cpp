@@ -245,3 +245,8 @@ void DmlDispatchable::Dispatch(const Model::DispatchCommand& args)
 {
     m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
 }
+
+void DmlDispatchable::SyncGpuAndCpu()
+{
+    m_device->DispatchAndWait();
+}

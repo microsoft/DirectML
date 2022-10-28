@@ -22,5 +22,6 @@ struct Dispatchable
     virtual void Initialize() = 0;
     virtual void Bind(const Bindings& bindings) = 0;
     virtual void Dispatch(const Model::DispatchCommand& args) = 0;
+    virtual void SyncGpuAndCpu() = 0;
     virtual bool RecordsDispatchIntoCommandList() = 0;
 };

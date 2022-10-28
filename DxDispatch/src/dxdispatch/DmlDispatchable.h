@@ -12,6 +12,7 @@ public:
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
     void Dispatch(const Model::DispatchCommand& args) final;
+    void SyncGpuAndCpu() final;
     bool RecordsDispatchIntoCommandList() final { return true; }
 
 private:

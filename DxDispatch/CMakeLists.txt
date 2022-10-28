@@ -163,6 +163,10 @@ install(
     DESTINATION bin
 )
 
+if(WIN32)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/tools/AnalyzePixGpuCapture.ps1 DESTINATION bin/tools)
+endif()
+
 if(TARGET_XBOX)
     # Deploy to the console instead of running on local machine.
     set_property(TARGET dxdispatch PROPERTY VS_SOLUTION_DEPLOY ON)

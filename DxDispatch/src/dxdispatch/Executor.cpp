@@ -118,10 +118,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
 {
     auto& dispatchable = m_dispatchables[command.dispatchableName];
 
-    // DML and HLSL dispatchables write into the DxDispatch device command list; ONNX dispatchables use
-    // a command list owned by the DML execution provider in onnxruntime.dll.
-    const bool dispatchableUsesDeviceCommandList = dispatchable->RecordsDispatchIntoCommandList();
-
     Timer timer;
     std::vector<double> dispatchDurations;
     double totalDuration = 0.0;
@@ -137,36 +133,28 @@ void Executor::operator()(const Model::DispatchCommand& command)
         return;
     }
 
+    try
+    {
+        PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
+        dispatchable->Bind(bindings);
+        PIXEndEvent();
+    }
+    catch (const std::exception& e)
+    {
+        LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
+        return;
+    }
+
     // Dispatch
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
-        THROW_IF_FAILED(m_device->GetPixCaptureHelper().BeginCapturableWork(command.dispatchableName));
-
         for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
         {
             timer.Start();
 
-            try
-            {
-                dispatchable->Bind(bindings);
-            }
-            catch (const std::exception& e)
-            {
-                LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
-                return;
-            }
-
-            PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Dispatch '%s'", command.dispatchableName.c_str());
-            
             dispatchable->Dispatch(command);
-            
-            if (dispatchableUsesDeviceCommandList)
-            {
-                m_device->DispatchAndWait();
-            }
-
-            PIXEndEvent(m_device->GetCommandQueue());
+            dispatchable->SyncGpuAndCpu();
 
             double duration = timer.End().DurationInMilliseconds();
             dispatchDurations.push_back(duration);
@@ -178,8 +166,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 break;
             }
         }
-
-        THROW_IF_FAILED(m_device->GetPixCaptureHelper().EndCapturableWork());
     }
     catch (const std::exception& e)
     {

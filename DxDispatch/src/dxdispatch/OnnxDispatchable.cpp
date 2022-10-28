@@ -260,7 +260,17 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
 void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
 {
+    PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
+    m_device->ExecuteCommandList();
+
     Ort::RunOptions runOptions;
     m_session->Run(runOptions, *m_ioBindings);
+
+    PIXEndEvent(m_device->GetCommandList());
+    m_device->ExecuteCommandList();
+}
+
+void OnnxDispatchable::SyncGpuAndCpu()
+{
     m_ioBindings->SynchronizeOutputs();
 }

@@ -20,17 +20,18 @@ class PixCaptureHelper
 {
 public:
     // Must be constructed *before* the D3D device: Windows PIX GPU capture library needs to load first.
-    PixCaptureHelper(PixCaptureType captureType);
+    PixCaptureHelper(PixCaptureType captureType, std::wstring_view captureName);
 
     // Must be called *after* the D3D device when a command queue is available.
     void Initialize(ID3D12CommandQueue* commandQueue);
 
-    HRESULT BeginCapturableWork(std::string commandName);
+    HRESULT BeginCapturableWork();
     HRESULT EndCapturableWork();
     PixCaptureType GetPixCaptureType() const { return m_captureType; }
 
 private:
     PixCaptureType m_captureType;
+    std::wstring m_captureName;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 #if !defined(_GAMING_XBOX) && !defined(PIX_NONE)
     wil::unique_hmodule m_gpuCaptureLibrary;
