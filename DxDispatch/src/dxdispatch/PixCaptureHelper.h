@@ -20,7 +20,7 @@ class PixCaptureHelper
 {
 public:
     // Must be constructed *before* the D3D device: Windows PIX GPU capture library needs to load first.
-    PixCaptureHelper(PixCaptureType captureType, std::wstring_view captureName);
+    PixCaptureHelper(PixCaptureType captureType, std::string_view captureName);
 
     // Must be called *after* the D3D device when a command queue is available.
     void Initialize(ID3D12CommandQueue* commandQueue);

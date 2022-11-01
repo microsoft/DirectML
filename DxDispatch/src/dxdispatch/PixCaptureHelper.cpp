@@ -7,10 +7,28 @@ static constexpr GUID PIX_EVAL_CAPTURABLE_WORK_GUID = {
     0x4993,
     {0x86, 0x08, 0xd7, 0x06, 0xa7, 0x3b, 0x91, 0xce} };
 
-PixCaptureHelper::PixCaptureHelper(PixCaptureType captureType, std::wstring_view captureName)
+#if _WIN32
+static std::wstring Utf8ToWideString(std::string_view utf8String)
+{
+    if (utf8String.empty())
+    {
+        return std::wstring();
+    }
+
+    int requiredSize = MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), nullptr, 0);
+    std::wstring result(requiredSize, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), result.data(), result.size());
+    return result;
+}
+#endif
+
+PixCaptureHelper::PixCaptureHelper(PixCaptureType captureType, std::string_view captureName)
 {
     m_captureType = captureType;
-    m_captureName = captureName;
+
+#ifdef _WIN32
+    m_captureName = Utf8ToWideString(captureName);
+#endif
 
 #if !defined(_GAMING_XBOX) && !defined(PIX_NONE)
     if (captureType == PixCaptureType::ProgrammaticGpu)
