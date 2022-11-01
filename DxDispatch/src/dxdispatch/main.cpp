@@ -13,6 +13,21 @@
 
 using Microsoft::WRL::ComPtr;
 
+#if _WIN32
+static std::wstring Utf8ToWideString(std::string_view utf8String)
+{
+    if (utf8String.empty())
+    {
+        return std::wstring();
+    }
+
+    int requiredSize = MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), nullptr, 0);
+    std::wstring result(requiredSize, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), result.data(), result.size());
+    return result;
+}
+#endif
+
 int main(int argc, char** argv)
 {
     CommandLineArgs args;
@@ -29,7 +44,7 @@ int main(int argc, char** argv)
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
-    auto pixCaptureHelper = std::make_shared<PixCaptureHelper>(args.GetPixCaptureType(), args.PixCaptureName());
+    auto pixCaptureHelper = std::make_shared<PixCaptureHelper>(args.GetPixCaptureType(), Utf8ToWideString(args.PixCaptureName()));
     auto dxCoreModule = std::make_shared<DxCoreModule>();
     auto d3dModule = std::make_shared<D3d12Module>();
     auto dmlModule = std::make_shared<DmlModule>();

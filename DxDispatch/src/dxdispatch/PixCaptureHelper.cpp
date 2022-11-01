@@ -1,21 +1,6 @@
 #include "pch.h"
 #include "PixCaptureHelper.h"
 
-#ifndef PIX_NONE
-static std::wstring Utf8ToWideString(std::string_view utf8String)
-{
-    if (utf8String.empty())
-    {
-        return std::wstring();
-    }
-
-    int requiredSize = MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), nullptr, 0);
-    std::wstring result(requiredSize, 0);
-    MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), result.data(), result.size());
-    return result;
-}
-#endif
-
 static constexpr GUID PIX_EVAL_CAPTURABLE_WORK_GUID = {
     0xd113b493,
     0xbba2,

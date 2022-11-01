@@ -34,7 +34,7 @@ private:
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
-    std::string m_pixCaptureName;
+    std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
