@@ -135,25 +135,24 @@ void Executor::operator()(const Model::DispatchCommand& command)
         return;
     }
 
-    // Bind
-    PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
-    try
-    {
-        dispatchable->Bind(bindings);
-    }
-    catch (const std::exception& e)
-    {
-        LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
-        return;
-    }
-    PIXEndEvent();
-
     // Dispatch
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
         for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
         {
+            PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
+            try
+            {
+                dispatchable->Bind(bindings);
+            }
+            catch (const std::exception& e)
+            {
+                LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
+                return;
+            }
+            PIXEndEvent();
+
             timer.Start();
 
             dispatchable->Dispatch(command);
