@@ -39,7 +39,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             m_resources[desc.name] = std::move(device->Upload(bufferDesc.sizeInBytes, bufferDesc.initialValues, wName));
         }
     }
-    device->DispatchAndWait();
+    device->ExecuteCommandListAndWait();
 
     // Create dispatchables.
     for (auto& desc : model.GetDispatchableDescs())

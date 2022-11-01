@@ -284,7 +284,7 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
-    DispatchAndWait();
+    ExecuteCommandListAndWait();
 
     std::vector<std::byte> outputBuffer(defaultBuffer->GetDesc().Width);
     {
@@ -310,13 +310,15 @@ void Device::ExecuteCommandList()
     THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
 }
 
-void Device::DispatchAndWait()
+void Device::ExecuteCommandListAndWait()
 {
     THROW_IF_FAILED(m_commandList->Close());
 
     ID3D12CommandList* commandLists[] = { m_commandList.Get() };
     m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
+    
     WaitForGpuWorkToComplete();
+
     THROW_IF_FAILED(m_d3d->GetDeviceRemovedReason());
     THROW_IF_FAILED(m_commandAllocator->Reset());
     THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));

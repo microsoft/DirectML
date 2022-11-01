@@ -181,7 +181,7 @@ void DmlDispatchable::Initialize()
 
     m_device->KeepAliveUntilNextCommandListDispatch(std::move(descriptorHeap));
     m_device->RecordDispatch(initializer.Get(), bindingTable.Get());
-    m_device->DispatchAndWait();
+    m_device->ExecuteCommandListAndWait();
 }
 
 void DmlDispatchable::Bind(const Bindings& bindings)
@@ -248,5 +248,5 @@ void DmlDispatchable::Dispatch(const Model::DispatchCommand& args)
 
 void DmlDispatchable::SyncGpuAndCpu()
 {
-    m_device->DispatchAndWait();
+    m_device->ExecuteCommandListAndWait();
 }

@@ -449,5 +449,5 @@ void HlslDispatchable::Dispatch(const Model::DispatchCommand& args)
 
 void HlslDispatchable::SyncGpuAndCpu()
 {
-    m_device->DispatchAndWait();
+    m_device->ExecuteCommandListAndWait();
 }

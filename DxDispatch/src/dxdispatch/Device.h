@@ -4,6 +4,7 @@
 #include "DxModules.h"
 
 // Simplified abstraction for submitting work to a device with a single command queue. Not thread safe.
+// This "device" includes a single command list that is always open for recording work.
 class Device
 {
 public:
@@ -54,9 +55,13 @@ public:
     // Waits for all work submitted to this device's queue to complete.
     void WaitForGpuWorkToComplete();
 
+    // Submits all commands recorded into the device's command list for execution.
     void ExecuteCommandList();
-    void DispatchAndWait();
 
+    // Submits the device command list for execution and blocks the CPU thread until the commands have finished on the GPU.
+    void ExecuteCommandListAndWait();
+
+    // Records the dispatch of an IDMLDispatchable into the device command list.
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
