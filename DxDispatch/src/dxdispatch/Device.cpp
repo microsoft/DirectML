@@ -115,6 +115,13 @@ Device::Device(
 
     THROW_IF_FAILED(m_dml->CreateCommandRecorder(IID_PPV_ARGS(&m_commandRecorder)));
 
+    D3D12_QUERY_HEAP_DESC queryHeapDesc;
+    queryHeapDesc.Count = timestampCount;
+    queryHeapDesc.NodeMask = 0;
+    queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+
+    m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap));
+
     m_pixCaptureHelper->Initialize(m_queue.Get());
 }
 
@@ -313,6 +320,15 @@ void Device::DispatchAndWait()
     THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
 
     m_temporaryResources.clear();
+}
+
+void Device::DispatchDontWait()
+{
+    THROW_IF_FAILED(m_commandList->Close());
+
+    ID3D12CommandList* commandLists[] = { m_commandList.Get() };
+    m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
+    THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
 }
 
 #ifndef DXCOMPILER_NONE

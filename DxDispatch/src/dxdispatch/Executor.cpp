@@ -15,6 +15,8 @@
 #include "Executor.h"
 #include <half.hpp>
 
+using Microsoft::WRL::ComPtr;
+
 struct Timer
 {
     std::chrono::steady_clock::time_point start;
@@ -123,7 +125,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     const bool dispatchableUsesDeviceCommandList = dispatchable->RecordsDispatchIntoCommandList();
 
     Timer timer;
-    std::vector<double> dispatchDurations;
+    std::vector<double> dispatchDurationsCPU;
     double totalDuration = 0.0;
 
     Dispatchable::Bindings bindings;
@@ -136,6 +138,12 @@ void Executor::operator()(const Model::DispatchCommand& command)
         LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
         return;
     }
+
+    const uint32_t timestampCount = m_device->timestampCount;
+
+    auto timestampReadbackBuffer = m_device->CreateReadbackBuffer(sizeof(uint64_t) * timestampCount);
+
+    std::vector<uint64_t> timestamps;
 
     // Dispatch
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
@@ -158,18 +166,38 @@ void Executor::operator()(const Model::DispatchCommand& command)
             }
 
             PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Dispatch '%s'", command.dispatchableName.c_str());
-            
-            dispatchable->Dispatch(command);
-            
+
+            uint32_t timestampIndex = (iteration * 2) % timestampCount;
+
             if (dispatchableUsesDeviceCommandList)
             {
+                m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex);
+                dispatchable->Dispatch(command);
+                m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex + 1);
                 m_device->DispatchAndWait();
+            }
+            else
+            {
+#ifndef ONNXRUNTIME_NONE
+                OnnxDispatchable* onnx = dynamic_cast<OnnxDispatchable*>(dispatchable.get());
+
+                if (onnx)
+                {
+                    m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex);
+                    m_device->DispatchDontWait();
+                    onnx->Dispatch(command);
+
+                    m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex + 1);
+                    m_device->DispatchDontWait();
+                    onnx->Wait();
+                }
+#endif
             }
 
             PIXEndEvent(m_device->GetCommandQueue());
 
             double duration = timer.End().DurationInMilliseconds();
-            dispatchDurations.push_back(duration);
+            dispatchDurationsCPU.push_back(duration);
 
             totalDuration += duration;
             if (m_commandLineArgs.TimeToRunInMilliseconds() &&
@@ -188,18 +216,68 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     PIXEndEvent();
 
-    uint32_t iterations = dispatchDurations.size();
+    m_device->GetCommandList()->ResolveQueryData(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, 0, timestampCount, timestampReadbackBuffer.Get(), 0);
+    m_device->DispatchAndWait();
+
+    void* pData = nullptr;
+    D3D12_RANGE readRange = { 0, sizeof(uint64_t) * timestampCount };
+    timestampReadbackBuffer->Map(0, &readRange, &pData);
+
+    const uint64_t* pTimestamps = reinterpret_cast<uint64_t*>(pData);
+    timestamps.insert(timestamps.end(), pTimestamps, pTimestamps + timestampCount);
+
+
+    uint32_t iterations = dispatchDurationsCPU.size();
     // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
     int skipped = (iterations > 1) ? 1 : 0;
-    double totalTime = std::accumulate(dispatchDurations.begin() + skipped, dispatchDurations.end(), 0.0);
-    double avgTime = totalTime / (dispatchDurations.size() - skipped);
+    double totalTimeCPU = std::accumulate(dispatchDurationsCPU.begin() + skipped, dispatchDurationsCPU.end(), 0.0);
+    double avgTimeCPU = totalTimeCPU / (dispatchDurationsCPU.size() - skipped);
+
+    std::sort(dispatchDurationsCPU.begin(), dispatchDurationsCPU.end());
+    double medianTimeCPU = dispatchDurationsCPU[iterations / 2];
+    double minTimeCPU = dispatchDurationsCPU[0];
+    double maxTimeCPU = dispatchDurationsCPU[iterations - 1];
+
+
+    uint64_t frequency;
+    m_device->GetCommandQueue()->GetTimestampFrequency(&frequency);
+
+    uint32_t samples = std::min(iterations, (uint32_t)timestamps.size() / 2);
+    std::vector<double> dispatchDurationsGPU(samples);
+
+    for (uint32_t i = 0; i < samples; ++i) {
+        uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
+
+        dispatchDurationsGPU[i] = double(timestampDelta) / frequency;
+    }
+
+    if (iterations > timestamps.size() / 2) {
+        skipped = 0;
+    }
+
+    double totalTimeGPU = std::accumulate(dispatchDurationsGPU.begin() + skipped, dispatchDurationsGPU.end(), 0.0);
+    double avgTimeGPU = totalTimeGPU / (dispatchDurationsGPU.size() - skipped);
+
+    std::sort(dispatchDurationsGPU.begin(), dispatchDurationsGPU.end());
+    double medianTimeGPU = dispatchDurationsGPU[samples / 2];
+    double minTimeGPU = dispatchDurationsGPU[0];
+    double maxTimeGPU = dispatchDurationsGPU[samples - 1];
+
     
-    std::sort(dispatchDurations.begin(), dispatchDurations.end());
-    double medianTime = dispatchDurations[iterations / 2];
-    double minTime = dispatchDurations[0];
-    double maxTime = dispatchDurations[iterations - 1];
-    LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-        command.dispatchableName, iterations, avgTime, minTime, medianTime, maxTime));
+    if (m_commandLineArgs.VerboseTimings()) {
+        LogInfo(fmt::format("Dispatch '{}': {} iterations\nCPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
+            command.dispatchableName, iterations, avgTimeCPU, minTimeCPU, medianTimeCPU, maxTimeCPU));
+        LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max\n",
+            avgTimeGPU, minTimeGPU, medianTimeGPU, maxTimeGPU));
+    }
+    else if (iterations == 1) {
+        LogInfo(fmt::format("Dispatch '{}': {} iteration, {:.4f} ms (CPU), {:.4f} ms (GPU)",
+            command.dispatchableName, iterations, medianTimeCPU, medianTimeGPU));
+    }
+    else {
+        LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)",
+            command.dispatchableName, iterations, medianTimeCPU, medianTimeGPU));
+    }
 }
 
 template <typename T>

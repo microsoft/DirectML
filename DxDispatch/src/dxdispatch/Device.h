@@ -21,6 +21,7 @@ public:
     ID3D12Device2* D3D() { return m_d3d.Get(); }
     IDMLDevice1* DML() { return m_dml.Get(); }
     ID3D12CommandQueue* GetCommandQueue() { return m_queue.Get(); }
+    ID3D12QueryHeap* GetTimestampHeap() { return m_timestampHeap.Get(); }
     D3D12_COMMAND_LIST_TYPE GetCommandListType() const { return m_commandListType; }
     ID3D12GraphicsCommandList* GetCommandList() { return m_commandList.Get(); }
     PixCaptureHelper& GetPixCaptureHelper() { return *m_pixCaptureHelper; }
@@ -56,6 +57,8 @@ public:
 
     void DispatchAndWait();
 
+    void DispatchDontWait();
+
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
@@ -69,6 +72,8 @@ public:
 
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
+
+    static constexpr uint32_t timestampCount = 16384;
 
 private:
     void EnsureDxcInterfaces();
@@ -84,6 +89,7 @@ private:
     Microsoft::WRL::ComPtr<IDMLDevice1> m_dml;
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
+    Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_timestampHeap;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
