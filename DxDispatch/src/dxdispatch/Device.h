@@ -73,7 +73,7 @@ public:
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
-    const static uint32_t timestampCount = 16384;
+    static constexpr uint32_t timestampCount = 16384;
 
 private:
     void EnsureDxcInterfaces();

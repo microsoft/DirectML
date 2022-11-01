@@ -328,12 +328,7 @@ void Device::DispatchDontWait()
 
     ID3D12CommandList* commandLists[] = { m_commandList.Get() };
     m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
-    //WaitForGpuWorkToComplete();
-    //THROW_IF_FAILED(m_d3d->GetDeviceRemovedReason());
-    //THROW_IF_FAILED(m_commandAllocator->Reset());
     THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
-
-    m_temporaryResources.clear();
 }
 
 #ifndef DXCOMPILER_NONE

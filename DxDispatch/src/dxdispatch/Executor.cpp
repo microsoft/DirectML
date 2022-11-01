@@ -176,11 +176,11 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex + 1);
                 m_device->DispatchAndWait();
             }
-            else 
+            else
             {
                 OnnxDispatchable* onnx = dynamic_cast<OnnxDispatchable*>(dispatchable.get());
 
-                if (onnx) 
+                if (onnx)
                 {
                     m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex);
                     m_device->DispatchDontWait();
@@ -236,6 +236,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     double minTimeCPU = dispatchDurationsCPU[0];
     double maxTimeCPU = dispatchDurationsCPU[iterations - 1];
 
+
     uint64_t frequency;
     m_device->GetCommandQueue()->GetTimestampFrequency(&frequency);
 
@@ -244,8 +245,12 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     for (uint32_t i = 0; i < samples; ++i) {
         uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
-        
+
         dispatchDurationsGPU[i] = double(timestampDelta) / frequency;
+    }
+
+    if (iterations > timestamps.size() / 2) {
+        skipped = 0;
     }
 
     double totalTimeGPU = std::accumulate(dispatchDurationsGPU.begin() + skipped, dispatchDurationsGPU.end(), 0.0);
