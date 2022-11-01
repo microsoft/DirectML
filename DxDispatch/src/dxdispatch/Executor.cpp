@@ -178,6 +178,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             }
             else
             {
+#ifndef ONNXRUNTIME_NONE
                 OnnxDispatchable* onnx = dynamic_cast<OnnxDispatchable*>(dispatchable.get());
 
                 if (onnx)
@@ -190,6 +191,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
                     m_device->DispatchDontWait();
                     onnx->Wait();
                 }
+#endif
             }
 
             PIXEndEvent(m_device->GetCommandQueue());
