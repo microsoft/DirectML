@@ -135,12 +135,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
         return;
     }
 
-    const uint32_t timestampCount = m_device->timestampCount;
-
-    auto timestampReadbackBuffer = m_device->CreateReadbackBuffer(sizeof(uint64_t) * timestampCount);
-
-    std::vector<uint64_t> timestamps;
-
     // Dispatch
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
