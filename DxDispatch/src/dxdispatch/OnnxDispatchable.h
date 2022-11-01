@@ -15,9 +15,7 @@ public:
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
     void Dispatch(const Model::DispatchCommand& args) final;
-    void DispatchDontWait(const Model::DispatchCommand& args);
-    void Wait();
-    bool RecordsDispatchIntoCommandList() final { return false; }
+    void Wait() final;
 
 private:
     std::shared_ptr<Device> m_device;

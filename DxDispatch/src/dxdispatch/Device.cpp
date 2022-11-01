@@ -116,11 +116,11 @@ Device::Device(
     THROW_IF_FAILED(m_dml->CreateCommandRecorder(IID_PPV_ARGS(&m_commandRecorder)));
 
     D3D12_QUERY_HEAP_DESC queryHeapDesc;
-    queryHeapDesc.Count = timestampCount;
+    queryHeapDesc.Count = timestampCapacity;
     queryHeapDesc.NodeMask = 0;
     queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
 
-    m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap));
+    THROW_IF_FAILED(m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap)));
 
     m_pixCaptureHelper->Initialize(m_queue.Get());
 }
@@ -291,7 +291,7 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
     }
 
-    DispatchAndWait();
+    ExecuteCommandListAndWait();
 
     std::vector<std::byte> outputBuffer(defaultBuffer->GetDesc().Width);
     {
@@ -308,7 +308,16 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
     return outputBuffer;
 }
 
-void Device::DispatchAndWait()
+void Device::ExecuteCommandList()
+{
+    THROW_IF_FAILED(m_commandList->Close());
+
+    ID3D12CommandList* commandLists[] = { m_commandList.Get() };
+    m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
+    THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+}
+
+void Device::ExecuteCommandListAndWait()
 {
     THROW_IF_FAILED(m_commandList->Close());
 
@@ -322,13 +331,37 @@ void Device::DispatchAndWait()
     m_temporaryResources.clear();
 }
 
-void Device::DispatchDontWait()
+void Device::RecordTimestamp()
 {
-    THROW_IF_FAILED(m_commandList->Close());
+    m_commandList->EndQuery(m_timestampHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_timestampHeadIndex);
+    m_timestampHeadIndex = (m_timestampHeadIndex + 1) % Device::timestampCapacity;
+    if (m_timestampCount < timestampCapacity)
+    {
+        m_timestampCount++;
+    }
+}
 
-    ID3D12CommandList* commandLists[] = { m_commandList.Get() };
-    m_queue->ExecuteCommandLists(_countof(commandLists), commandLists);
-    THROW_IF_FAILED(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+std::vector<uint64_t> Device::ResolveTimestamps()
+{
+    assert(m_timestampCount <= timestampCapacity);
+
+    auto timestampReadbackBuffer = CreateReadbackBuffer(sizeof(uint64_t) * m_timestampCount);
+
+    m_commandList->ResolveQueryData(m_timestampHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, m_timestampCount, timestampReadbackBuffer.Get(), 0);
+    ExecuteCommandListAndWait();
+
+    void* pData = nullptr;
+    D3D12_RANGE readRange = { 0, sizeof(uint64_t) * m_timestampCount };
+    timestampReadbackBuffer->Map(0, &readRange, &pData);
+
+    std::vector<uint64_t> timestamps;
+    const uint64_t* pTimestamps = reinterpret_cast<uint64_t*>(pData);
+    timestamps.insert(timestamps.end(), pTimestamps, pTimestamps + m_timestampCount);
+
+    m_timestampHeadIndex = 0;
+    m_timestampCount = 0;
+
+    return timestamps;
 }
 
 #ifndef DXCOMPILER_NONE

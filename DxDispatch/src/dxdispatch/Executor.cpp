@@ -41,7 +41,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             m_resources[desc.name] = std::move(device->Upload(bufferDesc.sizeInBytes, bufferDesc.initialValues, wName));
         }
     }
-    device->DispatchAndWait();
+    device->ExecuteCommandListAndWait();
 
     // Create dispatchables.
     for (auto& desc : model.GetDispatchableDescs())
@@ -120,10 +120,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
 {
     auto& dispatchable = m_dispatchables[command.dispatchableName];
 
-    // DML and HLSL dispatchables write into the DxDispatch device command list; ONNX dispatchables use
-    // a command list owned by the DML execution provider in onnxruntime.dll.
-    const bool dispatchableUsesDeviceCommandList = dispatchable->RecordsDispatchIntoCommandList();
-
     Timer timer;
     std::vector<double> dispatchDurationsCPU;
     double totalDuration = 0.0;
@@ -139,22 +135,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
         return;
     }
 
-    const uint32_t timestampCount = m_device->timestampCount;
-
-    auto timestampReadbackBuffer = m_device->CreateReadbackBuffer(sizeof(uint64_t) * timestampCount);
-
-    std::vector<uint64_t> timestamps;
-
     // Dispatch
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
-        THROW_IF_FAILED(m_device->GetPixCaptureHelper().BeginCapturableWork(command.dispatchableName));
-
         for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
         {
-            timer.Start();
-
+            PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
             try
             {
                 dispatchable->Bind(bindings);
@@ -164,38 +151,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
                 return;
             }
+            PIXEndEvent();
 
-            PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Dispatch '%s'", command.dispatchableName.c_str());
+            timer.Start();
 
-            uint32_t timestampIndex = (iteration * 2) % timestampCount;
-
-            if (dispatchableUsesDeviceCommandList)
-            {
-                m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex);
-                dispatchable->Dispatch(command);
-                m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex + 1);
-                m_device->DispatchAndWait();
-            }
-            else
-            {
-#ifndef ONNXRUNTIME_NONE
-                OnnxDispatchable* onnx = dynamic_cast<OnnxDispatchable*>(dispatchable.get());
-
-                if (onnx)
-                {
-                    m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex);
-                    m_device->DispatchDontWait();
-                    onnx->Dispatch(command);
-
-                    m_device->GetCommandList()->EndQuery(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, timestampIndex + 1);
-                    m_device->DispatchDontWait();
-                    onnx->Wait();
-                }
-#endif
-            }
-
-            PIXEndEvent(m_device->GetCommandQueue());
-
+            dispatchable->Dispatch(command);
+            dispatchable->Wait();
+            
             double duration = timer.End().DurationInMilliseconds();
             dispatchDurationsCPU.push_back(duration);
 
@@ -206,8 +168,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 break;
             }
         }
-
-        THROW_IF_FAILED(m_device->GetPixCaptureHelper().EndCapturableWork());
     }
     catch (const std::exception& e)
     {
@@ -215,17 +175,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
         return;
     }
     PIXEndEvent();
-
-    m_device->GetCommandList()->ResolveQueryData(m_device->GetTimestampHeap(), D3D12_QUERY_TYPE_TIMESTAMP, 0, timestampCount, timestampReadbackBuffer.Get(), 0);
-    m_device->DispatchAndWait();
-
-    void* pData = nullptr;
-    D3D12_RANGE readRange = { 0, sizeof(uint64_t) * timestampCount };
-    timestampReadbackBuffer->Map(0, &readRange, &pData);
-
-    const uint64_t* pTimestamps = reinterpret_cast<uint64_t*>(pData);
-    timestamps.insert(timestamps.end(), pTimestamps, pTimestamps + timestampCount);
-
 
     uint32_t iterations = dispatchDurationsCPU.size();
     // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
@@ -238,20 +187,23 @@ void Executor::operator()(const Model::DispatchCommand& command)
     double minTimeCPU = dispatchDurationsCPU[0];
     double maxTimeCPU = dispatchDurationsCPU[iterations - 1];
 
+    std::vector<uint64_t> timestamps = m_device->ResolveTimestamps();
 
     uint64_t frequency;
     m_device->GetCommandQueue()->GetTimestampFrequency(&frequency);
 
-    uint32_t samples = std::min(iterations, (uint32_t)timestamps.size() / 2);
+    uint32_t samples = timestamps.size() / 2;
     std::vector<double> dispatchDurationsGPU(samples);
 
     for (uint32_t i = 0; i < samples; ++i) {
         uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
-
+        
         dispatchDurationsGPU[i] = double(timestampDelta) / frequency;
     }
 
-    if (iterations > timestamps.size() / 2) {
+    // If iterations > samples then the first timestamps were overwritten (no need to skip).
+    if (iterations > samples) 
+    {
         skipped = 0;
     }
 

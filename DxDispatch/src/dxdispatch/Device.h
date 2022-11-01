@@ -4,6 +4,7 @@
 #include "DxModules.h"
 
 // Simplified abstraction for submitting work to a device with a single command queue. Not thread safe.
+// This "device" includes a single command list that is always open for recording work.
 class Device
 {
 public:
@@ -55,11 +56,22 @@ public:
     // Waits for all work submitted to this device's queue to complete.
     void WaitForGpuWorkToComplete();
 
-    void DispatchAndWait();
+    // Submits all commands recorded into the device's command list for execution.
+    void ExecuteCommandList();
 
-    void DispatchDontWait();
+    // Submits the device command list for execution and blocks the CPU thread until the commands have finished on the GPU.
+    void ExecuteCommandListAndWait();
 
+    // Records the dispatch of an IDMLDispatchable into the device command list.
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
+
+    // Records a GPU timestamp in the device's command list. The device has a limit on the number of 
+    // unresolved timestamps; if this capacity is exceeded, the oldest timestamps are dropped.
+    void RecordTimestamp();
+
+    // Resolves and returns all timestamp values recorded since the last call to ResolveTimestamps. 
+    // This is a blocking call that forces the CPU and GPU to sync.
+    std::vector<uint64_t> ResolveTimestamps();
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {
@@ -73,7 +85,8 @@ public:
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
-    static constexpr uint32_t timestampCount = 16384;
+    // Max number of timestamps that may be saved in GPU memory. 
+    static constexpr uint32_t timestampCapacity = 16384;
 
 private:
     void EnsureDxcInterfaces();
@@ -90,6 +103,8 @@ private:
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
     Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_timestampHeap;
+    uint32_t m_timestampHeadIndex = 0;
+    uint32_t m_timestampCount = 0;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
