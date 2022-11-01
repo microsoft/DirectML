@@ -274,3 +274,14 @@ void OnnxDispatchable::SyncGpuAndCpu()
 {
     m_ioBindings->SynchronizeOutputs();
 }
+
+void OnnxDispatchable::DispatchDontWait(const Model::DispatchCommand & args)
+{
+    Ort::RunOptions runOptions;
+    m_session->Run(runOptions, *m_ioBindings);
+}
+
+void OnnxDispatchable::Wait()
+{
+    m_ioBindings->SynchronizeOutputs();
+}
