@@ -29,7 +29,7 @@ int main(int argc, char** argv)
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
-    auto pixCaptureHelper = std::make_shared<PixCaptureHelper>(args.GetPixCaptureType(), L"dxdispatch");
+    auto pixCaptureHelper = std::make_shared<PixCaptureHelper>(args.GetPixCaptureType(), args.PixCaptureName());
     auto dxCoreModule = std::make_shared<DxCoreModule>();
     auto d3dModule = std::make_shared<D3d12Module>();
     auto dmlModule = std::make_shared<DmlModule>();
