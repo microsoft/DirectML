@@ -22,6 +22,7 @@ public:
     ID3D12Device2* D3D() { return m_d3d.Get(); }
     IDMLDevice1* DML() { return m_dml.Get(); }
     ID3D12CommandQueue* GetCommandQueue() { return m_queue.Get(); }
+    ID3D12QueryHeap* GetTimestampHeap() { return m_timestampHeap.Get(); }
     D3D12_COMMAND_LIST_TYPE GetCommandListType() const { return m_commandListType; }
     ID3D12GraphicsCommandList* GetCommandList() { return m_commandList.Get(); }
     PixCaptureHelper& GetPixCaptureHelper() { return *m_pixCaptureHelper; }
@@ -85,7 +86,7 @@ public:
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
     // Max number of timestamps that may be saved in GPU memory. 
-    const static uint32_t timestampCapacity = 16384;
+    static constexpr uint32_t timestampCapacity = 16384;
 
 private:
     void EnsureDxcInterfaces();
