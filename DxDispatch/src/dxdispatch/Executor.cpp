@@ -201,8 +201,11 @@ void Executor::operator()(const Model::DispatchCommand& command)
         dispatchDurationsGPU[i] = double(timestampDelta) / frequency;
     }
 
-    // Only skip the first sample if all iterations were recorded.
-    skipped = (iterations > 1 && iterations <= Device::timestampCapacity / 2) ? 1 : 0;
+    // If iterations > samples then the first timestamps were overwritten (no need to skip).
+    if (iterations > samples) 
+    {
+        skipped = 0;
+    }
 
     double totalTimeGPU = std::accumulate(dispatchDurationsGPU.begin() + skipped, dispatchDurationsGPU.end(), 0.0);
     double avgTimeGPU = totalTimeGPU / (dispatchDurationsGPU.size() - skipped);
