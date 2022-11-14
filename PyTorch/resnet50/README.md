@@ -159,7 +159,7 @@ python pytorch\resnet50\train.py --trace True
 With default settings, you'll see output like the following:
 
 ```
->python pytorch\resnet50\train.py --trace Tue
+>python pytorch\resnet50\train.py --trace True
 Loading the training dataset from: E:\work\dml\PyTorch\data\cifar-10-python
         Train data X [N, C, H, W]:
                 shape=torch.Size([1, 3, 224, 224]),
