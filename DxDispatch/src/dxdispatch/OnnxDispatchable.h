@@ -15,11 +15,12 @@ public:
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
     void Dispatch(const Model::DispatchCommand& args) final;
-    bool RecordsDispatchIntoCommandList() final { return false; }
+    void Wait() final;
 
 private:
     std::shared_ptr<Device> m_device;
     const Model::OnnxDispatchableDesc& m_desc;
+    std::optional<Ort::Env> m_environment;
     std::optional<Ort::Session> m_session;
     const OrtDmlApi* m_ortDmlApi = nullptr;
     const CommandLineArgs& m_args;

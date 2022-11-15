@@ -12,6 +12,7 @@ public:
     bool ShowDependencies() const { return m_showDependencies; }
     bool PrintHelp() const { return m_printHelp; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
+    bool VerboseTimings() const { return m_verboseTimings; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
@@ -20,6 +21,7 @@ public:
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
+    const std::string& PixCaptureName() const { return m_pixCaptureName; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_freeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_freeDimensionDenotationOverrides; }
 
@@ -28,13 +30,17 @@ private:
     bool m_showDependencies = false;
     bool m_printHelp = false;
     bool m_debugLayersEnabled = false;
+    bool m_verboseTimings = false;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
+    std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
-    D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+    // Tools like PIX generally work better when work is recorded into a graphics queue, so it's set as the default here.
+    D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 
     // [onnx models] Overrides for free dimensions by name. 

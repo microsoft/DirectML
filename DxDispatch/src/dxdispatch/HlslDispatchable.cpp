@@ -442,5 +442,14 @@ void HlslDispatchable::Bind(const Bindings& bindings)
 
 void HlslDispatchable::Dispatch(const Model::DispatchCommand& args)
 {
+    PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "HLSL: '%s'", args.dispatchableName.c_str());
+    m_device->RecordTimestamp();
     m_device->GetCommandList()->Dispatch(args.threadGroupCount[0], args.threadGroupCount[1], args.threadGroupCount[2]);
+    m_device->RecordTimestamp();
+    PIXEndEvent(m_device->GetCommandList());
+}
+
+void HlslDispatchable::Wait()
+{
+    m_device->ExecuteCommandListAndWait();
 }

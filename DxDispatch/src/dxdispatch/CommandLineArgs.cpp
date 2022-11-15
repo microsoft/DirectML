@@ -43,6 +43,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()
         )
         (
+            "v,verbose_timings",
+            "Print verbose timing information",
+            cxxopts::value<bool>()
+        )
+        (
             "h,help", 
             "Print command-line usage help", 
             cxxopts::value<bool>()
@@ -65,11 +70,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "q,queue_type", 
             "Type of command queue/list to use ('compute' or 'direct')", 
-#ifdef _GAMING_XBOX
             cxxopts::value<std::string>()->default_value("direct")
-#else
-            cxxopts::value<std::string>()->default_value("compute")
-#endif
         )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
@@ -86,6 +87,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "c,pix_capture_type",
             "Type of PIX captures to take: gpu, timing, or manual.",
             cxxopts::value<std::string>()->default_value("manual")
+        )
+        (
+            "o,pix_capture_name",
+            "Name used for PIX capture files.",
+            cxxopts::value<std::string>()->default_value("dxdispatch")
         )
         (
             "f,onnx_free_dim_name_override",
@@ -137,6 +143,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
 
+    if (result.count("verbose_timings"))
+    {
+        m_verboseTimings = result["verbose_timings"].as<bool>();
+    }
+
     if (result.count("show_dependencies"))
     {
         m_showDependencies = result["show_dependencies"].as<bool>();
@@ -183,6 +194,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         {
             throw std::invalid_argument("Unexpected value for pix_capture_type. Must be 'gpu', 'timing', or 'manual'");
         }
+    }
+
+    if (result.count("pix_capture_name"))
+    {
+        m_pixCaptureName = result["pix_capture_name"].as<std::string>();
     }
 
     auto ParseFreeDimensionOverrides = [&](const char* parameterName, std::vector<std::pair<std::string, uint32_t>>& overrides)
