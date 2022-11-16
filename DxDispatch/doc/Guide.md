@@ -511,7 +511,7 @@ This command is used to print the contents of a resource to stdout. If the resou
 
 ```json
 { 
-    "type": "Print", 
+    "type": "print", 
     "resource": "Out" 
 }
 ```
@@ -522,7 +522,7 @@ This command writes the contents of a resource to a file, either as raw binary (
 
 ```json
 { 
-    "type": "WriteFile",
+    "type": "writeFile",
     "targetPath": "OutputFile.npy",
     "resource": "Out"
 }

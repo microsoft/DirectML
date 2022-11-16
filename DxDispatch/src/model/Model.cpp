@@ -87,7 +87,7 @@ Model::Model(
                     if (m_resourceDescsByName.find(writeFileCommand.resourceName) == m_resourceDescsByName.end())
                     {
                         throw std::invalid_argument(fmt::format(
-                            "Command attempts to print resource '{}', which does not exist in the model", 
+                            "Command attempts to write to a file the resource '{}', which does not exist in the model", 
                             writeFileCommand.resourceName));
                     }
                 }
