@@ -260,4 +260,4 @@ Done! with highest_accuracy:  0
 - [Alternative training data (CIFAR-10)](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 Alternative implementations:
-- [ONNX](https://github.com/onnx/models/tree/master/vision/classification/resnet)
+- [ONNX](https://github.com/onnx/models/tree/main/vision/classification/resnet)
