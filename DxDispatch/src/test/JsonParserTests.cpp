@@ -492,7 +492,7 @@ TEST(ParseInt32Test, ValidInput)
         "x4": 2147483647
     })");
     ASSERT_FALSE(d.HasParseError());
-    int32_t expectedValues[] = { 1, 5, -3, -2147483648l, 2147483647 };
+    int32_t expectedValues[] = { 1, 5, -3, INT32_MIN, INT32_MAX };
     for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
@@ -1607,7 +1607,7 @@ TEST(ParseModelResourceDesc, BufferArrayInitializer)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    auto result = ParseModelResourceDesc("testFloatArray", d);
+    auto result = ParseModelResourceDesc("testFloatArray", "", d);
     EXPECT_EQ(result.name, "testFloatArray");
     ASSERT_TRUE(std::holds_alternative<Model::BufferDesc>(result.value));
     auto& desc = std::get<Model::BufferDesc>(result.value);
@@ -1635,7 +1635,7 @@ TEST(ParseModelResourceDesc, BufferArrayAtValidOffset)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    auto result = ParseModelResourceDesc("test", d);
+    auto result = ParseModelResourceDesc("test", "", d);
     EXPECT_EQ(result.name, "test");
     ASSERT_TRUE(std::holds_alternative<Model::BufferDesc>(result.value));
     auto& desc = std::get<Model::BufferDesc>(result.value);
@@ -1663,7 +1663,7 @@ TEST(ParseModelResourceDesc, BufferArrayAtInvalidOffset)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    EXPECT_THROW(ParseModelResourceDesc("test", d), std::invalid_argument);
+    EXPECT_THROW(ParseModelResourceDesc("test", "", d), std::invalid_argument);
 }
 
 TEST(ParseModelResourceDesc, BufferArrayMixed) 
@@ -1681,7 +1681,7 @@ TEST(ParseModelResourceDesc, BufferArrayMixed)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    auto result = ParseModelResourceDesc("testMixedArray", d);
+    auto result = ParseModelResourceDesc("testMixedArray", "", d);
     EXPECT_EQ(result.name, "testMixedArray");
     ASSERT_TRUE(std::holds_alternative<Model::BufferDesc>(result.value));
     auto& desc = std::get<Model::BufferDesc>(result.value);
@@ -1705,7 +1705,7 @@ TEST(ParseModelResourceDesc, BufferConstantInitializer)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    auto result = ParseModelResourceDesc("testUintConstant", d);
+    auto result = ParseModelResourceDesc("testUintConstant", "", d);
     EXPECT_EQ(result.name, "testUintConstant");
     ASSERT_TRUE(std::holds_alternative<Model::BufferDesc>(result.value));
     auto& desc = std::get<Model::BufferDesc>(result.value);
@@ -1731,7 +1731,7 @@ TEST(ParseModelResourceDesc, BufferSequenceInitializer)
     })");
     ASSERT_FALSE(d.HasParseError());
 
-    auto result = ParseModelResourceDesc("testFloatSequence", d);
+    auto result = ParseModelResourceDesc("testFloatSequence", "", d);
     EXPECT_EQ(result.name, "testFloatSequence");
     ASSERT_TRUE(std::holds_alternative<Model::BufferDesc>(result.value));
     auto& desc = std::get<Model::BufferDesc>(result.value);
@@ -1767,7 +1767,7 @@ TEST(ParseModelDispatchableDesc, DmlAdd)
     ASSERT_FALSE(d.HasParseError());
 
     BucketAllocator allocator;
-    auto result = ParseModelDispatchableDesc("add", d, allocator);
+    auto result = ParseModelDispatchableDesc("add", "", d, allocator);
     ASSERT_EQ(result.name, "add");
     ASSERT_TRUE(std::holds_alternative<Model::DmlDispatchableDesc>(result.value));
     auto modelDmlOpDesc = std::get<Model::DmlDispatchableDesc>(result.value);
@@ -1826,7 +1826,7 @@ TEST(ParseModelDispatchableDesc, HlslAdd)
     ASSERT_FALSE(d.HasParseError());
 
     BucketAllocator allocator;
-    auto result = ParseModelDispatchableDesc("my test operator", d, allocator);
+    auto result = ParseModelDispatchableDesc("my test operator", "", d, allocator);
     ASSERT_EQ(result.name, "my test operator");
     ASSERT_TRUE(std::holds_alternative<Model::HlslDispatchableDesc>(result.value));
     auto modelHlslOpDesc = std::get<Model::HlslDispatchableDesc>(result.value);

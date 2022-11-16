@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "JsonParsers.h"
+#include "StdSupport.h"
+#include "NpyReaderWriter.h"
 
 #ifndef WIN32
 #define _stricmp strcasecmp
@@ -174,7 +176,7 @@ TReturn ParseFieldHelper(
     auto fieldIterator = object.FindMember(fieldName.data());
     if (fieldIterator == object.MemberEnd())
     {
-        if (required) 
+        if (required)
         { 
             throw std::invalid_argument(fmt::format("Field '{}' is required.", fieldName)); 
         }
@@ -185,7 +187,7 @@ TReturn ParseFieldHelper(
     {
         return func(fieldIterator->value);
     }
-    catch(const std::exception& e)
+    catch (const std::exception& e)
     {
         throw std::invalid_argument(fmt::format("Error parsing field '{}': {}", fieldName, e.what()));
     }
@@ -1015,7 +1017,64 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
     }
 }
 
-Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
+std::filesystem::path ResolveInputFilePath(const std::filesystem::path& parentPath, std::string_view sourcePath)
+{
+    auto filePathRelativeToParent = std::filesystem::absolute(parentPath / sourcePath);
+    if (std::filesystem::exists(filePathRelativeToParent))
+    {
+        return filePathRelativeToParent;
+    }
+
+    auto filePathRelativeToCurrentDirectory = std::filesystem::absolute(sourcePath);
+    return filePathRelativeToCurrentDirectory;
+}
+
+std::filesystem::path ResolveOutputFilePath(const std::filesystem::path& parentPath, std::string_view targetPath)
+{
+    auto filePathRelativeToParent = std::filesystem::absolute(parentPath / targetPath);
+    return filePathRelativeToParent;
+}
+
+std::vector<std::byte> ReadFileContent(const std::string& fileName)
+{
+    std::ifstream file(fileName.c_str(), std::ifstream::ate | std::ifstream::binary);
+    if (!file.is_open())
+    {
+        throw std::ios::failure(fmt::format("Given filename '{}' could not be opened.", fileName));
+    }
+
+    size_t fileSize = file.tellg();
+    file.seekg(0);
+    std::vector<std::byte> allBytes(fileSize);
+    file.read(reinterpret_cast<char*>(allBytes.data()), fileSize);
+
+    return allBytes;
+}
+
+std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFromFile(
+    const std::filesystem::path& parentPath,
+    const rapidjson::Value& object)
+{
+    auto sourcePath = ParseStringField(object, "sourcePath");
+    auto filePath = ResolveInputFilePath(parentPath, sourcePath);
+
+    std::vector<std::byte> allBytes = ReadFileContent(filePath.string());
+
+    DML_TENSOR_DATA_TYPE tensorDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
+
+    // Check for NumPy array files. Otherwise read it as raw file data, such as a .dat/.bin file.
+    if (IsNpyFilenameExtension(sourcePath))
+    {
+        std::vector<uint32_t> dimensions;
+        std::vector<std::byte> arrayByteData;
+        ReadNpy(allBytes, /*out*/ tensorDataType, /*out*/ dimensions, /*out*/ arrayByteData);
+        allBytes = std::move(arrayByteData);
+    }
+
+    return {std::move(allBytes), tensorDataType};
+}
+
+Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
     if (!object.IsObject())
     {
@@ -1023,20 +1082,30 @@ Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
     }
 
     Model::BufferDesc buffer = {};
-    buffer.initialValuesDataType = ParseDmlTensorDataTypeField(object, "initialValuesDataType");
+    buffer.initialValuesDataType = ParseDmlTensorDataTypeField(object, "initialValuesDataType", /*required*/ false);
+
+    auto ensureInitialValuesDataType = [&]()
+    {
+        if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+        {
+            throw std::invalid_argument("Field 'initialValuesDataType' is required."); 
+        }
+    };
 
     auto initialValuesField = object.FindMember("initialValues");
     if (initialValuesField == object.MemberEnd())
     {
-        throw std::invalid_argument("Field 'InitialValues' is required."); 
+        throw std::invalid_argument("Field 'initialValues' is required."); 
     }
 
     if (initialValuesField->value.IsArray())
     {
+        // e.g. "initialValues": [{"type": "UINT32", "value": 42}, {"type": "FLOAT32", "value": 3.14159}]
         if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
         {
             buffer.initialValues = ParseMixedPrimitiveArray(initialValuesField->value);
         }
+        // e.g. "initialValues": [1,2,3]
         else
         {
             buffer.initialValues = GenerateInitialValuesFromList(buffer.initialValuesDataType, initialValuesField->value);
@@ -1044,13 +1113,42 @@ Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
     } 
     else if (initialValuesField->value.IsObject())
     {
-        if (initialValuesField->value.HasMember("value")) 
+        // e.g. "initialValues": { "value": 0, "valueCount": 3 }
+        if (initialValuesField->value.HasMember("value"))
         {
+            if (initialValuesField->value.HasMember("valueStart") || initialValuesField->value.HasMember("sourcePath"))
+            {
+                throw std::invalid_argument("The 'initialValuesDataType' may contain a value, valueStart, or sourcePath, but they are mutually exclusive.");
+            }
+
+            ensureInitialValuesDataType();
             buffer.initialValues = GenerateInitialValuesFromConstant(buffer.initialValuesDataType, initialValuesField->value);
         }
+        // e.g. "initialValues": { "valueStart": 0, "valueDelta": 2, "valueCount": 10 }
         else if (initialValuesField->value.HasMember("valueStart"))
         {
+            ensureInitialValuesDataType();
             buffer.initialValues = GenerateInitialValuesFromSequence(buffer.initialValuesDataType, initialValuesField->value);
+        }
+        // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
+        else if (initialValuesField->value.HasMember("sourcePath"))
+        {
+            auto [initialValues, initialValuesDataType] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
+
+            // Depending on the file type (.npy vs .dat), the file may have an explict data type.
+            // Use the data type if present, else require initialValuesDataType if not.
+            if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+            {
+                buffer.initialValuesDataType = initialValuesDataType;
+            }
+            else if (initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+            {
+                auto fileName = ParseStringField(object, "sourcePath");
+                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName));
+            }
+
+            ensureInitialValuesDataType(); // Raw data requires 'initialValuesDataType'. Typed data (e.g. .npy) already had a type.
+            buffer.initialValues = std::move(initialValues);
         }
         else
         {
@@ -1088,18 +1186,22 @@ Model::BufferDesc ParseModelBufferDesc(const rapidjson::Value& object)
     return buffer;
 }
 
-Model::ResourceDesc ParseModelResourceDesc(std::string_view name, const rapidjson::Value& object)
+Model::ResourceDesc ParseModelResourceDesc(
+    std::string_view name,
+    const std::filesystem::path& parentPath,
+    const rapidjson::Value& object)
 {
     Model::ResourceDesc desc;
     desc.name = name;
-    desc.value = ParseModelBufferDesc(object);
+    desc.value = ParseModelBufferDesc(parentPath, object);
     return desc;
 }
 
-Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const rapidjson::Value& object)
+Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
     Model::HlslDispatchableDesc desc = {};
-    desc.sourcePath = ParseStringField(object, "sourcePath");
+    auto sourcePath = ParseStringField(object, "sourcePath");
+    desc.sourcePath = ResolveInputFilePath(parentPath, sourcePath);
 
     auto compilerStr = ParseStringField(object, "compiler", false, "dxc");
     if (!_stricmp(compilerStr.data(), "dxc"))
@@ -1126,10 +1228,11 @@ Model::HlslDispatchableDesc ParseModelHlslDispatchableDesc(const rapidjson::Valu
     return desc;
 }
 
-Model::OnnxDispatchableDesc ParseModelOnnxDispatchableDesc(const rapidjson::Value& object)
+Model::OnnxDispatchableDesc ParseModelOnnxDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
     Model::OnnxDispatchableDesc desc = {};
-    desc.sourcePath = ParseStringField(object, "sourcePath");
+    auto sourcePath = ParseStringField(object, "sourcePath");
+    desc.sourcePath = ResolveInputFilePath(parentPath, sourcePath);
 
     return desc;
 }
@@ -1198,7 +1301,11 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     return desc;
 }
 
-Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const rapidjson::Value& object, BucketAllocator& allocator)
+Model::DispatchableDesc ParseModelDispatchableDesc(
+    std::string_view name,
+    const std::filesystem::path& parentPath,
+    const rapidjson::Value& object,
+    BucketAllocator& allocator)
 {
     if (!object.IsObject())
     {
@@ -1210,11 +1317,11 @@ Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const 
     auto type = ParseStringField(object, "type");
     if (!_stricmp(type.data(), "hlsl")) 
     { 
-        desc.value = ParseModelHlslDispatchableDesc(object);
+        desc.value = ParseModelHlslDispatchableDesc(parentPath, object);
     }
     else if (!_stricmp(type.data(), "onnx"))
     {
-        desc.value = ParseModelOnnxDispatchableDesc(object);
+        desc.value = ParseModelOnnxDispatchableDesc(parentPath, object);
     }
     else
     {
@@ -1273,6 +1380,18 @@ Model::PrintCommand ParsePrintCommand(const rapidjson::Value& object)
     return command;
 }
 
+Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object)
+{
+    Model::WriteFileCommand command = {};
+    command.resourceName = ParseStringField(object, "resource");
+    command.targetPath = ResolveOutputFilePath(".", ParseStringField(object, "targetPath")).string();
+    BucketAllocator allocator;
+    auto dimensions = ParseUInt32ArrayField(object, "dimensions", allocator, false);
+    command.dimensions.assign(dimensions.begin(), dimensions.end());
+
+    return command;
+}
+
 Model::Command ParseModelCommand(const rapidjson::Value& object)
 {
     Model::Command command = {};
@@ -1286,6 +1405,10 @@ Model::Command ParseModelCommand(const rapidjson::Value& object)
     {
         command = ParsePrintCommand(object);
     }
+    else if (!_stricmp(type.data(), "writeFile"))
+    {
+        command = ParseWriteFileCommand(object);
+    }
     else
     {
         throw std::invalid_argument("Unrecognized command");
@@ -1294,11 +1417,99 @@ Model::Command ParseModelCommand(const rapidjson::Value& object)
     return command;
 }
 
-Model ParseModel(const rapidjson::Document& doc)
+// Determine the line and column in text by counting the line breaking characters
+// up to the given offset. Note the line and column counts are zero-based, and so the
+// caller may want to add 1 when displaying it, as most text editors show one-based
+// values to the user.
+void MapCharacterOffsetToLineColumn(
+    std::string_view documentText,
+    size_t errorOffset,
+    _Out_ uint32_t& line,
+    _Out_ uint32_t& column
+    )
+{
+    uint32_t lineCount = 0;
+    uint32_t columnCount = 0;
+
+    bool precededByCr = false;
+    for (size_t i = 0; i < errorOffset; ++i)
+    {
+        wchar_t ch = documentText[i];
+        bool foundNewLine = false;
+
+        switch (ch)
+        {
+        case 0x2028: // U+2028 LINE SEPARATOR
+        case 0x2029: // U+2029 PARAGRAPH SEPARATOR
+        case 0x000B: // U+000B VERTICAL TABULATION
+        case 0x000C: // U+000C FORM FEED
+        case 0x000D: // U+000D CARRIAGE RETURN
+            foundNewLine = true;
+            break;
+
+        case 0x000A: // U+000A LINE FEED
+            // Count CR LF pair as one line break.
+            foundNewLine = !precededByCr;
+            break;
+
+        default: // Any other character.
+            ++columnCount;
+            break;
+        }
+        precededByCr = (ch == 0x000D);
+
+        if (foundNewLine)
+        {
+            ++lineCount;
+            columnCount = 0;
+        }
+    }
+
+    line = lineCount;
+    column = columnCount;
+}
+
+std::string GetJsonParseErrorMessage(
+    const rapidjson::Document& jsonDocument,
+    std::string_view jsonDocumentText
+    )
+{
+    // Gather a snippet of preview text at the error, stripping any new lines for preview sake.
+    // Note RapidJSON doesn't include the line number, just document offset.
+    std::string_view applicableText = jsonDocumentText.substr(jsonDocument.GetErrorOffset(), 40);
+    std::string newLineStrippedText(applicableText);
+
+    for (auto& ch : newLineStrippedText)
+    {
+        if (ch == '\r' || ch == '\n')
+            ch = ' ';
+    }
+
+    uint32_t line = 0, column = 0;
+    MapCharacterOffsetToLineColumn(jsonDocumentText, jsonDocument.GetErrorOffset(), /*out*/ line, /*out*/ column);
+
+    std::string formattedErrorMessage = fmt::format(
+        "JSON parse error at char offset:{}, line:{}, column:{}, error:{} {}\nSnippet: >>>{}<<<",
+        int(jsonDocument.GetErrorOffset()),
+        line + 1,
+        column + 1,
+        jsonDocument.GetParseError(),
+        rapidjson::GetParseError_En(jsonDocument.GetParseError()),
+        newLineStrippedText.c_str()
+    );
+
+    return formattedErrorMessage;
+}
+
+Model ParseModel(
+    const rapidjson::Document& doc,
+    const std::filesystem::path& parentPath,
+    std::string_view jsonDocumentText)
 {
     if (doc.HasParseError())
     {
-        throw std::invalid_argument("Model is invalid JSON");
+        std::string errorMessage = GetJsonParseErrorMessage(doc, jsonDocumentText);
+        throw std::invalid_argument(errorMessage);
     }
 
     BucketAllocator allocator;
@@ -1313,7 +1524,7 @@ Model ParseModel(const rapidjson::Document& doc)
     {
         try
         {
-            resources.emplace_back(std::move(ParseModelResourceDesc(field->name.GetString(), field->value)));
+            resources.emplace_back(std::move(ParseModelResourceDesc(field->name.GetString(), parentPath, field->value)));
         }
         catch (std::exception& e)
         {
@@ -1331,7 +1542,7 @@ Model ParseModel(const rapidjson::Document& doc)
     {
         try
         {
-            operators.emplace_back(std::move(ParseModelDispatchableDesc(field->name.GetString(), field->value, allocator)));
+            operators.emplace_back(std::move(ParseModelDispatchableDesc(field->name.GetString(), parentPath, field->value, allocator)));
         }
         catch (std::exception& e)
         {
@@ -1371,19 +1582,24 @@ Model ParseModel(const std::filesystem::path& filePath)
     {
         throw std::invalid_argument(fmt::format("Model must be a JSON file, not a directory. Path given: '{}'", filePath.string()));
     }
+    std::filesystem::path parentPath = filePath.parent_path();
 
-    std::ifstream ifs(filePath.string());
-    rapidjson::IStreamWrapper isw(ifs);
+    std::vector<std::byte> allBytes = ReadFileContent(filePath.string());
+    allBytes.push_back(std::byte(0)); // Ensure null terminated for parser.
+    char* fileContentBegin = reinterpret_cast<char*>(allBytes.data());
+    std::string_view fileContent{fileContentBegin, allBytes.size()};
+
     rapidjson::Document doc;
 
     constexpr rapidjson::ParseFlag parseFlags = rapidjson::ParseFlag(
         rapidjson::kParseFullPrecisionFlag | 
         rapidjson::kParseCommentsFlag |
+        rapidjson::kParseTrailingCommasFlag |
         rapidjson::kParseStopWhenDoneFlag);
 
-    doc.ParseStream<parseFlags>(isw);
+    doc.ParseInsitu<parseFlags>(fileContentBegin);
 
-    return ParseModel(doc);
+    return ParseModel(doc, parentPath, fileContent);
 }
 
 } // namespace JsonParsers

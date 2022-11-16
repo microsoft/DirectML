@@ -1,0 +1,61 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": 
+        {
+            "initialValues": { "sourcePath": "dml_element_wise_add_input.npy" }
+        },
+        "B": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "sourcePath": "dml_element_wise_add_input.dat" }
+        },
+        "Out": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 6, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "add": 
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_ADD",
+            "desc": 
+            {
+                "ATensor": { "DataType": "FLOAT32", "Sizes": [6] },
+                "BTensor": { "DataType": "FLOAT32", "Sizes": [6] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [6] }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "add",
+            "bindings": 
+            {
+                "ATensor": "A",
+                "BTensor": "B",
+                "OutputTensor": "Out"
+            }
+        },
+        { "type": "print", "resource": "Out" },
+        {
+            "type": "writeFile",
+            "targetPath": "dml_element_wise_add_output.npy",
+            "resource": "Out",
+            "dimensions": [6]
+        },
+        {
+            "type": "writeFile",
+            "targetPath": "dml_element_wise_add_output.dat",
+            "resource": "Out"
+        }
+    ]
+}

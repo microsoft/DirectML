@@ -201,11 +201,12 @@ All buffer resources have the following fields, though only the first two are re
 
 The following rules apply:
 
-- The `initialValuesDataType` field must be a string form of [DML_TENSOR_DATA_TYPE](https://docs.microsoft.com/en-us/windows/win32/api/directml/ne-directml-dml_tensor_data_type). You can use a shortened version that omits the `DML_TENSOR_DATA_TYPE_` prefix.
+- The `initialValuesDataType` field must be a string form of [DML_TENSOR_DATA_TYPE](https://docs.microsoft.com/en-us/windows/win32/api/directml/ne-directml-dml_tensor_data_type). You can use a shortened version that omits the `DML_TENSOR_DATA_TYPE_` prefix (e.g. `FLOAT32`).
 - JSON numbers will be converted to the appropriate data type in C++. You can use strings as well for "nan", "inf", and "-inf", but only when the data type is floating-point.
 - The buffer's `sizeInBytes` will, if not supplied, be calculated as as number of elements in `initialValues` multiplied by the size of `initialValuesDataType`. If supplied, the `sizeInBytes` must be *at least* as large as the size calculated from the initial values. The total size will be inflated, if necessary, to meet DirectML's 4-byte alignment requirement.
 - The `initialValues` are always written to the start of the buffer; if the `sizeInBytes` is larger than the implied size of the initial data then the end will be padded.
 - The initial values are written into an upload-heap resource that is then copied to the default-heap buffer resource at startup; any commands that write into a buffer after startup will have a permanent effect on that buffer's contents for the duration of model execution.
+- sourcePath
 
 ### Buffer: Constant Initializer
 
@@ -246,6 +247,26 @@ You can initialize a buffer is using a sequence. The example below will write `[
 {
     "initialValuesDataType": "FLOAT32",
     "initialValues": { "valueCount": 4, "valueStart": 1, "valueDelta": 2.5 }
+}
+```
+
+### Buffer: File Data Initializer
+
+You can initialize a buffer using a raw binary file (.dat/.bin) or NumPy array file (.npy).
+
+- The `sourcePath` must exist, either relative to the base .json file or the current directory.
+- The `initialValuesDataType` is irrelevant when reading from .npy's since they contain their data type, but when reading from a raw binary file, the type must be given and not `"UNKNOWN"`.
+
+```json
+{
+    "initialValues": { "sourcePath": "inputFile.npy" }
+}
+```
+
+```json
+{
+    "initialValuesDataType": "FLOAT32",
+    "initialValues": { "sourcePath": "inputFile.dat" }
 }
 ```
 
@@ -490,8 +511,20 @@ This command is used to print the contents of a resource to stdout. If the resou
 
 ```json
 { 
-    "type": "Print", 
+    "type": "print", 
     "resource": "Out" 
+}
+```
+
+### Write File
+
+This command writes the contents of a resource to a file, either as raw binary (.dat/.bin) or a NumPy array (.npy, which includes the original dimensions and data type).
+
+```json
+{ 
+    "type": "writeFile",
+    "targetPath": "OutputFile.npy",
+    "resource": "Out"
 }
 ```
 

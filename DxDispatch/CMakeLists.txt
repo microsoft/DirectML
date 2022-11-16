@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.10.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.11.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -61,11 +61,19 @@ get_target_property(onnxruntime_type onnxruntime DX_COMPONENT_CONFIG)
 add_library(
     model STATIC 
     src/model/JsonParsers.cpp 
+    src/model/JsonParsers.h
     src/model/Model.cpp
+    src/model/Model.h
+    src/model/NpyReaderWriter.cpp
+    src/model/NpyReaderWriter.h
 )
 
 if(NOT onnxruntime_type STREQUAL None)
-    target_sources(model PRIVATE src/model/OnnxParsers.cpp)
+    target_sources(
+        model PRIVATE
+        src/model/OnnxParsers.cpp
+        src/model/OnnxParsers.h
+    )
 endif()
 
 target_link_libraries(
@@ -100,14 +108,22 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
 add_executable(
     dxdispatch
     src/dxdispatch/Adapter.cpp
+    src/dxdispatch/Adapter.h
     src/dxdispatch/Device.cpp
+    src/dxdispatch/Device.h
     src/dxdispatch/main.cpp
     src/dxdispatch/DmlDispatchable.cpp
+    src/dxdispatch/DmlDispatchable.h
     src/dxdispatch/Executor.cpp
+    src/dxdispatch/Executor.h
     src/dxdispatch/CommandLineArgs.cpp
+    src/dxdispatch/CommandLineArgs.h
     src/dxdispatch/Logging.cpp
+    src/dxdispatch/Logging.h
     src/dxdispatch/PixCaptureHelper.cpp
+    src/dxdispatch/PixCaptureHelper.h
     src/dxdispatch/DxModules.cpp
+    src/dxdispatch/DxModules.h
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
@@ -242,6 +258,7 @@ if(DXD_TESTS)
     model_test(dml_convolution "Resource 'output': 6, 8, 12, 14")
     model_test(dml_cumulative_product "Resource 'Out': 2, 8, 64, 192")
     model_test(dml_element_wise_add "Resource 'Out': 6, 10, -2")
+    model_test(dml_element_wise_add_npy "Resource 'Out': 2, 4, 6, 8, 10, 12")
     model_test(dml_element_wise_add1 "Resource 'Out': 6, 10, -0.432332")
     model_test(dml_element_wise_clip "Resource 'A': -2.5, -2.5, -2, -1, 0, 1, 2, 2.5, 2.5")
     model_test(dml_element_wise_identity "Resource 'Out': 12, 14, 16")

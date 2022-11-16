@@ -34,6 +34,11 @@ int main(int argc, char** argv)
     auto d3dModule = std::make_shared<D3d12Module>();
     auto dmlModule = std::make_shared<DmlModule>();
 
+    // Ensure remaining D3D references are released before the D3D module is released,
+    // regardless of normal exit or exception.
+    auto pixCleanup = [](decltype(pixCaptureHelper)* p) {p->reset();};
+    std::unique_ptr<decltype(pixCaptureHelper), decltype(pixCleanup)> deferredPixCleanup(&pixCaptureHelper, pixCleanup);
+
     if (args.PrintHelp())
     {
         LogInfo(args.HelpText());
@@ -127,9 +132,6 @@ int main(int argc, char** argv)
             return 1;
         }
     }
-
-    // Ensure remaining D3D references are released before the D3D module is released.
-    pixCaptureHelper = nullptr;
 
     return 0;
 }

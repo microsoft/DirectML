@@ -7,11 +7,15 @@
 #include "directml_guids.h"
 #endif
 
+#include <numeric>
+#include <charconv>
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <iostream>
 #include <filesystem>
 #include <variant>
+#include <codecvt>
 #include <fstream>
 #include <deque>
 #include <optional>
@@ -23,6 +27,7 @@
 #include <DirectML.h>
 #include "DirectMLX.h"
 #include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fmt/format.h>
 #include <half.hpp>

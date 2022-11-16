@@ -41,46 +41,57 @@ Model::Model(
     // Validate references to ops/resources in the model.
     for (auto& command : m_commands)
     {
-        std::visit(overload{
-            [&](DispatchCommand& command) 
-            {
-                auto dispatchable = m_dispatchableDescsByName.find(command.dispatchableName);
-                if (dispatchable == m_dispatchableDescsByName.end())
+        std::visit(
+            overload{
+                [&](DispatchCommand& command)
                 {
-                    throw std::invalid_argument(fmt::format(
-                        "Command attempts to dispatch '{}', which does not exist in the model", 
-                        command.dispatchableName));
-                }
-                
-                for (auto& binding : command.bindings)
-                {
-                    for (auto& sourceResource : binding.second)
+                    auto dispatchable = m_dispatchableDescsByName.find(command.dispatchableName);
+                    if (dispatchable == m_dispatchableDescsByName.end())
                     {
-                        if (m_resourceDescsByName.find(sourceResource.name) == m_resourceDescsByName.end())
+                        throw std::invalid_argument(fmt::format(
+                            "Command attempts to dispatch '{}', which does not exist in the model", 
+                            command.dispatchableName));
+                    }
+                
+                    for (auto& binding : command.bindings)
+                    {
+                        for (auto& sourceResource : binding.second)
                         {
-                            throw std::invalid_argument(fmt::format(
-                                "Command attempts to bind resource '{}', which does not exist in the model", 
-                                sourceResource.name));
-                        }
+                            if (m_resourceDescsByName.find(sourceResource.name) == m_resourceDescsByName.end())
+                            {
+                                throw std::invalid_argument(fmt::format(
+                                    "Command attempts to bind resource '{}', which does not exist in the model", 
+                                    sourceResource.name));
+                            }
 
-                        if (sourceResource.counterName && m_resourceDescsByName.find(*sourceResource.counterName) == m_resourceDescsByName.end())
-                        {
-                            throw std::invalid_argument(fmt::format(
-                                "Command attempts to bind resource '{}' as a counter, which does not exist in the model", 
-                                *sourceResource.counterName));
+                            if (sourceResource.counterName && m_resourceDescsByName.find(*sourceResource.counterName) == m_resourceDescsByName.end())
+                            {
+                                throw std::invalid_argument(fmt::format(
+                                    "Command attempts to bind resource '{}' as a counter, which does not exist in the model", 
+                                    *sourceResource.counterName));
+                            }
                         }
+                    }
+                },
+                [&](PrintCommand& printCommand)
+                {
+                    if (m_resourceDescsByName.find(printCommand.resourceName) == m_resourceDescsByName.end())
+                    {
+                        throw std::invalid_argument(fmt::format(
+                            "Command attempts to print resource '{}', which does not exist in the model", 
+                            printCommand.resourceName));
+                    }
+                },
+                [&](WriteFileCommand& writeFileCommand)
+                {
+                    if (m_resourceDescsByName.find(writeFileCommand.resourceName) == m_resourceDescsByName.end())
+                    {
+                        throw std::invalid_argument(fmt::format(
+                            "Command attempts to write to a file the resource '{}', which does not exist in the model", 
+                            writeFileCommand.resourceName));
                     }
                 }
             },
-            [&](PrintCommand& printCommand) 
-            {
-                if (m_resourceDescsByName.find(printCommand.resourceName) == m_resourceDescsByName.end())
-                {
-                    throw std::invalid_argument(fmt::format(
-                        "Command attempts to print resource '{}', which does not exist in the model", 
-                        printCommand.resourceName));
-                }
-            }
-        }, command);
+            command);
     }
 }

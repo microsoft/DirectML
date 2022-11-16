@@ -129,8 +129,8 @@ namespace JsonParsers
     // MODEL STRUCTS
     // ------------------------------------------------------------------------
 
-    Model::ResourceDesc ParseModelResourceDesc(std::string_view name, const rapidjson::Value& object);
-    Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const rapidjson::Value& object, BucketAllocator& allocator);
+    Model::ResourceDesc ParseModelResourceDesc(std::string_view name, const std::filesystem::path& parentPath, const rapidjson::Value& object);
+    Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const std::filesystem::path& parentPath, const rapidjson::Value& object, BucketAllocator& allocator);
     Model::Command ParseModelCommand(const rapidjson::Value& object);
 
     Model ParseModel(const rapidjson::Document& doc);
