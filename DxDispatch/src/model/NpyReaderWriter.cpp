@@ -5,13 +5,13 @@
 ////////////////////////////////////////
 // Generic helpers
 
-inline char const* ToChar(char8_t const* p) { return reinterpret_cast<char const*>(p); }
+inline const char* ToChar(const char8_t* p) { return reinterpret_cast<const char*>(p); }
 
 template<
     typename ContiguousContainerType,
     typename ElementType = std::remove_reference_t<decltype(*std::declval<ContiguousContainerType>().data())>
 >
-auto append_data(ContiguousContainerType& v, std::span<ElementType const> s)
+auto append_data(ContiguousContainerType& v, std::span<const ElementType> s)
 {
     // Whyyyy is basic functionality like std::vector::append() missing from the standard? -_-
     v.insert(v.end(), s.begin(), s.end());
@@ -42,7 +42,7 @@ auto make_span(ContiguousContainerType& container) -> std::span<ElementType>
 }
 
 template<typename ContiguousContainerType>
-std::span<const std::byte> as_bytes(ContiguousContainerType const& container)
+std::span<const std::byte> as_bytes(const ContiguousContainerType& container)
 #if __cpp_concepts
 requires (std::is_const_v<std::remove_pointer_t<decltype(container.data())>>)
 #endif
@@ -74,6 +74,11 @@ const NewStructType& read_as(OldTypeContainer&& oldSpan)
     return *reinterpret_cast<const NewStructType*>(byteSpan.data());
 }
 
+bool IsNpyFilenameExtension(std::string_view filename)
+{
+    return ends_with(filename, std::string_view(".npy")) || ends_with(filename, std::string_view(".NPY"));
+}
+
 ////////////////////////////////////////
 // Tensor specific
 
@@ -99,7 +104,7 @@ uint32_t GetByteSizeFromDataType(DML_TENSOR_DATA_TYPE dataType) noexcept
     return g_elementDataTypeByteSizes[index < std::size(g_elementDataTypeByteSizes) ? index : 0];
 }
 
-uint32_t ComputeElementCount(std::span<int32_t const> dimensions)
+uint32_t ComputeElementCount(std::span<const int32_t> dimensions)
 {
     return std::accumulate(dimensions.begin(), dimensions.end(), 1, std::multiplies<int32_t>());
 }
@@ -309,7 +314,7 @@ public:
         Number,
     };
 
-    PythonDictionaryLexer(std::span<char8_t const> text) : text_(text)
+    PythonDictionaryLexer(std::span<const char8_t> text) : text_(text)
     {
     }
 
@@ -317,7 +322,7 @@ public:
     {
     }
 
-    PythonDictionaryLexer(std::span<std::byte const> text) : text_(reinterpret_span<char8_t const>(text))
+    PythonDictionaryLexer(std::span<const std::byte> text) : text_(reinterpret_span<const char8_t>(text))
     {
     }
 
@@ -524,9 +529,9 @@ public:
         return text_;
     }
 
-    std::span<std::byte const> const GetBytes() const
+    std::span<const std::byte> GetBytes() const
     {
-        return reinterpret_span<std::byte const>(text_);
+        return reinterpret_span<const std::byte>(text_);
     }
 
     void Append(std::u8string_view text)
@@ -601,7 +606,7 @@ using NumPyArrayHeaderV3 = NumPyArrayHeaderV2;
 // default as a minimum compatibility bar.
 
 void ReadNpy(
-    std::span<std::byte const> fileData,
+    std::span<const std::byte> fileData,
     /*out*/DML_TENSOR_DATA_TYPE& dataType,
     /*out*/std::vector<int32_t>& dimensions,
     /*out*/std::vector<std::byte>& arrayByteData
@@ -675,9 +680,9 @@ void ReadNpy(
 
 // Writes tensor data to in memory file data (not directly to file).
 void WriteNpy(
-    std::span<std::byte const> arrayByteData,
+    std::span<const std::byte> arrayByteData,
     DML_TENSOR_DATA_TYPE dataType,
-    std::span<int32_t const> dimensions,
+    std::span<const int32_t> dimensions,
     /*out*/std::vector<std::byte>& fileData
     )
 {
@@ -705,7 +710,7 @@ void WriteNpy(
 
     // Write header, including fixed size part, dictionary, and alignment padding.
     headerFixedPart.dictionaryLength = static_cast<uint16_t>(headerLength - sizeof(headerFixedPart));
-    append_data(/*inout*/ fileData, { reinterpret_cast<std::byte const*>(&headerFixedPart), sizeof(headerFixedPart) });
+    append_data(/*inout*/ fileData, { reinterpret_cast<const std::byte*>(&headerFixedPart), sizeof(headerFixedPart) });
     append_data(/*inout*/ fileData, dictionaryWriter.GetBytes());
     fileData.insert(fileData.end(), headerLength - fileData.size(), std::byte{' '});
     fileData.back() = std::byte{ '\x000A' }; // Terminate with new line.

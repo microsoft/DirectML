@@ -124,7 +124,6 @@ add_executable(
     src/dxdispatch/PixCaptureHelper.h
     src/dxdispatch/DxModules.cpp
     src/dxdispatch/DxModules.h
-    src/dxdispatch/DeferCleanup.h
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
@@ -259,6 +258,7 @@ if(DXD_TESTS)
     model_test(dml_convolution "Resource 'output': 6, 8, 12, 14")
     model_test(dml_cumulative_product "Resource 'Out': 2, 8, 64, 192")
     model_test(dml_element_wise_add "Resource 'Out': 6, 10, -2")
+    model_test(dml_element_wise_add_npy "Resource 'Out': 2, 4, 6, 8, 10, 12")
     model_test(dml_element_wise_add1 "Resource 'Out': 6, 10, -0.432332")
     model_test(dml_element_wise_clip "Resource 'A': -2.5, -2.5, -2, -1, 0, 1, 2, 2.5, 2.5")
     model_test(dml_element_wise_identity "Resource 'Out': 12, 14, 16")

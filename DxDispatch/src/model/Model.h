@@ -112,7 +112,13 @@ public:
         std::string resourceName;
     };
 
-    using Command = std::variant<DispatchCommand, PrintCommand>;
+    struct WriteFileCommand
+    {
+        std::string resourceName;
+        std::string targetPath;
+    };
+
+    using Command = std::variant<DispatchCommand, PrintCommand, WriteFileCommand>;
 
     Model() = default;
 

@@ -2,6 +2,7 @@
 
 ////////////////////////////////////////
 // Pre-C++17 support for char8_t.
+
 #undef __U8
 #undef U8
 
@@ -32,6 +33,7 @@ namespace std
 
 ////////////////////////////////////////
 // Pre-C++20 minimal span support.
+
 #ifndef __cpp_lib_span
 
 template <typename T>
@@ -110,6 +112,7 @@ namespace std
 // Pre-C++23 starts_with and ends_with helper.
 // 
 // e.g. starts_with(some_string_view, "prefix");
+
 template <typename ContainerType1, typename ContainerType2>
 bool starts_with(ContainerType1&& fullSequence, ContainerType2&& prefix)
 {

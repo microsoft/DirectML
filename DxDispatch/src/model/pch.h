@@ -27,6 +27,7 @@
 #include <DirectML.h>
 #include "DirectMLX.h"
 #include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fmt/format.h>
 #include <half.hpp>

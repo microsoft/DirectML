@@ -10,6 +10,7 @@ public:
     void Run();
     void operator()(const Model::DispatchCommand& command);
     void operator()(const Model::PrintCommand& command);
+    void operator()(const Model::WriteFileCommand& command);
 
 private:
     Dispatchable::Bindings ResolveBindings(const Model::Bindings& modelBindings);

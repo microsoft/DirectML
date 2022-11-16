@@ -294,6 +294,43 @@ void Executor::operator()(const Model::PrintCommand& command)
     }
 }
 
+void Executor::operator()(const Model::WriteFileCommand& command)
+{
+    PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "WriteFile: %s", command.resourceName.c_str());
+
+    try
+    {
+        auto resource = m_resources[command.resourceName];
+        auto fileData = m_device->Download(resource.Get());
+        auto& resourceDesc = m_model.GetResource(command.resourceName);
+        auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
+
+        std::ofstream file(command.targetPath.c_str(), std::ifstream::trunc | std::ifstream::binary);
+        if (!file.is_open())
+        {
+            throw std::ios::failure("Could not open file");
+        }
+
+        // TODO: Find a suitable folder so the parsing code can access ReadNpy(),
+        // and the execution code can access WriteNpy().
+        //
+        // if (IsNpyFilenameExtension(command.targetPath))
+        // {
+        //     std::vector<std::byte> npyFileData;
+        //     std::vector<int32_t> dimensions;
+        //     WriteNpy(fileData, bufferDesc.initialValuesDataType, bufferDesc.dimensions, /*out*/ npyFileData);
+        //     std::swap(fileData, npyFileData);
+        // }
+
+        file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+        LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath));
+    }
+    catch (const std::exception& e)
+    {
+        LogError(fmt::format("Failed to write resource to file '{}': {}", command.targetPath, e.what()));
+    }
+}
+
 Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBindings)
 {
     Dispatchable::Bindings bindings;
