@@ -159,7 +159,7 @@ python pytorch\resnet50\train.py --trace True
 With default settings, you'll see output like the following:
 
 ```
->python pytorch\resnet50\train.py --trace Tue
+>python pytorch\resnet50\train.py --trace True
 Loading the training dataset from: E:\work\dml\PyTorch\data\cifar-10-python
         Train data X [N, C, H, W]:
                 shape=torch.Size([1, 3, 224, 224]),
@@ -260,4 +260,4 @@ Done! with highest_accuracy:  0
 - [Alternative training data (CIFAR-10)](https://www.cs.toronto.edu/~kriz/cifar.html)
 
 Alternative implementations:
-- [ONNX](https://github.com/onnx/models/tree/master/vision/classification/resnet)
+- [ONNX](https://github.com/onnx/models/tree/main/vision/classification/resnet)
