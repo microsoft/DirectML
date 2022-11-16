@@ -104,7 +104,7 @@ uint32_t GetByteSizeFromDataType(DML_TENSOR_DATA_TYPE dataType) noexcept
     return g_elementDataTypeByteSizes[index < std::size(g_elementDataTypeByteSizes) ? index : 0];
 }
 
-uint32_t ComputeElementCount(std::span<const int32_t> dimensions)
+uint32_t ComputeElementCount(std::span<const uint32_t> dimensions)
 {
     return std::accumulate(dimensions.begin(), dimensions.end(), 1, std::multiplies<int32_t>());
 }
@@ -490,7 +490,7 @@ public:
         return map;
     }
 
-    void ParseIntegers(/*out*/ std::vector<int32_t>& numbers)
+    void ParseIntegers(/*out*/ std::vector<uint32_t>& numbers)
     {
         while (true)
         {
@@ -556,7 +556,7 @@ public:
         text_.append(U8("\', "));
     }
 
-    void WriteIntegers(std::span<const int32_t> numbers, std::u8string_view brackets)
+    void WriteIntegers(std::span<const uint32_t> numbers, std::u8string_view brackets)
     {
         if (!brackets.empty())
         {
@@ -608,7 +608,7 @@ using NumPyArrayHeaderV3 = NumPyArrayHeaderV2;
 void ReadNpy(
     std::span<const std::byte> fileData,
     /*out*/DML_TENSOR_DATA_TYPE& dataType,
-    /*out*/std::vector<int32_t>& dimensions,
+    /*out*/std::vector<uint32_t>& dimensions,
     /*out*/std::vector<std::byte>& arrayByteData
     )
 {
@@ -682,7 +682,7 @@ void ReadNpy(
 void WriteNpy(
     std::span<const std::byte> arrayByteData,
     DML_TENSOR_DATA_TYPE dataType,
-    std::span<const int32_t> dimensions,
+    std::span<const uint32_t> dimensions,
     /*out*/std::vector<std::byte>& fileData
     )
 {

@@ -1065,7 +1065,7 @@ std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFro
     // Check for NumPy array files. Otherwise read it as raw file data, such as a .dat/.bin file.
     if (IsNpyFilenameExtension(sourcePath))
     {
-        std::vector<int32_t> dimensions;
+        std::vector<uint32_t> dimensions;
         std::vector<std::byte> arrayByteData;
         ReadNpy(allBytes, /*out*/ tensorDataType, /*out*/ dimensions, /*out*/ arrayByteData);
         allBytes = std::move(arrayByteData);
@@ -1385,6 +1385,10 @@ Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object)
     Model::WriteFileCommand command = {};
     command.resourceName = ParseStringField(object, "resource");
     command.targetPath = ResolveOutputFilePath(".", ParseStringField(object, "targetPath")).string();
+    BucketAllocator allocator;
+    auto dimensions = ParseUInt32ArrayField(object, "dimensions", allocator, false);
+    command.dimensions.assign(dimensions.begin(), dimensions.end());
+
     return command;
 }
 

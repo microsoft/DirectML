@@ -116,6 +116,7 @@ public:
     {
         std::string resourceName;
         std::string targetPath;
+        std::vector<uint32_t> dimensions; // The resources don't store their dimensions. So repeat them here.
     };
 
     using Command = std::variant<DispatchCommand, PrintCommand, WriteFileCommand>;

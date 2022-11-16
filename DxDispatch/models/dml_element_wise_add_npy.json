@@ -49,6 +49,12 @@
         {
             "type": "writeFile",
             "targetPath": "dml_element_wise_add_output.npy",
+            "resource": "Out",
+            "dimensions": [6]
+        },
+        {
+            "type": "writeFile",
+            "targetPath": "dml_element_wise_add_output.dat",
             "resource": "Out"
         }
     ]

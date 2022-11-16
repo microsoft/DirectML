@@ -1,12 +1,14 @@
 #pragma once
 
+#include <span>
+
 bool IsNpyFilenameExtension(std::string_view filename);
 
 // Reads a NumPy array file in memory.
 void ReadNpy(
     std::span<const std::byte> fileData,
     /*out*/DML_TENSOR_DATA_TYPE& dataType,
-    /*out*/std::vector<int32_t>& dimensions,
+    /*out*/std::vector<uint32_t>& dimensions,
     /*out*/std::vector<std::byte>& arrayByteData
     );
 
@@ -14,6 +16,6 @@ void ReadNpy(
 void WriteNpy(
     std::span<const std::byte> arrayByteData,
     DML_TENSOR_DATA_TYPE dataType,
-    std::span<const int32_t> dimensions,
+    std::span<const uint32_t> dimensions,
     /*out*/std::vector<std::byte>& fileData
     );

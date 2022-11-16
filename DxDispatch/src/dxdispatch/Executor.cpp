@@ -11,6 +11,8 @@
 #ifndef ONNXRUNTIME_NONE
 #include "OnnxDispatchable.h"
 #endif
+#include "StdSupport.h"
+#include "NpyReaderWriter.h"
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
@@ -311,16 +313,21 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             throw std::ios::failure("Could not open file");
         }
 
-        // TODO: Find a suitable folder so the parsing code can access ReadNpy(),
-        // and the execution code can access WriteNpy().
-        //
-        // if (IsNpyFilenameExtension(command.targetPath))
-        // {
-        //     std::vector<std::byte> npyFileData;
-        //     std::vector<int32_t> dimensions;
-        //     WriteNpy(fileData, bufferDesc.initialValuesDataType, bufferDesc.dimensions, /*out*/ npyFileData);
-        //     std::swap(fileData, npyFileData);
-        // }
+        // If NumPy array, serialize data into .npy file.
+        if (IsNpyFilenameExtension(command.targetPath))
+        {
+            // If no dimensions were given, then treat as a 1D array.
+            std::vector<uint32_t> dimensions(command.dimensions);
+            if (dimensions.empty())
+            {
+                uint32_t elementCount = bufferDesc.sizeInBytes / Device::GetSizeInBytes(bufferDesc.initialValuesDataType);
+                dimensions.push_back(elementCount);
+            }
+
+            std::vector<std::byte> npyFileData;
+            WriteNpy(fileData, bufferDesc.initialValuesDataType, dimensions, /*out*/ npyFileData);
+            std::swap(fileData, npyFileData);
+        }
 
         file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
         LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath));
