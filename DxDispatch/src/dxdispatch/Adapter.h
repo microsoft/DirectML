@@ -38,6 +38,12 @@ private:
 
             outputValue.resize(propSize);
             THROW_IF_FAILED(m_adapter->GetProperty(prop, propSize, outputValue.data()));
+
+            // Trim any trailing nul characters.
+            while (!outputValue.empty() && outputValue.back() == '\0')
+            {
+                outputValue.pop_back();
+            }
             
             return true;
         }

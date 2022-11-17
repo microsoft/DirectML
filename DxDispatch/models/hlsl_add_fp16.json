@@ -34,9 +34,9 @@
         "add": 
         {
             "type": "hlsl",
-            "sourcePath": "models/hlsl_add.hlsl",
+            "sourcePath": "./hlsl_add.hlsl",
             "compiler": "dxc",
-            "compilerArgs": 
+            "compilerArgs":
             [
                 "-T", "cs_6_2",
                 "-E", "CSMain",
