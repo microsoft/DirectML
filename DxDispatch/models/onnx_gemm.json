@@ -35,7 +35,7 @@
         "gemm": 
         {
             "type": "onnx",
-            "sourcePath": "models/onnx_gemm.onnx"
+            "sourcePath": "onnx_gemm.onnx"
         }
     },
 
