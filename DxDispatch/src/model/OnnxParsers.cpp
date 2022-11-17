@@ -6,8 +6,14 @@
 std::string OnnxParsers::GetTensorName(size_t index, Ort::Session const& session, bool isInput)
 {
     Ort::AllocatorWithDefaultOptions allocator;
+#if 1 // deprecated binding method for ORT 1.12.1
+    char* name = isInput ? session.GetInputName(index, allocator) : session.GetOutputName(index, allocator);
+    std::string returnName(name);
+    allocator.Free(name); // Don't leak memory.
+#else
     auto name = isInput ? session.GetInputNameAllocated(index, allocator) : session.GetOutputNameAllocated(index, allocator);
     std::string returnName(name.get());
+#endif
     return returnName;
 }
 
