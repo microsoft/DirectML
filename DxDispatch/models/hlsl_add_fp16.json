@@ -34,7 +34,7 @@
         "add": 
         {
             "type": "hlsl",
-            "sourcePath": "./hlsl_add.hlsl",
+            "sourcePath": "hlsl_add.hlsl",
             "compiler": "dxc",
             "compilerArgs": 
             [
