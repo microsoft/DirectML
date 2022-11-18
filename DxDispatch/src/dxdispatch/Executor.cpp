@@ -157,7 +157,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             }
             PIXEndEvent();
 
-            dispatchable->Dispatch(command);
+            dispatchable->Dispatch(command, m_commandLineArgs.GpuTimingEnabled());
             dispatchable->Wait();
             
             double duration = timer.End().DurationInMilliseconds();
@@ -195,7 +195,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
     double medianTimeGPU = 0;
     double minTimeGPU = 0;
     double maxTimeGPU = 0;
-    if (!timestamps.empty())
+
+    if (m_commandLineArgs.GpuTimingEnabled())
     {
         uint64_t frequency;
         m_device->GetCommandQueue()->GetTimestampFrequency(&frequency);
@@ -228,7 +229,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         LogInfo(fmt::format("Dispatch '{}': {} iterations\nCPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
             command.dispatchableName, iterations, avgTimeCPU, minTimeCPU, medianTimeCPU, maxTimeCPU));
-        if (!timestamps.empty())
+        if (m_commandLineArgs.GpuTimingEnabled())
         {
             LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max\n",
                 avgTimeGPU, minTimeGPU, medianTimeGPU, maxTimeGPU));
@@ -237,7 +238,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     else if (iterations == 1) 
     {
         std::string fmtString = "Dispatch '{}': {} iteration, {:.4f} ms (CPU)";
-        if (!timestamps.empty())
+        if (m_commandLineArgs.GpuTimingEnabled())
         {
             fmtString += ", {:.4f} ms (GPU)";
         }
@@ -245,8 +246,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     else 
     {
-        std::string fmtString = "Dispatch '{}': {} iterations, {:.4f} ms (CPU)";
-        if (!timestamps.empty())
+        std::string fmtString = "Dispatch '{}': {} iterations, {:.4f} ms median (CPU)";
+        if (m_commandLineArgs.GpuTimingEnabled())
         {
             fmtString += ", {:.4f} ms median (GPU)";
         }

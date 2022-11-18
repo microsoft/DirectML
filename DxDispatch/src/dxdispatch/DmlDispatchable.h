@@ -11,7 +11,7 @@ public:
 
     void Initialize() final;
     void Bind(const Bindings& bindings) final;
-    void Dispatch(const Model::DispatchCommand& args) final;
+    void Dispatch(const Model::DispatchCommand& args, bool recordGpuTimestamps) final;
     void Wait() final;
 
 private:

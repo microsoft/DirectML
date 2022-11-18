@@ -258,18 +258,27 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
     }
 }
 
-void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
+void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, bool recordGpuTimestamps)
 {
-    PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
-    m_device->RecordTimestamp();
-    m_device->ExecuteCommandList();
+    PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
+    
+    if (recordGpuTimestamps)
+    {
+        m_device->RecordTimestamp();
+        m_device->ExecuteCommandList();
+    }
+
 
     Ort::RunOptions runOptions;
     m_session->Run(runOptions, *m_ioBindings);
 
-    m_device->RecordTimestamp();
-    PIXEndEvent(m_device->GetCommandList());
-    m_device->ExecuteCommandList();
+    if (recordGpuTimestamps)
+    {
+        m_device->RecordTimestamp();
+        m_device->ExecuteCommandList();
+    }
+
+    PIXEndEvent(m_device->GetCommandQueue());
 }
 
 void OnnxDispatchable::Wait()

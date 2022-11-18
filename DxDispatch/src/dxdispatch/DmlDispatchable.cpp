@@ -241,11 +241,19 @@ void DmlDispatchable::Bind(const Bindings& bindings)
     THROW_IF_FAILED(m_device->DML()->GetDeviceRemovedReason());
 }
 
-void DmlDispatchable::Dispatch(const Model::DispatchCommand& args)
+void DmlDispatchable::Dispatch(const Model::DispatchCommand& args, bool recordGpuTimestamps)
 {
-    m_device->RecordTimestamp();
+    if (recordGpuTimestamps)
+    {
+        m_device->RecordTimestamp();
+    }
+    
     m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
-    m_device->RecordTimestamp();
+
+    if (recordGpuTimestamps)
+    {
+        m_device->RecordTimestamp();
+    }
 }
 
 void DmlDispatchable::Wait()
