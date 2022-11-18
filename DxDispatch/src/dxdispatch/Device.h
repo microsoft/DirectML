@@ -11,6 +11,7 @@ public:
     Device(
         IAdapter* adapter, 
         bool debugLayersEnabled, 
+        bool gpuTimingsEnabled,
         D3D12_COMMAND_LIST_TYPE commandListType, 
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,

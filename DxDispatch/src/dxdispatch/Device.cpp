@@ -24,6 +24,7 @@ static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MES
 Device::Device(
     IAdapter* adapter, 
     bool debugLayersEnabled, 
+    bool gpuTimingsEnabled,
     D3D12_COMMAND_LIST_TYPE commandListType, 
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
@@ -115,12 +116,15 @@ Device::Device(
 
     THROW_IF_FAILED(m_dml->CreateCommandRecorder(IID_PPV_ARGS(&m_commandRecorder)));
 
-    D3D12_QUERY_HEAP_DESC queryHeapDesc;
-    queryHeapDesc.Count = timestampCapacity;
-    queryHeapDesc.NodeMask = 0;
-    queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+    if (gpuTimingsEnabled)
+    {
+        D3D12_QUERY_HEAP_DESC queryHeapDesc;
+        queryHeapDesc.Count = timestampCapacity;
+        queryHeapDesc.NodeMask = 0;
+        queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
 
-    THROW_IF_FAILED(m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap)));
+        THROW_IF_FAILED(m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap)));
+    }
 
     m_pixCaptureHelper->Initialize(m_queue.Get());
 }
@@ -333,6 +337,12 @@ void Device::ExecuteCommandListAndWait()
 
 void Device::RecordTimestamp()
 {
+    if (!m_timestampHeap)
+    {
+        // GPU timings are disabled, so this is a no-op.
+        return;
+    }
+    
     m_commandList->EndQuery(m_timestampHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_timestampHeadIndex);
     m_timestampHeadIndex = (m_timestampHeadIndex + 1) % Device::timestampCapacity;
     if (m_timestampCount < timestampCapacity)
@@ -343,6 +353,12 @@ void Device::RecordTimestamp()
 
 std::vector<uint64_t> Device::ResolveTimestamps()
 {
+    if (!m_timestampHeap)
+    {
+        // GPU timings are disabled, so return empty list.
+        return {};
+    }
+
     assert(m_timestampCount <= timestampCapacity);
 
     auto timestampReadbackBuffer = CreateReadbackBuffer(sizeof(uint64_t) * m_timestampCount);

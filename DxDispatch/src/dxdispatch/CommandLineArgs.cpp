@@ -35,7 +35,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "i,dispatch_iterations", 
             "The number of times to repeat each dispatch", 
-            cxxopts::value<uint32_t>()->default_value("1")
+            cxxopts::value<uint32_t>()->default_value(std::to_string(m_dispatchIterations))
         )
         (
             "t,milliseconds_to_run",
@@ -45,7 +45,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "v,verbose_timings",
             "Print verbose timing information",
-            cxxopts::value<bool>()
+            cxxopts::value<bool>()->default_value(std::to_string(m_verboseTimings))
+        )
+        (
+            "gpu_timing",
+            "Record GPU timestamps",
+            cxxopts::value<bool>()->default_value(std::to_string(m_gpuTimingEnabled))
         )
         (
             "h,help", 
@@ -146,6 +151,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("verbose_timings"))
     {
         m_verboseTimings = result["verbose_timings"].as<bool>();
+    }
+
+    if (result.count("gpu_timing"))
+    {
+        m_gpuTimingEnabled = result["gpu_timing"].as<bool>();
     }
 
     if (result.count("show_dependencies"))

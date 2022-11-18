@@ -13,6 +13,7 @@ public:
     bool PrintHelp() const { return m_printHelp; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     bool VerboseTimings() const { return m_verboseTimings; }
+    bool GpuTimingEnabled() const { return m_gpuTimingEnabled; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
@@ -31,6 +32,7 @@ private:
     bool m_printHelp = false;
     bool m_debugLayersEnabled = false;
     bool m_verboseTimings = false;
+    bool m_gpuTimingEnabled = true;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;

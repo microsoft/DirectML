@@ -74,6 +74,7 @@ int main(int argc, char** argv)
             device = std::make_shared<Device>(
                 adapter.GetAdapter(), 
                 args.DebugLayersEnabled(), 
+                args.GpuTimingEnabled(), 
                 args.CommandListType(),
                 pixCaptureHelper,
                 d3dModule,
