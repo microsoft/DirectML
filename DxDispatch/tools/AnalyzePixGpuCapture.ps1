@@ -76,7 +76,7 @@ foreach ($Event in $Events)
         # Get the top-level DML operator name
         $DmlOpName = "Other"
         $CurrentEvent = $Event
-        while ($CurrentEvent.Parent -ge 0)
+        while ([int]$CurrentEvent.Parent -ge 0)
         {
             $CurrentEvent = $Events[$CurrentEvent.Parent]
             if ($CurrentEvent.Name.StartsWith('DML_OPERATOR'))
