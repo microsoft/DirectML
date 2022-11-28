@@ -1,6 +1,6 @@
 // The macro T is defined by hlsl_add_fp(16|32).json
 #ifndef T
-#define true float
+#define T float
 #endif
 
 StructuredBuffer<T> inputA;
