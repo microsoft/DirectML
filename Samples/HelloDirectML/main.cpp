@@ -26,8 +26,8 @@ void InitializeDirect3D12(
     d3D12Debug->EnableDebugLayer();
 #endif
 
-    ComPtr<IDXGIFactory4> dxgiFactory;
 #if !defined(_GAMING_XBOX)
+    ComPtr<IDXGIFactory4> dxgiFactory;
     check_hresult(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
 
     ComPtr<IDXGIAdapter> dxgiAdapter;
@@ -85,7 +85,7 @@ void CloseExecuteResetWait(
     check_hresult(d3D12Device->CreateFence(
         0,
         D3D12_FENCE_FLAG_NONE,
-        IID_PPV_ARGS(d3D12Fence.GetAddressOf())));
+        IID_GRAPHICS_PPV_ARGS(d3D12Fence.GetAddressOf())));
 
     handle fenceEventHandle{ 0 };
     fenceEventHandle.attach(::CreateEvent(nullptr, true, false, nullptr));
@@ -231,7 +231,7 @@ int main()
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     check_hresult(d3D12Device->CreateDescriptorHeap(
         &descriptorHeapDesc,
-        IID_PPV_ARGS(descriptorHeap.GetAddressOf())));
+        IID_GRAPHICS_PPV_ARGS(descriptorHeap.GetAddressOf())));
 
     // Set the descriptor heap(s).
     ID3D12DescriptorHeap* d3D12DescriptorHeaps[] = { descriptorHeap.Get() };
@@ -270,7 +270,7 @@ int main()
             &CD3DX12_RESOURCE_DESC::Buffer(temporaryResourceSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
             D3D12_RESOURCE_STATE_COMMON,
             nullptr,
-            IID_PPV_ARGS(temporaryBuffer.GetAddressOf())));
+            IID_GRAPHICS_PPV_ARGS(temporaryBuffer.GetAddressOf())));
 
         if (initializeBindingProperties.TemporaryResourceSize != 0)
         {
@@ -289,7 +289,7 @@ int main()
             &CD3DX12_RESOURCE_DESC::Buffer(persistentResourceSize),
             D3D12_RESOURCE_STATE_COMMON,
             nullptr,
-            IID_PPV_ARGS(persistentBuffer.GetAddressOf())));
+            IID_GRAPHICS_PPV_ARGS(persistentBuffer.GetAddressOf())));
 
         // The persistent resource should be bound as the output to the IDMLOperatorInitializer.
         DML_BUFFER_BINDING bufferBinding{ persistentBuffer.Get(), 0, persistentResourceSize };
