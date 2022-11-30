@@ -12,7 +12,10 @@
 #include <DirectML.h> // The DirectML header from the Windows SDK.
 #include <DirectMLX.h>
 
+#ifndef _GAMING_XBOX
 #include <dxgi1_4.h>
+#define IID_GRAPHICS_PPV_ARGS IID_PPV_ARGS
+#endif
 
 #include <algorithm>
 #include <array>
