@@ -5,7 +5,18 @@
 
 #define NOMINMAX
 
-#include <winrt/Windows.Foundation.h>
+#include <wil/result.h>
+#include <wil/resource.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <optional>
 
 #ifdef _GAMING_XBOX_SCARLETT
 #include <d3dx12_xs.h>
@@ -19,13 +30,3 @@
 #define DML_TARGET_VERSION_USE_LATEST
 #include <DirectML.h> // The DirectML header from the Windows SDK.
 #include <DirectMLX.h>
-
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <cassert>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <vector>
-

@@ -6,9 +6,6 @@
 #pragma warning(disable : 4238) // References to temporary classes are okay because they are only used as function parameters.
 
 using Microsoft::WRL::ComPtr;
-using winrt::check_hresult;
-using winrt::check_bool;
-using winrt::handle;
 
 void InitializeDirect3D12(
     ComPtr<ID3D12Device> & d3D12Device,
@@ -18,17 +15,14 @@ void InitializeDirect3D12(
 {
 #if defined(_DEBUG) && !defined(_GAMING_XBOX)
     ComPtr<ID3D12Debug> d3D12Debug;
-    if (FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(d3D12Debug.GetAddressOf()))))
-    {
-        // The D3D12 debug layer is missing - you must install the Graphics Tools optional feature
-        winrt::throw_hresult(DXGI_ERROR_SDK_COMPONENT_MISSING);
-    }
+    // Throws if the D3D12 debug layer is missing - you must install the Graphics Tools optional feature
+    THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(d3D12Debug.GetAddressOf())));
     d3D12Debug->EnableDebugLayer();
 #endif
 
 #if !defined(_GAMING_XBOX)
     ComPtr<IDXGIFactory4> dxgiFactory;
-    check_hresult(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
+    THROW_IF_FAILED(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.GetAddressOf())));
 
     ComPtr<IDXGIAdapter> dxgiAdapter;
     UINT adapterIndex{};
@@ -36,7 +30,7 @@ void InitializeDirect3D12(
     do
     {
         dxgiAdapter = nullptr;
-        check_hresult(dxgiFactory->EnumAdapters(adapterIndex, dxgiAdapter.ReleaseAndGetAddressOf()));
+        THROW_IF_FAILED(dxgiFactory->EnumAdapters(adapterIndex, dxgiAdapter.ReleaseAndGetAddressOf()));
         ++adapterIndex;
 
         hr = ::D3D12CreateDevice(
@@ -44,25 +38,25 @@ void InitializeDirect3D12(
             D3D_FEATURE_LEVEL_11_0,
             IID_PPV_ARGS(d3D12Device.ReleaseAndGetAddressOf()));
         if (hr == DXGI_ERROR_UNSUPPORTED) continue;
-        check_hresult(hr);
+        THROW_IF_FAILED(hr);
     } while (hr != S_OK);
 #else
-    check_hresult(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_GRAPHICS_PPV_ARGS(d3D12Device.GetAddressOf())));
+    THROW_IF_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_GRAPHICS_PPV_ARGS(d3D12Device.GetAddressOf())));
 #endif
 
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
     commandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
     commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
-    check_hresult(d3D12Device->CreateCommandQueue(
+    THROW_IF_FAILED(d3D12Device->CreateCommandQueue(
         &commandQueueDesc,
         IID_GRAPHICS_PPV_ARGS(commandQueue.ReleaseAndGetAddressOf())));
 
-    check_hresult(d3D12Device->CreateCommandAllocator(
+    THROW_IF_FAILED(d3D12Device->CreateCommandAllocator(
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         IID_GRAPHICS_PPV_ARGS(commandAllocator.ReleaseAndGetAddressOf())));
 
-    check_hresult(d3D12Device->CreateCommandList(
+    THROW_IF_FAILED(d3D12Device->CreateCommandList(
         0,
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         commandAllocator.Get(),
@@ -76,28 +70,27 @@ void CloseExecuteResetWait(
     ComPtr<ID3D12CommandAllocator> commandAllocator,
     ComPtr<ID3D12GraphicsCommandList> commandList)
 {
-    check_hresult(commandList->Close());
+    THROW_IF_FAILED(commandList->Close());
 
     ID3D12CommandList* commandLists[] = { commandList.Get() };
     commandQueue->ExecuteCommandLists(ARRAYSIZE(commandLists), commandLists);
     
     ComPtr<ID3D12Fence> d3D12Fence;
-    check_hresult(d3D12Device->CreateFence(
+    THROW_IF_FAILED(d3D12Device->CreateFence(
         0,
         D3D12_FENCE_FLAG_NONE,
         IID_GRAPHICS_PPV_ARGS(d3D12Fence.GetAddressOf())));
 
-    handle fenceEventHandle{ 0 };
-    fenceEventHandle.attach(::CreateEvent(nullptr, true, false, nullptr));
-    check_bool(bool{ fenceEventHandle });
+    wil::unique_handle fenceEventHandle(::CreateEvent(nullptr, true, false, nullptr));
+    THROW_LAST_ERROR_IF_NULL(fenceEventHandle);
 
-    check_hresult(d3D12Fence->SetEventOnCompletion(1, fenceEventHandle.get()));
+    THROW_IF_FAILED(d3D12Fence->SetEventOnCompletion(1, fenceEventHandle.get()));
 
-    check_hresult(commandQueue->Signal(d3D12Fence.Get(), 1));
+    THROW_IF_FAILED(commandQueue->Signal(d3D12Fence.Get(), 1));
     ::WaitForSingleObjectEx(fenceEventHandle.get(), INFINITE, FALSE);
     
-    check_hresult(commandAllocator->Reset());
-    check_hresult(commandList->Reset(commandAllocator.Get(), nullptr));
+    THROW_IF_FAILED(commandAllocator->Reset());
+    THROW_IF_FAILED(commandList->Reset(commandAllocator.Get(), nullptr));
 }
 
 int main()
@@ -120,7 +113,7 @@ int main()
 #endif
 
     ComPtr<IDMLDevice> dmlDevice;
-    check_hresult(DMLCreateDevice(
+    THROW_IF_FAILED(DMLCreateDevice(
         d3D12Device.Get(),
         dmlCreateDeviceFlags,
         IID_PPV_ARGS(dmlDevice.GetAddressOf())));
@@ -163,7 +156,7 @@ int main()
         dmlOperatorDesc.Type = DML_OPERATOR_ELEMENT_WISE_IDENTITY;
         dmlOperatorDesc.Desc = &dmlIdentityOperatorDesc;
 
-        check_hresult(dmlDevice->CreateOperator(
+        THROW_IF_FAILED(dmlDevice->CreateOperator(
             &dmlOperatorDesc,
             IID_PPV_ARGS(dmlOperator.GetAddressOf())));
     }
@@ -173,7 +166,7 @@ int main()
     // The resulting compiled operator is a baked, optimized form of an operator suitable for execution on the GPU.
 
     ComPtr<IDMLCompiledOperator> dmlCompiledOperator;
-    check_hresult(dmlDevice->CompileOperator(
+    THROW_IF_FAILED(dmlDevice->CompileOperator(
         dmlOperator.Get(),
         DML_EXECUTION_FLAG_NONE,
         IID_PPV_ARGS(dmlCompiledOperator.GetAddressOf())));
@@ -207,7 +200,7 @@ int main()
 
     ComPtr<IDMLOperatorInitializer> dmlOperatorInitializer;
     IDMLCompiledOperator* dmlCompiledOperators[] = { dmlCompiledOperator.Get() };
-    check_hresult(dmlDevice->CreateOperatorInitializer(
+    THROW_IF_FAILED(dmlDevice->CreateOperatorInitializer(
         ARRAYSIZE(dmlCompiledOperators),
         dmlCompiledOperators,
         IID_PPV_ARGS(dmlOperatorInitializer.GetAddressOf())));
@@ -229,7 +222,7 @@ int main()
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     descriptorHeapDesc.NumDescriptors = descriptorCount;
     descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    check_hresult(d3D12Device->CreateDescriptorHeap(
+    THROW_IF_FAILED(d3D12Device->CreateDescriptorHeap(
         &descriptorHeapDesc,
         IID_GRAPHICS_PPV_ARGS(descriptorHeap.GetAddressOf())));
 
@@ -245,7 +238,7 @@ int main()
     dmlBindingTableDesc.SizeInDescriptors = descriptorCount;
 
     ComPtr<IDMLBindingTable> dmlBindingTable;
-    check_hresult(dmlDevice->CreateBindingTable(
+    THROW_IF_FAILED(dmlDevice->CreateBindingTable(
         &dmlBindingTableDesc,
         IID_PPV_ARGS(dmlBindingTable.GetAddressOf())));
 
@@ -264,7 +257,7 @@ int main()
     ComPtr<ID3D12Resource> temporaryBuffer;
     if (temporaryResourceSize != 0)
     {
-        check_hresult(d3D12Device->CreateCommittedResource(
+        THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
             &CD3DX12_RESOURCE_DESC::Buffer(temporaryResourceSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
@@ -283,7 +276,7 @@ int main()
     ComPtr<ID3D12Resource> persistentBuffer;
     if (persistentResourceSize != 0)
     {
-        check_hresult(d3D12Device->CreateCommittedResource(
+        THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
             &CD3DX12_RESOURCE_DESC::Buffer(persistentResourceSize),
@@ -299,7 +292,7 @@ int main()
 
     // The command recorder is a stateless object that records Dispatches into an existing Direct3D 12 command list.
     ComPtr<IDMLCommandRecorder> dmlCommandRecorder;
-    check_hresult(dmlDevice->CreateCommandRecorder(
+    THROW_IF_FAILED(dmlDevice->CreateCommandRecorder(
         IID_PPV_ARGS(dmlCommandRecorder.GetAddressOf())));
 
     // Record execution of the operator initializer.
@@ -324,7 +317,7 @@ int main()
 
     dmlBindingTableDesc.Dispatchable = dmlCompiledOperator.Get();
 
-    check_hresult(dmlBindingTable->Reset(&dmlBindingTableDesc));
+    THROW_IF_FAILED(dmlBindingTable->Reset(&dmlBindingTableDesc));
 
     if (temporaryResourceSize != 0)
     {
@@ -343,7 +336,7 @@ int main()
     // Create tensor buffers for upload/input/output/readback of the tensor elements.
 
     ComPtr<ID3D12Resource> uploadBuffer;
-    check_hresult(d3D12Device->CreateCommittedResource(
+    THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(tensorBufferSize),
@@ -352,7 +345,7 @@ int main()
         IID_GRAPHICS_PPV_ARGS(uploadBuffer.GetAddressOf())));
 
     ComPtr<ID3D12Resource> inputBuffer;
-    check_hresult(d3D12Device->CreateCommittedResource(
+    THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(tensorBufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
@@ -401,7 +394,7 @@ int main()
     dmlBindingTable->BindInputs(1, &inputBindingDesc);
 
     ComPtr<ID3D12Resource> outputBuffer;
-    check_hresult(d3D12Device->CreateCommittedResource(
+    THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(tensorBufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
@@ -422,7 +415,7 @@ int main()
     // so read it back if you want the CPU to access it.
 
     ComPtr<ID3D12Resource> readbackBuffer;
-    check_hresult(d3D12Device->CreateCommittedResource(
+    THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
         D3D12_HEAP_FLAG_NONE,
         &CD3DX12_RESOURCE_DESC::Buffer(tensorBufferSize),
@@ -445,7 +438,7 @@ int main()
 
     D3D12_RANGE tensorBufferRange{ 0, static_cast<SIZE_T>(tensorBufferSize) };
     FLOAT* outputBufferData{};
-    check_hresult(readbackBuffer->Map(0, &tensorBufferRange, reinterpret_cast<void**>(&outputBufferData)));
+    THROW_IF_FAILED(readbackBuffer->Map(0, &tensorBufferRange, reinterpret_cast<void**>(&outputBufferData)));
 
     std::wcout << L"output tensor: ";
     for (size_t tensorElementIndex{ 0 }; tensorElementIndex < tensorElementCount; ++tensorElementIndex, ++outputBufferData)
