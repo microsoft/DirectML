@@ -41,7 +41,20 @@ void InitializeDirect3D12(
         THROW_IF_FAILED(hr);
     } while (hr != S_OK);
 #else
-    THROW_IF_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_GRAPHICS_PPV_ARGS(d3D12Device.GetAddressOf())));
+    D3D12XBOX_CREATE_DEVICE_PARAMETERS params = {};
+    params.Version = D3D12_SDK_VERSION;
+    params.GraphicsCommandQueueRingSizeBytes = D3D12XBOX_DEFAULT_SIZE_BYTES;
+    params.GraphicsScratchMemorySizeBytes = D3D12XBOX_DEFAULT_SIZE_BYTES;
+    params.ComputeScratchMemorySizeBytes = D3D12XBOX_DEFAULT_SIZE_BYTES;
+#ifdef _DEBUG
+    params.ProcessDebugFlags = D3D12XBOX_PROCESS_DEBUG_FLAG_VALIDATED;
+#endif
+
+    THROW_IF_FAILED(D3D12XboxCreateDevice(
+        nullptr,
+        &params,
+        IID_GRAPHICS_PPV_ARGS(d3D12Device.ReleaseAndGetAddressOf())
+    ));
 #endif
 
     D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
@@ -84,9 +97,9 @@ void CloseExecuteResetWait(
     wil::unique_handle fenceEventHandle(::CreateEvent(nullptr, true, false, nullptr));
     THROW_LAST_ERROR_IF_NULL(fenceEventHandle);
 
+    THROW_IF_FAILED(commandQueue->Signal(d3D12Fence.Get(), 1));
     THROW_IF_FAILED(d3D12Fence->SetEventOnCompletion(1, fenceEventHandle.get()));
 
-    THROW_IF_FAILED(commandQueue->Signal(d3D12Fence.Get(), 1));
     ::WaitForSingleObjectEx(fenceEventHandle.get(), INFINITE, FALSE);
     
     THROW_IF_FAILED(commandAllocator->Reset());
@@ -440,12 +453,14 @@ int main()
     FLOAT* outputBufferData{};
     THROW_IF_FAILED(readbackBuffer->Map(0, &tensorBufferRange, reinterpret_cast<void**>(&outputBufferData)));
 
-    std::wcout << L"output tensor: ";
+    std::wstring outputString = L"output tensor: ";
     for (size_t tensorElementIndex{ 0 }; tensorElementIndex < tensorElementCount; ++tensorElementIndex, ++outputBufferData)
     {
-        std::wcout << *outputBufferData << L' ';
+        outputString += std::to_wstring(*outputBufferData) + L' ';
     }
-    std::wcout << std::endl;
+
+    std::wcout << outputString << std::endl;
+    OutputDebugStringW(outputString.c_str());
 
     D3D12_RANGE emptyRange{ 0, 0 };
     readbackBuffer->Unmap(0, &emptyRange);
