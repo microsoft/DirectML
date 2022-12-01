@@ -4,6 +4,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                | Feature level                                                                                                                | First available in OS                                    | Redistributable                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [1.10.0](#directml-1100) | DML_FEATURE_LEVEL_5_2 | TBD                                                      | [Microsoft.AI.DirectML.1.10.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.0) |
 | [1.9.1](#directml-191) | [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                      | [Microsoft.AI.DirectML.1.9.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.1) |
 | [1.9.0](#directml-190) | [DML_FEATURE_LEVEL_5_1](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                      | [Microsoft.AI.DirectML.1.9.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0) |
 | [1.8.2](#directml-182) | [DML_FEATURE_LEVEL_5_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_5_0) | TBD                                                      | [Microsoft.AI.DirectML.1.8.2](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.8.2) |
@@ -19,6 +20,19 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.4.0](#directml-140) | [DML_FEATURE_LEVEL_3_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                     | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0) |
 | [1.1.0](#directml-110) | [DML_FEATURE_LEVEL_2_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_2_0) | Version 2004 (Build 10.0.19041; 20H1, "May 2020 Update") | -                                                                                         |
 | [1.0.0](#directml-100) | [DML_FEATURE_LEVEL_1_0](https://docs.microsoft.com/windows/win32/direct3d12/dml-feature-level-history#dml_feature_level_1_0) | Version 1903 (Build 10.0.18362; 19H1, "May 2019 Update") | -                                                                                         |
+
+# DirectML 1.10.0
+
+- Introduced DML_FEATURE_LEVEL 5.2:
+  - Expanded supported rank count across certain DML operators.
+  - Enabled DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION/1 to allow optional ScaleTensor regardless of the value of the BiasTensor and vice-versa.
+- Enabled DMLCreateDevice/1 to use DML_CREATE_DEVICE_FLAG_DEBUG flag even if Direct3D 12 debug layer is not enabled.
+- Improved DML_OPERATOR_RESAMPLE/1/2 APIs performance significantly.
+- Improved graph-level layout transformation logic performance significantly.
+- Fixed DML_OPERATOR_ELEMENT_WISE_MODULUS_TRUNCATE/FLOOR precision issue with non-power of 2 on specific GPUs.
+- Fixed DML_OPERATOR_CAST casting between 16-bit and 64-bit data types on specific GPUs.
+- Fixed DML_OPERATOR_ACTIVATION_HARDMAX/1 result for certain OutputTensor stride.
+
 
 # DirectML 1.9.1
 
