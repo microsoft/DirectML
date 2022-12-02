@@ -19,7 +19,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.4.1](#directml-141)   | [DML_FEATURE_LEVEL_3_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                              | [Microsoft.AI.DirectML.1.4.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.1)   |
 | [1.4.0](#directml-140)   | [DML_FEATURE_LEVEL_3_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                              | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0)   |
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
-| [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
+| [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
 
 # DirectML 1.10.0
 
