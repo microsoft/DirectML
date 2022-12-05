@@ -1,0 +1,46 @@
+# PyTorch with DirectML Samples <!-- omit in toc -->
+
+For detailed instructions on getting started with PyTorch with DirectML, see [GPU accelerated ML training](https://docs.microsoft.com/en-us/windows/ai/directml/gpu-pytorch-windows).
+
+- [Setup](#setup)
+- [Samples](#samples)
+- [External Links](#external-links)
+
+## Setup
+
+Follow the steps below to get set up with PyTorch on DirectML.
+
+1.	Download and install [Python 3.8 to 3.10](https://www.python.org/).
+
+2. Clone this repo.	
+
+3. Install prerequisites
+```
+    pip install opencv-python
+    pip install wget
+    pip install torchvision 
+    pip install torch==1.13
+    pip install pytorch-directml
+```
+
+4. _(optional)_ Run `pip list`. The following packages should be installed:
+```
+torch                   1.13.0
+torch-directml          0.1.13
+torchvision             0.13.0
+```
+
+## Samples
+
+The following sample models are included in this repo to help you get started. The sample includes both inference and training scripts, and you can either train the models from scratch or use the supplied pre-trained weights.
+* [attenion is all you need- the original transformer model](./attention_is_all_you_need/)
+* [yolov3- a real-time object detection model](./yolov3/)
+* [squeezenet - a small image classification model](./squeezenet)
+* [resnet50 - an image classification model](./resnet50)
+* [maskrcnn - an object detection model](./objectDetection/maskrcnn/)
+* *more coming soon*
+
+## External Links
+
+* [pytorch-directml PyPI project](https://pypi.org/project/pytorch-directml/)
+* [PyTorch homepage](https://pytorch.org/)

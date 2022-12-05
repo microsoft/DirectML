@@ -1,0 +1,8 @@
+devices:
+  NVIDIA A100-SXM4-40GB:
+    eval_batch_size: 256
+eval_benchmark: false
+eval_deterministic: false
+eval_nograd: true
+train_benchmark: false
+train_deterministic: false
