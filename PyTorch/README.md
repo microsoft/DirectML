@@ -8,14 +8,11 @@ More information about DirectML can be found in [Introduction to DirectML](https
 
 PyTorch on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
 
-* [Samples](#samples)
-* [External Links](#external-links)
-
+## Pytorch with DirectML Versions
 | torch-directml        | torch |
 |-----------------------|-------|
 | [0.1.13](https://pypi.org/project/torch-directml/)                | 1.13  |
 | [1.8.0a0.dev220506](https://pypi.org/project/pytorch-directml/) | 1.8   |
-
 
 ## Setup
 * For users of Pytorch-DirectML forked from Pytorch __1.13__, see the setup instructions in the [1.13](./1.13/) folder. 
