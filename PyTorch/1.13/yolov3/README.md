@@ -12,7 +12,7 @@ This is a fork of https://github.com/ultralytics/yolov3 at commit [1be3170](http
 ## Setup
 Install the following prerequisites:
 ```
-pip install -r pytorch\yolov3\requirements.txt 
+pip install -r pytorch\1.13\yolov3\requirements.txt 
 ```
 
 ## Training
@@ -20,7 +20,7 @@ pip install -r pytorch\yolov3\requirements.txt
 A helper script exists to train yolov3 with default data, batch size, and so on, and testing is enabled by default, to disable, use --notest:
 
 ```
-python pytorch\yolov3\train.py --batch-size 4 --device dml --nosave --notest
+python pytorch\1.13\yolov3\train.py --batch-size 4 --device dml --nosave --notest
 ```
 
 The first few lines of output should look similar to the following (exact numbers may change):
@@ -126,8 +126,8 @@ You should see the result such as this:
 Namespace(agnostic_nms=False, augment=False, classes=None, conf_thres=0.25, device='dml', exist_ok=False, hide_conf=False, hide_labels=False, img_size=640, iou_thres=0.45, line_thickness=3, max_det=1000, name='exp', nosave=False, project='runs/detect', save_conf=False, save_crop=False, save_txt=False, source='data/images', update=False, view_img=False, weights='yolov3.pt')
 Fusing layers...
 Model Summary: 261 layers, 61922845 parameters, 0 gradients
-image 1/2 F:\xianz\DirectML\PyTorch\yolov3\data\images\bus.jpg: 640x480 4 persons, 1 bus, Done. (0.285s)
-image 2/2 F:\xianz\DirectML\PyTorch\yolov3\data\images\zidane.jpg: 384x640 2 persons, 3 ties, Done. (0.170s)
+image 1/2 F:\xianz\DirectML\pytorch\1.13\yolov3\data\images\bus.jpg: 640x480 4 persons, 1 bus, Done. (0.285s)
+image 2/2 F:\xianz\DirectML\pytorch\1.13\yolov3\data\images\zidane.jpg: 384x640 2 persons, 3 ties, Done. (0.170s)
 Results saved to runs\detect\exp3
 Done. (0.735s)
 ```

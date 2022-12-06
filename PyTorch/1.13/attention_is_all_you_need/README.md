@@ -19,18 +19,18 @@ This sample is extracted from [pytorch benchmark](https://github.com/pytorch/ben
 
 # Usage
 
-## Run install.py to download and preprocess data
-
+## 1) Run install.py to download and preprocess data
+From inside the `attention_is_all_you_need` directory, run the following script:
 ```ps
 python install.py
 ```
 
-## Train the model
+## 2) Train the model
 ```bash
 python train.py -data_pkl m30k_deen_shr.pkl -log m30k_deen_shr -embs_share_weight -proj_share_weight -label_smoothing -save_model trained -b 128 -warmup 128000 -epoch 400 -use_dml
 ```
 
-### 3) Test the model
+## 3) Test the model
 ```bash
 python translate.py -data_pkl m30k_deen_shr.pkl -model trained.chkpt -output prediction.txt -use_dml
 ```

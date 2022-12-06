@@ -1,4 +1,4 @@
-# Resnet50 Model <!-- omit in toc -->
+# Resnet50 Model <!-- omit in toc -->\\
 
 Sample scripts for training the [torchvision(v0.9.0) classification models](https://pytorch.org/vision/0.9/models.html#classification) using PyTorch on DirectML.
 
@@ -12,25 +12,25 @@ Sample scripts for training the [torchvision(v0.9.0) classification models](http
 ## Setup
 Install the following prerequisites:
 ```
-pip install -r pytorch\torchvision_classification\requirements.txt 
+pip install -r pytorch\1.8\torchvision_classification\requirements.txt 
 ```
 
 ## Prepare Data
 
-After installing the PyTorch on DirectML package (see [GPU accelerated ML training](..\readme.md)), open a console to the `root` directory and run the setup script to download and convert data:
+After installing the PyTorch on DirectML package (see [GPU accelerated ML training](https://docs.microsoft.com/en-us/windows/ai/directml/gpu-pytorch-windows)), open a console to the `root` directory and run the setup script to download and convert data:
 
 ```
-python pytorch\data\dataset.py
+python pytorch\1.8\data\dataset.py
 ```
 
 Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset and PennFudanPed dataset. The output of running it should look similar to the following:
 
 ```
->python pytorch\data\dataset.py
-Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz
-Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz
+>python pytorch\1.8\data\dataset.py
+Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\Pytorch\1.8\data\cifar-10-python.tar.gz
+Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\DirectML\Pytorch\1.8\data\cifar-10-python.tar.gz
 170499072it [00:17, 9709154.90it/s]
-Extracting E:\work\DirectML\PyTorch\data\cifar-10-python.tar.gz to E:\work\DirectML\PyTorch\data
+Extracting E:\work\DirectML\Pytorch\1.8\data\cifar-10-python.tar.gz to E:\work\DirectML\Pytorch\1.8\data
 Downloading PennFundaPed dataset
 
 100% [........................................................................] 53723336 / 53723336
@@ -42,7 +42,7 @@ Extracted PennFundaPed dataset
 A helper script exists to train classification models with default data, batch size, and so on:
 
 ```
-python pytorch\torchvision_classification\train.py --model resnet18
+python pytorch\1.8\torchvision_classification\train.py --model resnet18
 ```
 
 model names from list below can be used to train:
@@ -63,16 +63,16 @@ model names from list below can be used to train:
 
 The first few lines of output should look similar to the following (exact numbers may change):
 ```
-> python pytorch\torchvision_classification\train.py --model resnet18
+> python pytorch\1.8\torchvision_classification\train.py --model resnet18
 Namespace(batch_size=32, device='dml', epochs=50, learning_rate=0.001, model='resnet18', momentum=0.9, path='cifar-10-python', save_model=False, trace=False, weight_decay=0.0001)
-Loading the training dataset from: F:\DirectML\PyTorch\data\cifar-10-python
+Loading the training dataset from: F:\DirectML\Pytorch\1.8\data\cifar-10-python
         Train data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
         Train data Y:
                 shape=torch.Size([32]),
                 dtype=torch.int64
-Loading the testing dataset from: F:\DirectML\PyTorch\data\cifar-10-python
+Loading the testing dataset from: F:\DirectML\Pytorch\1.8\data\cifar-10-python
         Test data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
@@ -93,15 +93,15 @@ By default, the script will run for 50 epochs with a batch size of 32 and print 
 > When discrete memory or shared GPU memory is insufficient consider running the same scripts with a smaller batch size (use the --batch_size argument). For example:
 
 ```
-python pytorch\torchvision_classification\train.py --model resnet18 --batch_size 8
+python pytorch\1.8\torchvision_classification\train.py --model resnet18 --batch_size 8
 ```
 
-You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters. Increasing the batch size will, in general, improve the accuracy. 
+You can inspect `train.py` (and the real script, `pytorch/1.8/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters. Increasing the batch size will, in general, improve the accuracy. 
 
-You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the pytorch\checkpoints\<device>\<model>\checkpoint.pth path.
+You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the pytorch\1.8\checkpoints\<device>\<model>\checkpoint.pth path.
 
 ```
-python pytorch\torchvision_classification\train.py --save_model
+python pytorch\1.8\torchvision_classification\train.py --save_model
 ```
 
 
@@ -110,15 +110,15 @@ python pytorch\torchvision_classification\train.py --save_model
 Once the model is trained and saved we can now test the model using the following steps. The test script will use the latest trained model from the checkpoints folder.
 
 ```
-python pytorch\torchvision_classification\test.py --model resnet18
+python pytorch\1.8\torchvision_classification\test.py --model resnet18
 ```
 
 You should see the result such as this:
 
 ```
-PS F:\DirectML> python pytorch\torchvision_classification\test.py --model resnet18
+PS F:\DirectML> python pytorch\1.8\torchvision_classification\test.py --model resnet18
 Namespace(batch_size=32, device='dml', model='resnet18', path='cifar-10-python', trace=False)
-Loading the testing dataset from: F:\DirectML\PyTorch\data\cifar-10-python
+Loading the testing dataset from: F:\DirectML\Pytorch\1.8\data\cifar-10-python
         Test data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
@@ -136,13 +136,13 @@ Test Error:
 Once the model is trained and saved we can now run the prediction using the following steps. The predict script will use that latest trained model from the checkpoints folder.
 
 ```
-python pytorch\torchvision_classification\predict.py --model resnet18 --image E:\a.jpeg
+python pytorch\1.8\torchvision_classification\predict.py --model resnet18 --image E:\a.jpeg
 ```
 
 You should see the result such as this:
 
 ```
-E:\work\dml>python pytorch\torchvision_classification\predict.py --model resnet18 --image E:\a.jpeg
+E:\work\dml>python pytorch\1.8\torchvision_classification\predict.py --model resnet18 --image E:\a.jpeg
 cock 0.10412269830703735
 electric ray 0.1026773527264595
 tench 0.10185252875089645

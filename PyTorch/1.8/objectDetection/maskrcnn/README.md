@@ -9,23 +9,23 @@ These scripts are collected from the tutorial [here](https://pytorch.org/tutoria
 - [Training](#training)
 
 ## Setup
-Install the following prerequisites:
+Install the following prerequisites by running the following script from the `root` directory of the DirectML folder:
 ```
-pip install -r pytorch\objectDetection\maskrcnn\requirements.txt 
+pip install -r pytorch\1.8\objectDetection\maskrcnn\requirements.txt 
 ```
 
 ## Prepare Data
 
-After installing the PyTorch on DirectML package (see [GPU accelerated ML training](..\readme.md)), open a console to the `root` directory and run the setup script to download and convert data:
+After installing the PyTorch on DirectML package (see [GPU accelerated ML training](https://docs.microsoft.com/en-us/windows/ai/directml/gpu-pytorch-windows)), open a console to the `root` directory and run the setup script to download and convert data:
 
 ```
-python pytorch\data\dataset.py
+python pytorch\1.8\data\dataset.py
 ```
 
 Running `dataset.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
 
 ```
->python pytorch\data\dataset.py
+>python pytorch\1.8\data\dataset.py
 Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
 Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
 170499072it [00:32, 5250164.09it/s]
@@ -37,7 +37,7 @@ Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:
 A helper script exists to train Mask R-CNN with PennFudanPed data:
 
 ```
-cd pytorch\objectdetection\maskrcnn
+cd pytorch\1.8\objectdetection\maskrcnn
 python .\maskrcnn.py
 ```
 

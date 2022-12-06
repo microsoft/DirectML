@@ -17,25 +17,25 @@ The original paper can be found at: https://arxiv.org/abs/1602.07360
 ## Setup
 Install the following prerequisites:
 ```
-pip install -r pytorch\squeezenet\requirements.txt 
+pip install -r pytorch\1.13\squeezenet\requirements.txt 
 ```
 
 ## Prepare Data
 
-After installing the PyTorch on DirectML package (see [GPU accelerated ML training](..\readme.md)), open a console to the `root` directory and run the setup script to download and convert data:
+After installing the PyTorch on DirectML package (see [GPU accelerated ML training](https://learn.microsoft.com/en-us/windows/ai/directml/gpu-pytorch-windows)), open a console to the `root` directory and run the setup script to download and convert data:
 
 ```
-python pytorch\data\dataset.py
+python pytorch\1.13\data\dataset.py
 ```
 
 Running `setup.py` should take at least a minute or so, since it downloads the CIFAR-10 dataset. The output of running it should look similar to the following:
 
 ```
->python pytorch\data\dataset.py
-Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
-Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz
+>python pytorch\1.13\data\dataset.py
+Downloading https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\pytorch\1.13\data\cifar-10-python\cifar-10-python.tar.gz
+Failed download. Trying https -> http instead. Downloading http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz to E:\work\dml\pytorch\1.13\data\cifar-10-python\cifar-10-python.tar.gz
 170499072it [00:32, 5250164.09it/s]
-Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:\work\dml\PyTorch\data\cifar-10-python
+Extracting E:\work\dml\pytorch\1.13\data\cifar-10-python\cifar-10-python.tar.gz to E:\work\dml\pytorch\1.13\data\cifar-10-python
 ```
 
 ## Training
@@ -43,20 +43,20 @@ Extracting E:\work\dml\PyTorch\data\cifar-10-python\cifar-10-python.tar.gz to E:
 A helper script exists to train SqueezeNet with default data, batch size, and so on:
 
 ```
-python pytorch\squeezenet\train.py
+python pytorch\1.13\squeezenet\train.py
 ```
 
 The first few lines of output should look similar to the following (exact numbers may change):
 ```
->python pytorch\squeezenet\train.py
-Loading the training dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+>python pytorch\1.13\squeezenet\train.py
+Loading the training dataset from: E:\work\dml\pytorch\1.13\data\cifar-10-python
         Train data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
         Train data Y:
                 shape=torch.Size([32]),
                 dtype=torch.int64
-Loading the testing dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+Loading the testing dataset from: E:\work\dml\pytorch\1.13\data\cifar-10-python
         Test data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
@@ -92,15 +92,15 @@ By default, the script will run for 50 epochs with a batch size of 32 and print 
 > When discrete memory or shared GPU memory is insufficient consider running the same scripts with a smaller batch size (use the --batch_size argument). For example:
 
 ```
-python pytorch\resnet50\train.py --batch_size 8
+python pytorch\1.13\resnet50\train.py --batch_size 8
 ```
 
-You can inspect `train.py` (and the real script, `pytorch/classification/train_classification.py`) to see the command line it is invoking or adjust some of the parameters.
+You can inspect `train.py` (and the real script, `pytorch\1.13\classification\train_classification.py`) to see the command line it is invoking or adjust some of the parameters.
 
-You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the `pytorch\checkpoints\<device>\<model>\checkpoint.pth` path.
+You can save the model for testing by passing in the --save_model flag. This will cause checkpoints to be saved to the `pytorch\1.13\checkpoints\<device>\<model>\checkpoint.pth` path.
 
 ```
-python pytorch\resnet50\train.py --save_model
+python pytorch\1.13\resnet50\train.py --save_model
 ```
 
 ## Testing
@@ -108,14 +108,14 @@ python pytorch\resnet50\train.py --save_model
 Once the model is trained and saved we can now test the model using the following steps. The test script will use the latest trained model from the checkpoints folder.
 
 ```
-python pytorch\squeezenet\test.py
+python pytorch\1.13\squeezenet\test.py
 ```
 
 You should see the result such as this:
 
 ```
->python pytorch\squeezenet\test.py
-Loading the testing dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+>python pytorch\1.13\squeezenet\test.py
+Loading the testing dataset from: E:\work\dml\pytorch\1.13\data\cifar-10-python
         Test data X [N, C, H, W]:
                 shape=torch.Size([32, 3, 224, 224]),
                 dtype=torch.float32
@@ -132,13 +132,13 @@ Test Error:
 Once the model is trained and saved we can now run the prediction using the following steps. The predict script will use that latest trained model from the checkpoints folder.
 
 ```
-python pytorch\squeezenet\predict.py --image E:\a.jpeg
+python pytorch\1.13\squeezenet\predict.py --image E:\a.jpeg
 ```
 
 You should see the result such as this:
 
 ```
-E:\work\dml>python pytorch\squeezenet\predict.py --image E:\a.jpeg
+E:\work\dml>python pytorch\1.13\squeezenet\predict.py --image E:\a.jpeg
 hammerhead 0.35642221570014954
 stingray 0.34619468450546265
 electric ray 0.09593362361192703
@@ -151,22 +151,22 @@ great white shark 0.06555310636758804
 It may be useful to get a trace during training or evaluation.
 
 ```
-python pytorch\squeezenet\test.py --trace True
-python pytorch\squeezenet\train.py --trace True
+python pytorch\1.13\squeezenet\test.py --trace True
+python pytorch\1.13\squeezenet\train.py --trace True
 ```
 
 With default settings, you'll see output like the following:
 
 ```
->python pytorch\squeezenet\train.py --trace True
-Loading the training dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+>python pytorch\1.13\squeezenet\train.py --trace True
+Loading the training dataset from: E:\work\dml\pytorch\1.13\data\cifar-10-python
         Train data X [N, C, H, W]:
                 shape=torch.Size([1, 3, 224, 224]),
                 dtype=torch.float32
         Train data Y:
                 shape=torch.Size([1]),
                 dtype=torch.int64
-Loading the testing dataset from: E:\work\dml\PyTorch\data\cifar-10-python
+Loading the testing dataset from: E:\work\dml\pytorch\1.13\data\cifar-10-python
         Test data X [N, C, H, W]:
                 shape=torch.Size([1, 3, 224, 224]),
                 dtype=torch.float32
