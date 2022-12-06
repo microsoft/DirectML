@@ -11,7 +11,7 @@ PyTorch on DirectML is supported on both the latest versions of Windows 10 and t
 ## Pytorch with DirectML Versions
 | torch-directml        | torch |
 |-----------------------|-------|
-| [0.1.13](https://pypi.org/project/torch-directml/)                | 1.13  |
+| [0.1.13.dev221206](https://pypi.org/project/torch-directml/)                | 1.13  |
 | [1.8.0a0.dev220506](https://pypi.org/project/pytorch-directml/) | 1.8   |
 
 ## Setup
