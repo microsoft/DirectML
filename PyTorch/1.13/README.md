@@ -24,7 +24,7 @@ Follow the steps below to get set up with PyTorch on DirectML.
 4. _(optional)_ Run `pip list`. The following packages should be installed:
 ```
 torch                   1.13.0
-torch-directml          0.1.13.dev221206
+torch-directml          0.1.13.*
 torchvision             0.14.0
 ```
 
