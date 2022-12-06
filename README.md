@@ -122,8 +122,8 @@ DirectML acceleration for Pytorch 1.13.0 is currently available for Public Previ
 
 PyTorch on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
 
-* [PyTorch-1.13 on DirectML samples](./Pytorch/Pytorch_1.13)
-* [(Deprecated) Pytorch-1.08 on DirectML samples ](./Pytorch/PyTorch_1.08)
+* [PyTorch-1.13 on DirectML samples](./Pytorch/1.13/)
+* [(Deprecated) Pytorch-1.8 on DirectML samples ](./Pytorch/1.8/)
 * [pytorch-directml PyPI project](https://pypi.org/project/pytorch-directml/)
 * [PyTorch homepage](https://pytorch.org/)
 

@@ -1,4 +1,4 @@
-# PyTorch-1.13 with DirectML Samples <!-- omit in toc -->
+# PyTorch with DirectML Samples <!-- omit in toc -->
 
 DirectML acceleration for PyTorch is currently available for Public Preview. PyTorch with DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware.
 
@@ -11,19 +11,25 @@ PyTorch on DirectML is supported on both the latest versions of Windows 10 and t
 * [Samples](#samples)
 * [External Links](#external-links)
 
+| torch-directml        | torch |
+|-----------------------|-------|
+| [0.1.13](https://pypi.org/project/torch-directml/)                | 1.13  |
+| [1.8.0a0.dev220506](https://pypi.org/project/pytorch-directml/) | 1.8   |
+
+
 ## Setup
-For users of Pytorch-DirectML forked from Pytorch *1.13*, see the setup instructions in [Pytorch_1.08](./Pytorch_1.13/README.md).
-For users of Pytorch-DirectML forked from Pytorch *1.08*, see the setup instructions in [Pytorch_1.08](./Pytorch_1.08/README.md).
+* For users of Pytorch-DirectML forked from Pytorch __1.13__, see the setup instructions in the [1.13](./1.13/) folder. 
+* For users of Pytorch-DirectML forked from Pytorch __1.8__, see the setup instructions in the [1.8](./1.8/) folder.
 
 ## Samples
-For users of Pytorch-DirectML forked from Pytorch 1.13, the samples can be found below: 
+For users of Pytorch-DirectML forked from Pytorch 1.13, the samples can be found below or in the [1.13](./1.13/) folder: 
 * [attenion is all you need- the original transformer model](./Pytorch_1.13/attention_is_all_you_need/)
 * [yolov3- a real-time object detection model](./Pytorch_1.13/yolov3/)
 * [squeezenet - a small image classification model](./Pytorch_1.13/squeezenet)
 * [resnet50 - an image classification model](./Pytorch_1.13/resnet50)
 * [maskrcnn - an object detection model](./Pytorch_1.13/objectDetection/maskrcnn/)
 
-For users of Pytorch-DirectML forked from Pytorch 1.08, the samples can be found below: 
+For users of Pytorch-DirectML forked from Pytorch 1.8, the samples can be found below or in the [1.8](./1.8/) folder: 
 * [squeezenet - a small image classification model](./squeezenet)
 * [resnet50 - an image classification model](./resnet50)
 * [maskrcnn - an object detection model](./objectDetection/maskrcnn/)

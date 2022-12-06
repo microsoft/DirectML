@@ -3,13 +3,13 @@
 This is a PyTorch Directml implementation of the Transformer model in "[Attention is All You Need](https://arxiv.org/abs/1706.03762)" (Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, Illia Polosukhin, arxiv, 2017). 
 
 
-This sample is extracted from [pytorch benchmark](https://github.com/pytorch/benchmark/tree/main/torchbenchmark/models/attention_is_all_you_need_pytorch), and has been slightly changed to apply pytorch-directml.
+This sample is extracted from [pytorch benchmark](https://github.com/pytorch/benchmark/tree/main/torchbenchmark/models/attention_is_all_you_need_pytorch), and has been slightly changed to apply torch-directml.
 
 
 # Requirement
 - python  3.8
-- pytorch 1.13
-- pytorch_directml 0.1.13
+- torch 1.13
+- torch_directml 0.1.13
 - torchtext 0.14.0
 - spacy
 - tqdm
