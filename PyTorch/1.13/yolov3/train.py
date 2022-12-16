@@ -234,7 +234,7 @@ def train(hyp, opt, device, tb_writer=None):
     model.nc = nc  # attach number of classes to model
     model.hyp = hyp  # attach hyperparameters to model
     model.gr = 1.0  # iou loss ratio (obj_loss = 1.0 or iou)
-    model.class_weights = labels_to_class_weights(dataset.labels, nc).to(device) * nc  # attach class weights
+    model.class_weights = labels_to_class_weights(dataset.labels, nc).float().to(device) * nc  # attach class weights
     model.names = names
 
     # Start training
