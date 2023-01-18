@@ -35,6 +35,7 @@ data/*
 !data/coco_*.txt
 !data/trainvalno5k.shapes
 !data/*.sh
+!data/*.yaml
 
 pycocotools/*
 results*.txt
