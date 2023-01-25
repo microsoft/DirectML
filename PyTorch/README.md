@@ -11,15 +11,11 @@ PyTorch on DirectML is supported on both the latest versions of Windows 10 and t
 ## Pytorch with DirectML Versions
 | torch-directml        | pytorch |
 |-----------------------|-------|
-| [0.1.13.\*](https://pypi.org/project/torch-directml/)                | 1.13  |
+| [0.1.13+](https://pypi.org/project/torch-directml/)                | 1.13+  |
 | [1.8.0a0.\*](https://pypi.org/project/pytorch-directml/) | 1.8   |
 
-## Setup
-* For users of Pytorch-DirectML forked from Pytorch __1.13__, see the setup instructions in the [1.13](./1.13/) folder. 
-* For users of Pytorch-DirectML forked from Pytorch __1.8__, see the setup instructions in the [1.8](./1.8/) folder.
-
 ## Samples
-For users of Pytorch-DirectML forked from Pytorch 1.13, the samples can be found below or in the [1.13](./1.13/) folder: 
+For users of Pytorch-DirectML forked from Pytorch 1.13 or higher, the samples can be found below or in the [1.13](./1.13/) folder:
 * [attenion is all you need- the original transformer model](./1.13/attention_is_all_you_need/)
 * [yolov3- a real-time object detection model](./1.13/yolov3/)
 * [squeezenet - a small image classification model](./1.13/squeezenet)

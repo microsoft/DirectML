@@ -14,27 +14,22 @@ Follow the steps below to get set up with PyTorch on DirectML.
 
 2. Clone this repo.	
 
-3. Install prerequisites
-```
-    pip install torchvision==0.14.0 
-    pip install torch==1.13
-    pip install torch-directml
+3. Install **torch-directml**
+
+>⚠️ Since torch-directml 0.1.13.1.*, **torch** and **torchvision** will be installed as dependencies
+
+```ps
+pip install torch-directml
 ```
 
-4. _(optional)_ Run `pip list`. The following packages should be installed:
-```
-torch                   1.13.0
-torch-directml          0.1.13.*
-torchvision             0.14.0
-```
+4. Create a DML Device and Test
 
-5. Create a DML Device and Test
 ```
 import torch
 import torch_directml
 dml = torch_directml.device()
 ```
->⚠️ Note that device creation has changed in torch-directml 1.13 from previous versions. The torch-directml backend is currently mapped to “PrivateUse1." The new `torch_directml.device()` API is a convenient wrapper for creating your tenors on the correct device. 
+>⚠️ Note that device creation has changed in torch-directml 0.1.13 from previous versions. The torch-directml backend is currently mapped to “PrivateUse1." The new `torch_directml.device()` API is a convenient wrapper for creating your tenors on the correct device.
 
 ## Samples
 
