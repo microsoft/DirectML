@@ -12,11 +12,10 @@ def spacy_download(language):
 
 def preprocess():
     current_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-    multi30k_data_dir = os.path.join(current_dir.parent.parent, ".data", "multi30k")
-    root = os.path.join(str(Path(__file__).parent), ".data")
-    os.makedirs(root, exist_ok=True)
+    data_root = os.path.join(current_dir, ".data")
+    os.makedirs(data_root, exist_ok=True)
     subprocess.check_call([sys.executable, os.path.join(current_dir, 'preprocess.py'), '-lang_src', 'de', '-lang_trg', 'en', '-share_vocab',
-                           '-save_data', os.path.join(root, 'm30k_deen_shr.pkl')])
+                           '-save_data', os.path.join(data_root, 'm30k_deen_shr.pkl')])
 
 if __name__ == '__main__':
     pip_install_requirements()

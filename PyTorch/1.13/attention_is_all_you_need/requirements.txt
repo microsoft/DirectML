@@ -1,6 +1,7 @@
+torch-directml
+torchtext
 dill==0.3.4
 tqdm
 iopath
 numpy
 spacy==2.3.5
-torchtext==0.14.0
