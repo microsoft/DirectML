@@ -22,7 +22,7 @@ Follow the steps below to get set up with PyTorch on DirectML.
 pip install torch-directml
 ```
 
-1. Create a DML Device and Test
+4. Create a DML Device and Test
 
 ```
 import torch
