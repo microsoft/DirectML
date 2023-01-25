@@ -1,4 +1,3 @@
-torch-directml
 torchtext
 dill==0.3.4
 tqdm
