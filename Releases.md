@@ -4,6 +4,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                  | Feature level                                                                                                            | First available in OS                                             | Redistributable                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [1.10.1](#directml-1101) | [DML_FEATURE_LEVEL_5_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_2) | TBD                                                               | [Microsoft.AI.DirectML.1.10.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.1) |
 | [1.10.0](#directml-1100) | [DML_FEATURE_LEVEL_5_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_2) | TBD                                                               | [Microsoft.AI.DirectML.1.10.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.0) |
 | [1.9.1](#directml-191)   | [DML_FEATURE_LEVEL_5_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                               | [Microsoft.AI.DirectML.1.9.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.1)   |
 | [1.9.0](#directml-190)   | [DML_FEATURE_LEVEL_5_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                               | [Microsoft.AI.DirectML.1.9.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0)   |
@@ -21,6 +22,10 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
 
+# DirectML 1.10.1
+
+- Fixed bug in DMLCreateDevice1, when DML_FEATURE_LEVEL > 0x5000
+
 # DirectML 1.10.0
 
 - Introduced DML_FEATURE_LEVEL 5.2:
@@ -32,7 +37,6 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 - Fixed DML_OPERATOR_ELEMENT_WISE_MODULUS_TRUNCATE/FLOOR precision issue with non-power of 2 on specific GPUs.
 - Fixed DML_OPERATOR_CAST casting between 16-bit and 64-bit data types on specific GPUs.
 - Fixed DML_OPERATOR_ACTIVATION_HARDMAX/1 result for certain OutputTensor stride.
-
 
 # DirectML 1.9.1
 
