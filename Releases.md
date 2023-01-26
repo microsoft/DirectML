@@ -24,7 +24,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 # DirectML 1.10.1
 
-- Fixed bug in DMLCreateDevice1, when DML_FEATURE_LEVEL > 0x5000
+- Fixed bug in DMLCreateDevice1 that would cause it to incorrectly fail when a minimumFeatureLevel greater than DML_FEATURE_LEVEL_5_0 is supplied.
 
 # DirectML 1.10.0
 
