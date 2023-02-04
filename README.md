@@ -131,7 +131,7 @@ PyTorch on DirectML is supported on both the latest versions of Windows 10 and t
 
 We look forward to hearing from you!
 
-* For TensorFlow with DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML-Samples/issues) or contact us directly at askdirectml@microsoft.com.
+* For TensorFlow with DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/tensorflow-directml-plugin/issues) or contact us directly at askdirectml@microsoft.com.
 
 * For PyTorch with DirectML issues, bugs, and feedback; or for general DirectML issues and feedback, please [file an issue](https://github.com/microsoft/DirectML-Samples/issues) or contact us directly at askdirectml@microsoft.com.
 
