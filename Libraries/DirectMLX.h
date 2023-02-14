@@ -709,7 +709,7 @@ namespace dml
         NameScope CreateNameScope(StringView name) { return NameScope(m_graphBuilder.get(), name); }
 
         void PushName(StringView name) { m_graphBuilder->PushName(name); }
-        void PopName() { m_graphBuilder->PopName(name); }
+        void PopName() { m_graphBuilder->PopName(); }
 
         Microsoft::WRL::ComPtr<IDMLCompiledOperator> Compile(
             DML_EXECUTION_FLAGS flags,
