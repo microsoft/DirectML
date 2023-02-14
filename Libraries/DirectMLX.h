@@ -38,6 +38,14 @@
     #define DMLX_OPTIONAL_EXTENDED
 #endif
 
+#if __cpp_exceptions
+    #include <stdexcept>
+#endif
+
+#if __cplusplus >= 201703L && __has_include(<string_view>)
+    #include <string_view>
+#endif
+
 /** Calculates the minimum number of bytes required to store a buffer tensor with the specified type, sizes, and
     strides. The formula can be expressed as the following:
 
@@ -241,7 +249,6 @@ namespace dml
 #endif
 
 #if __cplusplus >= 201703L && __has_include(<string_view>)
-    #include <string_view>
     using StringView = std::string_view;
 #else
     using StringView = const std::string&;
@@ -4207,7 +4214,7 @@ namespace dml
             {
                 uint32_t nodeIndex = static_cast<uint32_t>(desc.nodes.size());
 
-                desc.nodes.push_back(DML_OPERATOR_GRAPH_NODE_DESC{ node.op.Get(), (!node.name.empty() ? node.name->c_str() : nullptr) });
+                desc.nodes.push_back(DML_OPERATOR_GRAPH_NODE_DESC{ node.op.Get(), (!node.name.empty() ? node.name.c_str() : nullptr) });
 
                 // Walk through each of this node's inputs and add it as an edge
                 const uint32_t inputCount = static_cast<uint32_t>(node.inputs.size());
