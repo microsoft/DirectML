@@ -4176,7 +4176,7 @@ namespace dml
             node.inputs.assign(inputs.begin(), inputs.end());
             if (!m_name.empty())
             {
-                node.name = m_name.c_str();
+                node.name = m_name;
             }
 
             uint32_t index = static_cast<uint32_t>(m_operatorNodes.size());
