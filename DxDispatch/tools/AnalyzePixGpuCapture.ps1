@@ -131,7 +131,15 @@ if ($DmlOpDurationsNs.Count -gt 0)
         $TotalOpTimeNs += $DmlOpDurationsNs[$DmlOpName]
     }
 
-    Write-Host "Operator GPU Time (sum may exceed model time due to parallelism):"
+    if ($DurationType -eq 'TOP to EOP')
+    {
+        Write-Host "Operator GPU Time (sum may exceed model time due to parallelism):"
+    }
+    else
+    {
+        Write-Host "Operator GPU Time:"
+    }
+
     foreach ($DmlOpName in $DmlOpsSortedByDuration)
     {
         $DurationNs = $DmlOpDurationsNs[$DmlOpName]
