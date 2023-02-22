@@ -8,7 +8,12 @@ param
     [Parameter(Mandatory)][string]$InputPath,
     
     # Path to pixtool.exe. If not provided, the latest installed version is used.
-    [string]$PixtoolPath
+    [string]$PixtoolPath,
+
+    # Method of summing duration of PIX events.
+    # See "Timing Data and Counters" (https://devblogs.microsoft.com/pix/gpu-captures/) for details.
+    [ValidateSet("TOP to EOP", "EOP to EOP")]
+    [string]$DurationType = 'EOP to EOP'
 )
 
 function PrettyDurationFormat($DurationNs)
@@ -19,7 +24,7 @@ function PrettyDurationFormat($DurationNs)
     }
     if ($DurationNs -ge 1000)
     {
-        return "{0:f2} μs" -f ($DurationNs / 1000.0)
+        return "{0:f2} us" -f ($DurationNs / 1000.0)
     }
     return "{0:f2} ns" -f $DurationNs
 }
@@ -49,9 +54,9 @@ if ($InputFile.Extension -eq '.wpix')
     $PixCaptureFile = (Resolve-Path $InputPath).Path
     
     $CounterCommandLine = 
-        '--counters="Execution Start Time*"',
-        '--counters="TOP to EOP Duration*"',
-        '--counters="CS Invocations"'
+        "--counters=`"Execution Start Time*`"",
+        "--counters=`"$DurationType Duration*`"",
+        "--counters=`"CS Invocations`""
     
     $PixCaptureEventsFileName = "events.csv"
     & $PixtoolPath open-capture $PixCaptureFile save-event-list $CounterCommandLine $PixCaptureEventsFileName
@@ -91,7 +96,7 @@ foreach ($Event in $Events)
 
         if ($DmlOpName -ne "Other")
         {
-            $DmlOpDurationsNs[$DmlOpName] += [int]$Event.'TOP to EOP Duration (ns)'
+            $DmlOpDurationsNs[$DmlOpName] += [int]$Event."$DurationType Duration (ns)"
         }
 
         if ($Event.Name -eq 'ExecuteMetaCommand')
@@ -101,7 +106,7 @@ foreach ($Event in $Events)
     }
     elseif ($Event.Name -match 'ONNX: ''(.*)''')
     {
-        $ModelDurationNs[$Matches[1]] = [int]$Event.'TOP to EOP Duration (ns)'
+        $ModelDurationNs[$Matches[1]] = [int]$Event."$DurationType Duration (ns)"
     }
 }
 
@@ -126,7 +131,15 @@ if ($DmlOpDurationsNs.Count -gt 0)
         $TotalOpTimeNs += $DmlOpDurationsNs[$DmlOpName]
     }
 
-    Write-Host "Operator GPU Time (sum may exceed model time due to parallelism):"
+    if ($DurationType -eq 'TOP to EOP')
+    {
+        Write-Host "Operator GPU Time (sum may exceed model time due to parallelism):"
+    }
+    else
+    {
+        Write-Host "Operator GPU Time:"
+    }
+
     foreach ($DmlOpName in $DmlOpsSortedByDuration)
     {
         $DurationNs = $DmlOpDurationsNs[$DmlOpName]

@@ -160,7 +160,7 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
-                Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+                auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
 
                 tensorShape = shapeInfo.GetShape();
                 for (auto& dim : tensorShape)
