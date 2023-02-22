@@ -8,7 +8,12 @@ param
     [Parameter(Mandatory)][string]$InputPath,
     
     # Path to pixtool.exe. If not provided, the latest installed version is used.
-    [string]$PixtoolPath
+    [string]$PixtoolPath,
+
+    # Method of summing duration of PIX events.
+    # See "Timing Data and Counters" (https://devblogs.microsoft.com/pix/gpu-captures/) for details.
+    [ValidateSet("TOP to EOP", "EOP to EOP")]
+    [string]$DurationType = 'EOP to EOP'
 )
 
 function PrettyDurationFormat($DurationNs)
@@ -50,7 +55,7 @@ if ($InputFile.Extension -eq '.wpix')
     
     $CounterCommandLine = 
         '--counters="Execution Start Time*"',
-        '--counters="TOP to EOP Duration*"',
+        '--counters="$DurationType Duration*"',
         '--counters="CS Invocations"'
     
     $PixCaptureEventsFileName = "events.csv"
@@ -91,7 +96,7 @@ foreach ($Event in $Events)
 
         if ($DmlOpName -ne "Other")
         {
-            $DmlOpDurationsNs[$DmlOpName] += [int]$Event.'TOP to EOP Duration (ns)'
+            $DmlOpDurationsNs[$DmlOpName] += [int]$Event."$DurationType Duration (ns)"
         }
 
         if ($Event.Name -eq 'ExecuteMetaCommand')
@@ -101,7 +106,7 @@ foreach ($Event in $Events)
     }
     elseif ($Event.Name -match 'ONNX: ''(.*)''')
     {
-        $ModelDurationNs[$Matches[1]] = [int]$Event.'TOP to EOP Duration (ns)'
+        $ModelDurationNs[$Matches[1]] = [int]$Event."$DurationType Duration (ns)"
     }
 }
 
