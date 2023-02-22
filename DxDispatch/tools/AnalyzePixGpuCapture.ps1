@@ -24,7 +24,7 @@ function PrettyDurationFormat($DurationNs)
     }
     if ($DurationNs -ge 1000)
     {
-        return "{0:f2} μs" -f ($DurationNs / 1000.0)
+        return "{0:f2} us" -f ($DurationNs / 1000.0)
     }
     return "{0:f2} ns" -f $DurationNs
 }
@@ -54,9 +54,9 @@ if ($InputFile.Extension -eq '.wpix')
     $PixCaptureFile = (Resolve-Path $InputPath).Path
     
     $CounterCommandLine = 
-        '--counters="Execution Start Time*"',
-        '--counters="$DurationType Duration*"',
-        '--counters="CS Invocations"'
+        "--counters=`"Execution Start Time*`"",
+        "--counters=`"$DurationType Duration*`"",
+        "--counters=`"CS Invocations`""
     
     $PixCaptureEventsFileName = "events.csv"
     & $PixtoolPath open-capture $PixCaptureFile save-event-list $CounterCommandLine $PixCaptureEventsFileName
