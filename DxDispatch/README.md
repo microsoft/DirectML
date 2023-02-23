@@ -90,11 +90,11 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
 </table>
 
 The default redistributable versions of components (e.g. nuget, archives):
-- **DirectML (nuget)**: [Microsoft.AI.DirectML (1.9.0)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.0)
-- **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.606.3)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.606.3)
-- **DX Compiler (archive)**: [July 2022 (v1.7.2207)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2207)
-- **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.220124001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.220124001)
-- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.12.1)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.12.1)
+- **DirectML (nuget)**: [Microsoft.AI.DirectML (1.10.1)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.1) - 2023/01/26
+- **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.608.2)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.608.2) -  2023/01/03
+- **DX Compiler (archive)**: [December 2022 (v1.7.2212)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2212) - 2022/12/16
+- **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.220810001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.220810001) - 2022/08/10
+- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.14.0)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.14.0-dev-20230209-0844-6ccaeddefa) - 2023/02/10
 
 Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
 

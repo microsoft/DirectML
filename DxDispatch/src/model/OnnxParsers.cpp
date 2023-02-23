@@ -136,7 +136,7 @@ Model OnnxParsers::ParseModel(
                 continue;
             }
 
-            Ort::Unowned<Ort::TensorTypeAndShapeInfo> shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
+            auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
             auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
 
             bool hasFreeDimensions = false;
