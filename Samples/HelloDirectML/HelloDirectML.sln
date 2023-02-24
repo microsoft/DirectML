@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.489
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HelloDirectML", "HelloDirectML.vcxproj", "{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}"
 EndProject
@@ -11,10 +11,12 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
 		Debug|ARM64 = Debug|ARM64
+		Debug|Gaming.Xbox.Scarlett.x64 = Debug|Gaming.Xbox.Scarlett.x64
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|ARM = Release|ARM
 		Release|ARM64 = Release|ARM64
+		Release|Gaming.Xbox.Scarlett.x64 = Release|Gaming.Xbox.Scarlett.x64
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -23,6 +25,9 @@ Global
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM.Build.0 = Debug|ARM
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.Build.0 = Debug|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Xbox.Scarlett.x64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.Build.0 = Debug|Gaming.Xbox.Scarlett.x64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.Deploy.0 = Debug|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|x64.ActiveCfg = Debug|x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|x64.Build.0 = Debug|x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|x86.ActiveCfg = Debug|Win32
@@ -31,6 +36,9 @@ Global
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM.Build.0 = Release|ARM
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64.ActiveCfg = Release|ARM64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64.Build.0 = Release|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Xbox.Scarlett.x64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.Deploy.0 = Release|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|x64.ActiveCfg = Release|x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|x64.Build.0 = Release|x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|x86.ActiveCfg = Release|Win32
@@ -39,6 +47,9 @@ Global
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM.Build.0 = Debug|ARM
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Xbox.Scarlett.x64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.Build.0 = Debug|Gaming.Xbox.Scarlett.x64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.Deploy.0 = Debug|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|x64.ActiveCfg = Debug|x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|x64.Build.0 = Debug|x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|x86.ActiveCfg = Debug|Win32
@@ -47,6 +58,9 @@ Global
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM.Build.0 = Release|ARM
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64.ActiveCfg = Release|ARM64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64.Build.0 = Release|ARM64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Xbox.Scarlett.x64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.Deploy.0 = Release|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|x64.ActiveCfg = Release|x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|x64.Build.0 = Release|x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|x86.ActiveCfg = Release|Win32
