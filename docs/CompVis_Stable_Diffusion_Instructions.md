@@ -23,7 +23,7 @@ We first need to download the model from Hugging Face. You need an account at Hu
 Once you have the account and an access token, authenticate yourself in a terminal or powershell console by running the following command.
 
 ```
-Hugging Face-cli.exe login
+huggingface-cli.exe login
 ```
 
 It'll ask for your access token, which you can find on your account profile `Settings -> Access Tokens`, just copy it from here and carefully paste it on this prompt. Note that you won't see anything appear on the prompt when you paste it, that's fine. It's there already, just hit Enter. You'll start downloading the model from Hugging Face.
