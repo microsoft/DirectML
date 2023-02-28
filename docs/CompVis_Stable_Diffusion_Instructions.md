@@ -12,8 +12,8 @@ pip install diffusers transformers onnxruntime-directml onnx
 
 ### Hardware Requirement
 Since it is still necessary for the entire model to fit within the GPU memory while executing. An ideal GPU to run this model with should have 8GB of VRAM available. Here are a few examples:
-- NVIDIA RTX 2070 or later
-- AMD RX 6500 XT (8GB) or later
+- NVIDIA GeForce RTX 2070 or later
+- AMD Radeon RX 6500 XT (8GB) or later
 - Intel Arc A750 Graphics or later 
 
 ## Downloading the Model
@@ -74,4 +74,4 @@ When running this script inside VSCode, the relative path specified here is rela
         }
 ```
 
-If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA with, just replace the `onnxruntime-directml` package with `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`.
+If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA with, just replace the `onnxruntime-directml` package with `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`. You may need to install NVIDIA CUDA libraries separately.
