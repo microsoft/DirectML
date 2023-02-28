@@ -1,0 +1,77 @@
+# Running CompVis Stable Diffusion on a Single GPU with ONNX Runtime and DirectML
+
+This instruction downloads and set up CompVis Stable Diffusion v1.4 model through the Hugging Face diffusers and transformers library. It pulls relevant Python packages that allows the model to run on most discrete consumer graphics GPUs with ONNX Runtime on the DirectML execution provider. This instruction is based on the prior work of [Neil McAlister](https://www.travelneil.com/stable-diffusion-windows-amd.html) with the more up-to-date script version from the Hugging Face Diffusers repo and its dependency packages as well as additional conversion steps for better execution performance.
+
+## Installing Dependency Packages
+
+We need a few Python packages, namely the Hugging Face script libraries for transformers and diffusers along with ONNX Runtime for DirectML.
+
+```
+pip install diffusers transformers onnxruntime-directml onnx
+```
+
+### Hardware Requirement
+Since it is still necessary for the entire model to fit within the GPU memory while executing. An ideal GPU to run this model with should have 8GB of VRAM available. Here are a few examples:
+- NVIDIA RTX 2070 or later
+- AMD RX 6500 XT (8GB) or later
+- Intel Arc A750 Graphics or later 
+
+## Downloading the Model
+
+We first need to download the model from Hugging Face. You need an account at Hugging Face, so if you haven't done so, now is the time. Once you've set up a Hugging Face account, go generate an access token (just follow their instruction in the web site).
+
+Once you have the account and an access token, authenticate yourself in a terminal or powershell console by running the following command.
+
+```
+Hugging Face-cli.exe login
+```
+
+It'll ask for your access token, which you can find on your account profile `Settings -> Access Tokens`, just copy it from here and carefully paste it on this prompt. Note that you won't see anything appear on the prompt when you paste it, that's fine. It's there already, just hit Enter. You'll start downloading the model from Hugging Face.
+
+## Converting to ONNX
+
+The model is trained with PyTorch so it can naturally convert to ONNX. Since we'll be using DirectML through ONNX Runtime, this step is needed. The script `convert_stable_diffusion_checkpoint_to_onnx.py` you already have here is just a local copy of the same file from the [Hugging Face diffusers GitHub repo](https://github.com/HuggingFace/diffusers/blob/main/scripts/convert_stable_diffusion_checkpoint_to_onnx.py), so you don't need to clone that repo.
+
+```
+python convert_stable_diffusion_checkpoint_to_onnx.py --model_path="CompVis/stable-diffusion-v1-4" --output_path="./stable_diffusion_onnx" --fp16
+```
+
+This will run the conversion and put the result ONNX files under the `stable_diffusion_onnx` folder. For better performance, we recommend you convert the model to half-precision floating point data type using the `--fp16` option.
+
+_Note: As of this writing, you cannot run this `--fp16` option until you have installed CUDA support with Torch packages using the following instruction. This will require up to 3 GB of additional disk space._
+
+```
+pip install torch>=1.13.0+cu116 torchvision>=0.13.0+cu116 torchaudio>=0.13.0 --extra-index-url https://download.pytorch.org/whl/cu116
+```
+
+## Running the ONNX Model
+
+You'll need a script that looks like what in the `text2image.py` file as follow. On a mid-range NVIDIA RTX 2070, a single image currently takes 20 seconds to generate from a prompt. It'll take up to 10 mins on the CPU.
+
+```python
+# (test/run.py)
+from diffusers import StableDiffusionOnnxPipeline
+pipe = StableDiffusionOnnxPipeline.from_pretrained("./stable_diffusion_onnx", provider="DmlExecutionProvider")
+prompt = "a photo of an astronaut riding a horse on mars."
+image = pipe(prompt).images[0]
+image.save("./result.png")
+```
+
+### A Debugging Note
+When running this script inside VSCode, the relative path specified here is relative to the base location of your project folder and not the location of your script file. To fix that up, configure the `cwd` (i.e. "current working directory") option in your launch.json file as follows:
+
+```json
+    // .vscode/launch.json
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/test/",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+```
+
+If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA with, just replace the `onnxruntime-directml` package with `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`.
