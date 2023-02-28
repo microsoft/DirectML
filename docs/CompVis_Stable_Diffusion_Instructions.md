@@ -29,7 +29,7 @@ It'll ask for your access token, which you can find on your account profile `Set
 
 ## Converting to ONNX
 
-The model is trained with PyTorch so it can naturally convert to ONNX. Since we'll be using DirectML through ONNX Runtime, this step is needed. The script `convert_stable_diffusion_checkpoint_to_onnx.py` you already have here is just a local copy of the same file from the [Hugging Face diffusers GitHub repo](https://github.com/HuggingFace/diffusers/blob/main/scripts/convert_stable_diffusion_checkpoint_to_onnx.py), so you don't need to clone that repo.
+The model is trained with PyTorch so it can naturally convert to ONNX. Since we'll be using DirectML through ONNX Runtime, this step is needed. The script `convert_stable_diffusion_checkpoint_to_onnx.py`, which you will use here is just a local copy of the same file from the [Hugging Face diffusers GitHub repo](https://github.com/HuggingFace/diffusers/blob/main/scripts/convert_stable_diffusion_checkpoint_to_onnx.py). In case you don't want to clone that entire repo, just copy the file over.
 
 ```
 python convert_stable_diffusion_checkpoint_to_onnx.py --model_path="CompVis/stable-diffusion-v1-4" --output_path="./stable_diffusion_onnx" --fp16
@@ -45,7 +45,7 @@ pip install torch>=1.13.0+cu116 torchvision>=0.13.0+cu116 torchaudio>=0.13.0 --e
 
 ## Running the ONNX Model
 
-You'll need a script that looks like what in the `text2image.py` file as follow. On a mid-range NVIDIA RTX 2070, a single image currently takes 20 seconds to generate from a prompt. It'll take up to 10 mins on the CPU.
+You'll need a script that looks like what follows. On an NVIDIA GeForce RTX 2070, a single image currently takes about 20 seconds to generate from a prompt. It'll take between 5-10 mins on a CPU.
 
 ```python
 # (test/run.py)
