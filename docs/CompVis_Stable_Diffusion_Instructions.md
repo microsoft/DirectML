@@ -71,6 +71,7 @@ When running this script inside VSCode, the relative path specified here is rela
             "console": "integratedTerminal",
             "justMyCode": true
         }
+    ]
 ```
 
 If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA, just replace the `onnxruntime-directml` package with the `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`. You may need to install NVIDIA CUDA libraries separately.
