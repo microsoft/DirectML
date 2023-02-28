@@ -1,6 +1,6 @@
 # Running CompVis Stable Diffusion on a Single GPU with ONNX Runtime and DirectML
 
-This instruction downloads and set up CompVis Stable Diffusion v1.4 model through the Hugging Face diffusers and transformers library. It pulls relevant Python packages that allows the model to run on most discrete consumer graphics GPUs with ONNX Runtime on the DirectML execution provider. This instruction is based on the prior work of [Neil McAlister](https://www.travelneil.com/stable-diffusion-windows-amd.html) with the more up-to-date script version from the Hugging Face Diffusers repo and its dependency packages as well as additional conversion steps for better execution performance.
+These instructions download and set up the CompVis Stable Diffusion v1.4 model through the Hugging Face diffusers and transformers library. It pulls relevant Python packages that allow the model to run on most discrete consumer graphics GPUs with ONNX Runtime atop the DirectML execution provider. These instructions are based on the prior work of [Neil McAlister](https://www.travelneil.com/stable-diffusion-windows-amd.html) with the more up-to-date script version from the Hugging Face Diffusers repo and its dependency packages, as well as additional conversion steps for better execution performance.
 
 ## Installing Dependency Packages
 
