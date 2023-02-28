@@ -11,14 +11,13 @@ pip install diffusers transformers onnxruntime-directml onnx
 ```
 
 ### Hardware Requirement
-Since it is still necessary for the entire model to fit within the GPU memory while executing. An ideal GPU to run this model with should have 8GB of VRAM available. Here are a few examples:
+Since the entire model must fit within GPU memory while executing, the GPU should have at least 8GB of VRAM available to run this model. Here are a few examples:
 - NVIDIA GeForce RTX 2070 or later
 - AMD Radeon RX 6500 XT (8GB) or later
 - Intel Arc A750 Graphics or later 
 
 ## Downloading the Model
-
-We first need to download the model from Hugging Face. You need an account at Hugging Face, so if you haven't done so, now is the time. Once you've set up a Hugging Face account, go generate an access token (just follow their instruction in the web site).
+We first need to download the model from Hugging Face, for which you need an account. So if you haven't created one, now is the time. Once you've set up a Hugging Face account, generate an access token (just follow their instructions in the web site).
 
 Once you have the account and an access token, authenticate yourself in a terminal or powershell console by running the following command.
 
@@ -74,4 +73,4 @@ When running this script inside VSCode, the relative path specified here is rela
         }
 ```
 
-If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA with, just replace the `onnxruntime-directml` package with `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`. You may need to install NVIDIA CUDA libraries separately.
+If you have an NVIDIA graphics card and want to try running the ONNX model on CUDA, just replace the `onnxruntime-directml` package with the `onnxruntime-gpu` package. Do not keep them both. Then replace the `"DmlExecutionProvider"` name in the running script `run.py` with `"CUDAExecutionProvider"`. You may need to install NVIDIA CUDA libraries separately.
