@@ -11,5 +11,8 @@ trigger:
     include: 
     - master 
 
+variables:
+  ComponentDetection.Timeout: 1200
+
 steps:
   - task: ComponentGovernanceComponentDetection@0
