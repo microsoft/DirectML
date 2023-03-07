@@ -5,6 +5,9 @@ message("DMLX_PATH=${DMLX_PATH}")
 
 project(pydirectml)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED on)
+
 if(MSVC)
 if(MSVC_VERSION GREATER_EQUAL 1920)
 # Use C++17 on VS 16.0 (aka 2019) and later but with relaxed conformance check
