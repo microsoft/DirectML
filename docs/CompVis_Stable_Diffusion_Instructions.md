@@ -17,7 +17,7 @@ The figure below provides an overview of the components involved in the model co
 - (Python package) [onnx](https://pypi.org/project/onnx/) : for creating ONNX representations of ML models
 - (Python package) [onnxruntime-directml](https://pypi.org/project/onnxruntime-directml/) : for running ONNX models with DirectML support
 
-## Installing Dependencies
+## Installing Dependency Packages
 
 We need a few Python packages, namely the Hugging Face script libraries for transformers and diffusers along with ONNX Runtime for DirectML.
 
