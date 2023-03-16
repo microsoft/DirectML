@@ -49,8 +49,8 @@ You'll need a script that looks like what follows. On an NVIDIA GeForce RTX 2070
 
 ```python
 # (test/run.py)
-from diffusers import StableDiffusionOnnxPipeline
-pipe = StableDiffusionOnnxPipeline.from_pretrained("./stable_diffusion_onnx", provider="DmlExecutionProvider")
+from diffusers import OnnxStableDiffusionPipeline
+pipe = OnnxStableDiffusionPipeline.from_pretrained("./stable_diffusion_onnx", provider="DmlExecutionProvider")
 prompt = "a photo of an astronaut riding a horse on mars."
 image = pipe(prompt).images[0]
 image.save("./result.png")
