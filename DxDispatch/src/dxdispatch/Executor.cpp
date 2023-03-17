@@ -163,8 +163,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
             double duration = timer.End().DurationInMilliseconds();
             dispatchDurationsCPU.push_back(duration);
 
-            std::cout << duration << std::endl;
-
             // If the user specified a fixed frequency for each dispatch, and there
             // is time remaining before the next dispatch, then go to sleep.
             double timeToSleepMs = static_cast<double>(m_commandLineArgs.DispatchFrequencyInMilliseconds()) - duration;
