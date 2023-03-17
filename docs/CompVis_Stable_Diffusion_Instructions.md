@@ -22,7 +22,7 @@ The figure below provides an overview of the components involved in the model co
 We need a few Python packages, namely the Hugging Face script libraries for transformers and diffusers along with ONNX Runtime for DirectML.
 
 ```
-pip install diffusers transformers onnxruntime-directml onnx
+pip install diffusers transformers onnxruntime-directml onnx accelerate
 ```
 
 You will also need PyTorch installed to run the Hugging Face model conversion script (`convert_stable_diffusion_checkpoint_to_onnx.py`). By default, the conversion script will output FP32 ONNX models. FP16 models consume less memory and may be faster depending on your GPU. However, **as of this writing, the Hugging Face stable diffusion to ONNX conversion script only supports FP16 if you have PyTorch with CUDA**. This will require up to 3 GB of additional disk space.
