@@ -19,6 +19,7 @@ public:
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
+    uint32_t DispatchFrequencyInMilliseconds() const { return m_dispatchFrequencyInMilliseconds; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
@@ -37,6 +38,7 @@ private:
     std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
+    uint32_t m_dispatchFrequencyInMilliseconds = 0;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
 
     // Tools like PIX generally work better when work is recorded into a graphics queue, so it's set as the default here.

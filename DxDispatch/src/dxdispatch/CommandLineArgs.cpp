@@ -43,6 +43,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()
         )
         (
+            "frequency",
+            "The minimum time in milliseconds between each dispatch",
+            cxxopts::value<uint32_t>()->default_value("0")
+        )
+        (
             "v,verbose_timings",
             "Print verbose timing information",
             cxxopts::value<bool>()
@@ -126,6 +131,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     {
         m_timeToRunInMilliseconds.emplace(result["milliseconds_to_run"].as<uint32_t>());
         m_dispatchIterations = std::numeric_limits<uint32_t>::max();   // override the "iterations" setting
+    }
+
+    if (result.count("frequency"))
+    {
+        m_dispatchFrequencyInMilliseconds = result["frequency"].as<uint32_t>();
     }
 
     if (result.count("model")) 

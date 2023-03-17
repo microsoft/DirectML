@@ -163,11 +163,25 @@ void Executor::operator()(const Model::DispatchCommand& command)
             double duration = timer.End().DurationInMilliseconds();
             dispatchDurationsCPU.push_back(duration);
 
-            totalDuration += duration;
+            std::cout << duration << std::endl;
+
+            // If the user specified a fixed frequency for each dispatch, and there
+            // is time remaining before the next dispatch, then go to sleep.
+            double timeToSleepMs = static_cast<double>(m_commandLineArgs.DispatchFrequencyInMilliseconds()) - duration;
+            
+            // Break the loop if the loop has run (or will run) longer than the user's limit.
+            // The time to sleep, if any, is added here to avoid a nap that would exceed the limit
+            // by the time the sleep call has has finished.
+            totalDuration += duration + std::abs(timeToSleepMs);
             if (m_commandLineArgs.TimeToRunInMilliseconds() &&
                 totalDuration > m_commandLineArgs.TimeToRunInMilliseconds().value())
             {
                 break;
+            }
+
+            if (timeToSleepMs > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<uint32_t>(timeToSleepMs)));
             }
         }
     }
