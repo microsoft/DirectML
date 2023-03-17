@@ -166,7 +166,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             // If the user specified a fixed frequency for each dispatch, and there
             // is time remaining before the next dispatch, then go to sleep.
             double timeToSleepMs = static_cast<double>(m_commandLineArgs.DispatchFrequencyInMilliseconds()) - duration;
-            
+
             // Break the loop if the loop has run (or will run) longer than the user's limit.
             // The time to sleep, if any, is added here to avoid a nap that would exceed the limit
             // by the time the sleep call has has finished.
@@ -179,6 +179,9 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             if (timeToSleepMs > 0)
             {
+                // This may sleep longer than needed (by several milliseconds even!). This isn't intended
+                // for precise dispatch intervals, but rather to spread work out over time without stressing the CPU.
+                // OS-specific APIs or a shorter sleeps-and-check solution would be more precise.
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<uint32_t>(timeToSleepMs)));
             }
         }
