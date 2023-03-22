@@ -89,10 +89,11 @@ void OnnxDispatchable::Initialize()
 
     m_environment = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
 
+
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
-    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL); // Note ORT_ENABLE_BASIC is useful for debugging.
+    sessionOptions.SetGraphOptimizationLevel(static_cast<GraphOptimizationLevel>(m_args.GetOnnxGraphOptimizationLevel()));
  
     for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionNameOverrides())
     {

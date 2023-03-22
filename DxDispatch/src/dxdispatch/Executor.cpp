@@ -92,14 +92,23 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 
     // Compile/initialize dispatchables.
     {
+        Timer timer;
+
         PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Initialize dispatchables");
         for (auto& dispatchable : m_dispatchables)
         {
             try
             {
+                timer.Start();
                 PIXBeginEvent(PIX_COLOR(128,255,0), L"Init");
                 dispatchable.second->Initialize();
                 PIXEndEvent();
+                timer.End();
+
+                if (m_commandLineArgs.VerboseTimings())
+                {
+                    LogInfo(fmt::format("Initialize '{}': {:.4f} ms", dispatchable.first, timer.DurationInMilliseconds()));
+                }
             }
             catch (const std::exception& e)
             {

@@ -23,5 +23,6 @@ namespace OnnxParsers
         ID3D12CommandQueue* queue,
         const std::filesystem::path& filePath, 
         gsl::span<const std::pair<std::string, uint32_t>> freeDimNameOverrides,
-        gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides);
+        gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides,
+        uint32_t optimizationLevel);
 }

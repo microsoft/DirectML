@@ -83,14 +83,15 @@ Model OnnxParsers::ParseModel(
     ID3D12CommandQueue* queue,
     const std::filesystem::path& filePath, 
     gsl::span<const std::pair<std::string, uint32_t>> freeDimNameOverrides,
-    gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides)
+    gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides,
+    uint32_t graphOptimizationLevel)
 {
     const OrtApi& ortApi = Ort::GetApi();
 
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
-    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+    sessionOptions.SetGraphOptimizationLevel(static_cast<GraphOptimizationLevel>(graphOptimizationLevel));
 
     for (auto& freeDimOverride : freeDimNameOverrides)
     {

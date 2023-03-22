@@ -24,6 +24,7 @@ public:
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_freeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_freeDimensionDenotationOverrides; }
+    uint32_t GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
 
 private:
     bool m_showAdapters = false;
@@ -50,4 +51,6 @@ private:
     // [onnx models] Overrides for free dimensions by denotation. 
     // The first value in the pair is the denotation, and the second value is the dimension size.
     std::vector<std::pair<std::string, uint32_t>> m_freeDimensionDenotationOverrides;
+
+    uint32_t m_onnxGraphOptimizationLevel = 99;
 };

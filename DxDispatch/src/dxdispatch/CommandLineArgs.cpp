@@ -103,6 +103,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "List of free dimension overrides by denotation (ONNX models only). Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
+        (
+            "l,onnx_graph_optimization_level",
+            "Sets the ONNX Runtime graph optimization level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 = All",
+            cxxopts::value<uint32_t>()->default_value("99")
+        )
         ;
     
     options.positional_help("<PATH_TO_MODEL>");
@@ -222,6 +227,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
     ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_freeDimensionNameOverrides);
     ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_freeDimensionDenotationOverrides);
+
+    if (result.count("onnx_graph_optimization_level")) 
+    { 
+        m_onnxGraphOptimizationLevel = result["onnx_graph_optimization_level"].as<uint32_t>(); 
+    }
 
     m_helpText = options.help();
 }

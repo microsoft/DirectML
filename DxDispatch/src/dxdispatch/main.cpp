@@ -104,7 +104,8 @@ int main(int argc, char** argv)
                     device->GetCommandQueue(),
                     args.ModelPath(), 
                     args.GetOnnxFreeDimensionNameOverrides(),
-                    args.GetOnnxFreeDimensionDenotationOverrides()
+                    args.GetOnnxFreeDimensionDenotationOverrides(),
+                    args.GetOnnxGraphOptimizationLevel()
                 );
     #endif
             }
