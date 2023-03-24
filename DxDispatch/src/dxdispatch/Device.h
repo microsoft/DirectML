@@ -73,6 +73,9 @@ public:
     // This is a blocking call that forces the CPU and GPU to sync.
     std::vector<uint64_t> ResolveTimestamps();
 
+    // Calls ResolveTimestamps() and converts timestamp pairs into timing samples.
+    std::vector<double> ResolveTimingSamples();
+
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {
         m_temporaryResources.emplace_back(std::move(object));

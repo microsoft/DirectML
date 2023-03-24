@@ -29,6 +29,41 @@ struct Timer
     double DurationInMilliseconds() { return std::chrono::duration<double>(end - start).count() * 1000; }
 };
 
+struct Timings
+{
+    std::vector<double> samples;
+
+    struct Stats
+    {
+        double average;
+        double median;
+        double min;
+        double max;
+    };
+
+    Stats ComputeStats(size_t warmupSampleCount)
+    {
+        Stats stats = {};
+        if (samples.empty())
+        {
+            return stats;
+        }
+
+        // The first samples may be "warmup" runs that should be discarded to avoid skewing the results.
+        size_t discardedSamples = std::min(warmupSampleCount, samples.size() - 1);
+
+        double totalTime = std::accumulate(samples.begin() + discardedSamples, samples.end(), 0.0);
+        stats.average = totalTime / (samples.size() - discardedSamples);
+
+        std::sort(samples.begin(), samples.end());
+        stats.median = samples[samples.size() / 2];
+        stats.min = samples[0];
+        stats.max = samples[samples.size() - 1];
+
+        return stats;
+    }
+};
+
 Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args) : m_model(model), m_device(device), m_commandLineArgs(args)
 {
     // Initialize buffer resources.
@@ -131,9 +166,9 @@ void Executor::operator()(const Model::DispatchCommand& command)
 {
     auto& dispatchable = m_dispatchables[command.dispatchableName];
 
-    Timer timer;
-    std::vector<double> dispatchDurationsCPU;
-    double totalDuration = 0.0;
+    Timings cpuTimings;
+    Timings gpuTimings;
+    Timings bindTimings;
 
     Dispatchable::Bindings bindings;
     try
@@ -147,11 +182,17 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
 
     // Dispatch
+    uint32_t iterationsCompleted = 0;
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
-        for (uint32_t iteration = 0; iteration < m_commandLineArgs.DispatchIterations(); iteration++)
+        Timer loopTimer;
+        Timer iterationTimer;
+
+        for (; iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
         {
+            // Bind
+            iterationTimer.Start();
             PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
             try
             {
@@ -163,18 +204,16 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 return;
             }
             PIXEndEvent();
+            bindTimings.samples.push_back(iterationTimer.End().DurationInMilliseconds());
 
-            timer.Start();
-
+            // Dispatch
+            iterationTimer.Start();
             dispatchable->Dispatch(command);
             dispatchable->Wait();
-            
-            double duration = timer.End().DurationInMilliseconds();
-            dispatchDurationsCPU.push_back(duration);
+            cpuTimings.samples.push_back(iterationTimer.End().DurationInMilliseconds());
 
-            totalDuration += duration;
             if (m_commandLineArgs.TimeToRunInMilliseconds() &&
-                totalDuration > m_commandLineArgs.TimeToRunInMilliseconds().value())
+                loopTimer.End().DurationInMilliseconds() > m_commandLineArgs.TimeToRunInMilliseconds().value())
             {
                 break;
             }
@@ -187,59 +226,44 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     PIXEndEvent();
 
-    uint32_t iterations = dispatchDurationsCPU.size();
-    // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
-    int skipped = (iterations > 1) ? 1 : 0;
-    double totalTimeCPU = std::accumulate(dispatchDurationsCPU.begin() + skipped, dispatchDurationsCPU.end(), 0.0);
-    double avgTimeCPU = totalTimeCPU / (dispatchDurationsCPU.size() - skipped);
+    auto cpuStats = cpuTimings.ComputeStats(1);
+    auto bindStats = bindTimings.ComputeStats(1);
 
-    std::sort(dispatchDurationsCPU.begin(), dispatchDurationsCPU.end());
-    double medianTimeCPU = dispatchDurationsCPU[iterations / 2];
-    double minTimeCPU = dispatchDurationsCPU[0];
-    double maxTimeCPU = dispatchDurationsCPU[iterations - 1];
+    // GPU timings are capped at a fixed size. If iterations > samples then the 
+    // first warmup sample was overwritten (no need to discard any samples).
+    gpuTimings.samples = m_device->ResolveTimingSamples();
+    auto gpuStats = gpuTimings.ComputeStats(iterationsCompleted > gpuTimings.samples.size() ? 0 : 1);
 
-    std::vector<uint64_t> timestamps = m_device->ResolveTimestamps();
-
-    uint64_t frequency;
-    m_device->GetCommandQueue()->GetTimestampFrequency(&frequency);
-
-    uint32_t samples = timestamps.size() / 2;
-    std::vector<double> dispatchDurationsGPU(samples);
-
-    for (uint32_t i = 0; i < samples; ++i) {
-        uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
-        
-        dispatchDurationsGPU[i] = double(timestampDelta) / frequency;
-    }
-
-    // If iterations > samples then the first timestamps were overwritten (no need to skip).
-    if (iterations > samples) 
+    if (iterationsCompleted > 0)
     {
-        skipped = 0;
-    }
+        if (m_commandLineArgs.VerboseTimings())
+        {
+            LogInfo(fmt::format("Dispatch '{}': {} iterations", 
+                command.dispatchableName, iterationsCompleted
+            ));
 
-    double totalTimeGPU = std::accumulate(dispatchDurationsGPU.begin() + skipped, dispatchDurationsGPU.end(), 0.0);
-    double avgTimeGPU = totalTimeGPU / (dispatchDurationsGPU.size() - skipped);
+            LogInfo(fmt::format("CPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                cpuStats.average, cpuStats.min, cpuStats.median, cpuStats.max
+            ));
 
-    std::sort(dispatchDurationsGPU.begin(), dispatchDurationsGPU.end());
-    double medianTimeGPU = dispatchDurationsGPU[samples / 2];
-    double minTimeGPU = dispatchDurationsGPU[0];
-    double maxTimeGPU = dispatchDurationsGPU[samples - 1];
+            LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                gpuStats.average, gpuStats.min, gpuStats.median, gpuStats.max
+            ));
 
-    
-    if (m_commandLineArgs.VerboseTimings()) {
-        LogInfo(fmt::format("Dispatch '{}': {} iterations\nCPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-            command.dispatchableName, iterations, avgTimeCPU, minTimeCPU, medianTimeCPU, maxTimeCPU));
-        LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max\n",
-            avgTimeGPU, minTimeGPU, medianTimeGPU, maxTimeGPU));
-    }
-    else if (iterations == 1) {
-        LogInfo(fmt::format("Dispatch '{}': {} iteration, {:.4f} ms (CPU), {:.4f} ms (GPU)",
-            command.dispatchableName, iterations, medianTimeCPU, medianTimeGPU));
-    }
-    else {
-        LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)",
-            command.dispatchableName, iterations, medianTimeCPU, medianTimeGPU));
+            LogInfo(fmt::format("Bind Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                bindStats.average, bindStats.min, bindStats.median, bindStats.max
+            ));
+        }
+        else
+        {
+            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU), {:.4f} ms median (Bind)", 
+                command.dispatchableName, 
+                iterationsCompleted,
+                cpuStats.median,
+                gpuStats.median,
+                bindStats.median
+            ));
+        }
     }
 }
 
