@@ -25,10 +25,10 @@
     - [DML\_TENSOR\_DESC](#dml_tensor_desc)
   - [Advanced Binding](#advanced-binding)
 - [Timing](#timing)
-  - [CPU Dispatch Time](#cpu-dispatch-time)
-  - [GPU Dispatch Time](#gpu-dispatch-time)
-  - [Binding Time](#binding-time)
-  - [Fixed Dispatch Interval](#fixed-dispatch-interval)
+  - [CPU Timings](#cpu-timings)
+  - [GPU Timings](#gpu-timings)
+  - [Bind Timings](#bind-timings)
+  - [Target Dispatch Interval](#target-dispatch-interval)
 - [Scenarios](#scenarios)
   - [Debugging DirectX API Usage](#debugging-directx-api-usage)
   - [Benchmarking](#benchmarking)
@@ -53,8 +53,8 @@ The most basic usage is to simply pass in the path to a JSON model. For example,
 ```
 > dxdispatch.exe .\models\dml_reduce.json
 
-Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 1.1294 ms average
+Running on 'NVIDIA GeForce RTX 3090'
+Dispatch 'sum': 1 iterations, 0.5491 ms median (CPU), 0.0061 ms median (GPU), 0.4024 ms median (Bind)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
@@ -62,12 +62,12 @@ Resource 'output': 6, 15, 24
 There are more options available to you. If you run the executable with no arguments (or `--help`) it will display the available options:
 
 ```
-dxdispatch version 0.6.0
-  DirectML     : NuGet (Microsoft.AI.DirectML.1.8.2)
-  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.602.0)
-  DXCompiler   : Release (v1.6.2112)
-  PIX          : NuGet (WinPixEventRuntime.1.0.220124001)
-  ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.11.0)
+dxdispatch version 0.12.0
+  DirectML     : NuGet (Microsoft.AI.DirectML.1.10.1)
+  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.608.2)
+  DXCompiler   : Release (v1.7.2212)
+  PIX          : NuGet (WinPixEventRuntime.1.0.220810001)
+  ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.14.1)
 
 Usage:
   dxdispatch [OPTION...] <PATH_TO_MODEL>
@@ -76,20 +76,40 @@ Usage:
   -i, --dispatch_iterations arg
                                 The number of times to repeat each dispatch
                                 (default: 1)
+  -t, --milliseconds_to_run arg
+                                Specifies the total time to run the test for.
+                                Overrides dispatch_iterations
+      --dispatch_interval arg   The minimum time in milliseconds between
+                                dispatches (a large interval may introduce sleeps
+                                between dispatches) (default: 0)
+  -v, --verbose_timings         Print verbose timing information
   -h, --help                    Print command-line usage help
   -a, --adapter arg             Substring to match a desired DirectX adapter
                                 (default: )
   -s, --show_adapters           Show all available DirectX adapters
-  -q, --direct_queue            Use a direct queue/lists (default is a
-                                compute queue/lists)
+  -S, --show_dependencies       Show version info for dependencies including
+                                DirectX components
+  -q, --queue_type arg          Type of command queue/list to use ('compute'
+                                or 'direct') (default: direct)
       --xbox_allow_precompile   Disables automatically defining
                                 __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
   -c, --pix_capture_type arg    Type of PIX captures to take: gpu, timing, or
                                 manual. (default: manual)
-  -f, --onnx_free_dim_override arg
+  -o, --pix_capture_name arg    Name used for PIX capture files. (default:
+                                dxdispatch)
+  -f, --onnx_free_dim_name_override arg
                                 List of free dimension overrides by name
                                 (ONNX models only). Can be repeated. Example: -f
                                 foo:3 -f bar:5 (default: )
+  -F, --onnx_free_dim_denotation_override arg
+                                List of free dimension overrides by
+                                denotation (ONNX models only). Can be repeated.
+                                Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5 (default:
+                                )
+  -l, --onnx_graph_optimization_level arg
+                                Sets the ONNX Runtime graph optimization
+                                level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
+                                All (default: 99)
 ```
 
 
@@ -696,12 +716,65 @@ Finally, recall that you may bind *multiple* resources to a bind point. This mea
 
 # Timing
 
-todo. verbose. warmup sample.
+When a dispatchable is executed, DxDispatch prints some basic timing info in a single line summary:
 
-## CPU Dispatch Time
-## GPU Dispatch Time
-## Binding Time
-## Fixed Dispatch Interval
+```
+> dxdispatch.exe model.onnx -t 1000
+
+Dispatch 'model.onnx': 65 iterations, 14.3074 ms median (CPU), 13.8947 ms median (GPU), 0.0740 ms median (Bind)
+```
+
+The `--verbose` (`-v`) option will show more detailed statistics:
+
+```
+> dxdispatch.exe model.onnx -t 1000 -v
+
+Initialize 'model.onnx': 36.2849 ms
+Dispatch 'model.onnx': 67 iterations
+CPU Timings: 14.2981 ms average, 13.5309 ms min, 13.8500 ms median, 44.4716 ms max
+GPU Timings: 14.0318 ms average, 13.2772 ms min, 13.5946 ms median, 44.2225 ms max
+Bind Timings: 0.0559 ms average, 0.0247 ms min, 0.0384 ms median, 0.3853 ms max
+```
+
+For each category (CPU, GPU, Bind), every iteration is measured as a sample. In the above output, there were 67 iterations so there will be 67 timing samples. For the average and median, the first sample is discarded (called a "warmup sample") since it is disproportionately more expensive than others. However, the first/warmup sample *is* included when computing the max time, which is shown with verbose timings.
+
+## CPU Timings
+
+*CPU timings* refer to the duration for the each dispatch (ignoring binding) to complete on the CPU timeline. This measurement will always take longer than the actual GPU work.
+
+| Dispatchable | Work Done                                           |
+| ------------ | --------------------------------------------------- |
+| HLSL         | Command list dispatch and wait (signal)             |
+| DML Operator | Command list dispatch and wait (signal)             |
+| ONNX         | Ort::Session::Run and IOBinding::SynchronizeOutputs |
+
+## GPU Timings
+
+*GPU timings* are recorded using [D3D12 timestamp queries](https://learn.microsoft.com/en-us/windows/win32/direct3d12/timing) inserted into command lists, which gives a more precise view of time spent on the GPU work than the CPU timings. Start/end pairs of timestamps are converted into duration samples on the CPU once all dispatches complete.
+
+Both HLSL and DML operator dispatchables place the start and end timestamps around the respective work in a single command list. However, for ONNX dispatchables, the GPU timestamps are recorded in separate command lists that wrap the OrtSession::Run call. This difference is necessary because the DML execution provider in ORT manages its own command lists, and there may even be CPU/GPU interop if some kernels in ORT run on the CPU execution provider. This is illustrated in the figure below; it's important to keep in mind that the GPU timings for ONNX dispatchables may include more than pure GPU work.
+
+![ort gpu timings](images/ort_gpu_timings.png)
+
+## Bind Timings
+
+Ideally, in production scenarios, applications bind once and run inference multiple times: the contents of the bindings (e.g. pixel values of an image) may change without requiring the resources themselves to change. For this reason, binding is measured independently of dispatching. DxDispatch does some additional work in the bind step, depending on the dispatchable, that may increase binding time more than what a typical application would see. In particular, allocating memory is (descriptor heaps, D3D12 resources, etc.) usually not something that would be in a loop in a real application.
+
+| Dispatchable | Work Done                                                                                                       |
+| ------------ | --------------------------------------------------------------------------------------------------------------- |
+| HLSL         | Creates UAVs/SRVs.                                                                                              |
+| DML Operator | Creates and sets descriptor heap; fills IDMLBindingTable. May include allocation time for temporary resource.   |
+| ONNX         | Setting input/output bindings with Ort::IoBinding. May include allocation time for dynamically shaped bindings. |
+
+## Target Dispatch Interval
+
+The `--dispatch_interval <int>` command-line option can be used to simulate dispatching at a fixed frequency, which may be useful when analyzing CPU/GPU overhead for certain real-time scenarios. By default, DxDispatch will dispatch in a loop until all iterations are complete (equivalent to `--dispatch_interval 0`). The figure below shows an example where the `--dispatch_interval 15` is used, and most dispatches take less than 15ms to complete:
+
+![dispatch intervals](images/dispatch_interval.png)
+
+Note the following:
+- The interval is a *minimum* time. If a dispatch exceeds the interval time, then the next dispatch will commence without delay.
+- The exact interval duration will vary in practice (typically a few milliseconds, depending on the interval value), since the OS ultimately controls when a sleeping process resumes. Intervals are not intended to be high precision.
 
 # Scenarios
 
