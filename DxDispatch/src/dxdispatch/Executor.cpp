@@ -186,13 +186,14 @@ void Executor::operator()(const Model::DispatchCommand& command)
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
-        Timer loopTimer;
-        Timer iterationTimer;
+        Timer loopTimer, iterationTimer, bindTimer, dispatchTimer;
 
         for (; iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
         {
-            // Bind
             iterationTimer.Start();
+
+            // Bind
+            bindTimer.Start();
             PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
             try
             {
@@ -204,19 +205,26 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 return;
             }
             PIXEndEvent();
-            bindTimings.samples.push_back(iterationTimer.End().DurationInMilliseconds());
+            bindTimings.samples.push_back(bindTimer.End().DurationInMilliseconds());
 
             // Dispatch
-            iterationTimer.Start();
+            dispatchTimer.Start();
             dispatchable->Dispatch(command);
             dispatchable->Wait();
-            cpuTimings.samples.push_back(iterationTimer.End().DurationInMilliseconds());
+            cpuTimings.samples.push_back(dispatchTimer.End().DurationInMilliseconds());
+
+            // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
+            // to potentially introduce a sleep between each iteration.
+            double timeToSleep = std::max(0.0, m_commandLineArgs.MinimumDispatchIntervalInMilliseconds() - iterationTimer.End().DurationInMilliseconds());
 
             if (m_commandLineArgs.TimeToRunInMilliseconds() &&
-                loopTimer.End().DurationInMilliseconds() > m_commandLineArgs.TimeToRunInMilliseconds().value())
+                loopTimer.End().DurationInMilliseconds() + timeToSleep > m_commandLineArgs.TimeToRunInMilliseconds().value())
             {
                 break;
             }
+
+            // Not particularly precise (may be off by some milliseconds). Consider using OS APIs in the future.
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(timeToSleep)));
         }
     }
     catch (const std::exception& e)

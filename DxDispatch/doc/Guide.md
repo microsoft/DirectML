@@ -9,6 +9,7 @@
     - [Buffer: Constant Initializer](#buffer-constant-initializer)
     - [Buffer: Array Initializer](#buffer-array-initializer)
     - [Buffer: Sequence Initializer](#buffer-sequence-initializer)
+    - [Buffer: File Data Initializer](#buffer-file-data-initializer)
     - [Buffer: List Initializer](#buffer-list-initializer)
   - [Dispatchables](#dispatchables)
     - [DirectML Operator](#directml-operator)
@@ -17,11 +18,17 @@
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
+    - [Write File](#write-file)
   - [Special Parsing Rules](#special-parsing-rules)
-    - [Desc Structs (type and void*)](#desc-structs-type-and-void)
+    - [Desc Structs (type and void\*)](#desc-structs-type-and-void)
     - [Abbreviated Enum Values](#abbreviated-enum-values)
-    - [DML_TENSOR_DESC](#dml_tensor_desc)
+    - [DML\_TENSOR\_DESC](#dml_tensor_desc)
   - [Advanced Binding](#advanced-binding)
+- [Timing](#timing)
+  - [CPU Dispatch Time](#cpu-dispatch-time)
+  - [GPU Dispatch Time](#gpu-dispatch-time)
+  - [Binding Time](#binding-time)
+  - [Fixed Dispatch Interval](#fixed-dispatch-interval)
 - [Scenarios](#scenarios)
   - [Debugging DirectX API Usage](#debugging-directx-api-usage)
   - [Benchmarking](#benchmarking)
@@ -30,12 +37,13 @@
 
 # Overview
 
-DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders or DirectML operators), and commands to execute. 
+DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders, DirectML operators, and ONNX models), and commands to execute. 
 
 This guide is organized as follows:
 - The first section (**Running the Program**) shows basic command-line usage.
 - The second section (**Execution Model**) explains the steps involves in executing a model.
 - The third section (**Models**) covers the model schema with examples.
+- Third fourth section (**Timing**) covers the timing statistics and what they mean.
 - The final section (**Scenarios**) goes through some of the ways you might use the tool.
 
 # Running the Program
@@ -685,6 +693,15 @@ Finally, recall that you may bind *multiple* resources to a bind point. This mea
     }
 }
 ```
+
+# Timing
+
+todo. verbose. warmup sample.
+
+## CPU Dispatch Time
+## GPU Dispatch Time
+## Binding Time
+## Fixed Dispatch Interval
 
 # Scenarios
 
