@@ -26,8 +26,8 @@ public:
 
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_freeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_freeDimensionDenotationOverrides; }
+    gsl::span<const std::pair<std::string, std::string>> GetOnnxSessionOptionConfigEntries() const { return m_onnxSessionOptionConfigEntries; }
     uint32_t GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
-    bool GetOnnxDmlEpDisableGraphFusion() const { return false; }
 
 private:
     bool m_showAdapters = false;
@@ -55,6 +55,11 @@ private:
     // [onnx models] Overrides for free dimensions by denotation. 
     // The first value in the pair is the denotation, and the second value is the dimension size.
     std::vector<std::pair<std::string, uint32_t>> m_freeDimensionDenotationOverrides;
+
+    // [onnx models] Key/value pairs passed to SessionOptions config entries
+    // https://github.com/microsoft/onnxruntime/blob/main/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h
+    // https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/core/providers/dml/dml_session_options_config_keys.h
+    std::vector<std::pair<std::string, std::string>> m_onnxSessionOptionConfigEntries;
 
     uint32_t m_onnxGraphOptimizationLevel = 99;
 };

@@ -105,6 +105,7 @@ int main(int argc, char** argv)
                     args.ModelPath(), 
                     args.GetOnnxFreeDimensionNameOverrides(),
                     args.GetOnnxFreeDimensionDenotationOverrides(),
+                    args.GetOnnxSessionOptionConfigEntries(),
                     args.GetOnnxGraphOptimizationLevel()
                 );
     #endif

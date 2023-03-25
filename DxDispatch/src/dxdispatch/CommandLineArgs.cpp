@@ -52,7 +52,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()
         )
         (
-            "dispatch_interval",
+            "I,dispatch_interval",
             "The minimum time in milliseconds between dispatches (a large interval may introduce sleeps between dispatches)",
             cxxopts::value<uint32_t>()->default_value("0")
         )
@@ -112,12 +112,17 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     options.add_options("ONNX")
         (
             "f,onnx_free_dim_name_override",
-            "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
+            "List of free dimension overrides by name. Can be repeated. Example: -f foo:3 -f bar:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         (
             "F,onnx_free_dim_denotation_override",
-            "List of free dimension overrides by denotation (ONNX models only). Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
+            "List of free dimension overrides by denotation. Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
+        (
+            "e,onnx_session_config_entry",
+            "List of SessionOption config keys and values. Can be repeated. Example: -e foo:0 -e bar:1",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         (
@@ -254,6 +259,27 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     { 
         m_onnxGraphOptimizationLevel = result["onnx_graph_optimization_level"].as<uint32_t>(); 
     }
+
+    auto ParseConfigOptionEntries = [&](const char* parameterName, std::vector<std::pair<std::string, std::string>>& overrides)
+    {
+        if (result.count(parameterName))
+        {
+            auto freeDimOverrides = result[parameterName].as<std::vector<std::string>>(); 
+            for (auto& value : freeDimOverrides)
+            {
+                auto splitPos = value.find(":");
+                if (splitPos == std::string::npos)
+                {
+                    throw std::invalid_argument("Expected ':' separating name/denotation and its value");
+                }
+                auto overrideName = value.substr(0, splitPos);
+                auto overrideValue = value.substr(splitPos + 1);
+                overrides.emplace_back(overrideName, overrideValue);
+            }
+        }
+    };
+
+    ParseConfigOptionEntries("onnx_session_config_entry", m_onnxSessionOptionConfigEntries);
 
     m_helpText = options.help();
 }

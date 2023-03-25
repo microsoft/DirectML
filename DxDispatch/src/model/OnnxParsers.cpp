@@ -84,6 +84,7 @@ Model OnnxParsers::ParseModel(
     const std::filesystem::path& filePath, 
     gsl::span<const std::pair<std::string, uint32_t>> freeDimNameOverrides,
     gsl::span<const std::pair<std::string, uint32_t>> freeDimDenotationOverrides,
+    gsl::span<const std::pair<std::string, std::string>> sessionOptionConfigEntries,
     uint32_t graphOptimizationLevel)
 {
     const OrtApi& ortApi = Ort::GetApi();
@@ -101,6 +102,11 @@ Model OnnxParsers::ParseModel(
     for (auto& freeDimOverride : freeDimDenotationOverrides)
     {
         Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+    }
+
+    for (auto& configEntry : sessionOptionConfigEntries)
+    {
+        Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, configEntry.first.c_str(), configEntry.second.c_str()));
     }
 
     const OrtDmlApi* ortDmlApi;
