@@ -28,10 +28,19 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<decltype(m_modelPath)>()
         )
         (
-            "d,debug", 
-            "Enable D3D and DML debug layers", 
+            "h,help", 
+            "Print command-line usage help", 
             cxxopts::value<bool>()
         )
+        (
+            "S,show_dependencies",
+            "Show version info for dependencies including DirectX components",
+            cxxopts::value<bool>()
+        )
+        ;
+
+    // TIMING OPTIONS
+    options.add_options("Timing")
         (
             "i,dispatch_iterations", 
             "The number of times to repeat each dispatch", 
@@ -52,9 +61,13 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Print verbose timing information",
             cxxopts::value<bool>()
         )
+        ;
+
+    // DIRECTX OPTIONS
+    options.add_options("DirectX")
         (
-            "h,help", 
-            "Print command-line usage help", 
+            "d,debug", 
+            "Enable D3D and DML debug layers", 
             cxxopts::value<bool>()
         )
         (
@@ -65,11 +78,6 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "s,show_adapters", 
             "Show all available DirectX adapters", 
-            cxxopts::value<bool>()
-        )
-        (
-            "S,show_dependencies",
-            "Show version info for dependencies including DirectX components",
             cxxopts::value<bool>()
         )
         (
@@ -98,6 +106,10 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Name used for PIX capture files.",
             cxxopts::value<std::string>()->default_value("dxdispatch")
         )
+        ;
+
+    // ONNX OPTIONS
+    options.add_options("ONNX")
         (
             "f,onnx_free_dim_name_override",
             "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
@@ -114,7 +126,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()->default_value("99")
         )
         ;
-    
+
     options.positional_help("<PATH_TO_MODEL>");
 
     options.parse_positional({"model"});

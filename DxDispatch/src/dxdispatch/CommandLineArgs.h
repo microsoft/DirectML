@@ -23,9 +23,11 @@ public:
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
+
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_freeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_freeDimensionDenotationOverrides; }
     uint32_t GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
+    bool GetOnnxDmlEpDisableGraphFusion() const { return false; }
 
 private:
     bool m_showAdapters = false;
