@@ -2,6 +2,7 @@
 
 - [Overview](#overview)
 - [Running the Program](#running-the-program)
+  - [Choosing a Hardware Adapter](#choosing-a-hardware-adapter)
 - [Execution Model](#execution-model)
 - [Models](#models)
   - [Resources](#resources)
@@ -72,49 +73,60 @@ dxdispatch version 0.12.0
 Usage:
   dxdispatch [OPTION...] <PATH_TO_MODEL>
 
-  -d, --debug                   Enable D3D and DML debug layers
+  -h, --help               Print command-line usage help
+  -S, --show_dependencies  Show version info for dependencies including
+                           DirectX components
+
+ DirectX options:
+  -d, --debug                  Enable D3D and DML debug layers
+  -a, --adapter arg            Substring to match a desired DirectX adapter
+                               (default: )
+  -s, --show_adapters          Show all available DirectX adapters
+  -q, --queue_type arg         Type of command queue/list to use ('compute'
+                               or 'direct') (default: direct)
+      --xbox_allow_precompile  Disables automatically defining
+                               __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
+  -c, --pix_capture_type arg   Type of PIX captures to take: gpu, timing, or
+                               manual. (default: manual)
+  -o, --pix_capture_name arg   Name used for PIX capture files. (default:
+                               dxdispatch)
+
+ ONNX options:
+  -f, --onnx_free_dim_name_override arg
+                                List of free dimension overrides by name. Can
+                                be repeated. Example: -f foo:3 -f bar:5
+                                (default: )
+  -F, --onnx_free_dim_denotation_override arg
+                                List of free dimension overrides by
+                                denotation. Can be repeated. Example: -F DATA_BATCH:3
+                                -F DATA_CHANNEL:5 (default: )
+  -e, --onnx_session_config_entry arg
+                                List of SessionOption config keys and values.
+                                Can be repeated. Example: -e foo:0 -e bar:1
+                                (default: )
+  -l, --onnx_graph_optimization_level arg
+                                Sets the ONNX Runtime graph optimization
+                                level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
+                                All (default: 99)
+
+ Timing options:
   -i, --dispatch_iterations arg
                                 The number of times to repeat each dispatch
                                 (default: 1)
   -t, --milliseconds_to_run arg
                                 Specifies the total time to run the test for.
                                 Overrides dispatch_iterations
-      --dispatch_interval arg   The minimum time in milliseconds between
+  -I, --dispatch_interval arg   The minimum time in milliseconds between
                                 dispatches (a large interval may introduce sleeps
                                 between dispatches) (default: 0)
   -v, --verbose_timings         Print verbose timing information
-  -h, --help                    Print command-line usage help
-  -a, --adapter arg             Substring to match a desired DirectX adapter
-                                (default: )
-  -s, --show_adapters           Show all available DirectX adapters
-  -S, --show_dependencies       Show version info for dependencies including
-                                DirectX components
-  -q, --queue_type arg          Type of command queue/list to use ('compute'
-                                or 'direct') (default: direct)
-      --xbox_allow_precompile   Disables automatically defining
-                                __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
-  -c, --pix_capture_type arg    Type of PIX captures to take: gpu, timing, or
-                                manual. (default: manual)
-  -o, --pix_capture_name arg    Name used for PIX capture files. (default:
-                                dxdispatch)
-  -f, --onnx_free_dim_name_override arg
-                                List of free dimension overrides by name
-                                (ONNX models only). Can be repeated. Example: -f
-                                foo:3 -f bar:5 (default: )
-  -F, --onnx_free_dim_denotation_override arg
-                                List of free dimension overrides by
-                                denotation (ONNX models only). Can be repeated.
-                                Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5 (default:
-                                )
-  -l, --onnx_graph_optimization_level arg
-                                Sets the ONNX Runtime graph optimization
-                                level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
-                                All (default: 99)
 ```
 
+## Choosing a Hardware Adapter
 
+Your machine may have multiple graphics and/or compute accelerators, which DirectX calls [*adapters*](https://learn.microsoft.com/en-us/windows/win32/dxcore/dxcore-enum-adapters). By default, DxDispatch enumerates all available adapters, sorts them with a preference for [hardware & high performance](https://learn.microsoft.com/en-us/windows/win32/dxcore/dxcore_interface/ne-dxcore_interface-dxcoreadapterpreference), and then picks the first one. If you have both an integrated GPU and discrete GPU, for instance, this process should ensure that the discrete GPU is picked by default. Note that *high performance* doesn't mean *best performance*: the relative ordering of multiple discrete GPUs is arbitrary, for instance, and it's possible (but uncommon) to have an integrated GPU that is faster than a discrete GPU.
 
-If your machine has multiple adapters you can display them:
+If the default choice isn't desired, then you can print the available adapters using the `--show_adapters` (`-s`) option:
 
 ```
 > .\dxdispatch.exe -s    
@@ -144,7 +156,7 @@ Microsoft Basic Render Driver
 -Shared System Memory: 15.92 GB
 ```
 
-Discrete hardware adapters are preferred by default. You can specify a desired adapter by passing a part of its name (will match by substring):
+The default adapter selection for the above example would be the *NVIDIA GeForce RTX 2070 SUPER*. You can instead specify a desired adapter by passing a part of its name (first adapter to match the substring is chosen):
 
 ```
 > dxdispatch.exe .\models\dml_reduce.json -a Intel
@@ -449,16 +461,31 @@ Resources in the JSON model are bound to the ONNX model's input/output tensors. 
 The above DxDispatch JSON model is executed like any other model:
 
 ```
-> dxdispatch.exe .\models\onnx_gemm.json
+> dxdispatch.exe .\models\onnx_gemm.json [other options...]
 ```
 
-However, as a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to defining buffer resources for each ONNX input/output tensor with uninitialized values, dispatching the ONNX model once, and not issuing and print commands. This convenience is primarily intended for benchmarking and debugging.
+Unlike other dispatchable types, you **do not** need to specify *resources* and *bindings* for ONNX dispatchables. The following JSON is also valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
+
+```json
+{
+    "resources": {},
+
+    "dispatchables": { "gemm": { "type": "onnx", "sourcePath": "models/onnx_gemm.onnx" } },
+
+    "commands": 
+    [
+        { "type": "dispatch", "dispatchable": "gemm", "bindings": {} }
+    ]
+}
+```
+
+As a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to the JSON above with empty resources and bindings. Again, this convenience is primarily intended for benchmarking and debugging.
 
 ```
-> dxdispatch.exe .\models\onnx_gemm.onnx
+> dxdispatch.exe .\models\onnx_gemm.onnx [other options...]
 ```
 
-Some ONNX models have "free" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These free dimensions become 1 unless they are explicitly given a value. You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
+Some ONNX models have "symbolic" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These symbolic dimensions become 1 unless they are explicitly given a value; this default behavior *may* render the model valid (e.g. the symbolic dimension represents a batch size), but this is not always the case! You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
 
 ```
 > dxdispatch.exe some_model.onnx -f seq_len:100
