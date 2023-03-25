@@ -221,6 +221,8 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
     auto inputCount = m_session->GetInputCount();
     auto outputCount = m_session->GetOutputCount();
 
+    std::unordered_map<const char*, uint32_t> symbolicDimsForcedToSizeOne;
+
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
         const bool isInputTensor = (bindingPass == 0);
@@ -245,25 +247,50 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
                 tensorShape = shapeInfo.GetShape();
-                bool hasFreeDimensions = false;
                 uint64_t elementCount = 1;
                 std::vector<uint32_t> sizes;
 
-                for (auto& dim : tensorShape)
-                {
-                    // Tensors may have symbolic dimensions (stored as dim_param instead of dim_value in TensorShapeProto).
-                    // Symbolic dimensions that have not been overriden (using -f/-F options) will have a size of -1.
-                    // For input tensors, we try fixing any remaining free dimensions to 1, which *may* make the graph valid
-                    // for execution (e.g. symbolic dim represents batch size); however, this is not guaranteed to be valid
-                    // in all models (e.g. symbolic dim represents a spatial size that will be downsampled). Forcing dims to 1 
-                    // effectively gives input tensors static shapes that can be lazily allocated as DX resources; this is not
-                    // valid for output tensors, however, which may have symbolic dimensions computed at runtime.
-                    hasFreeDimensions = hasFreeDimensions || (dim == -1 && !isInputTensor);
-                    dim = std::abs(dim);
-                    sizes.push_back(static_cast<uint32_t>(dim));
-                    elementCount *= sizes.back();
+                // SymbolicDims will contain the names of any symbolic dimensions that haven't been overriden with -f/-F.
+                bool hasFreeDimensions = false;
+                std::vector<const char*> symbolicDims(shapeInfo.GetDimensionsCount());
+                shapeInfo.GetSymbolicDimensions(symbolicDims.data(), shapeInfo.GetDimensionsCount());
 
-                    // TODO: only abs symbolic dimensions that appear in input tensors.
+                for (size_t dimIndex = 0; dimIndex < shapeInfo.GetDimensionsCount(); dimIndex++)
+                {
+                    auto& dimSize = tensorShape[dimIndex];
+
+                    // Symbolic dimensions that have not been overriden (using -f/-F options) will have a size of -1.
+                    if (dimSize == -1)
+                    {
+                        auto dimName = symbolicDims[dimIndex];
+
+                        if (isInputTensor)
+                        {
+                            // We try fixing any symbolic dimensions that appear on inputs to size 1, which *may* make the graph valid
+                            // for execution (e.g. symbolic dim represents batch size); however, this is not guaranteed to be valid
+                            // in all models (e.g. symbolic dim represents a spatial size that will be downsampled). Forcing dims to 1 
+                            // effectively gives input tensors static shapes that can be lazily allocated as DX resources. 
+                            if (strlen(dimName) > 0)
+                            {
+                                symbolicDimsForcedToSizeOne[symbolicDims[dimIndex]] = 1;
+                            }
+                            dimSize = 1;
+                        }
+                        else
+                        {
+                            // Symbolic dimensions that appear on outputs cannot naively be forced to size 1 since they may be 
+                            // computed during session run. However, it is safe if an input forced the same name to size 1 earlier.
+                            if (strlen(dimName) > 0 && symbolicDimsForcedToSizeOne[symbolicDims[dimIndex]] == 1)
+                            {
+                                dimSize = 1;
+                            }
+                        }
+                    }
+
+                    hasFreeDimensions = hasFreeDimensions || dimSize == -1;
+
+                    sizes.push_back(static_cast<uint32_t>(std::abs(dimSize)));
+                    elementCount *= sizes.back();
                 }
 
                 // Scalars have empty shapes.
