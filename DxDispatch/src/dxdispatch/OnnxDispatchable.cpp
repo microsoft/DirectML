@@ -280,7 +280,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                         {
                             // Symbolic dimensions that appear on outputs cannot naively be forced to size 1 since they may be 
                             // computed during session run. However, it is safe if an input forced the same name to size 1 earlier.
-                            if (strlen(dimName) > 0 && symbolicDimsForcedToSizeOne[symbolicDims[dimIndex]] == 1)
+                            if (strlen(dimName) > 0 && symbolicDimsForcedToSizeOne.find(dimName) != symbolicDimsForcedToSizeOne.end())
                             {
                                 dimSize = 1;
                             }
