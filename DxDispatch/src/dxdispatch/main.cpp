@@ -4,9 +4,6 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "JsonParsers.h"
-#ifndef ONNXRUNTIME_NONE
-#include "OnnxParsers.h"
-#endif
 #include "Executor.h"
 #include "CommandLineArgs.h"
 #include "ModuleInfo.h"
@@ -99,15 +96,14 @@ int main(int argc, char** argv)
     #ifdef ONNXRUNTIME_NONE
                 throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
     #else
-                model = OnnxParsers::ParseModel(
-                    device->DML(), 
-                    device->GetCommandQueue(),
-                    args.ModelPath(), 
-                    args.GetOnnxFreeDimensionNameOverrides(),
-                    args.GetOnnxFreeDimensionDenotationOverrides(),
-                    args.GetOnnxSessionOptionConfigEntries(),
-                    args.GetOnnxGraphOptimizationLevel()
-                );
+                auto name = args.ModelPath().filename().string();
+                model = 
+                {
+                    /*resource*/{}, 
+                    /*dispatchables*/{ {name, Model::OnnxDispatchableDesc{args.ModelPath()}} }, 
+                    /*commands*/{ Model::DispatchCommand{name, {}, {}} }, 
+                    BucketAllocator{}
+                };
     #endif
             }
             else

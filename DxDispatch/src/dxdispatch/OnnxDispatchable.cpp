@@ -4,7 +4,6 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "OnnxDispatchable.h"
-#include "OnnxParsers.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -72,6 +71,89 @@ static ID3D12Resource* GetResourceFromModelBinding(
     }
 
     return bindingSource.resource;
+}
+
+
+static std::string GetTensorName(size_t index, Ort::Session const& session, bool isInput)
+{
+    Ort::AllocatorWithDefaultOptions allocator;
+    auto name = isInput ? session.GetInputNameAllocated(index, allocator) : session.GetOutputNameAllocated(index, allocator);
+    std::string returnName(name.get());
+    return returnName;
+}
+
+struct DataTypeInfo
+{
+    ONNXTensorElementDataType onnxDataType;
+    DML_TENSOR_DATA_TYPE dmlDataType;
+    uint32_t sizeInBytes;
+};
+
+static DataTypeInfo GetDataTypeInfo(ONNXTensorElementDataType dataType)
+{
+    DataTypeInfo info = {};
+    info.onnxDataType = dataType;
+    info.dmlDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
+
+    switch (dataType)
+    {
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT8;
+        info.sizeInBytes = 1;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT8;
+        info.sizeInBytes = 1;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
+        info.sizeInBytes = 8;
+        break;
+    }
+
+    return info;
 }
 
 OnnxDispatchable::OnnxDispatchable(
@@ -147,7 +229,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
             TensorBinding binding = {};
-            auto tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
+            auto tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
 
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
 
@@ -159,7 +241,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
             {
 
                 auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-                auto dataTypeInfo = OnnxParsers::GetDataTypeInfo(shapeInfo.GetElementType());
+                auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
                 tensorShape = shapeInfo.GetShape();
@@ -242,7 +324,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
             {
                 if (binding.ortValue)
                 {
-                    m_ioBindings->BindInput(tensorName.c_str(), *m_tensors.back().ortValue);
+                    m_ioBindings->BindInput(tensorName.c_str(), *binding.ortValue);
                 }
                 else
                 {
@@ -256,7 +338,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 
                 if (binding.ortValue)
                 {
-                    m_ioBindings->BindOutput(tensorName.c_str(), *m_tensors.back().ortValue);
+                    m_ioBindings->BindOutput(tensorName.c_str(), *binding.ortValue);
                 }
                 else
                 {

@@ -68,14 +68,6 @@ add_library(
     src/model/NpyReaderWriter.h
 )
 
-if(NOT onnxruntime_type STREQUAL None)
-    target_sources(
-        model PRIVATE
-        src/model/OnnxParsers.cpp
-        src/model/OnnxParsers.h
-    )
-endif()
-
 target_link_libraries(
     model 
     PRIVATE 
@@ -87,7 +79,6 @@ target_link_libraries(
     wil
     d3d12
     directml
-    onnxruntime
 )
 
 target_compile_features(model PRIVATE cxx_std_17)
