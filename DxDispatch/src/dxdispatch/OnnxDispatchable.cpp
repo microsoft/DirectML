@@ -221,7 +221,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
     auto inputCount = m_session->GetInputCount();
     auto outputCount = m_session->GetOutputCount();
 
-    std::unordered_map<const char*, uint32_t> symbolicDimsForcedToSizeOne;
+    std::unordered_map<std::string, uint32_t> symbolicDimsForcedToSizeOne;
 
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
