@@ -25,7 +25,18 @@ private:
     const OrtDmlApi* m_ortDmlApi = nullptr;
     const CommandLineArgs& m_args;
 
+    struct TensorBinding
+    {
+        Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+        Microsoft::WRL::ComPtr<IUnknown> wrapper;
+        std::optional<Ort::Value> ortValue;
+    };
+
+    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The final bindings are the union 
+    // of JSON bindings (argument of Bind call) and any bindings to lazily-allocated DX resources from the first 
+    // Bind call. Lazily-allocated DX resources have a lifetime tied to the dispatchable instance and cannot be 
+    // referenced by any other dispatchables. 
+    std::vector<TensorBinding> m_tensors;
+
     std::optional<Ort::IoBinding> m_ioBindings;
-    std::vector<Ort::Value> m_tensors;
-    std::vector<Microsoft::WRL::ComPtr<IUnknown>> m_tensorWrappers;
 };

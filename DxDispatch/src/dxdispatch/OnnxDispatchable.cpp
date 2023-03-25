@@ -89,7 +89,6 @@ void OnnxDispatchable::Initialize()
 
     m_environment = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
 
-
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
@@ -115,35 +114,24 @@ void OnnxDispatchable::Initialize()
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 
     m_session = Ort::Session(*m_environment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
-    m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
-void OnnxDispatchable::Bind(const Bindings& bindings)
+void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 {
-    // This table summarizes the resource bindings provided to the ONNX Runtime session:
+    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The final bindings are the union 
+    // of JSON bindings and bindings to lazily-allocated DX resources from the first Bind(). Lazily-allocated DX resources
+    // have a lifetime tied to the dispatchable instance and cannot be referenced by any other dispatchables. 
     //
-    // Kind   | Type       | DXD Binding    | DML Supported Data Type | ORT binding
-    // -------|------------|----------------|-------------------------|----------------------------------
-    // input  | tensor     | true           | *                       | pre-allocated DX resource
-    // input  | tensor     | false          | true                    | explicit DX resource (uninitialized values)
-    // input  | tensor     | false          | false                   | explicit CPU resource (uninitialized values)
-    // input  | non-tensor | *              | *                       | none
-    // output | tensor     | true           | *                       | pre-allocated DX resource
-    // output | tensor     | false          | true                    | implicit DX resource
-    // output | tensor     | false          | false                   | implicit CPU resource
-    // output | non-tensor | *              | *                       | implicit CPU resource
-    //
-    // - "DXD Binding" refers to the binding specified in a DxDispatch JSON model or created by OnnxParsers::ParseModel. 
-    // - "ORT Binding" refers to the final binding passed to the ONNX Runtime session.
-    // - A pre-allocated DX resource is a buffer that is created by DxDispatch (independently of the ONNX model/session).
-    // - An explicit ORT binding means creating an Ort::Value and storing it in m_tensors.
-    // - An implicit ORT binding means passing an Ort::MemoryInfo to Ort::IoBinding::BindOutput, which lets the underlying
-    //   execution provider allocate as necessary. This is useful when outputs have dynamic shapes that can't be pre-allocated.
+    // Note that bindings and DX resources are only stored for tensors with static shapes: ONNX model inputs/outputs 
+    // with free dimensions cannot be allocated ahead of time (unknown size until sometime during Session::Run), so 
+    // they are implicitly allocated by ORT.
 
-    m_ioBindings->ClearBoundInputs();
-    m_ioBindings->ClearBoundOutputs();
-    m_tensors.clear();
-    m_tensorWrappers.clear();
+    if (m_ioBindings)
+    {
+        return;
+    }
+
+    m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 
     Ort::MemoryInfo cpuMemoryInformation = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo dmlMemoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
@@ -158,108 +146,126 @@ void OnnxDispatchable::Bind(const Bindings& bindings)
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
+            TensorBinding binding = {};
+            auto tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
+
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
-            std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
+
             bool isDmlSupportedType = false;
 
             std::vector<int64_t> tensorShape;
 
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
+
                 auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-
-                tensorShape = shapeInfo.GetShape();
-                for (auto& dim : tensorShape)
-                {
-                    dim = std::abs(dim);
-                }
-
                 auto dataTypeInfo = OnnxParsers::GetDataTypeInfo(shapeInfo.GetElementType());
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
-                if (bindings.find(tensorName) == bindings.end())
+                tensorShape = shapeInfo.GetShape();
+                bool hasFreeDimensions = false;
+                uint64_t elementCount = 1;
+                std::vector<uint32_t> sizes;
+
+                for (auto& dim : tensorShape)
                 {
-                    // No DXD binding exists, so allocate input tensors on the CPU.
-                    // Outputs are implicitly allocated using memInfo to handle dynamic shapes.
-                    if (isInputTensor)
+                    // Tensors may have symbolic dimensions (stored as dim_param instead of dim_value in TensorShapeProto).
+                    // Symbolic dimensions that have not been overriden (using -f/-F options) will have a size of -1.
+                    // For input tensors, we try fixing any remaining free dimensions to 1, which *may* make the graph valid
+                    // for execution (e.g. symbolic dim represents batch size); however, this is not guaranteed to be valid
+                    // in all models (e.g. symbolic dim represents a spatial size that will be downsampled). Forcing dims to 1 
+                    // effectively gives input tensors static shapes that can be lazily allocated as DX resources; this is not
+                    // valid for output tensors, however, which may have symbolic dimensions computed at runtime.
+                    hasFreeDimensions = hasFreeDimensions || (dim == -1 && !isInputTensor);
+                    dim = std::abs(dim);
+                    sizes.push_back(static_cast<uint32_t>(dim));
+                    elementCount *= sizes.back();
+
+                    // TODO: only abs symbolic dimensions that appear in input tensors.
+                }
+
+                // Scalars have empty shapes.
+                if (sizes.empty())
+                {
+                    sizes.push_back(1);
+                }
+
+                if (jsonBindings.find(tensorName) == jsonBindings.end())
+                {
+                    if (!hasFreeDimensions && isDmlSupportedType)
                     {
-                        if (isDmlSupportedType)
-                        {
-                            // Allocate a DX resource.
-                            std::vector<uint32_t> sizes;
-                            for (auto& dimSize : tensorShape) { sizes.push_back(static_cast<uint32_t>(dimSize)); }
-                            auto resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
-                                dataTypeInfo.dmlDataType,
-                                sizes.size(),
-                                sizes.data(),
-                                nullptr
-                                ));
+                        // Lazily allocate DX resource, wrap it as a DML tensor, and store a binding.
+                        // This applies to both inputs and outputs so long as they have static shapes.
+                        binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
+                            dataTypeInfo.dmlDataType,
+                            sizes.size(),
+                            sizes.data(),
+                            nullptr
+                        ));
 
-                            // Wrap the explicitly allocated DX resource.
-                            Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-                            m_tensors.emplace_back(CreateTensorFromResource(
-                                m_ortDmlApi,
-                                dmlMemoryInformation,
-                                resource.Get(),
-                                tensorShape,
-                                dataTypeInfo.onnxDataType,
-                                &resourceWrapper));
-
-                            m_tensorWrappers.push_back(std::move(resourceWrapper));
-                        }
-                        else
-                        {
-                            auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
-                            m_tensors.emplace_back(Ort::Value::CreateTensor(
-                                allocator, 
-                                tensorShape.data(),
-                                tensorShape.size(), 
-                                dataTypeInfo.onnxDataType));
-                        }
+                        binding.ortValue = CreateTensorFromResource(
+                            m_ortDmlApi,
+                            dmlMemoryInformation,
+                            binding.resource.Get(),
+                            tensorShape,
+                            dataTypeInfo.onnxDataType,
+                            &binding.wrapper
+                        );
+                    }
+                    else if (isInputTensor && !isDmlSupportedType)
+                    {
+                        // Inputs with unsupported data types can be explicitly as CPU tensors.
+                        binding.ortValue = Ort::Value::CreateTensor(
+                            static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions()), 
+                            tensorShape.data(),
+                            tensorShape.size(), 
+                            dataTypeInfo.onnxDataType
+                        );
                     }
                 }
                 else
                 {
-                    // Wrap the pre-allocated DX resource.
-                    Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-                    m_tensors.emplace_back(CreateTensorFromResource(
+                    // Wrap the pre-allocated DX resource from JSON model.
+                    binding.resource = GetResourceFromModelBinding(tensorName, jsonBindings);
+                    binding.ortValue = CreateTensorFromResource(
                         m_ortDmlApi,
                         dmlMemoryInformation,
-                        GetResourceFromModelBinding(tensorName, bindings),
+                        binding.resource.Get(),
                         tensorShape,
                         dataTypeInfo.onnxDataType,
-                        &resourceWrapper));
-
-                    m_tensorWrappers.push_back(std::move(resourceWrapper));
+                        &binding.wrapper
+                    );
                 }
             }
 
             if (isInputTensor)
             {
-                if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
+                if (binding.ortValue)
                 {
-                    // Don't bind non-tensor inputs.
-                    continue;
+                    m_ioBindings->BindInput(tensorName.c_str(), *m_tensors.back().ortValue);
                 }
-
-                // Bind the input tensor.
-                m_ioBindings->BindInput(tensorName.c_str(), m_tensors.back());
+                else
+                {
+                    // Only non-tensor inputs should remain unbound.
+                    assert(typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR);
+                }
             }
             else
             {
                 assert(!isInputTensor);
 
-                if (bindings.find(tensorName) == bindings.end())
+                if (binding.ortValue)
+                {
+                    m_ioBindings->BindOutput(tensorName.c_str(), *m_tensors.back().ortValue);
+                }
+                else
                 {
                     // Let the execution provider allocate the output.
                     m_ioBindings->BindOutput(tensorName.c_str(), isDmlSupportedType ? dmlMemoryInformation : cpuMemoryInformation);
                 }
-                else
-                {
-                    // Bind the pre-allocated DX resource.
-                    m_ioBindings->BindOutput(tensorName.c_str(), m_tensors.back());
-                }
             }
+
+            m_tensors.emplace_back(std::move(binding));
         }
     }
 }
