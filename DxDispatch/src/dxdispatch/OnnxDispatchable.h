@@ -32,11 +32,9 @@ private:
         std::optional<Ort::Value> ortValue;
     };
 
-    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The final bindings are the union 
-    // of JSON bindings (argument of Bind call) and any bindings to lazily-allocated DX resources from the first 
-    // Bind call. Lazily-allocated DX resources have a lifetime tied to the dispatchable instance and cannot be 
-    // referenced by any other dispatchables. 
-    std::vector<TensorBinding> m_tensors;
+    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The merged bindings 
+    // are the union of JSON bindings and bindings to lazily-allocated resources from the first Bind().
+    std::vector<TensorBinding> m_mergedBindings;
 
     std::optional<Ort::IoBinding> m_ioBindings;
 };

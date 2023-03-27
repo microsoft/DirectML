@@ -200,13 +200,13 @@ void OnnxDispatchable::Initialize()
 
 void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 {
-    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The final bindings are the union 
-    // of JSON bindings and bindings to lazily-allocated DX resources from the first Bind(). Lazily-allocated DX resources
-    // have a lifetime tied to the dispatchable instance and cannot be referenced by any other dispatchables. 
-    //
-    // Note that bindings and DX resources are only stored for tensors with static shapes: ONNX model inputs/outputs 
-    // with free dimensions cannot be allocated ahead of time (unknown size until sometime during Session::Run), so 
-    // they are implicitly allocated by ORT.
+    // Type         | Static Shape | DML Data Type | JSON Binding | Result
+    // -------------|--------------|---------------|--------------|---------------------------------------------------------
+    // Input/Output | TRUE/FALSE   | TRUE/FALSE    | TRUE         | Bind DX resource allocated by executor
+    // Input/Output | TRUE         | TRUE          | FALSE        | Bind DX resource lazily allocated by this dispatchable
+    // Input/Output | TRUE         | FALSE         | FALSE        | Bind CPU resource lazily allocated by this dispatchable
+    // Output       | FALSE        | TRUE          | FALSE        | Bind DML EP memory info (resource allocated each run)
+    // Output       | FALSE        | FALSE         | FALSE        | Bind CPU EP memory info (resource allocated each run)
 
     if (m_ioBindings)
     {
@@ -220,8 +220,6 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 
     auto inputCount = m_session->GetInputCount();
     auto outputCount = m_session->GetOutputCount();
-
-    std::unordered_map<std::string, uint32_t> symbolicDimsForcedToSizeOne;
 
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
@@ -241,53 +239,37 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
-
                 auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
                 auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
+
+                bool hasStaticShape = true;
 
                 tensorShape = shapeInfo.GetShape();
                 uint64_t elementCount = 1;
                 std::vector<uint32_t> sizes;
 
-                // SymbolicDims will contain the names of any symbolic dimensions that haven't been overriden with -f/-F.
-                bool hasFreeDimensions = false;
-                std::vector<const char*> symbolicDims(shapeInfo.GetDimensionsCount());
-                shapeInfo.GetSymbolicDimensions(symbolicDims.data(), shapeInfo.GetDimensionsCount());
-
-                for (size_t dimIndex = 0; dimIndex < shapeInfo.GetDimensionsCount(); dimIndex++)
+                for (auto& dimSize : tensorShape)
                 {
-                    auto& dimSize = tensorShape[dimIndex];
-
-                    // Symbolic dimensions that have not been overriden (using -f/-F options) will have a size of -1.
-                    if (dimSize == -1)
+                    if (dimSize == -1) // Dimensions that aren't statically known/inferrable are "free dimensions" with size -1. 
                     {
-                        auto dimName = symbolicDims[dimIndex];
-
                         if (isInputTensor)
                         {
-                            // We try fixing any symbolic dimensions that appear on inputs to size 1, which *may* make the graph valid
-                            // for execution (e.g. symbolic dim represents batch size); however, this is not guaranteed to be valid
-                            // in all models (e.g. symbolic dim represents a spatial size that will be downsampled). Forcing dims to 1 
-                            // effectively gives input tensors static shapes that can be lazily allocated as DX resources. 
-                            if (strlen(dimName) > 0)
-                            {
-                                symbolicDimsForcedToSizeOne[symbolicDims[dimIndex]] = 1;
-                            }
+                            // Try fixing any free dimensions that appear on *inputs* to size 1, which may make the graph valid
+                            // for execution (e.g. dim represents batch size); however, this is not guaranteed to be valid
+                            // in all models (e.g. dim represents a spatial size that will be downsampled). Forcing dims to 1 
+                            // effectively gives all input tensors static shapes that can be preallocated. This trick cannot be
+                            // done for outputs, since their free dimensions may correspond to symbolic dimensions that are
+                            // only known at runtime (e.g. a shape node generates the dimensions based on input tensor values).
                             dimSize = 1;
                         }
                         else
                         {
-                            // Symbolic dimensions that appear on outputs cannot naively be forced to size 1 since they may be 
-                            // computed during session run. However, it is safe if an input forced the same name to size 1 earlier.
-                            if (strlen(dimName) > 0 && symbolicDimsForcedToSizeOne.find(dimName) != symbolicDimsForcedToSizeOne.end())
-                            {
-                                dimSize = 1;
-                            }
+                            // Tensors with one or more free dimensions have "dynamic shapes" and cannot be preallocated, 
+                            // since their total size is unknown.
+                            hasStaticShape = false;
                         }
                     }
-
-                    hasFreeDimensions = hasFreeDimensions || dimSize == -1;
 
                     sizes.push_back(static_cast<uint32_t>(std::abs(dimSize)));
                     elementCount *= sizes.back();
@@ -301,40 +283,47 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 
                 if (jsonBindings.find(tensorName) == jsonBindings.end())
                 {
-                    if (!hasFreeDimensions && isDmlSupportedType)
+                    // Attempt to lazily create resources/bindings for tensors not bound in the JSON model (if any).
+                    // Only tensors with static shapes can be preallocated.
+                    if (hasStaticShape)
                     {
-                        // Lazily allocate DX resource, wrap it as a DML tensor, and store a binding.
-                        // This applies to both inputs and outputs so long as they have static shapes.
-                        binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
-                            dataTypeInfo.dmlDataType,
-                            sizes.size(),
-                            sizes.data(),
-                            nullptr
-                        ));
+                        if (isDmlSupportedType)
+                        {
+                            // If the data type is supported by DML, then the resource is lazily allocated.
+                            binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
+                                dataTypeInfo.dmlDataType,
+                                sizes.size(),
+                                sizes.data(),
+                                nullptr
+                            ));
 
-                        binding.ortValue = CreateTensorFromResource(
-                            m_ortDmlApi,
-                            dmlMemoryInformation,
-                            binding.resource.Get(),
-                            tensorShape,
-                            dataTypeInfo.onnxDataType,
-                            &binding.wrapper
-                        );
-                    }
-                    else if (isInputTensor && !isDmlSupportedType)
-                    {
-                        // Inputs with unsupported data types can be explicitly as CPU tensors.
-                        binding.ortValue = Ort::Value::CreateTensor(
-                            static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions()), 
-                            tensorShape.data(),
-                            tensorShape.size(), 
-                            dataTypeInfo.onnxDataType
-                        );
+                            binding.ortValue = CreateTensorFromResource(
+                                m_ortDmlApi,
+                                dmlMemoryInformation,
+                                binding.resource.Get(),
+                                tensorShape,
+                                dataTypeInfo.onnxDataType,
+                                &binding.wrapper
+                            );
+                        }
+                        else
+                        {
+                            // Preallocate as a CPU resource.
+                            binding.ortValue = Ort::Value::CreateTensor(
+                                static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions()), 
+                                tensorShape.data(),
+                                tensorShape.size(), 
+                                dataTypeInfo.onnxDataType
+                            );
+                        }
                     }
                 }
                 else
                 {
-                    // Wrap the pre-allocated DX resource from JSON model.
+                    // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
+                    // Simply wrap the existing DX resource as an OrtValue. Note this path does NOT check if the
+                    // the tensor has a static shape: it assume the user has allocated a large resource
+                    // to accomodate the dynamic shape.
                     binding.resource = GetResourceFromModelBinding(tensorName, jsonBindings);
                     binding.ortValue = CreateTensorFromResource(
                         m_ortDmlApi,
@@ -374,7 +363,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                 }
             }
 
-            m_tensors.emplace_back(std::move(binding));
+            m_mergedBindings.emplace_back(std::move(binding));
         }
     }
 }
