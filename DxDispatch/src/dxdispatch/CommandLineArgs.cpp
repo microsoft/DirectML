@@ -1,5 +1,9 @@
 #include "pch.h"
 #include "CommandLineArgs.h"
+// cxxopts will parse comma-separated arguments as vectors by default (e.g. --foo 1,2,3,4 can be
+// parsed as a vector<int>. This interferes with binding shape syntax, so we override the delimiter
+// and parse manually.
+#define CXXOPTS_VECTOR_DELIMITER '\0'
 #include <cxxopts.hpp>
 #include "config.h"
 
@@ -123,6 +127,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "e,onnx_session_config_entry",
             "List of SessionOption config keys and values. Can be repeated. Example: -e foo:0 -e bar:1",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
+        (
+            "b,binding_shape",
+            "Explicit shapes for ONNX model tensors (-b <tensor_name>:<shape>, where <shape> is a comma-separated list of "
+            "dimension sizes without whitespace). Can be repeated. Example: -b input1:2,2 -b input2:3,2",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         (
@@ -289,6 +299,36 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("onnx_logging_level")) 
     { 
         m_onnxLoggingLevel = result["onnx_logging_level"].as<uint32_t>(); 
+    }
+
+    // Parse binding shapes
+    if (result.count("binding_shape"))
+    {
+        auto bindingShapes = result["binding_shape"].as<std::vector<std::string>>(); 
+        for (auto& bindingShapeArg : bindingShapes)
+        {
+            auto splitPos = bindingShapeArg.rfind(":");
+            if (splitPos == std::string::npos)
+            {
+                throw std::invalid_argument("Expected ':' separating tensor name and its shape");
+            }
+            auto tensorName = bindingShapeArg.substr(0, splitPos);
+            auto tensorShapeStr = bindingShapeArg.substr(splitPos + 1);
+
+            // Tokenize shape string (e.g "1,2,15,8") by commas -> [1,2,15,8]
+            std::vector<int64_t> shape;
+
+            size_t startPos = 0;
+            while (startPos != std::string::npos)
+            {
+                size_t endPos = tensorShapeStr.find(",", startPos + 1);
+                auto substr = tensorShapeStr.substr(startPos, endPos - startPos);
+                shape.push_back(std::stoll(substr));
+                startPos = endPos == std::string::npos ? std::string::npos : endPos + 1;
+            }
+
+            m_onnxBindShapes[tensorName] = std::move(shape);
+        }
     }
 
     m_helpText = options.help();
