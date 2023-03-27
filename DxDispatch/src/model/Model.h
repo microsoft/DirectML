@@ -89,6 +89,13 @@ public:
     struct OnnxDispatchableDesc
     {
         std::filesystem::path sourcePath;
+
+        // NOTE: these will be overriden if also using the respective command-line options.
+        std::vector<std::pair<std::string, uint32_t>> freeDimNameOverrides;
+        std::vector<std::pair<std::string, uint32_t>> freeDimDenotationOverrides;
+        std::vector<std::pair<std::string, std::string>> sessionOptionsConfigEntries;
+        uint32_t graphOptimizationLevel;
+        uint32_t loggingLevel;
     };
 
     struct DispatchableDesc

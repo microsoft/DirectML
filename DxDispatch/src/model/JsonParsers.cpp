@@ -1234,6 +1234,63 @@ Model::OnnxDispatchableDesc ParseModelOnnxDispatchableDesc(const std::filesystem
     auto sourcePath = ParseStringField(object, "sourcePath");
     desc.sourcePath = ResolveInputFilePath(parentPath, sourcePath);
 
+    desc.freeDimNameOverrides = ParseFieldHelper<std::vector<std::pair<std::string, uint32_t>>>(
+        object, "freeDimensionNameOverrides", false, {}, [](auto& value)
+    { 
+        std::vector<std::pair<std::string, uint32_t>> overrides;
+
+        if (!value.IsObject())
+        {
+            throw std::invalid_argument("Expected a non-null JSON object.");
+        }
+
+        for (auto member = value.MemberBegin(); member != value.MemberEnd(); member++)
+        {
+            overrides.emplace_back(member->name.GetString(), ParseUInt32(member->value));
+        }
+
+        return overrides;
+    });
+
+    desc.freeDimDenotationOverrides = ParseFieldHelper<std::vector<std::pair<std::string, uint32_t>>>(
+        object, "freeDimensionDenotationOverrides", false, {}, [](auto& value)
+    { 
+        std::vector<std::pair<std::string, uint32_t>> overrides;
+        
+        if (!value.IsObject())
+        {
+            throw std::invalid_argument("Expected a non-null JSON object.");
+        }
+
+        for (auto member = value.MemberBegin(); member != value.MemberEnd(); member++)
+        {
+            overrides.emplace_back(member->name.GetString(), ParseUInt32(member->value));
+        }
+
+        return overrides;
+    });
+
+    desc.sessionOptionsConfigEntries = ParseFieldHelper<std::vector<std::pair<std::string, std::string>>>(
+        object, "sessionOptionsConfigEntries", false, {}, [](auto& value)
+    { 
+        std::vector<std::pair<std::string, std::string>> overrides;
+        
+        if (!value.IsObject())
+        {
+            throw std::invalid_argument("Expected a non-null JSON object.");
+        }
+
+        for (auto member = value.MemberBegin(); member != value.MemberEnd(); member++)
+        {
+            overrides.emplace_back(member->name.GetString(), ParseString(member->value));
+        }
+
+        return overrides;
+    });
+
+    desc.graphOptimizationLevel = ParseUInt32Field(object, "graphOptimizationLevel", false, 99);
+    desc.loggingLevel = ParseUInt32Field(object, "loggingLevel", false, 2);
+
     return desc;
 }
 

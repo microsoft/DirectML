@@ -238,6 +238,33 @@
                 {
                     "type": "string",
                     "description": "Path to the ONNX model file"
+                },
+                "freeDimensionNameOverrides": 
+                { 
+                    "type": "object",
+                    "description": "Dictionary of dimension names to override. Each member (symbolic dimension name) should map to an integer."
+                },
+                "freeDimensionDenotationOverrides": 
+                { 
+                    "type": "object",
+                    "description": "Dictionary of denotation names to override. Each member (denotation name) should map to an integer."
+                },
+                "sessionOptionsConfigEntries": 
+                { 
+                    "type": "object",
+                    "description": "Dictionary of config entries for SessionOptions. Each member (key) should map to string (value)."
+                },
+                "graphOptimizationLevel": 
+                {
+                    "type": "integer",
+                    "description": "OrtGraphOptimizationLevel. 0 = None, 1 = Basic, 2 = Extended, 99 = All.",
+                    "default": 99
+                },
+                "loggingLevel": 
+                {
+                    "type": "integer",
+                    "description": "OrtLoggingLevel. 0 = Verbose, 1 = Info, 2 = Warning, 3 = Error, 4 = Fatal.",
+                    "default": 2
                 }
             },
             "required": [ "sourcePath" ]

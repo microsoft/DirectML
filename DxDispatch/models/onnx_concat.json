@@ -1,0 +1,55 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "a": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4 ]
+        },
+        "b": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 5, 6, 7, 8 ]
+        },
+        "c": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 8, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "concat": 
+        {
+            "type": "onnx",
+            "sourcePath": "onnx_concat.onnx",
+            "freeDimensionNameOverrides": { "N": 2 },
+            "freeDimensionDenotationOverrides": {},
+            "sessionOptionsConfigEntries": {},
+            "graphOptimizationLevel": 99,
+            "loggingLevel": 2
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": "a",
+                "x1": "b",
+                "y": "c"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "c"
+        }
+    ]
+}
