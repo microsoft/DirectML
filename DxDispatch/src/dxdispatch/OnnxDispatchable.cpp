@@ -185,46 +185,35 @@ void OnnxDispatchable::Initialize()
 
     sessionOptions.SetGraphOptimizationLevel(graphOptimizationLevel);
  
+    using DimOverridesList = std::initializer_list<gsl::span<const std::pair<std::string, uint32_t>>>;
+
     // Dimension name overrides (command-line overrides take priority over JSON values)
+    for (auto& overrides : DimOverridesList{ m_desc.freeDimNameOverrides, m_args.GetOnnxFreeDimensionNameOverrides() })
     {
-        std::unordered_map<std::string, uint32_t> mergedOverrides;
-
-        for (auto& override : m_desc.freeDimNameOverrides)
-            mergedOverrides[override.first] = override.second;
-
-        for (auto& override : m_args.GetOnnxFreeDimensionNameOverrides())
-            mergedOverrides[override.first] = override.second;
-
-        for (auto& override : mergedOverrides)
+        for (auto& override : overrides)
+        {
             Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, override.first.c_str(), override.second));
+        }
     }
 
     // Denotation overrides (command-line overrides take priority over JSON values)
+    for (auto& overrides : DimOverridesList{ m_desc.freeDimDenotationOverrides, m_args.GetOnnxFreeDimensionDenotationOverrides() })
     {
-        std::unordered_map<std::string, uint32_t> mergedOverrides;
-
-        for (auto& override : m_desc.freeDimDenotationOverrides)
-            mergedOverrides[override.first] = override.second;
-
-        for (auto& override : m_args.GetOnnxFreeDimensionDenotationOverrides())
-            mergedOverrides[override.first] = override.second;
-
-        for (auto& override : mergedOverrides)
+        for (auto& override : overrides)
+        {
             Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, override.first.c_str(), override.second));
+        }
     }
 
+    using ConfigEntriesList = std::initializer_list<gsl::span<const std::pair<std::string, std::string>>>;
+
     // SessionOptions config entries (command-line entries take priority over JSON values)
+    for (auto& configEntries : ConfigEntriesList{ m_desc.sessionOptionsConfigEntries, m_args.GetOnnxSessionOptionConfigEntries() })
     {
-        std::unordered_map<std::string, std::string> mergedEntries;
-
-        for (auto& configEntry : m_desc.sessionOptionsConfigEntries)
-            mergedEntries[configEntry.first] = configEntry.second;
-
-        for (auto& configEntry : m_args.GetOnnxSessionOptionConfigEntries())
-            mergedEntries[configEntry.first] = configEntry.second;
-
-        for (auto& entry : mergedEntries)
-            Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, entry.first.c_str(), entry.second.c_str()));
+        for (auto& configEntry : configEntries)
+        {
+            Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, configEntry.first.c_str(), configEntry.second.c_str()));
+        }
     }
 
     const OrtDmlApi* ortDmlApi;
