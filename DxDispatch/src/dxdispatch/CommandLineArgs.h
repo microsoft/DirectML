@@ -28,8 +28,8 @@ public:
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_onnxFreeDimensionDenotationOverrides; }
     gsl::span<const std::pair<std::string, std::string>> GetOnnxSessionOptionConfigEntries() const { return m_onnxSessionOptionConfigEntries; }
-    uint32_t GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
-    uint32_t GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; } 
+    std::optional<uint32_t> GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
+    std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; } 
 
 private:
     bool m_showAdapters = false;
@@ -63,6 +63,6 @@ private:
     // https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/core/providers/dml/dml_session_options_config_keys.h
     std::vector<std::pair<std::string, std::string>> m_onnxSessionOptionConfigEntries;
 
-    uint32_t m_onnxGraphOptimizationLevel = 99;
-    uint32_t m_onnxLoggingLevel = 2;
+    std::optional<uint32_t> m_onnxGraphOptimizationLevel;
+    std::optional<uint32_t> m_onnxLoggingLevel;
 };

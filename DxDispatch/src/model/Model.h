@@ -94,8 +94,8 @@ public:
         std::vector<std::pair<std::string, uint32_t>> freeDimNameOverrides;
         std::vector<std::pair<std::string, uint32_t>> freeDimDenotationOverrides;
         std::vector<std::pair<std::string, std::string>> sessionOptionsConfigEntries;
-        uint32_t graphOptimizationLevel;
-        uint32_t loggingLevel;
+        uint32_t graphOptimizationLevel = 99;
+        uint32_t loggingLevel = 2;
     };
 
     struct DispatchableDesc

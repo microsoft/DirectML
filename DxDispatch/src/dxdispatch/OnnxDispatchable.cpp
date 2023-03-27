@@ -169,26 +169,62 @@ void OnnxDispatchable::Initialize()
     const OrtApi& ortApi = Ort::GetApi();
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
-    m_environment = Ort::Env(static_cast<OrtLoggingLevel>(m_args.GetOnnxLoggingLevel()), "DxDispatch");
+    OrtLoggingLevel loggingLevel = m_args.GetOnnxLoggingLevel() ? 
+        static_cast<OrtLoggingLevel>(*m_args.GetOnnxLoggingLevel()) : 
+        static_cast<OrtLoggingLevel>(m_desc.loggingLevel);
+
+    m_environment = Ort::Env(loggingLevel, "DxDispatch");
 
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
-    sessionOptions.SetGraphOptimizationLevel(static_cast<GraphOptimizationLevel>(m_args.GetOnnxGraphOptimizationLevel()));
+
+    GraphOptimizationLevel graphOptimizationLevel = m_args.GetOnnxGraphOptimizationLevel() ? 
+        static_cast<GraphOptimizationLevel>(*m_args.GetOnnxGraphOptimizationLevel()) :
+        static_cast<GraphOptimizationLevel>(m_desc.graphOptimizationLevel);
+
+    sessionOptions.SetGraphOptimizationLevel(graphOptimizationLevel);
  
-    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionNameOverrides())
+    // Dimension name overrides (command-line overrides take priority over JSON values)
     {
-        Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+        std::unordered_map<std::string, uint32_t> mergedOverrides;
+
+        for (auto& override : m_desc.freeDimNameOverrides)
+            mergedOverrides[override.first] = override.second;
+
+        for (auto& override : m_args.GetOnnxFreeDimensionNameOverrides())
+            mergedOverrides[override.first] = override.second;
+
+        for (auto& override : mergedOverrides)
+            Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, override.first.c_str(), override.second));
     }
 
-    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionDenotationOverrides())
+    // Denotation overrides (command-line overrides take priority over JSON values)
     {
-        Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+        std::unordered_map<std::string, uint32_t> mergedOverrides;
+
+        for (auto& override : m_desc.freeDimDenotationOverrides)
+            mergedOverrides[override.first] = override.second;
+
+        for (auto& override : m_args.GetOnnxFreeDimensionDenotationOverrides())
+            mergedOverrides[override.first] = override.second;
+
+        for (auto& override : mergedOverrides)
+            Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, override.first.c_str(), override.second));
     }
 
-    for (auto& configEntry : m_args.GetOnnxSessionOptionConfigEntries())
+    // SessionOptions config entries (command-line entries take priority over JSON values)
     {
-        Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, configEntry.first.c_str(), configEntry.second.c_str()));
+        std::unordered_map<std::string, std::string> mergedEntries;
+
+        for (auto& configEntry : m_desc.sessionOptionsConfigEntries)
+            mergedEntries[configEntry.first] = configEntry.second;
+
+        for (auto& configEntry : m_args.GetOnnxSessionOptionConfigEntries())
+            mergedEntries[configEntry.first] = configEntry.second;
+
+        for (auto& entry : mergedEntries)
+            Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, entry.first.c_str(), entry.second.c_str()));
     }
 
     const OrtDmlApi* ortDmlApi;
