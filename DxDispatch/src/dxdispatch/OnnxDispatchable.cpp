@@ -238,7 +238,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 {
     // Type         | Static Shape | DML Data Type | JSON Binding | Result
     // -------------|--------------|---------------|--------------|---------------------------------------------------------
-    // Input/Output | TRUE/FALSE   | TRUE/FALSE    | TRUE         | Bind DX resource allocated by executor
+    // Input/Output | TRUE         | TRUE/FALSE    | TRUE         | Bind DX resource allocated by executor
     // Input/Output | TRUE         | TRUE          | FALSE        | Bind DX resource lazily allocated by this dispatchable
     // Input/Output | TRUE         | FALSE         | FALSE        | Bind CPU resource lazily allocated by this dispatchable
     // Output       | FALSE        | TRUE          | FALSE        | Bind DML EP memory info (resource allocated each run)
@@ -317,7 +317,43 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                     sizes.push_back(1);
                 }
 
-                if (jsonBindings.find(tensorName) == jsonBindings.end())
+                auto jsonBinding = jsonBindings.find(tensorName);
+                if (jsonBinding != jsonBindings.end())
+                {
+                    if (hasStaticShape)
+                    {
+                        if (isDmlSupportedType)
+                        {
+                            // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
+                            // Simply wrap the existing DX resource as an OrtValue.
+                            binding.resource = GetResourceFromModelBinding(tensorName, jsonBindings);
+                            binding.ortValue = CreateTensorFromResource(
+                                m_ortDmlApi,
+                                dmlMemoryInformation,
+                                binding.resource.Get(),
+                                tensorShape,
+                                dataTypeInfo.onnxDataType,
+                                &binding.wrapper
+                            );
+                        }
+                        else
+                        {
+                            throw std::invalid_argument(fmt::format(
+                                "Binding resource '{}' to tensor '{}' is invalid because the ONNX model tensor's data type is not supported by DML.",
+                                jsonBinding->second[0].resourceDesc->name, 
+                                tensorName
+                            ));
+                        }
+                    }
+                    else
+                    {
+                        throw std::invalid_argument(fmt::format("Binding resource '{}' to tensor '{}' is invalid because the tensor shape is not static.", 
+                            jsonBinding->second[0].resourceDesc->name, 
+                            tensorName
+                        ));
+                    }
+                }
+                else
                 {
                     // Attempt to lazily create resources/bindings for tensors not bound in the JSON model (if any).
                     // Only tensors with static shapes can be preallocated.
@@ -353,22 +389,6 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                             );
                         }
                     }
-                }
-                else
-                {
-                    // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
-                    // Simply wrap the existing DX resource as an OrtValue. Note this path does NOT check if the
-                    // the tensor has a static shape: it assume the user has allocated a large resource
-                    // to accomodate the dynamic shape.
-                    binding.resource = GetResourceFromModelBinding(tensorName, jsonBindings);
-                    binding.ortValue = CreateTensorFromResource(
-                        m_ortDmlApi,
-                        dmlMemoryInformation,
-                        binding.resource.Get(),
-                        tensorShape,
-                        dataTypeInfo.onnxDataType,
-                        &binding.wrapper
-                    );
                 }
             }
 

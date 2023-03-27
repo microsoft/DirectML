@@ -26,11 +26,7 @@
         {
             "type": "onnx",
             "sourcePath": "onnx_concat.onnx",
-            "freeDimensionNameOverrides": { "N": 2 },
-            "freeDimensionDenotationOverrides": {},
-            "sessionOptionsConfigEntries": {},
-            "graphOptimizationLevel": 99,
-            "loggingLevel": 2
+            "freeDimensionNameOverrides": { "N": 2 }
         }
     },
 
