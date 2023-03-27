@@ -236,13 +236,10 @@ void OnnxDispatchable::Initialize()
 
 void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 {
-    // Type         | Static Shape | DML Data Type | JSON Binding | Result
-    // -------------|--------------|---------------|--------------|---------------------------------------------------------
-    // Input/Output | TRUE         | TRUE/FALSE    | TRUE         | Bind DX resource allocated by executor
-    // Input/Output | TRUE         | TRUE          | FALSE        | Bind DX resource lazily allocated by this dispatchable
-    // Input/Output | TRUE         | FALSE         | FALSE        | Bind CPU resource lazily allocated by this dispatchable
-    // Output       | FALSE        | TRUE          | FALSE        | Bind DML EP memory info (resource allocated each run)
-    // Output       | FALSE        | FALSE         | FALSE        | Bind CPU EP memory info (resource allocated each run)
+    // Binding behavior is complex. The motivation behind these rules:
+    // 1. Be flexible in running models without explicit JSON bindings (most likely profiling; generate either CPU or DX resources to unblock execution).
+    // 2. Be strict when using explicit JSON bindings (fail if the binding doesn't make sense).
+    // While it may be possible to ignore an invalid binding in JSON to unblock execution, this is most likely not what the user wants.
 
     if (m_ioBindings)
     {
