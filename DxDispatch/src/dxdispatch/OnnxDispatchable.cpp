@@ -224,15 +224,18 @@ void OnnxDispatchable::Initialize()
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
-void OnnxDispatchable::Bind(const Bindings& jsonBindings)
+void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
 {
+    // Early exit for all iterations after the first. Bindings are cached in m_ioBindings.
+    if (iteration > 0)
+    {
+        return;
+    }
+
     // Binding behavior is complex. The motivation behind these rules:
     // 1. Be flexible in running models without explicit JSON bindings (most likely profiling; generate either CPU or DX resources to unblock execution).
     // 2. Be strict when using explicit JSON bindings (fail if the binding doesn't make sense).
     // While it may be possible to ignore an invalid binding in JSON to unblock execution, this is most likely not what the user wants.
-
-    // TODO: executor should only bind once for loop. Bindings don't change between iterations.
-    // if (iteration != 0) { return; }
 
     m_ioBindings->ClearBoundInputs();
     m_ioBindings->ClearBoundOutputs();
@@ -433,7 +436,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
     }
 }
 
-void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
+void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
     PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
     m_device->RecordTimestamp();

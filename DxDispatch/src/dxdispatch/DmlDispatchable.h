@@ -10,8 +10,8 @@ public:
         const Dispatchable::Bindings& initBindings);
 
     void Initialize() final;
-    void Bind(const Bindings& bindings) final;
-    void Dispatch(const Model::DispatchCommand& args) final;
+    void Bind(const Bindings& bindings, uint32_t iteration) final;
+    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 
 private:

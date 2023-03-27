@@ -308,7 +308,7 @@ void HlslDispatchable::Initialize()
     }
 }
 
-void HlslDispatchable::Bind(const Bindings& bindings)
+void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 {
     uint32_t descriptorIncrementSize = m_device->D3D()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -440,7 +440,7 @@ void HlslDispatchable::Bind(const Bindings& bindings)
     m_device->GetCommandList()->SetComputeRootDescriptorTable(0, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
 
-void HlslDispatchable::Dispatch(const Model::DispatchCommand& args)
+void HlslDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
     PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "HLSL: '%s'", args.dispatchableName.c_str());
     m_device->RecordTimestamp();

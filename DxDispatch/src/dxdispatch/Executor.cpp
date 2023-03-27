@@ -197,7 +197,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
             try
             {
-                dispatchable->Bind(bindings);
+                dispatchable->Bind(bindings, iterationsCompleted);
             }
             catch (const std::exception& e)
             {
@@ -209,7 +209,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             // Dispatch
             dispatchTimer.Start();
-            dispatchable->Dispatch(command);
+            dispatchable->Dispatch(command, iterationsCompleted);
             dispatchable->Wait();
             cpuTimings.samples.push_back(dispatchTimer.End().DurationInMilliseconds());
 
