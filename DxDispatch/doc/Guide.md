@@ -16,9 +16,10 @@
   - [Dispatchable: DirectML Operator](#dispatchable-directml-operator)
   - [Dispatchable: HLSL Compute Shader](#dispatchable-hlsl-compute-shader)
   - [Dispatchable: ONNX Model](#dispatchable-onnx-model)
-    - [Implicit Binding](#implicit-binding)
-    - [Dynamic Shapes](#dynamic-shapes)
-    - [Optional JSON File](#optional-json-file)
+    - [Static and Dynamic Shapes](#static-and-dynamic-shapes)
+    - [Handling Dynamic Shapes at Initialization](#handling-dynamic-shapes-at-initialization)
+    - [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)
+    - [Implicit Bindings and Optional JSON](#implicit-bindings-and-optional-json)
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
@@ -470,9 +471,71 @@ The above DxDispatch JSON model is executed like any other model:
 > dxdispatch.exe .\models\onnx_gemm.json [other options...]
 ```
 
-### Implicit Binding
+### Static and Dynamic Shapes
 
-Unlike other dispatchable types, you **do not** need to explicitly specify *resources* and *bindings* for ONNX dispatchables. The following JSON is also valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
+The ONNX example shown earlier has all inputs and outputs with *static shapes*, which means every dimension has a constant integer value (e.g. `[3,2]`). Static shapes are ideal for performance: they allow more optimizations to occur, and they also make it possible to preallocate resources for input and output tensors.
+
+Some ONNX models have input and/or output tensors with *dynamic shapes*, which contain symbolic or unspecified dimensions. Dynamic shapes makes models more flexible. The example below shows a model where the two inputs have shape `[N,2]`. The first dimension `N` is a symbolic dimension that may take any value at runtime depending on the input bindings. The output tensor `y` has an unknown shape `[?,?]` that won't be known until after [shape inference](https://github.com/onnx/onnx/blob/main/docs/ShapeInference.md) runs.
+
+![dynamic shape](images/onnx_dynamic_shape.png)
+
+It's important to understand when your model contains dynamic shapes: not only does it affect the performance of the underlying ONNX runtime execution provider, you might need to provide additional information to run the model at all!
+
+### Handling Dynamic Shapes at Initialization
+
+The first way of handling dyanmic shapes is to explicitly override them as part of model loading (session creation, which occurs when the "dispatchable" is created). You can override symbolic dimensions by name or by [denotation](https://github.com/onnx/onnx/blob/main/docs/DimensionDenotation.md).
+
+- Use the `--onnx_free_dim_name_override` (`-f`) option to specify values for symbolic dimensions by name. 
+  - Example: `dxdispatch.exe onnx_concat.onnx -f N:2`
+- Use the `--onnx_free_dim_denotation_override` (`-F`) option to specify values for dimension denotations. 
+  - Example: `dxdispatch.exe another_model.onnx -F DATA_BATCH:8`
+
+You can specify overrides in JSON as well.
+
+```json
+"concat": 
+{
+    "type": "onnx",
+    "sourcePath": "onnx_concat.onnx",
+    "freeDimensionNameOverrides": { "N": 2 } // alternative to "-f N:2" on the command line
+}
+```
+
+If you specify overrides in both JSON and on the command line, the command-line overrides will take priority.
+
+Specifying dimension sizes in this manner comes with an important advantage: the shapes for nodes in the rest of the graph *may* be inferred (depending on shape inference), effectively making their shapes static for the purpose of graph optimization and binding. You should prefer to override symbolic dimensions with overrides for best performance!
+
+### Handling Dynamic Shapes at Session Run
+
+While it's best for performance to handle dynamic shapes as early as possible (using dimension overrides during initialization), it's not always convenient or realistic in certain scenarios. For example, you may want to feed images of different sizes into the same model without recreating the ORT session (dispatchable). In DxDispatch, the way to test this scenario is by providing shapes as part of the bindings:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "concat",
+    "bindings": 
+    {
+        "x0": { "name": "a", "shape": [2,2] },
+        "x1": { "name": "b", "shape": [2,2] },
+        "y": { "name": "c", "shape": [4,2] }
+    }
+}
+```
+
+The equivalent command-line syntax for this is `--binding_shape <tensor_name>:<shape>` (`-b`) (e.g. `-b x0:2,2 -b x1:2,2 -b y:4,2`). If you specify shapes in both JSON and on the command line, the command-line shapes will take priority. 
+
+Take note that *binding shapes* are an attribute of the bindings, not *resources*, which are memory and not tensors. You can reinterpret the same resources with different shapes in different dispatch commands.
+
+There are a few additional considerations when handling dynamic shapes:
+- For input tensors *without binding shapes*, any symbolic dimensions without overriden values ("free dimensions") will be set to 1. In the above example, the shape `[N,2]` will be converted to `[1,2]` if `N` isn't overriden and the tensor has no binding shape. This behavior is a convenience, since it renders several models valid without having to override dimensions or specify binding shapes. However, this behavior does not always result in sensible input shapes. If a model fails to run, be sure to check that all ONNX input tensors are given sensible shapes.
+- Output tensors with free dimensions will be allocated by ONNX runtime, not DxDispatch. This is suboptimal for performance, but it's not safe to make assumptions about output shapes that may only be known during model execution.
+- You only need to specify binding shapes for output tensors when you provide explicit resource bindings for the respective output tensors (see next section on *implicit bindings*).
+
+### Implicit Bindings and Optional JSON
+
+Unlike other dispatchable types, you **do not** need to explicitly specify *resources* and *bindings* for ONNX dispatchables. The reason it's possible to omit bindings is that ONNX files contain tensor shape and type information, and this information can be used to lazily allocate resources and bindings. ONNX Runtime also allows output tensors to be implicitly bound without allocating any memory upfront, so outputs with dynamic shapes can be handled automatically. 
+
+The following JSON is valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The implicitly created resources have no names and cannot be referenced in JSON by other commands (you cannot print the output, for example, if you don't provide an explicit resource binding). The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
 
 ```json
 {
@@ -487,32 +550,7 @@ Unlike other dispatchable types, you **do not** need to explicitly specify *reso
 }
 ```
 
-The reason it's possible to omit bindings is that ONNX files contain tensor shape and type information, and this information can be used to lazily allocate resources and bindings when the dispatchable is loaded. The implicitly created resources have no names and cannot be referenced in JSON by other commands (you cannot print the output, for example, if you don't provide an explicit binding).
-
-### Dynamic Shapes
-
-Some ONNX models have input and/or output tensors with *dynamic shapes*, which contain symbolic or unspecified dimensions that are not constant integer values. The example below shows a model where the two inputs have shape `[N,2]`. The first dimension `N` is a symbolic dimension that may take any value at runtime depending on the input bindings. The output tensor `y` has an unknown shape `[?,?]` that won't be known until after [shape inference](https://github.com/onnx/onnx/blob/main/docs/ShapeInference.md) runs.
-
-![dynamic shape](images/onnx_dynamic_shape.png)
-
-DxDispatch *resources* (declared in JSON) are not tensors and thus have no shape. In order to execute ONNX models with dynamic shapes, you may need to *override* symbolic dimensions. There are several special rules to this process:
-- Use the `--onnx_free_dim_name_override` (`-f`) option to specify values for symbolic dimensions by name.
-- Use the `--onnx_free_dim_denotation_override` (`-F`) option to specify values for [dimension denotations](https://github.com/onnx/onnx/blob/main/docs/DimensionDenotation.md).
-- For **input tensors only**, any remaining dimensions without constant/overriden values ("free dimensions") will be set to 1. This effectively converts all input tensor shapes to static shapes. While this behavior may render models valid without having to override dimensions (e.g. the symbolic dimension represents a batch size), this is not always the case (e.g. the symbolic dimension represents a spatial dimension that will be downsampled).
-- Output tensors with remaining free dimensions will be allocated by ONNX runtime. This is suboptimal for performance, but it's not safe to make assumptions about output shapes that may only be known during model execution.
-
-Returning to the example above, you can override the `N` dimension to a size of 2 as shown below. In this specific example the output shape will be inferred as `[4,2]` (effectively a static shape) since the concat occurs on the first dimension.
-
-```
-> dxdispatch.exe onnx_concat.onnx -f N:2
-```
-
-**TIP**: If a model fails to run, check that you've provided valid overrides for all input shape dimensions. It rarely makes sense to override output dimensions, since they may be inferred (once input shapes are known) or only knowable at runtime.
-
-### Optional JSON File
-
 As a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to the JSON above with empty resources and bindings. Again, this convenience is primarily intended for benchmarking and debugging.
-
 
 ```
 > dxdispatch.exe .\models\onnx_gemm.onnx [other options...]

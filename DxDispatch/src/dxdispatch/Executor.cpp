@@ -399,6 +399,7 @@ Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBin
             source.format = modelSource.format;
             source.resource = m_resources[modelSource.name].Get();
             source.resourceDesc = &resourceDesc;
+            source.shape = modelSource.shape;
 
             if (std::holds_alternative<Model::BufferDesc>(resourceDesc.value))
             {

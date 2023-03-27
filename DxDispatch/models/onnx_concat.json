@@ -25,8 +25,7 @@
         "concat": 
         {
             "type": "onnx",
-            "sourcePath": "onnx_concat.onnx",
-            "freeDimensionNameOverrides": { "N": 2 }
+            "sourcePath": "onnx_concat.onnx"
         }
     },
 
@@ -37,9 +36,9 @@
             "dispatchable": "concat",
             "bindings": 
             {
-                "x0": "a",
-                "x1": "b",
-                "y": "c"
+                "x0": { "name": "a", "shape": [2,2] },
+                "x1": { "name": "b", "shape": [2,2] },
+                "y": { "name": "c", "shape": [4,2] }
             }
         }
         ,

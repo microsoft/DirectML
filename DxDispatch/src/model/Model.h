@@ -29,6 +29,8 @@ public:
         // For Append/Consume buffers only:
         std::optional<std::string> counterName;
         uint64_t counterOffsetBytes;
+
+        std::vector<uint32_t> shape;
     };
 
     using Bindings = std::unordered_map<std::string, std::vector<BufferBindingSource>>;
