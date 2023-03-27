@@ -130,6 +130,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Sets the ONNX Runtime graph optimization level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 = All",
             cxxopts::value<uint32_t>()->default_value("99")
         )
+        (
+            "L,onnx_logging_level",
+            "Sets the ONNX Runtime logging level. 0 = Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 = Fatal",
+            cxxopts::value<uint32_t>()->default_value("2")
+        )
         ;
 
     options.positional_help("<PATH_TO_MODEL>");
@@ -252,13 +257,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     };
 
-    ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_freeDimensionNameOverrides);
-    ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_freeDimensionDenotationOverrides);
-
-    if (result.count("onnx_graph_optimization_level")) 
-    { 
-        m_onnxGraphOptimizationLevel = result["onnx_graph_optimization_level"].as<uint32_t>(); 
-    }
+    ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_onnxFreeDimensionNameOverrides);
+    ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_onnxFreeDimensionDenotationOverrides);
 
     auto ParseConfigOptionEntries = [&](const char* parameterName, std::vector<std::pair<std::string, std::string>>& overrides)
     {
@@ -280,6 +280,16 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     };
 
     ParseConfigOptionEntries("onnx_session_config_entry", m_onnxSessionOptionConfigEntries);
+
+    if (result.count("onnx_graph_optimization_level")) 
+    { 
+        m_onnxGraphOptimizationLevel = result["onnx_graph_optimization_level"].as<uint32_t>(); 
+    }
+
+    if (result.count("onnx_logging_level")) 
+    { 
+        m_onnxLoggingLevel = result["onnx_logging_level"].as<uint32_t>(); 
+    }
 
     m_helpText = options.help();
 }

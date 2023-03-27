@@ -264,12 +264,11 @@ void Executor::operator()(const Model::DispatchCommand& command)
         }
         else
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU), {:.4f} ms median (Bind)", 
+            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)", 
                 command.dispatchableName, 
                 iterationsCompleted,
                 cpuStats.median,
-                gpuStats.median,
-                bindStats.median
+                gpuStats.median
             ));
         }
     }

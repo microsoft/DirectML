@@ -169,7 +169,7 @@ void OnnxDispatchable::Initialize()
     const OrtApi& ortApi = Ort::GetApi();
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
-    m_environment = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
+    m_environment = Ort::Env(static_cast<OrtLoggingLevel>(m_args.GetOnnxLoggingLevel()), "DxDispatch");
 
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
