@@ -221,6 +221,7 @@ void OnnxDispatchable::Initialize()
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
 
     m_session = Ort::Session(*m_environment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
+    m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
 void OnnxDispatchable::Bind(const Bindings& jsonBindings)
@@ -230,23 +231,20 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
     // 2. Be strict when using explicit JSON bindings (fail if the binding doesn't make sense).
     // While it may be possible to ignore an invalid binding in JSON to unblock execution, this is most likely not what the user wants.
 
-    if (m_ioBindings)
-    {
-        return;
-    }
+    // TODO: executor should only bind once for loop. Bindings don't change between iterations.
+    // if (iteration != 0) { return; }
 
-    m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
+    m_ioBindings->ClearBoundInputs();
+    m_ioBindings->ClearBoundOutputs();
+    m_mergedBindings.clear();
 
     Ort::MemoryInfo cpuMemoryInformation = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo dmlMemoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 
-    auto inputCount = m_session->GetInputCount();
-    auto outputCount = m_session->GetOutputCount();
-
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
         const bool isInputTensor = (bindingPass == 0);
-        const size_t tensorCount = isInputTensor ? inputCount : outputCount;
+        const size_t tensorCount = isInputTensor ? m_session->GetInputCount() : m_session->GetOutputCount();
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
@@ -257,62 +255,74 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
 
             bool isDmlSupportedType = false;
 
-            std::vector<int64_t> tensorShape;
-
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
                 auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
                 auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
-                bool hasStaticShape = true;
-
-                tensorShape = shapeInfo.GetShape();
-                uint64_t elementCount = 1;
-                std::vector<uint32_t> sizes;
-
-                for (auto& dimSize : tensorShape)
+                // Get shape stored in ONNX model.
+                std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+                
+                // Check if the tensor shape is static or dynamic, which determines if resources can be preallocated.
+                bool tensorShapeHasFreeDimensions = false;
+                for (int64_t& dimSize : tensorShape)
                 {
-                    if (dimSize == -1) // Dimensions that aren't statically known/inferrable are "free dimensions" with size -1. 
+                    // Dimensions that aren't statically known/inferrable are "free dimensions" with size -1. 
+                    if (dimSize == -1)
                     {
+                        // Try fixing any free dimensions that appear on *inputs* to size 1, which may make the graph valid
+                        // for execution (e.g. dim represents batch size). This trick cannot be done for outputs, since their 
+                        // free dimensions may correspond to symbolic dimensions that are only known at runtime. Tensors with 
+                        // free dimensions have "dynamic shapes" and cannot be preallocated; their total size is unknown.
                         if (isInputTensor)
                         {
-                            // Try fixing any free dimensions that appear on *inputs* to size 1, which may make the graph valid
-                            // for execution (e.g. dim represents batch size); however, this is not guaranteed to be valid
-                            // in all models (e.g. dim represents a spatial size that will be downsampled). Forcing dims to 1 
-                            // effectively gives all input tensors static shapes that can be preallocated. This trick cannot be
-                            // done for outputs, since their free dimensions may correspond to symbolic dimensions that are
-                            // only known at runtime (e.g. a shape node generates the dimensions based on input tensor values).
                             dimSize = 1;
                         }
                         else
                         {
-                            // Tensors with one or more free dimensions have "dynamic shapes" and cannot be preallocated, 
-                            // since their total size is unknown.
-                            hasStaticShape = false;
+                            tensorShapeHasFreeDimensions = true;
                         }
                     }
-
-                    sizes.push_back(static_cast<uint32_t>(std::abs(dimSize)));
-                    elementCount *= sizes.back();
                 }
 
-                // Scalars have empty shapes.
-                if (sizes.empty())
-                {
-                    sizes.push_back(1);
-                }
-
+                // Override tensorShape with the one specified in JSON, if any.
                 auto jsonBinding = jsonBindings.find(tensorName);
+                ID3D12Resource* jsonResource = nullptr;
                 if (jsonBinding != jsonBindings.end())
                 {
-                    if (hasStaticShape)
+                    auto& bindingShape = jsonBinding->second[0].shape;
+                    if (!bindingShape.empty())
+                    {
+                        tensorShape = bindingShape;
+                        tensorShapeHasFreeDimensions = false;
+                    }
+
+                    // The JSON binding may also include the name of a JSON resource.
+                    binding.resource = jsonBinding->second[0].resource;
+                }
+
+                // Override tensorShape with the one specified on the command line, if any.
+                auto commandLineBindingShape = m_args.GetOnnxBindingShapes().find(tensorName);
+                if (commandLineBindingShape != m_args.GetOnnxBindingShapes().end())
+                {
+                    auto& bindingShape = commandLineBindingShape->second;
+                    if (!bindingShape.empty())
+                    {
+                        tensorShape = bindingShape;
+                        tensorShapeHasFreeDimensions = false;
+                    }
+                }
+
+                // Attempt to preallocate/wrap resources where possible.
+                if (binding.resource)
+                {
+                    // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
+                    // Simply wrap the existing DX resource as an OrtValue.
+                    if (!tensorShapeHasFreeDimensions)
                     {
                         if (isDmlSupportedType)
                         {
-                            // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
-                            // Simply wrap the existing DX resource as an OrtValue.
-                            binding.resource = GetResourceFromModelBinding(tensorName, jsonBindings);
                             binding.ortValue = CreateTensorFromResource(
                                 m_ortDmlApi,
                                 dmlMemoryInformation,
@@ -341,17 +351,29 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                 }
                 else
                 {
-                    // Attempt to lazily create resources/bindings for tensors not bound in the JSON model (if any).
+                    // Attempt to lazily create resources/bindings for tensors not bound in the JSON model.
                     // Only tensors with static shapes can be preallocated.
-                    if (hasStaticShape)
+                    if (!tensorShapeHasFreeDimensions)
                     {
                         if (isDmlSupportedType)
                         {
-                            // If the data type is supported by DML, then the resource is lazily allocated.
+                            // Convert int64_t tensorShape to uint32_t for DML
+                            std::vector<uint32_t> tensorShapeUint32;
+                            for (int64_t dimSize : tensorShape)
+                            {
+                                tensorShapeUint32.push_back(static_cast<uint32_t>(std::abs(dimSize)));
+                            }
+
+                            // Scalars have empty shapes. DML stores these as [1].
+                            if (tensorShapeUint32.empty())
+                            {
+                                tensorShapeUint32.push_back(1);
+                            }
+
                             binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
                                 dataTypeInfo.dmlDataType,
-                                sizes.size(),
-                                sizes.data(),
+                                tensorShapeUint32.size(),
+                                tensorShapeUint32.data(),
                                 nullptr
                             ));
 
@@ -378,6 +400,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings)
                 }
             }
 
+            // Finally, set the ORT IO binding for the tensor.
             if (isInputTensor)
             {
                 if (binding.ortValue)

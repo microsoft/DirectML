@@ -327,9 +327,14 @@
                 {
                     "type": "string",
                     "description": "The name of the counter resource in the model"
+                },
+                "shape":
+                {
+                    "type": "array",
+                    "items": { "type": "integer", "exclusiveMinimum": 0 },
+                    "description": "Optional shape for tensor bindings in ONNX dispatchables."
                 }
-            },
-            "required": [ "name" ]
+            }
         },
 
         "dispatchCommand":

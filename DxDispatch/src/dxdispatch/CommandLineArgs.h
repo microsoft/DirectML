@@ -28,6 +28,7 @@ public:
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_onnxFreeDimensionDenotationOverrides; }
     gsl::span<const std::pair<std::string, std::string>> GetOnnxSessionOptionConfigEntries() const { return m_onnxSessionOptionConfigEntries; }
+    const std::unordered_map<std::string, std::vector<int64_t>>& GetOnnxBindingShapes() const { return m_onnxBindShapes; }
     std::optional<uint32_t> GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
     std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; } 
 
@@ -62,6 +63,10 @@ private:
     // https://github.com/microsoft/onnxruntime/blob/main/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h
     // https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/core/providers/dml/dml_session_options_config_keys.h
     std::vector<std::pair<std::string, std::string>> m_onnxSessionOptionConfigEntries;
+
+    // Optional binding shapes for dynamically shaped tensors.
+    // Maps ONNX tensor names to a specific shape that should be used when binding the tensor to a resource/OrtValue.
+    std::unordered_map<std::string, std::vector<int64_t>> m_onnxBindShapes;
 
     std::optional<uint32_t> m_onnxGraphOptimizationLevel;
     std::optional<uint32_t> m_onnxLoggingLevel;

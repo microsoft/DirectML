@@ -236,6 +236,26 @@ gsl::span<T> ParseArray(
     return gsl::make_span(outputElements, valueArray.Size());
 }
 
+template <typename T> 
+std::vector<T> ParseArrayAsVector(
+    const rapidjson::Value& value, 
+    std::function<T(const rapidjson::Value&)> elementParser)
+{
+    if (value.GetType() != rapidjson::Type::kArrayType)
+    {
+        throw std::invalid_argument("Expected an array.");
+    }
+
+    auto valueArray = value.GetArray();
+    std::vector<T> outputElements(valueArray.Size());
+    for (uint32_t i = 0; i < valueArray.Size(); i++)
+    {
+        outputElements[i] = elementParser(valueArray[i]);
+    }
+
+    return outputElements;
+}
+
 template <typename T>
 std::vector<std::byte> ParseArrayAsBytes(
     const rapidjson::Value& value,
@@ -492,6 +512,18 @@ int64_t ParseInt64Field(const rapidjson::Value& object, std::string_view fieldNa
 {
     return ParseFieldHelper<int64_t>(object, fieldName, required, defaultValue, [](auto& value){ 
         return ParseInt64(value); 
+    });
+}
+
+std::vector<int64_t> ParseInt64ArrayAsVector(const rapidjson::Value& object)
+{
+    return ParseArrayAsVector<int64_t>(object, ParseInt64);
+}
+
+std::vector<int64_t> ParseInt64ArrayAsVectorField(const rapidjson::Value& object, std::string_view fieldName, bool required, std::vector<int64_t> defaultValue)
+{
+    return ParseFieldHelper<std::vector<int64_t>>(object, fieldName, required, defaultValue, [](auto& value){ 
+        return ParseInt64ArrayAsVector(value); 
     });
 }
 
@@ -1317,6 +1349,7 @@ Model::BufferBindingSource ParseBufferBindingSource(const rapidjson::Value& valu
             bindingSource.counterName = ParseStringField(value, "counter");
             bindingSource.counterOffsetBytes = ParseUInt64Field(value, "counterOffsetBytes", false);
         }
+        bindingSource.shape = ParseInt64ArrayAsVectorField(value, "shape", false);
     }
 
     return bindingSource;
