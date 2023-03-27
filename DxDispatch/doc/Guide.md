@@ -13,9 +13,12 @@
     - [Buffer: File Data Initializer](#buffer-file-data-initializer)
     - [Buffer: List Initializer](#buffer-list-initializer)
   - [Dispatchables](#dispatchables)
-    - [DirectML Operator](#directml-operator)
-    - [HLSL Compute Shader](#hlsl-compute-shader)
-    - [ONNX Model](#onnx-model)
+  - [Dispatchable: DirectML Operator](#dispatchable-directml-operator)
+  - [Dispatchable: HLSL Compute Shader](#dispatchable-hlsl-compute-shader)
+  - [Dispatchable: ONNX Model](#dispatchable-onnx-model)
+    - [Implicit Binding](#implicit-binding)
+    - [Dynamic Shapes](#dynamic-shapes)
+    - [Optional JSON File](#optional-json-file)
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
@@ -63,7 +66,7 @@ Resource 'output': 6, 15, 24
 There are more options available to you. If you run the executable with no arguments (or `--help`) it will display the available options:
 
 ```
-dxdispatch version 0.12.0
+dxdispatch version 0.13.0
   DirectML     : NuGet (Microsoft.AI.DirectML.1.10.1)
   D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.608.2)
   DXCompiler   : Release (v1.7.2212)
@@ -108,6 +111,9 @@ Usage:
                                 Sets the ONNX Runtime graph optimization
                                 level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
                                 All (default: 99)
+  -L, --onnx_logging_level arg  Sets the ONNX Runtime logging level. 0 =
+                                Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 =
+                                Fatal (default: 2)
 
  Timing options:
   -i, --dispatch_iterations arg
@@ -336,7 +342,7 @@ You can initialize a buffer is using an array of elements with different types a
 
 Dispatchables are objects that can be executed on a D3D command queue. The model supports three types of dispatchables: DirectML operators, custom HLSL compute shaders, and serialized ONNX models.
 
-### DirectML Operator
+## Dispatchable: DirectML Operator
 
 The JSON format for defining operators closely mirrors the DirectML API for creating operators: you are filling out a `DML_OPERATOR_DESC` struct that will be used to instantiate an `IDMLOperator` object. Below is an example that creates a dispatchable using `DML_CONVOLUTION_OPERATOR_DESC`:
 
@@ -365,7 +371,7 @@ You must define **all** fields of the appropriate operator desc *unless* a field
 
 **NOTE**: take care to use the same casing when setting the fields. Most of the JSON field names in the model start with a lowercase letter, but DML structs generally start with an uppercase letter.
 
-### HLSL Compute Shader
+## Dispatchable: HLSL Compute Shader
 
 You can execute custom compute shaders using an HLSL dispatchable. These objects will result in loading and compiling HLSL source at runtime, which can be very useful for prototyping. 
 
@@ -411,7 +417,7 @@ void CSMain(uint3 dtid : SV_DispatchThreadID)
 - You may declare shader resources using any type of buffer view, but textures are not supported. Arrays of resources (e.g. `Buffer<float> inputs[2];`), including unbounded arrays, are not yet supported. This is on the backlog though!
 - If you declare a resource in HLSL but do not reference it in the shader program then it will likely be optimized away! Binding failures will result if you try to bind a buffer in the model to an unused shader input.
 
-### ONNX Model
+## Dispatchable: ONNX Model
 
 You can execute ONNX models using ONNX Runtime with the DirectML execution provider using an ONNX dispatchable. The example below shows how to reference an ONNX model in the JSON model.
 
@@ -464,7 +470,9 @@ The above DxDispatch JSON model is executed like any other model:
 > dxdispatch.exe .\models\onnx_gemm.json [other options...]
 ```
 
-Unlike other dispatchable types, you **do not** need to specify *resources* and *bindings* for ONNX dispatchables. The following JSON is also valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
+### Implicit Binding
+
+Unlike other dispatchable types, you **do not** need to explicitly specify *resources* and *bindings* for ONNX dispatchables. The following JSON is also valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
 
 ```json
 {
@@ -479,16 +487,35 @@ Unlike other dispatchable types, you **do not** need to specify *resources* and 
 }
 ```
 
+The reason it's possible to omit bindings is that ONNX files contain tensor shape and type information, and this information can be used to lazily allocate resources and bindings when the dispatchable is loaded. The implicitly created resources have no names and cannot be referenced in JSON by other commands (you cannot print the output, for example, if you don't provide an explicit binding).
+
+### Dynamic Shapes
+
+Some ONNX models have input and/or output tensors with *dynamic shapes*, which contain symbolic or unspecified dimensions that are not constant integer values. The example below shows a model where the two inputs have shape `[N,2]`. The first dimension `N` is a symbolic dimension that may take any value at runtime depending on the input bindings. The output tensor `y` has an unknown shape `[?,?]` that won't be known until after [shape inference](https://github.com/onnx/onnx/blob/main/docs/ShapeInference.md) runs.
+
+![dynamic shape](images/onnx_dynamic_shape.png)
+
+DxDispatch *resources* (declared in JSON) are not tensors and thus have no shape. In order to execute ONNX models with dynamic shapes, you may need to *override* symbolic dimensions. There are several special rules to this process:
+- Use the `--onnx_free_dim_name_override` (`-f`) option to specify values for symbolic dimensions by name.
+- Use the `--onnx_free_dim_denotation_override` (`-F`) option to specify values for [dimension denotations](https://github.com/onnx/onnx/blob/main/docs/DimensionDenotation.md).
+- For **input tensors only**, any remaining dimensions without constant/overriden values ("free dimensions") will be set to 1. This effectively converts all input tensor shapes to static shapes. While this behavior may render models valid without having to override dimensions (e.g. the symbolic dimension represents a batch size), this is not always the case (e.g. the symbolic dimension represents a spatial dimension that will be downsampled).
+- Output tensors with remaining free dimensions will be allocated by ONNX runtime. This is suboptimal for performance, but it's not safe to make assumptions about output shapes that may only be known during model execution.
+
+Returning to the example above, you can override the `N` dimension to a size of 2 as shown below. In this specific example the output shape will be inferred as `[4,2]` (effectively a static shape) since the concat occurs on the first dimension.
+
+```
+> dxdispatch.exe onnx_concat.onnx -f N:2
+```
+
+**TIP**: If a model fails to run, check that you've provided valid overrides for all input shape dimensions. It rarely makes sense to override output dimensions, since they may be inferred (once input shapes are known) or only knowable at runtime.
+
+### Optional JSON File
+
 As a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to the JSON above with empty resources and bindings. Again, this convenience is primarily intended for benchmarking and debugging.
+
 
 ```
 > dxdispatch.exe .\models\onnx_gemm.onnx [other options...]
-```
-
-Some ONNX models have "symbolic" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These symbolic dimensions become 1 unless they are explicitly given a value; this default behavior *may* render the model valid (e.g. the symbolic dimension represents a batch size), but this is not always the case! You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
-
-```
-> dxdispatch.exe some_model.onnx -f seq_len:100
 ```
 
 ## Commands
