@@ -122,6 +122,8 @@ Usage:
   -L, --onnx_logging_level arg  Sets the ONNX Runtime logging level. 0 =
                                 Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 =
                                 Fatal (default: 2)
+  -p, --print_onnx_bindings     Prints verbose ONNX model binding
+                                information.
 
  Timing options:
   -i, --dispatch_iterations arg
@@ -1013,7 +1015,7 @@ Below is a modified version of `hlsl_add_fp16.json` used in the example above. W
 
 ## ONNX Model with Dynamic Shapes
 
-The `onnx_dynamic_shapes.onnx` model is a simple network that concatenates two input tensors along their first dimension. The two inputs have dynamic shapes `[N,2]`, so the first dimension is symbolic and may take any value at runtime. The output tensor has a dynamic shape `[?,?]`, which can't be known until the model is loaded and initialized (free dimension overrides provided) or run (no free dimension overrides provided). Let's walk through several examples of how you might leverage these dynamic shapes.
+The `onnx_dynamic_shapes.onnx` model is a simple network that concatenates two input tensors along their first dimension. The two inputs have dynamic shapes `[N,2]`, so the first dimension is symbolic and may take any value at runtime. The output tensor has a dynamic shape `[?,?]`, which can't be known statically: it depends on the value of `N`. Let's walk through several examples of how you might leverage these dynamic shapes and the implications of each approach.
 
 ![](images/onnx_dynamic_shape.png)
 
@@ -1027,18 +1029,160 @@ Running on 'NVIDIA GeForce RTX 4090'
 Dispatch 'onnx_dynamic_shapes.onnx': 1 iterations, 2.3696 ms median (CPU), 1.8207 ms median (GPU)
 ```
 
-How is this possible? What are the tensor shapes? In this case, the value of `N` is forced to `1` as a default. See 
+How is this possible? What are the tensor shapes? In this case, the symbolic dimension `N` is set to 1 because it would otherwise result in an invalid input tensor shape of `[-1,2]`. ONNX runtime won't allow input tensors with a negative dimension sizes. Forcing so-called "free dimensions" to 1, if left unspecified, is a common way to unblock execution and often works for most models. You can verify this by using the `--print_onnx_bindings` (`-p`) option:
 
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
 
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Output Tensor 'y':
+  Resource  = deferred (DirectX)
+  Data Type = FLOAT
+  Shape     = [-1,2]
+```
+
+Note the resource types:
+- **explicit** = binds to a named resource declared in a JSON model and allocated before the ONNX dispatchable is created.
+- **implicit** = binds to an unnamed resource allocated by the ONNX dispatchable during binding (before Session::Run).
+- **deferred** = binds to an unnamed resource allocated by the ONNX runtime execution provider during Session::Run.
+
+The output shape `[-1,2]` still has its first dimension unknown, as indiciate by the negative value. The output tensor `y` can't be preallocated because its shape is still not known until after all the inputs are bound: shape inference runs when the ONNX model is loaded (session created), and at that point the value of `N` wasn't known. The `N` dimension was coerced to size 1 during input binding. As a consequence, the output resource will be allocated internally in the DirectML execution provider when Session::Run is invoked. The DirectML execution provider pools allocations to avoid the cost of creating resources from scratch, but it is generally suboptimal when resource creation is deferred.
 
 **Overriding Symbolic Dimensions**
 
-First, 
+The optimal way to specify symbolic dimensions is before the ONNX runtime session is created. This is done with [dimension overides](#handling-dynamic-shapes-at-initialization). Note the addition of `-f N:5` below, which fixes the `N` dimension to size `5` before the model is loaded. This allows ONNX runtime to infer the output shape, so the output resource is preallocated outside of ONNX runtime!
 
-Command line profiling:
 ```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -f N:5
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Output Tensor 'y':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [10,2]
 ```
 
-- No arguments: inputs will have shape [1,2], output will be [2,2]
-- Dimension overrides: 
-- JSON with multiple dispatches and different bindings
+**Specifying Binding Shapes**
+
+While it's ideal to override symbolic dimensions upfront, this doesn't always reflect real-world usage (e.g. binding an image of different shape each Session:Run without recreating the session). You can also use binding shapes (see [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)) to fully define shapes instead of relying on the default size of 1 for symbolic dimensions:
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -b x0:5,2 -b:3,2
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Output Tensor 'y':
+  Resource  = deferred (DirectX)
+  Data Type = FLOAT
+  Shape     = [-1,2]
+```
+
+Note that the output resource is still deferred (shape not fully known during binding). This is a key difference between specifying binding shapes versus dimension overrides.
+
+**JSON with Multiple Dynamic Shapes**
+
+All of the above examples used the command line syntax, but you can set the same things in JSON as well. The final example here shows the same ONNX dispatchable dispatching twice with different binding shapes:
+
+```json
+{
+    "resources": 
+    {
+        "a": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "b": { "initialValuesDataType": "FLOAT32", "initialValues": [ 7, 8, 9, 10, 11, 12 ] },
+        "c": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 12, "value": 0 } }
+    },
+
+    "dispatchables": { "concat": { "type": "onnx", "sourcePath": "onnx_dynamic_shapes.onnx" } },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [1,2] },
+                "x1": { "name": "b", "shape": [1,2] },
+                "y": { "name": "c", "shape": [2,2] }
+            }
+        },
+        { "type": "print", "resource": "c" },
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [3,2] },
+                "x1": { "name": "b", "shape": [3,2] },
+                "y": { "name": "c", "shape": [6,2] }
+            }
+        },
+        { "type": "print", "resource": "c" }
+    ]
+}
+```
+
+Output below. Note the first dispatch interprets the input buffers as `[1,2]` tensors, so the first two elements of each are concatenated. The second dispatch interprets the input buffers as `[3,2]` tensors, so the first 3*2=6 elements are concatened.
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.json
+
+Input Tensor 'x0':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Input Tensor 'x1':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Output Tensor 'y':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [2,2]
+
+Dispatch 'concat': 1 iterations, 1.8071 ms median (CPU), 1.7224 ms median (GPU)
+Resource 'c': 1, 2, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0
+--------------------------------------------------------
+
+Input Tensor 'x0':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Input Tensor 'x1':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Output Tensor 'y':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [6,2]
+
+Dispatch 'concat': 1 iterations, 0.1888 ms median (CPU), 0.1342 ms median (GPU)
+Resource 'c': 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+```
