@@ -61,9 +61,14 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()->default_value("0")
         )
         (
-            "v,verbose_timings",
-            "Print verbose timing information",
-            cxxopts::value<bool>()
+            "w,warmup_samples",
+            "Max number of warmup samples to discard from timing statistics",
+            cxxopts::value<uint32_t>()
+        )
+        (
+            "v,timing_verbosity",
+            "Timing verbosity level. 0 = show hot timings, 1 = init/cold/hot timings, 2 = show all timing info",
+            cxxopts::value<uint32_t>()->default_value("0")
         )
         ;
 
@@ -180,6 +185,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_minDispatchIntervalInMilliseconds =result["dispatch_interval"].as<uint32_t>();
     }
 
+    if (result.count("warmup_samples"))
+    {
+        m_maxWarmupSamples =result["warmup_samples"].as<uint32_t>();
+    }
+
     if (result.count("model")) 
     { 
         m_modelPath = result["model"].as<decltype(m_modelPath)>(); 
@@ -195,9 +205,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
 
-    if (result.count("verbose_timings"))
+    if (result.count("timing_verbosity"))
     {
-        m_verboseTimings = result["verbose_timings"].as<bool>();
+        m_timingVerbosity = static_cast<TimingVerbosity>(result["timing_verbosity"].as<uint32_t>());
     }
 
     if (result.count("show_dependencies"))

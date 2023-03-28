@@ -2,6 +2,13 @@
 
 #include "PixCaptureHelper.h"
 
+enum TimingVerbosity
+{
+    Basic,
+    Extended,
+    All
+};
+
 class CommandLineArgs
 {
 public:
@@ -12,7 +19,7 @@ public:
     bool ShowDependencies() const { return m_showDependencies; }
     bool PrintHelp() const { return m_printHelp; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
-    bool VerboseTimings() const { return m_verboseTimings; }
+    TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
@@ -20,6 +27,7 @@ public:
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     uint32_t MinimumDispatchIntervalInMilliseconds() const { return m_minDispatchIntervalInMilliseconds; }
+    uint32_t MaxWarmupSamples() const { return m_maxWarmupSamples; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
@@ -38,7 +46,7 @@ private:
     bool m_showDependencies = false;
     bool m_printHelp = false;
     bool m_debugLayersEnabled = false;
-    bool m_verboseTimings = false;
+    TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
@@ -47,6 +55,7 @@ private:
     uint32_t m_dispatchIterations = 1;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
     uint32_t m_minDispatchIntervalInMilliseconds = 0;
+    uint32_t m_maxWarmupSamples = 1;
 
     // Tools like PIX generally work better when work is recorded into a graphics queue, so it's set as the default here.
     D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;

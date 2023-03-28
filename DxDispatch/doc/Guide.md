@@ -31,7 +31,6 @@
 - [Timing](#timing)
   - [CPU Timings](#cpu-timings)
   - [GPU Timings](#gpu-timings)
-  - [Bind Timings](#bind-timings)
   - [Target Dispatch Interval](#target-dispatch-interval)
 - [Scenarios](#scenarios)
   - [Debugging DirectX API Usage](#debugging-directx-api-usage)
@@ -135,7 +134,11 @@ Usage:
   -I, --dispatch_interval arg   The minimum time in milliseconds between
                                 dispatches (a large interval may introduce sleeps
                                 between dispatches) (default: 0)
-  -v, --verbose_timings         Print verbose timing information
+  -w, --warmup_samples arg      Max number of warmup samples to discard from
+                                timing statistics
+  -v, --timing_verbosity arg    Timing verbosity level. 0 = show hot timings,
+                                1 = init/cold/hot timings, 2 = show all
+                                timing info (default: 0)
 ```
 
 ## Choosing a Hardware Adapter
@@ -819,24 +822,51 @@ Finally, recall that you may bind *multiple* resources to a bind point. This mea
 When a dispatchable is executed, DxDispatch prints some basic timing info in a single line summary:
 
 ```
-> dxdispatch.exe model.onnx -t 1000
+> dxdispatch.exe model.onnx -i 10
 
-Dispatch 'model.onnx': 65 iterations, 14.3074 ms median (CPU), 13.8947 ms median (GPU), 0.0740 ms median (Bind)
+Dispatch 'model.onnx': 10 iterations, 4.8255 ms median (CPU), 4.6633 ms median (GPU)
 ```
 
-The `--verbose` (`-v`) option will show more detailed statistics:
+The `--timing_verbosity <level>` (`-v`) option can print more detailed statistics. The default `-v 0` shows only a single line of output, but `-v 1` will show extended statistics for both CPU and GPU timings:
 
 ```
-> dxdispatch.exe model.onnx -t 1000 -v
+> dxdispatch.exe model.onnx -i 10 -v 1
 
-Initialize 'model.onnx': 36.2849 ms
-Dispatch 'model.onnx': 67 iterations
-CPU Timings: 14.2981 ms average, 13.5309 ms min, 13.8500 ms median, 44.4716 ms max
-GPU Timings: 14.0318 ms average, 13.2772 ms min, 13.5946 ms median, 44.2225 ms max
-Bind Timings: 0.0559 ms average, 0.0247 ms min, 0.0384 ms median, 0.3853 ms max
+Initialize 'model.onnx': 43.0756 ms
+Dispatch 'model.onnx': 10 iterations
+CPU Timings (Cold) : 1 samples, 308.7716 ms average, 308.7716 ms min, 308.7716 ms median, 308.7716 ms max
+GPU Timings (Cold) : 1 samples, 308.3858 ms average, 308.3858 ms min, 308.3858 ms median, 308.3858 ms max
+CPU Timings (Hot)  : 9 samples, 4.8065 ms average, 4.4787 ms min, 4.7501 ms median, 5.4578 ms max
+GPU Timings (Hot)  : 9 samples, 4.6433 ms average, 4.3459 ms min, 4.5824 ms median, 5.3678 ms max
 ```
 
-For each category (CPU, GPU, Bind), every iteration is measured as a sample. In the above output, there were 67 iterations so there will be 67 timing samples. For the average and median, the first sample is discarded (called a "warmup sample") since it is disproportionately more expensive than others. However, the first/warmup sample *is* included when computing the max time, which is shown with verbose timings.
+In the above output, there were 10 iterations so there will be 10 raw samples; however, the raw samples are categorized as either *cold* or *hot* samples. The first sample (1 by default, this can be controlled with `--warmup_samples` (`-w`)) is considered *cold* since various caches aren't warmed up, and will typically be significantly slower than subsequent iterations.
+
+Using `-v 2` will print timings for every iteration (all raw samples):
+
+```
+> dxdispatch.exe model.onnx -i 10 -v 2
+
+Initialize 'model.onnx': 33.8805 ms
+Dispatch 'model.onnx': 10 iterations
+CPU Timings (Cold) : 1 samples, 313.3770 ms average, 313.3770 ms min, 313.3770 ms median, 313.3770 ms max
+GPU Timings (Cold) : 1 samples, 313.2426 ms average, 313.2426 ms min, 313.2426 ms median, 313.2426 ms max
+CPU Timings (Hot)  : 9 samples, 4.9087 ms average, 4.4412 ms min, 4.8508 ms median, 5.4984 ms max
+GPU Timings (Hot)  : 9 samples, 4.7606 ms average, 4.3571 ms min, 4.7063 ms median, 5.3484 ms max
+The timings of each iteration:
+iteration 0: 313.3770 ms (CPU), 313.2426 ms (GPU)
+iteration 1: 5.4984 ms (CPU), 5.3484 ms (GPU)
+iteration 2: 4.5709 ms (CPU), 4.4083 ms (GPU)
+iteration 3: 4.4412 ms (CPU), 4.3571 ms (GPU)
+iteration 4: 4.7979 ms (CPU), 4.7063 ms (GPU)
+iteration 5: 4.8508 ms (CPU), 4.6592 ms (GPU)
+iteration 6: 5.2723 ms (CPU), 5.1405 ms (GPU)
+iteration 7: 4.8079 ms (CPU), 4.6797 ms (GPU)
+iteration 8: 4.9587 ms (CPU), 4.7493 ms (GPU)
+iteration 9: 4.9798 ms (CPU), 4.7964 ms (GPU)
+```
+
+Another thing to note is that GPU timing samples are recorded into a fixed-sized buffer that can hold 8192 samples. If you run more iterations than this, then the GPU samples will start overwriting the first samples. In other words, you may lose cold timing information for GPU samples.
 
 ## CPU Timings
 
@@ -855,16 +885,6 @@ For each category (CPU, GPU, Bind), every iteration is measured as a sample. In 
 Both HLSL and DML operator dispatchables place the start and end timestamps around the respective work in a single command list. However, for ONNX dispatchables, the GPU timestamps are recorded in separate command lists that wrap the OrtSession::Run call. This difference is necessary because the DML execution provider in ORT manages its own command lists, and there may even be CPU/GPU interop if some kernels in ORT run on the CPU execution provider. This is illustrated in the figure below; it's important to keep in mind that the GPU timings for ONNX dispatchables may include more than pure GPU work.
 
 ![ort gpu timings](images/ort_gpu_timings.png)
-
-## Bind Timings
-
-Ideally, in production scenarios, applications bind once and run inference multiple times: the contents of the bindings (e.g. pixel values of an image) may change without requiring the resources themselves to change. For this reason, binding is measured independently of dispatching. DxDispatch does some additional work in the bind step, depending on the dispatchable, that may increase binding time more than what a typical application would see. In particular, allocating memory is (descriptor heaps, D3D12 resources, etc.) usually not something that would be in a loop in a real application.
-
-| Dispatchable | Work Done                                                                                                       |
-| ------------ | --------------------------------------------------------------------------------------------------------------- |
-| HLSL         | Creates UAVs/SRVs.                                                                                              |
-| DML Operator | Creates and sets descriptor heap; fills IDMLBindingTable. May include allocation time for temporary resource.   |
-| ONNX         | Setting input/output bindings with Ort::IoBinding. May include allocation time for dynamically shaped bindings. |
 
 ## Target Dispatch Interval
 

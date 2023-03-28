@@ -31,34 +31,72 @@ struct Timer
 
 struct Timings
 {
-    std::vector<double> samples;
+    std::vector<double> rawSamples;
 
     struct Stats
     {
+        size_t count;
+        double sum;
         double average;
         double median;
         double min;
         double max;
     };
 
-    Stats ComputeStats(size_t warmupSampleCount)
+    struct SampleStats
+    {
+        Stats cold;
+        Stats hot;
+    };
+
+    Stats ComputeStats(gsl::span<const double> sampleSpan) const
     {
         Stats stats = {};
-        if (samples.empty())
+
+        if (!sampleSpan.empty())
+        {
+            std::vector<double> samples(sampleSpan.size());
+            std::copy(sampleSpan.begin(), sampleSpan.end(), samples.begin());
+            std::sort(samples.begin(), samples.end());
+
+            stats.count = sampleSpan.size();
+            stats.sum = std::accumulate(samples.begin(), samples.end(), 0.0);
+            stats.average = stats.sum / samples.size();
+            stats.median = samples[samples.size() / 2];
+            stats.min = samples[0];
+            stats.max = samples[samples.size() - 1];
+        }
+
+        return stats;
+    }
+
+    SampleStats ComputeStats(size_t maxWarmupSampleCount) const
+    {
+        SampleStats stats = {};
+        if (rawSamples.empty())
         {
             return stats;
         }
 
-        // The first samples may be "warmup" runs that should be discarded to avoid skewing the results.
-        size_t discardedSamples = std::min(warmupSampleCount, samples.size() - 1);
+        // The first samples may be from "warmup" runs that skew the results because of cold caches.
+        // We call the first few samples "cold" and the later samples "hot". We always want at least 
+        // 1 hot sample. Example:
+        //
+        // Raw Samples | maxWarmup | cold | hot
+        // ------------|-----------|------|----
+        //           0 |         2 |    0 |   0
+        //           1 |         2 |    0 |   1
+        //           2 |         2 |    1 |   1
+        //           3 |         2 |    2 |   1
+        //           4 |         2 |    2 |   2
+        //           5 |         2 |    2 |   3
 
-        double totalTime = std::accumulate(samples.begin() + discardedSamples, samples.end(), 0.0);
-        stats.average = totalTime / (samples.size() - discardedSamples);
+        size_t coldSampleCount = std::min(std::max<size_t>(rawSamples.size(), 1) - 1, maxWarmupSampleCount);
+        size_t hotSampleCount = rawSamples.size() - coldSampleCount;
+        assert(coldSampleCount + hotSampleCount == rawSamples.size());
 
-        std::sort(samples.begin(), samples.end());
-        stats.median = samples[samples.size() / 2];
-        stats.min = samples[0];
-        stats.max = samples[samples.size() - 1];
+        stats.cold = ComputeStats(gsl::make_span<const double>(rawSamples.data(), coldSampleCount));
+        stats.hot = ComputeStats(gsl::make_span<const double>(rawSamples.data() + coldSampleCount, hotSampleCount));
 
         return stats;
     }
@@ -140,7 +178,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 PIXEndEvent();
                 timer.End();
 
-                if (m_commandLineArgs.VerboseTimings())
+                if (m_commandLineArgs.GetTimingVerbosity() >= TimingVerbosity::Extended)
                 {
                     LogInfo(fmt::format("Initialize '{}': {:.4f} ms", dispatchable.first, timer.DurationInMilliseconds()));
                 }
@@ -168,7 +206,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     Timings cpuTimings;
     Timings gpuTimings;
-    Timings bindTimings;
 
     Dispatchable::Bindings bindings;
     try
@@ -193,7 +230,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
             iterationTimer.Start();
 
             // Bind
-            bindTimer.Start();
             PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Bind");
             try
             {
@@ -205,13 +241,12 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 return;
             }
             PIXEndEvent();
-            bindTimings.samples.push_back(bindTimer.End().DurationInMilliseconds());
 
             // Dispatch
             dispatchTimer.Start();
             dispatchable->Dispatch(command, iterationsCompleted);
             dispatchable->Wait();
-            cpuTimings.samples.push_back(dispatchTimer.End().DurationInMilliseconds());
+            cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
             // to potentially introduce a sleep between each iteration.
@@ -234,42 +269,75 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     PIXEndEvent();
 
-    auto cpuStats = cpuTimings.ComputeStats(1);
-    auto bindStats = bindTimings.ComputeStats(1);
+    auto cpuStats = cpuTimings.ComputeStats(m_commandLineArgs.MaxWarmupSamples());
 
-    // GPU timings are capped at a fixed size. If iterations > samples then the 
-    // first warmup sample was overwritten (no need to discard any samples).
-    gpuTimings.samples = m_device->ResolveTimingSamples();
-    auto gpuStats = gpuTimings.ComputeStats(iterationsCompleted > gpuTimings.samples.size() ? 0 : 1);
+    // GPU timings are capped at a fixed size ring buffer. The first samples may have been 
+    // overwritten, in which case the warmup samples are dropped.
+    gpuTimings.rawSamples = m_device->ResolveTimingSamples();
+    assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
+    uint32_t gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
+    auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
 
     if (iterationsCompleted > 0)
     {
-        if (m_commandLineArgs.VerboseTimings())
+        if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
+        {
+            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)", 
+                command.dispatchableName, 
+                iterationsCompleted,
+                cpuStats.hot.median,
+                gpuStats.hot.median
+            ));
+        }
+        else
         {
             LogInfo(fmt::format("Dispatch '{}': {} iterations", 
                 command.dispatchableName, iterationsCompleted
             ));
 
-            LogInfo(fmt::format("CPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-                cpuStats.average, cpuStats.min, cpuStats.median, cpuStats.max
+            LogInfo(fmt::format("CPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                cpuStats.cold.count, cpuStats.cold.average, cpuStats.cold.min, cpuStats.cold.median, cpuStats.cold.max
             ));
 
-            LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-                gpuStats.average, gpuStats.min, gpuStats.median, gpuStats.max
+            LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
             ));
 
-            LogInfo(fmt::format("Bind Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-                bindStats.average, bindStats.min, bindStats.median, bindStats.max
+            LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                cpuStats.hot.count, cpuStats.hot.average, cpuStats.hot.min, cpuStats.hot.median, cpuStats.hot.max
             ));
+
+            LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
+            ));
+
+            if (gpuSamplesOverwritten > 0)
+            {
+                LogInfo(fmt::format("GPU samples buffer has {} samples overwritten.", gpuSamplesOverwritten));
+            }
         }
-        else
+
+        if (m_commandLineArgs.GetTimingVerbosity() >= TimingVerbosity::All)
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)", 
-                command.dispatchableName, 
-                iterationsCompleted,
-                cpuStats.median,
-                gpuStats.median
-            ));
+            LogInfo("The timings of each iteration: ");
+
+            for (uint32_t i = 0; i < iterationsCompleted; ++i)
+            {
+                if (i < gpuSamplesOverwritten)
+                {
+                    // GPU samples are limited to a fixed size, so the initial iterations
+                    // may not have timing information (overwritten timestamps).
+                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)", 
+                        i, cpuTimings.rawSamples[i]
+                    ));
+                }
+                else
+                {
+                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU), {:.4f} ms (GPU)",
+                        i, cpuTimings.rawSamples[i], gpuTimings.rawSamples[i - gpuSamplesOverwritten]
+                    ));
+                }
+            }
         }
     }
 }
