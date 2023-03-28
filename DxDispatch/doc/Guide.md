@@ -1074,7 +1074,7 @@ Note the resource types:
 - **implicit** = binds to an unnamed resource allocated by the ONNX dispatchable during binding (before Session::Run).
 - **deferred** = binds to an unnamed resource allocated by the ONNX runtime execution provider during Session::Run.
 
-The output shape `[-1,2]` still has its first dimension unknown, as indiciate by the negative value. The output tensor `y` can't be preallocated because its shape is still not known until after all the inputs are bound: shape inference runs when the ONNX model is loaded (session created), and at that point the value of `N` wasn't known. The `N` dimension was coerced to size 1 during input binding. As a consequence, the output resource will be allocated internally in the DirectML execution provider when Session::Run is invoked. The DirectML execution provider pools allocations to avoid the cost of creating resources from scratch, but it is generally suboptimal when resource creation is deferred.
+The output shape `[-1,2]` still has its first dimension unknown, as indicated by the negative value. The output tensor `y` can't be preallocated because its shape is still not known until after all the inputs are bound: shape inference runs when the ONNX model is loaded (session created), and at that point the value of `N` wasn't known. The `N` dimension was coerced to size 1 during input binding. As a consequence, the output resource will be allocated internally in the DirectML execution provider when Session::Run is invoked. The DirectML execution provider pools allocations to avoid the cost of creating resources from scratch, but it is generally suboptimal when resource creation is deferred.
 
 **Overriding Symbolic Dimensions**
 
@@ -1103,7 +1103,7 @@ Output Tensor 'y':
 While it's ideal to override symbolic dimensions upfront, this doesn't always reflect real-world usage (e.g. binding an image of different shape each Session:Run without recreating the session). You can also use binding shapes (see [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)) to fully define shapes instead of relying on the default size of 1 for symbolic dimensions:
 
 ```
-> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -b x0:5,2 -b:3,2
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -b x0:5,2 -b x1:3,2
 Input Tensor 'x0':
   Resource  = implicit (DirectX)
   Data Type = FLOAT
