@@ -180,14 +180,15 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     uint32_t iterations = dispatchDurationsCPU.size();
     // Skip the first dispatch (assuming multiple dispatches) since it warms up the pipeline.
-    int skipped = (iterations > 1) ? 1 : 0;
+    int skipped = (iterations > 1 && !m_commandLineArgs.VerboseTimings()) ? 1 : 0;
     double totalTimeCPU = std::accumulate(dispatchDurationsCPU.begin() + skipped, dispatchDurationsCPU.end(), 0.0);
     double avgTimeCPU = totalTimeCPU / (dispatchDurationsCPU.size() - skipped);
 
-    std::sort(dispatchDurationsCPU.begin(), dispatchDurationsCPU.end());
-    double medianTimeCPU = dispatchDurationsCPU[iterations / 2];
-    double minTimeCPU = dispatchDurationsCPU[0];
-    double maxTimeCPU = dispatchDurationsCPU[iterations - 1];
+    std::vector<double> dispatchDurationsCPUSorted = dispatchDurationsCPU;
+    std::sort(dispatchDurationsCPUSorted.begin(), dispatchDurationsCPUSorted.end());
+    double medianTimeCPU = dispatchDurationsCPUSorted[iterations / 2];
+    double minTimeCPU = dispatchDurationsCPUSorted[0];
+    double maxTimeCPU = dispatchDurationsCPUSorted[iterations - 1];
 
     std::vector<uint64_t> timestamps = m_device->ResolveTimestamps();
 
@@ -204,7 +205,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
 
     // If iterations > samples then the first timestamps were overwritten (no need to skip).
-    if (iterations > samples) 
+    if (iterations > samples || m_commandLineArgs.VerboseTimings())
     {
         skipped = 0;
     }
@@ -212,17 +213,39 @@ void Executor::operator()(const Model::DispatchCommand& command)
     double totalTimeGPU = std::accumulate(dispatchDurationsGPU.begin() + skipped, dispatchDurationsGPU.end(), 0.0);
     double avgTimeGPU = totalTimeGPU / (dispatchDurationsGPU.size() - skipped);
 
-    std::sort(dispatchDurationsGPU.begin(), dispatchDurationsGPU.end());
-    double medianTimeGPU = dispatchDurationsGPU[samples / 2];
-    double minTimeGPU = dispatchDurationsGPU[0];
-    double maxTimeGPU = dispatchDurationsGPU[samples - 1];
+    std::vector<double> dispatchDurationsGPUSorted = dispatchDurationsGPU;
+    std::sort(dispatchDurationsGPUSorted.begin(), dispatchDurationsGPUSorted.end());
+    double medianTimeGPU = dispatchDurationsGPUSorted[samples / 2];
+    double minTimeGPU = dispatchDurationsGPUSorted[0];
+    double maxTimeGPU = dispatchDurationsGPUSorted[samples - 1];
 
-    
     if (m_commandLineArgs.VerboseTimings()) {
         LogInfo(fmt::format("Dispatch '{}': {} iterations\nCPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-            command.dispatchableName, iterations, avgTimeCPU, minTimeCPU, medianTimeCPU, maxTimeCPU));
+                            command.dispatchableName, iterations, avgTimeCPU, minTimeCPU, medianTimeCPU, maxTimeCPU));
         LogInfo(fmt::format("GPU Timings: {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max\n",
-            avgTimeGPU, minTimeGPU, medianTimeGPU, maxTimeGPU));
+                            avgTimeGPU, minTimeGPU, medianTimeGPU, maxTimeGPU));
+        LogInfo("The timings of each iteration: ");
+        if (iterations > samples)
+        {
+            for (uint32_t i = 0; i < iterations; ++i)
+            {
+                LogInfo(fmt::format(" iteration {} , {:.4f} ms (CPU) , {:.4f} ms (GPU)",
+                                    i, dispatchDurationsCPU[i], dispatchDurationsGPU[i]));
+            }
+
+            LogInfo("The first timestamps has been overwritten.");
+            for (uint32_t i = 0; i < samples; ++i)
+            {
+                LogInfo(fmt::format("sample {} , {:.4f} ms (GPU)",
+                                    i, dispatchDurationsGPU[i]));
+            }
+        }
+
+        for (uint32_t i = 0; i < iterations; ++i)
+        {
+            LogInfo(fmt::format("iteration {} , {:.4f} ms (CPU) , {:.4f} ms (GPU)",
+                                i, dispatchDurationsCPU[i], dispatchDurationsGPU[i]));
+        }
     }
     else if (iterations == 1) {
         LogInfo(fmt::format("Dispatch '{}': {} iteration, {:.4f} ms (CPU), {:.4f} ms (GPU)",
