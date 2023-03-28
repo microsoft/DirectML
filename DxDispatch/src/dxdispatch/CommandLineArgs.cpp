@@ -145,6 +145,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Sets the ONNX Runtime logging level. 0 = Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 = Fatal",
             cxxopts::value<uint32_t>()->default_value("2")
         )
+        (
+            "p,print_onnx_bindings",
+            "Prints verbose ONNX model binding information.",
+            cxxopts::value<bool>()
+        )
         ;
 
     options.positional_help("<PATH_TO_MODEL>");
@@ -329,6 +334,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
             m_onnxBindShapes[tensorName] = std::move(shape);
         }
+    }
+
+    if (result.count("print_onnx_bindings")) 
+    { 
+        m_onnxPrintVerboseBindingInfo = result["print_onnx_bindings"].as<bool>(); 
     }
 
     m_helpText = options.help();

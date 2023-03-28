@@ -14,6 +14,9 @@
     - [Buffer: List Initializer](#buffer-list-initializer)
   - [Dispatchables](#dispatchables)
   - [Dispatchable: DirectML Operator](#dispatchable-directml-operator)
+    - [Desc Structs (type and void\*)](#desc-structs-type-and-void)
+    - [Abbreviated Enum Values](#abbreviated-enum-values)
+    - [DML\_TENSOR\_DESC](#dml_tensor_desc)
   - [Dispatchable: HLSL Compute Shader](#dispatchable-hlsl-compute-shader)
   - [Dispatchable: ONNX Model](#dispatchable-onnx-model)
     - [Static and Dynamic Shapes](#static-and-dynamic-shapes)
@@ -24,10 +27,6 @@
     - [Dispatch](#dispatch)
     - [Print](#print)
     - [Write File](#write-file)
-  - [Special Parsing Rules](#special-parsing-rules)
-    - [Desc Structs (type and void\*)](#desc-structs-type-and-void)
-    - [Abbreviated Enum Values](#abbreviated-enum-values)
-    - [DML\_TENSOR\_DESC](#dml_tensor_desc)
   - [Advanced Binding](#advanced-binding)
 - [Timing](#timing)
   - [CPU Timings](#cpu-timings)
@@ -39,6 +38,8 @@
   - [Benchmarking](#benchmarking)
   - [GPU Captures in PIX](#gpu-captures-in-pix)
   - [Shader Debugging in PIX](#shader-debugging-in-pix)
+- [Examples](#examples)
+  - [ONNX Model with Dynamic Shapes](#onnx-model-with-dynamic-shapes)
 
 # Overview
 
@@ -49,7 +50,8 @@ This guide is organized as follows:
 - The second section (**Execution Model**) explains the steps involves in executing a model.
 - The third section (**Models**) covers the model schema with examples.
 - Third fourth section (**Timing**) covers the timing statistics and what they mean.
-- The final section (**Scenarios**) goes through some of the ways you might use the tool.
+- The fifth section (**Scenarios**) goes through some of the ways you might use the tool.
+- The final section (**Examples**) explains some of the JSON models provided with the source.
 
 # Running the Program
 
@@ -108,6 +110,11 @@ Usage:
                                 List of SessionOption config keys and values.
                                 Can be repeated. Example: -e foo:0 -e bar:1
                                 (default: )
+  -b, --binding_shape arg       Explicit shapes for ONNX model tensors (-b
+                                <tensor_name>:<shape>, where <shape> is a
+                                comma-separated list of dimension sizes without
+                                whitespace). Can be repeated. Example: -b
+                                input1:2,2 -b input2:3,2 (default: )
   -l, --onnx_graph_optimization_level arg
                                 Sets the ONNX Runtime graph optimization
                                 level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
@@ -372,6 +379,119 @@ You must define **all** fields of the appropriate operator desc *unless* a field
 
 **NOTE**: take care to use the same casing when setting the fields. Most of the JSON field names in the model start with a lowercase letter, but DML structs generally start with an uppercase letter.
 
+### Desc Structs (type and void*)
+
+DirectML "desc" structs use a type enumeration and `void*` pair to achieve polymorphism: 
+
+- `DML_OPERATOR_DESC` is used to describe any type of operator (e.g. element-wise identity).
+- `DML_TENSOR_DESC` is used to describe any type of tensor (currently only buffers). 
+
+These high-level desc structs have no fields except for `<enum> Type` and `const void* Desc`; their only purpose is to give the API a way to communicate a polymorphic type to DirectML without using `IUnknown` or rev'ing structs and APIs for each new subtype that's added. As such, it's *usually* not useful to retain the exact layout of these structs when representing objects in JSON.
+
+For example, instead of writing the `FusedActivation` member like this:
+
+```json
+{
+    "type": "DML_OPERATOR_ELEMENT_WISE_ADD1",
+    "desc": 
+    {
+        "ATensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "BTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "FusedActivation": { "Type": "ACTIVATION_ELU", "Desc": { "Alpha": 0.5 } }
+    }
+}
+```
+
+... it's easier to write the field `Alpha` inline without the extra `Desc` level:
+
+```json
+{
+    "type": "DML_OPERATOR_ELEMENT_WISE_ADD1",
+    "desc": 
+    {
+        "ATensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "BTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
+        "FusedActivation": { "Type": "ACTIVATION_ELU", "Alpha": 0.5 }
+    }
+}
+```
+
+When defining DirectML desc structs in JSON, the parser will recognize either of the above formats. However, if the subtype itself has a field named `Type` then it will collide with the `Type` field of the higher-level struct; in this case you **must** use the longer format and explicitly list fields using the `Desc` member:
+
+```json
+{
+    "Type": "DML_OPERATOR_RANDOM_GENERATOR",
+    "Desc":
+    {
+        "InputTensor": { ... },
+        "OutputTensor": { ... },
+        "OutputStateTensor": { ... },
+        "Type": "DML_RANDOM_GENERATOR_TYPE_PHILOX_4X32_10"
+    }  
+}
+```
+
+### Abbreviated Enum Values
+
+DirectML enumerations follow a naming convention where values are prefixed by their respective type name. The JSON parser allows initializing enum values by either their full name or their suffix. Below are some examples:
+
+| Type                               | Example Value                                         | Example Value Suffix |
+| ---------------------------------- | ----------------------------------------------------- | -------------------- |
+| <b><i>DML_TENSOR_TYPE</b></i>      | <b><i>DML_TENSOR_TYPE_</b></i>BUFFER                  | BUFFER               |
+| <b><i>DML_TENSOR_DATA_TYPE</b></i> | <b><i>DML_TENSOR_DATA_TYPE_</b></i>FLOAT32            | FLOAT32              |
+| <b><i>DML_REDUCE_FUNCTION</b></i>  | <b><i>DML_REDUCE_FUNCTION</b></i>_SUM                 | SUM                  |
+| <b><i>DML_OPERATOR_</b></i>TYPE    | <b><i>DML_OPERATOR_</b></i>GEMM                       | GEMM                 |
+| <b><i>DML_EXECUTION_FLAG</b></i>S  | <b><i>DML_EXECUTION_FLAG</b></i>_DESCRIPTORS_VOLATILE | DESCRIPTORS_VOLATILE |
+
+Take note of the few odd cases that don't follow the usual rule exactly:
+
+- Enum values of type `DML_OPERATOR_TYPE` omit `_TYPE` from their prefix. It's `DML_OPERATOR_GEMM`, not `DML_OPERATOR_TYPE_GEMM`.
+- Flag values are singular and omit the "S". It's `DML_EXECUTION_FLAG_NONE`, not `DML_EXECUTION_FLAGS_NONE`. 
+
+### DML_TENSOR_DESC
+
+Since tensor descs are so common, the JSON parser provides default values for most fields.
+
+| Field                           | DML Type             | JSON Type | Required | Default                                                   |
+| ------------------------------- | -------------------- | --------- | -------- | --------------------------------------------------------- |
+| `Type`                          | DML_TENSOR_TYPE      | String    | No       | DML_TENSOR_TYPE_BUFFER                                    |
+| `DataType`                      | DML_TENSOR_DATA_TYPE | String    | Yes      | -                                                         |
+| `Flags`                         | DML_TENSOR_FLAGS     | String    | No       | DML_TENSOR_FLAG_NONE                                      |
+| `DimensionCount`                | UINT                 | Integer   | No       | inferred from size of `Sizes` field                       |
+| `Sizes`                         | UINT*                | List      | Yes      | -                                                         |
+| `Strides`                       | UINT*                | List      | No       | null                                                      |
+| `TotalTensorSizeInBytes`        | UINT                 | Integer   | No       | inferred (packed) from `Sizes`, `Strides`, and `DataType` |
+| `GuaranteedBaseOffsetAlignment` | UINT                 | Integer   | No       | 0                                                         |
+
+Below is an example of a fully defined `DML_TENSOR_DESC`:
+
+```json
+{ 
+    "Type": "DML_TENSOR_TYPE_BUFFER",
+    "Desc":
+    {
+        "DataType": "DML_TENSOR_DATA_TYPE_FLOAT32",
+        "Flags": "DML_TENSOR_FLAG_NONE",
+        "DimensionCount": 4,
+        "Sizes": [1,1,2,3],
+        "Strides": [6,6,3,1],
+        "TotalTensorSizeInBytes": 24,
+        "GuaranteedBaseOffsetAlignment": 0
+    }
+}
+```
+
+The following `DML_TENSOR_DESC` in JSON is equivalent to the definition above:
+
+```json
+{ 
+    "DataType": "FLOAT32",
+    "Sizes": [1,1,2,3],
+}
+```
+
 ## Dispatchable: HLSL Compute Shader
 
 You can execute custom compute shaders using an HLSL dispatchable. These objects will result in loading and compiling HLSL source at runtime, which can be very useful for prototyping. 
@@ -486,7 +606,7 @@ It's important to understand when your model contains dynamic shapes: not only d
 The first way of handling dyanmic shapes is to explicitly override them as part of model loading (session creation, which occurs when the "dispatchable" is created). You can override symbolic dimensions by name or by [denotation](https://github.com/onnx/onnx/blob/main/docs/DimensionDenotation.md).
 
 - Use the `--onnx_free_dim_name_override` (`-f`) option to specify values for symbolic dimensions by name. 
-  - Example: `dxdispatch.exe onnx_concat.onnx -f N:2`
+  - Example: `dxdispatch.exe onnx_dynamic_shapes.onnx -f N:2`
 - Use the `--onnx_free_dim_denotation_override` (`-F`) option to specify values for dimension denotations. 
   - Example: `dxdispatch.exe another_model.onnx -F DATA_BATCH:8`
 
@@ -496,7 +616,7 @@ You can specify overrides in JSON as well.
 "concat": 
 {
     "type": "onnx",
-    "sourcePath": "onnx_concat.onnx",
+    "sourcePath": "onnx_dynamic_shapes.onnx",
     "freeDimensionNameOverrides": { "N": 2 } // alternative to "-f N:2" on the command line
 }
 ```
@@ -648,121 +768,6 @@ This command writes the contents of a resource to a file, either as raw binary (
 }
 ```
 
-## Special Parsing Rules
-
-### Desc Structs (type and void*)
-
-DirectML "desc" structs use a type enumeration and `void*` pair to achieve polymorphism: 
-
-- `DML_OPERATOR_DESC` is used to describe any type of operator (e.g. element-wise identity).
-- `DML_TENSOR_DESC` is used to describe any type of tensor (currently only buffers). 
-
-These high-level desc structs have no fields except for `<enum> Type` and `const void* Desc`; their only purpose is to give the API a way to communicate a polymorphic type to DirectML without using `IUnknown` or rev'ing structs and APIs for each new subtype that's added. As such, it's *usually* not useful to retain the exact layout of these structs when representing objects in JSON.
-
-For example, instead of writing the `FusedActivation` member like this:
-
-```json
-{
-    "type": "DML_OPERATOR_ELEMENT_WISE_ADD1",
-    "desc": 
-    {
-        "ATensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "BTensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "FusedActivation": { "Type": "ACTIVATION_ELU", "Desc": { "Alpha": 0.5 } }
-    }
-}
-```
-
-... it's easier to write the field `Alpha` inline without the extra `Desc` level:
-
-```json
-{
-    "type": "DML_OPERATOR_ELEMENT_WISE_ADD1",
-    "desc": 
-    {
-        "ATensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "BTensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "OutputTensor": { "DataType": "FLOAT32", "Sizes": [3] },
-        "FusedActivation": { "Type": "ACTIVATION_ELU", "Alpha": 0.5 }
-    }
-}
-```
-
-When defining DirectML desc structs in JSON, the parser will recognize either of the above formats. However, if the subtype itself has a field named `Type` then it will collide with the `Type` field of the higher-level struct; in this case you **must** use the longer format and explicitly list fields using the `Desc` member:
-
-```json
-{
-    "Type": "DML_OPERATOR_RANDOM_GENERATOR",
-    "Desc":
-    {
-        "InputTensor": { ... },
-        "OutputTensor": { ... },
-        "OutputStateTensor": { ... },
-        "Type": "DML_RANDOM_GENERATOR_TYPE_PHILOX_4X32_10"
-    }  
-}
-```
-
-### Abbreviated Enum Values
-
-DirectML enumerations follow a naming convention where values are prefixed by their respective type name. The JSON parser allows initializing enum values by either their full name or their suffix. Below are some examples:
-
-| Type                               | Example Value                                         | Example Value Suffix |
-| ---------------------------------- | ----------------------------------------------------- | -------------------- |
-| <b><i>DML_TENSOR_TYPE</b></i>      | <b><i>DML_TENSOR_TYPE_</b></i>BUFFER                  | BUFFER               |
-| <b><i>DML_TENSOR_DATA_TYPE</b></i> | <b><i>DML_TENSOR_DATA_TYPE_</b></i>FLOAT32            | FLOAT32              |
-| <b><i>DML_REDUCE_FUNCTION</b></i>  | <b><i>DML_REDUCE_FUNCTION</b></i>_SUM                 | SUM                  |
-| <b><i>DML_OPERATOR_</b></i>TYPE    | <b><i>DML_OPERATOR_</b></i>GEMM                       | GEMM                 |
-| <b><i>DML_EXECUTION_FLAG</b></i>S  | <b><i>DML_EXECUTION_FLAG</b></i>_DESCRIPTORS_VOLATILE | DESCRIPTORS_VOLATILE |
-
-Take note of the few odd cases that don't follow the usual rule exactly:
-
-- Enum values of type `DML_OPERATOR_TYPE` omit `_TYPE` from their prefix. It's `DML_OPERATOR_GEMM`, not `DML_OPERATOR_TYPE_GEMM`.
-- Flag values are singular and omit the "S". It's `DML_EXECUTION_FLAG_NONE`, not `DML_EXECUTION_FLAGS_NONE`. 
-
-### DML_TENSOR_DESC
-
-Since tensor descs are so common, the JSON parser provides default values for most fields.
-
-| Field                           | DML Type             | JSON Type | Required | Default                                                   |
-| ------------------------------- | -------------------- | --------- | -------- | --------------------------------------------------------- |
-| `Type`                          | DML_TENSOR_TYPE      | String    | No       | DML_TENSOR_TYPE_BUFFER                                    |
-| `DataType`                      | DML_TENSOR_DATA_TYPE | String    | Yes      | -                                                         |
-| `Flags`                         | DML_TENSOR_FLAGS     | String    | No       | DML_TENSOR_FLAG_NONE                                      |
-| `DimensionCount`                | UINT                 | Integer   | No       | inferred from size of `Sizes` field                       |
-| `Sizes`                         | UINT*                | List      | Yes      | -                                                         |
-| `Strides`                       | UINT*                | List      | No       | null                                                      |
-| `TotalTensorSizeInBytes`        | UINT                 | Integer   | No       | inferred (packed) from `Sizes`, `Strides`, and `DataType` |
-| `GuaranteedBaseOffsetAlignment` | UINT                 | Integer   | No       | 0                                                         |
-
-Below is an example of a fully defined `DML_TENSOR_DESC`:
-
-```json
-{ 
-    "Type": "DML_TENSOR_TYPE_BUFFER",
-    "Desc":
-    {
-        "DataType": "DML_TENSOR_DATA_TYPE_FLOAT32",
-        "Flags": "DML_TENSOR_FLAG_NONE",
-        "DimensionCount": 4,
-        "Sizes": [1,1,2,3],
-        "Strides": [6,6,3,1],
-        "TotalTensorSizeInBytes": 24,
-        "GuaranteedBaseOffsetAlignment": 0
-    }
-}
-```
-
-The following `DML_TENSOR_DESC` in JSON is equivalent to the definition above:
-
-```json
-{ 
-    "DataType": "FLOAT32",
-    "Sizes": [1,1,2,3],
-}
-```
-
 ## Advanced Binding
 
 In this simplest case you provide a resource binding by its name only (e.g. `"inputA": "A"`). However, you also have the option of providing additional information to view a subrange of the resource or reinterpret its type. Below is an example that fills out a binding object with these additional properties:
@@ -778,13 +783,14 @@ Binding object:
 }
 ```
 
-| Member          | Type                 | DML      | HLSL     | Description                                         |
-| --------------- | -------------------- | -------- | -------- | --------------------------------------------------- |
-| `name`          | String               | Required | Required | Name of the model buffer to bind.                   |
-| `format`        | String (DXGI_FORMAT) | -        | Optional | Format to use for the buffer view.                  |
-| `elementCount`  | Number (UINT32)      | -        | Optional | Number of elements in the buffer.                   |
-| `elementStride` | Number (UINT32)      | -        | Optional | Size of each element (or structure) in the buffer.  |
-| `elementOffset` | Number (UINT32)      | Optional | Optional | Offset (measured in elements) to the first element. |
+| Member          | Type                 | DML      | HLSL     | ONNX     | Description                                         |
+| --------------- | -------------------- | -------- | -------- | -------- | --------------------------------------------------- |
+| `name`          | String               | Required | Required | Optional | Name of the model buffer to bind.                   |
+| `format`        | String (DXGI_FORMAT) | -        | Optional | -        | Format to use for the buffer view.                  |
+| `elementCount`  | Number (UINT32)      | -        | Optional | -        | Number of elements in the buffer.                   |
+| `elementStride` | Number (UINT32)      | -        | Optional | -        | Size of each element (or structure) in the buffer.  |
+| `elementOffset` | Number (UINT32)      | Optional | Optional | -        | Offset (measured in elements) to the first element. |
+| `shape`         | Array (UINT32)       | -        | -        | -        | Specifies shape for input/output tensor.            |
 
 When binding with only a name the above values default to viewing the portion of the resource that is initialized when declared in the model. So, for example, if you have a 64KB buffer named "A" that is initialized with 3x FLOAT32 values the default view will have `elementCount=3`, `elementStride=4`, `elementOffset=0`, `format=R32_FLOAT`. This is generally what you want, but the extra parameters can be useful for experimentation.
 
@@ -1002,3 +1008,37 @@ Below is a modified version of `hlsl_add_fp16.json` used in the example above. W
     ]
 }
 ```
+
+# Examples
+
+## ONNX Model with Dynamic Shapes
+
+The `onnx_dynamic_shapes.onnx` model is a simple network that concatenates two input tensors along their first dimension. The two inputs have dynamic shapes `[N,2]`, so the first dimension is symbolic and may take any value at runtime. The output tensor has a dynamic shape `[?,?]`, which can't be known until the model is loaded and initialized (free dimension overrides provided) or run (no free dimension overrides provided). Let's walk through several examples of how you might leverage these dynamic shapes.
+
+![](images/onnx_dynamic_shape.png)
+
+**Running the Model with No Arguments**
+
+If you run the model without any additional command-line options it *will* load and execute:
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx
+Running on 'NVIDIA GeForce RTX 4090'
+Dispatch 'onnx_dynamic_shapes.onnx': 1 iterations, 2.3696 ms median (CPU), 1.8207 ms median (GPU)
+```
+
+How is this possible? What are the tensor shapes? In this case, the value of `N` is forced to `1` as a default. See 
+
+
+
+**Overriding Symbolic Dimensions**
+
+First, 
+
+Command line profiling:
+```
+```
+
+- No arguments: inputs will have shape [1,2], output will be [2,2]
+- Dimension overrides: 
+- JSON with multiple dispatches and different bindings

@@ -156,6 +156,30 @@ static DataTypeInfo GetDataTypeInfo(ONNXTensorElementDataType dataType)
     return info;
 }
 
+const char* GetOnnxTensorTypeString(ONNXTensorElementDataType dataType)
+{
+    switch (dataType)
+    {
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: return "FLOAT";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8: return "UINT8";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8: return "INT8";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16: return "UINT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16: return "INT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32: return "INT32";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: return "INT64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING: return "STRING";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: return "BOOL";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: return "FLOAT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE: return "DOUBLE";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32: return "UINT32";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64: return "UINT64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64: return "COMPLEX64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128: return "COMPLEX128";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16: return "BFLOAT16";
+        default: return "UNDEFINED";
+    }
+}
+
 OnnxDispatchable::OnnxDispatchable(
     std::shared_ptr<Device> device, 
     const Model::OnnxDispatchableDesc& desc,
@@ -253,6 +277,8 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
         {
             TensorBinding binding = {};
             auto tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
+            binding.name = tensorName;
+            binding.isInput = isInputTensor;
 
             Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
 
@@ -265,11 +291,12 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
                 // Get shape stored in ONNX model.
-                std::vector<int64_t> tensorShape = shapeInfo.GetShape();
+                binding.shape = shapeInfo.GetShape();
+                binding.dataType = shapeInfo.GetElementType();
                 
                 // Check if the tensor shape is static or dynamic, which determines if resources can be preallocated.
                 bool tensorShapeHasFreeDimensions = false;
-                for (int64_t& dimSize : tensorShape)
+                for (int64_t& dimSize : binding.shape)
                 {
                     // Dimensions that aren't statically known/inferrable are "free dimensions" with size -1. 
                     if (dimSize == -1)
@@ -297,7 +324,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                     auto& bindingShape = jsonBinding->second[0].shape;
                     if (!bindingShape.empty())
                     {
-                        tensorShape = bindingShape;
+                        binding.shape = bindingShape;
                         tensorShapeHasFreeDimensions = false;
                     }
 
@@ -312,7 +339,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                     auto& bindingShape = commandLineBindingShape->second;
                     if (!bindingShape.empty())
                     {
-                        tensorShape = bindingShape;
+                        binding.shape = bindingShape;
                         tensorShapeHasFreeDimensions = false;
                     }
                 }
@@ -330,10 +357,11 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                                 m_ortDmlApi,
                                 dmlMemoryInformation,
                                 binding.resource.Get(),
-                                tensorShape,
+                                binding.shape,
                                 dataTypeInfo.onnxDataType,
                                 &binding.wrapper
                             );
+                            binding.resourceType = "explicit (DirectX)";
                         }
                         else
                         {
@@ -362,7 +390,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                         {
                             // Convert int64_t tensorShape to uint32_t for DML
                             std::vector<uint32_t> tensorShapeUint32;
-                            for (int64_t dimSize : tensorShape)
+                            for (int64_t dimSize : binding.shape)
                             {
                                 tensorShapeUint32.push_back(static_cast<uint32_t>(std::abs(dimSize)));
                             }
@@ -384,20 +412,24 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                                 m_ortDmlApi,
                                 dmlMemoryInformation,
                                 binding.resource.Get(),
-                                tensorShape,
+                                binding.shape,
                                 dataTypeInfo.onnxDataType,
                                 &binding.wrapper
                             );
+
+                            binding.resourceType = "implicit (DirectX)";
                         }
                         else
                         {
                             // Preallocate as a CPU resource.
                             binding.ortValue = Ort::Value::CreateTensor(
                                 static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions()), 
-                                tensorShape.data(),
-                                tensorShape.size(), 
+                                binding.shape.data(),
+                                binding.shape.size(), 
                                 dataTypeInfo.onnxDataType
                             );
+
+                            binding.resourceType = "implicit (CPU)";
                         }
                     }
                 }
@@ -428,10 +460,33 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                 {
                     // Let the execution provider allocate the output.
                     m_ioBindings->BindOutput(tensorName.c_str(), isDmlSupportedType ? dmlMemoryInformation : cpuMemoryInformation);
+                    binding.resourceType = isDmlSupportedType ? "deferred (DirectX)" : "deferred (CPU)";
                 }
             }
 
             m_mergedBindings.emplace_back(std::move(binding));
+        }
+    }
+
+    if (m_args.PrintVerboseOnnxBindingInfo())
+    {
+        for (auto& binding : m_mergedBindings)
+        {
+            LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name));
+            LogInfo(fmt::format("  Resource  = {}", binding.resourceType));
+            LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)));
+            std::string shapeString = "[";
+            for (size_t i = 0; i < binding.shape.size(); i++)
+            {
+                shapeString += std::to_string(binding.shape[i]);
+                if (i < binding.shape.size() - 1)
+                {
+                    shapeString += ",";
+                }
+            }
+            shapeString += "]";
+            LogInfo(fmt::format("  Shape     = {}", shapeString));
+            LogInfo("");
         }
     }
 }

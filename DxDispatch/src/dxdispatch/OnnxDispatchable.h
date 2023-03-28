@@ -27,6 +27,11 @@ private:
 
     struct TensorBinding
     {
+        std::string name;
+        std::string resourceType;
+        std::vector<int64_t> shape;
+        ONNXTensorElementDataType dataType;
+        bool isInput;
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
         Microsoft::WRL::ComPtr<IUnknown> wrapper;
         std::optional<Ort::Value> ortValue;

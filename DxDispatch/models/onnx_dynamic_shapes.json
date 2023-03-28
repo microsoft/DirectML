@@ -1,0 +1,63 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "a": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 1, 2, 3, 4, 5, 6 ]
+        },
+        "b": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 7, 8, 9, 10, 11, 12 ]
+        },
+        "c": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 12, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "concat": 
+        {
+            "type": "onnx",
+            "sourcePath": "onnx_dynamic_shapes.onnx"
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [1,2] },
+                "x1": { "name": "b", "shape": [1,2] },
+                "y": { "name": "c", "shape": [2,2] }
+            }
+        },
+        {
+            "type": "print",
+            "resource": "c"
+        },
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [3,2] },
+                "x1": { "name": "b", "shape": [3,2] },
+                "y": { "name": "c", "shape": [6,2] }
+            }
+        },
+        {
+            "type": "print",
+            "resource": "c"
+        }
+    ]
+}

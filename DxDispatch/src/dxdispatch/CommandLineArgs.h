@@ -30,7 +30,8 @@ public:
     gsl::span<const std::pair<std::string, std::string>> GetOnnxSessionOptionConfigEntries() const { return m_onnxSessionOptionConfigEntries; }
     const std::unordered_map<std::string, std::vector<int64_t>>& GetOnnxBindingShapes() const { return m_onnxBindShapes; }
     std::optional<uint32_t> GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
-    std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; } 
+    std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; }
+    bool PrintVerboseOnnxBindingInfo() const { return m_onnxPrintVerboseBindingInfo; } 
 
 private:
     bool m_showAdapters = false;
@@ -70,4 +71,5 @@ private:
 
     std::optional<uint32_t> m_onnxGraphOptimizationLevel;
     std::optional<uint32_t> m_onnxLoggingLevel;
+    bool m_onnxPrintVerboseBindingInfo = false;
 };
