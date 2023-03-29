@@ -220,12 +220,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     // Dispatch
     uint32_t iterationsCompleted = 0;
+    bool timedOut = false;
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
     try
     {
         Timer loopTimer, iterationTimer, bindTimer, dispatchTimer;
 
-        for (; iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
+        for (; !timedOut && iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
         {
             iterationTimer.Start();
 
@@ -255,11 +256,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
             if (m_commandLineArgs.TimeToRunInMilliseconds() &&
                 loopTimer.End().DurationInMilliseconds() + timeToSleep > m_commandLineArgs.TimeToRunInMilliseconds().value())
             {
-                break;
+                timedOut = true;
             }
-
-            // Not particularly precise (may be off by some milliseconds). Consider using OS APIs in the future.
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(timeToSleep)));
+            else
+            {
+                // Not particularly precise (may be off by some milliseconds). Consider using OS APIs in the future.
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(timeToSleep)));
+            }
         }
     }
     catch (const std::exception& e)
