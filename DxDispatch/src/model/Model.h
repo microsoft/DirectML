@@ -29,6 +29,8 @@ public:
         // For Append/Consume buffers only:
         std::optional<std::string> counterName;
         uint64_t counterOffsetBytes;
+
+        std::vector<int64_t> shape;
     };
 
     using Bindings = std::unordered_map<std::string, std::vector<BufferBindingSource>>;
@@ -89,6 +91,13 @@ public:
     struct OnnxDispatchableDesc
     {
         std::filesystem::path sourcePath;
+
+        // NOTE: these will be overriden if also using the respective command-line options.
+        std::vector<std::pair<std::string, uint32_t>> freeDimNameOverrides;
+        std::vector<std::pair<std::string, uint32_t>> freeDimDenotationOverrides;
+        std::vector<std::pair<std::string, std::string>> sessionOptionsConfigEntries;
+        uint32_t graphOptimizationLevel = 99;
+        uint32_t loggingLevel = 2;
     };
 
     struct DispatchableDesc

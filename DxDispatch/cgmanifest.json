@@ -116,7 +116,7 @@
         "type": "nuget",
         "nuget": {
           "name": "Microsoft.ML.OnnxRuntime.DirectML",
-          "version": "1.14.0-dev-20230209-0844-6ccaeddefa"
+          "version": "1.14.1"
         }
       }
     }

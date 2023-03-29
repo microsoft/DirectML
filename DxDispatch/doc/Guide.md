@@ -2,6 +2,7 @@
 
 - [Overview](#overview)
 - [Running the Program](#running-the-program)
+  - [Choosing a Hardware Adapter](#choosing-a-hardware-adapter)
 - [Execution Model](#execution-model)
 - [Models](#models)
   - [Resources](#resources)
@@ -9,34 +10,47 @@
     - [Buffer: Constant Initializer](#buffer-constant-initializer)
     - [Buffer: Array Initializer](#buffer-array-initializer)
     - [Buffer: Sequence Initializer](#buffer-sequence-initializer)
+    - [Buffer: File Data Initializer](#buffer-file-data-initializer)
     - [Buffer: List Initializer](#buffer-list-initializer)
   - [Dispatchables](#dispatchables)
-    - [DirectML Operator](#directml-operator)
-    - [HLSL Compute Shader](#hlsl-compute-shader)
-    - [ONNX Model](#onnx-model)
+  - [Dispatchable: DirectML Operator](#dispatchable-directml-operator)
+    - [Desc Structs (type and void\*)](#desc-structs-type-and-void)
+    - [Abbreviated Enum Values](#abbreviated-enum-values)
+    - [DML\_TENSOR\_DESC](#dml_tensor_desc)
+  - [Dispatchable: HLSL Compute Shader](#dispatchable-hlsl-compute-shader)
+  - [Dispatchable: ONNX Model](#dispatchable-onnx-model)
+    - [Static and Dynamic Shapes](#static-and-dynamic-shapes)
+    - [Handling Dynamic Shapes at Initialization](#handling-dynamic-shapes-at-initialization)
+    - [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)
+    - [Implicit Bindings and Optional JSON](#implicit-bindings-and-optional-json)
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
-  - [Special Parsing Rules](#special-parsing-rules)
-    - [Desc Structs (type and void*)](#desc-structs-type-and-void)
-    - [Abbreviated Enum Values](#abbreviated-enum-values)
-    - [DML_TENSOR_DESC](#dml_tensor_desc)
+    - [Write File](#write-file)
   - [Advanced Binding](#advanced-binding)
+- [Timing](#timing)
+  - [CPU Timings](#cpu-timings)
+  - [GPU Timings](#gpu-timings)
+  - [Target Dispatch Interval](#target-dispatch-interval)
 - [Scenarios](#scenarios)
   - [Debugging DirectX API Usage](#debugging-directx-api-usage)
   - [Benchmarking](#benchmarking)
   - [GPU Captures in PIX](#gpu-captures-in-pix)
   - [Shader Debugging in PIX](#shader-debugging-in-pix)
+- [Examples](#examples)
+  - [ONNX Model with Dynamic Shapes](#onnx-model-with-dynamic-shapes)
 
 # Overview
 
-DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders or DirectML operators), and commands to execute. 
+DxDispatch is simple command-line executable for launching DirectX 12 compute programs without writing all the C++ boilerplate. The input to the tool is a JSON model that defines resources, dispatchables (compute shaders, DirectML operators, and ONNX models), and commands to execute. 
 
 This guide is organized as follows:
 - The first section (**Running the Program**) shows basic command-line usage.
 - The second section (**Execution Model**) explains the steps involves in executing a model.
 - The third section (**Models**) covers the model schema with examples.
-- The final section (**Scenarios**) goes through some of the ways you might use the tool.
+- Third fourth section (**Timing**) covers the timing statistics and what they mean.
+- The fifth section (**Scenarios**) goes through some of the ways you might use the tool.
+- The final section (**Examples**) explains some of the JSON models provided with the source.
 
 # Running the Program
 
@@ -45,8 +59,8 @@ The most basic usage is to simply pass in the path to a JSON model. For example,
 ```
 > dxdispatch.exe .\models\dml_reduce.json
 
-Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 1.1294 ms average
+Running on 'NVIDIA GeForce RTX 3090'
+Dispatch 'sum': 1 iterations, 0.5491 ms median (CPU), 0.0061 ms median (GPU), 0.4024 ms median (Bind)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
@@ -54,39 +68,84 @@ Resource 'output': 6, 15, 24
 There are more options available to you. If you run the executable with no arguments (or `--help`) it will display the available options:
 
 ```
-dxdispatch version 0.6.0
-  DirectML     : NuGet (Microsoft.AI.DirectML.1.8.2)
-  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.602.0)
-  DXCompiler   : Release (v1.6.2112)
-  PIX          : NuGet (WinPixEventRuntime.1.0.220124001)
-  ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.11.0)
+dxdispatch version 0.13.0
+  DirectML     : NuGet (Microsoft.AI.DirectML.1.10.1)
+  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.608.2)
+  DXCompiler   : Release (v1.7.2212)
+  PIX          : NuGet (WinPixEventRuntime.1.0.220810001)
+  ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.14.1)
 
 Usage:
   dxdispatch [OPTION...] <PATH_TO_MODEL>
 
-  -d, --debug                   Enable D3D and DML debug layers
+  -h, --help               Print command-line usage help
+  -S, --show_dependencies  Show version info for dependencies including
+                           DirectX components
+
+ DirectX options:
+  -d, --debug                  Enable D3D and DML debug layers
+  -a, --adapter arg            Substring to match a desired DirectX adapter
+                               (default: )
+  -s, --show_adapters          Show all available DirectX adapters
+  -q, --queue_type arg         Type of command queue/list to use ('compute'
+                               or 'direct') (default: direct)
+      --xbox_allow_precompile  Disables automatically defining
+                               __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
+  -c, --pix_capture_type arg   Type of PIX captures to take: gpu, timing, or
+                               manual. (default: manual)
+  -o, --pix_capture_name arg   Name used for PIX capture files. (default:
+                               dxdispatch)
+
+ ONNX options:
+  -f, --onnx_free_dim_name_override arg
+                                List of free dimension overrides by name. Can
+                                be repeated. Example: -f foo:3 -f bar:5
+                                (default: )
+  -F, --onnx_free_dim_denotation_override arg
+                                List of free dimension overrides by
+                                denotation. Can be repeated. Example: -F DATA_BATCH:3
+                                -F DATA_CHANNEL:5 (default: )
+  -e, --onnx_session_config_entry arg
+                                List of SessionOption config keys and values.
+                                Can be repeated. Example: -e foo:0 -e bar:1
+                                (default: )
+  -b, --binding_shape arg       Explicit shapes for ONNX model tensors (-b
+                                <tensor_name>:<shape>, where <shape> is a
+                                comma-separated list of dimension sizes without
+                                whitespace). Can be repeated. Example: -b
+                                input1:2,2 -b input2:3,2 (default: )
+  -l, --onnx_graph_optimization_level arg
+                                Sets the ONNX Runtime graph optimization
+                                level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 =
+                                All (default: 99)
+  -L, --onnx_logging_level arg  Sets the ONNX Runtime logging level. 0 =
+                                Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 =
+                                Fatal (default: 2)
+  -p, --print_onnx_bindings     Prints verbose ONNX model binding
+                                information.
+
+ Timing options:
   -i, --dispatch_iterations arg
                                 The number of times to repeat each dispatch
                                 (default: 1)
-  -h, --help                    Print command-line usage help
-  -a, --adapter arg             Substring to match a desired DirectX adapter
-                                (default: )
-  -s, --show_adapters           Show all available DirectX adapters
-  -q, --direct_queue            Use a direct queue/lists (default is a
-                                compute queue/lists)
-      --xbox_allow_precompile   Disables automatically defining
-                                __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
-  -c, --pix_capture_type arg    Type of PIX captures to take: gpu, timing, or
-                                manual. (default: manual)
-  -f, --onnx_free_dim_override arg
-                                List of free dimension overrides by name
-                                (ONNX models only). Can be repeated. Example: -f
-                                foo:3 -f bar:5 (default: )
+  -t, --milliseconds_to_run arg
+                                Specifies the total time to run the test for.
+                                Overrides dispatch_iterations
+  -I, --dispatch_interval arg   The minimum time in milliseconds between
+                                dispatches (a large interval may introduce sleeps
+                                between dispatches) (default: 0)
+  -w, --warmup_samples arg      Max number of warmup samples to discard from
+                                timing statistics
+  -v, --timing_verbosity arg    Timing verbosity level. 0 = show hot timings,
+                                1 = init/cold/hot timings, 2 = show all
+                                timing info (default: 0)
 ```
 
+## Choosing a Hardware Adapter
 
+Your machine may have multiple graphics and/or compute accelerators, which DirectX calls [*adapters*](https://learn.microsoft.com/en-us/windows/win32/dxcore/dxcore-enum-adapters). By default, DxDispatch enumerates all available adapters, sorts them with a preference for [hardware & high performance](https://learn.microsoft.com/en-us/windows/win32/dxcore/dxcore_interface/ne-dxcore_interface-dxcoreadapterpreference), and then picks the first one. If you have both an integrated GPU and discrete GPU, for instance, this process should ensure that the discrete GPU is picked by default. Note that *high performance* doesn't mean *best performance*: the relative ordering of multiple discrete GPUs is arbitrary, for instance, and it's possible (but uncommon) to have an integrated GPU that is faster than a discrete GPU.
 
-If your machine has multiple adapters you can display them:
+If the default choice isn't desired, then you can print the available adapters using the `--show_adapters` (`-s`) option:
 
 ```
 > .\dxdispatch.exe -s    
@@ -116,7 +175,7 @@ Microsoft Basic Render Driver
 -Shared System Memory: 15.92 GB
 ```
 
-Discrete hardware adapters are preferred by default. You can specify a desired adapter by passing a part of its name (will match by substring):
+The default adapter selection for the above example would be the *NVIDIA GeForce RTX 2070 SUPER*. You can instead specify a desired adapter by passing a part of its name (first adapter to match the substring is chosen):
 
 ```
 > dxdispatch.exe .\models\dml_reduce.json -a Intel
@@ -296,7 +355,7 @@ You can initialize a buffer is using an array of elements with different types a
 
 Dispatchables are objects that can be executed on a D3D command queue. The model supports three types of dispatchables: DirectML operators, custom HLSL compute shaders, and serialized ONNX models.
 
-### DirectML Operator
+## Dispatchable: DirectML Operator
 
 The JSON format for defining operators closely mirrors the DirectML API for creating operators: you are filling out a `DML_OPERATOR_DESC` struct that will be used to instantiate an `IDMLOperator` object. Below is an example that creates a dispatchable using `DML_CONVOLUTION_OPERATOR_DESC`:
 
@@ -324,211 +383,6 @@ The JSON format for defining operators closely mirrors the DirectML API for crea
 You must define **all** fields of the appropriate operator desc *unless* a field is marked as optional in the API. Optional fields in DirectML operator descs are generally pointers and annotated with `_Maybenull_` or `_Field_size_opt_`. If you do not define an optional field in the JSON dispatchable then it will be a nullptr in the C++ definition. Additionally, there are some [special parsing rules](#special-parsing-rules) that make it more convenient to define DML dispatchables: take note of the abbreviated enum values and defaults for `DML_TENSOR_DESC` fields.
 
 **NOTE**: take care to use the same casing when setting the fields. Most of the JSON field names in the model start with a lowercase letter, but DML structs generally start with an uppercase letter.
-
-### HLSL Compute Shader
-
-You can execute custom compute shaders using an HLSL dispatchable. These objects will result in loading and compiling HLSL source at runtime, which can be very useful for prototyping. 
-
-The example below shows how to reference the shader in the JSON model:
-
-```json
-{
-    "type": "hlsl",
-    "sourcePath": "models/hlsl_add_fp16.hlsl",
-    "compiler": "dxc",
-    "compilerArgs": 
-    [
-        "-T", "cs_6_2",
-        "-E", "CSMain",
-        "-D", "NUM_THREADS=6",
-        "-enable-16bit-types"
-    ]
-}
-```
-
-The contents of `models/hlsl_add_fp16.hlsl` could, for example, point at the following contents:
-
-```c
-StructuredBuffer<float16_t> inputA;
-StructuredBuffer<float16_t> inputB;
-RWStructuredBuffer<float16_t> output;
-cbuffer constants { uint elementCount; };
-
-[numthreads(NUM_THREADS, 1, 1)]
-void CSMain(uint3 dtid : SV_DispatchThreadID)
-{
-    if (dtid.x < elementCount)
-    {
-        output[dtid.x] = inputA[dtid.x] + inputB[dtid.x];
-    }
-}
-```
-**Notes**:
-- Only the modern DXC compiler is supported at this time. I may add FXC support later.
-- For command-line arguments refer to [this page](https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll#using-the-compiler-interface). Pay special attention to how the arguments should be split in the array.
-- A compatible root signature will be generated automatically. You do not have control over the root signature and should not declare one inline in the HLSL.
-- A single descriptor table will reference all shader resources (buffers). SRVs, UAVs, and CBVs will be created automatically by reflecting the HLSL source and using appropriate views. You have some control over these views when binding (discussed later).
-- You may declare shader resources using any type of buffer view, but textures are not supported. Arrays of resources (e.g. `Buffer<float> inputs[2];`), including unbounded arrays, are not yet supported. This is on the backlog though!
-- If you declare a resource in HLSL but do not reference it in the shader program then it will likely be optimized away! Binding failures will result if you try to bind a buffer in the model to an unused shader input.
-
-### ONNX Model
-
-You can execute ONNX models using ONNX Runtime with the DirectML execution provider using an ONNX dispatchable. The example below shows how to reference an ONNX model in the JSON model.
-
-```json
-{
-    "resources": 
-    {
-        "A0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
-        "B0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
-        "A1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
-        "B1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
-        "Out": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 12, "value": 0 } }
-    },
-
-    "dispatchables": 
-    {
-        "gemm": { "type": "onnx", "sourcePath": "models/onnx_gemm.onnx" }
-    },
-
-    "commands": 
-    [
-        {
-            "type": "dispatch",
-            "dispatchable": "gemm",
-            "bindings": 
-            {
-                "A0": "A0",
-                "B0": "B0",
-                "A1": "A1",
-                "B1": "B1",
-                "add": "Out"
-            }
-        }
-        ,
-        {
-            "type": "print",
-            "resource": "Out"
-        }
-    ]
-}
-```
-
-Resources in the JSON model are bound to the ONNX model's input/output tensors. The `onnx_gemm.onnx` example has four inputs and one output:
-
-![ONNX model binding](images/onnx_model.png)
-
-The above DxDispatch JSON model is executed like any other model:
-
-```
-> dxdispatch.exe .\models\onnx_gemm.json
-```
-
-However, as a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to defining buffer resources for each ONNX input/output tensor with uninitialized values, dispatching the ONNX model once, and not issuing and print commands. This convenience is primarily intended for benchmarking and debugging.
-
-```
-> dxdispatch.exe .\models\onnx_gemm.onnx
-```
-
-Some ONNX models have "free" dimensions that aren't statically defined. For example, an input tensor for the ONNX model might have dimensions `[1, seq_len, 512, 128]`. These free dimensions become 1 unless they are explicitly given a value. You can use the `-f` command-line option to override free dimensions by name with the desired size. The example below would set the `seq_len` dimension to size 100. The `-f` option can be repeated if there are multiple free dimensions.
-
-```
-> dxdispatch.exe some_model.onnx -f seq_len:100
-```
-
-## Commands
-### Dispatch
-
-A dispatch command records a dispatchable into a D3D command list and executes it. Each dispatch command has the following fields:
-
-| Member           | Type                     | DML      | HLSL     | Description                                        |
-| ---------------- | ------------------------ | -------- | -------- | -------------------------------------------------- |
-| type             | String                   | Required | Required | Must be `"dispatch"`.                              |
-| dispatchable     | String                   | Required | Required | Name of the dispatchable object.                   |
-| bindings         | String, Object, or Array | Required | Required | Size of each element (or structure) in the buffer. |
-| threadGroupCount | Array                    | -        | Optional | Number of thread groups in X, Y, and Z dimensions. |
-
-The only difference between DML and HLSL dispatches is that DML ops ignore the `threadGroupCount` field (defaults to `[1,1,1]` for HLSL if omitted).
-
-Below is an example of a dispatch command for a DML operator:
-
-```json
-{
-    "type": "dispatch",
-    "dispatchable": "join",
-    "bindings": 
-    {
-        "InputTensors": [ "A", "B", "C" ],
-        "OutputTensor": "Out"
-    }
-}
-```
-
-Below is an example of a dispatch command for an HLSL operator:
-
-```json
-{
-    "type": "dispatch",
-    "dispatchable": "add",
-    "threadGroupCount": [ 2, 1, 1 ],
-    "bindings": 
-    {
-        "inputA": "A",
-        "inputB": "B",
-        "output": "Out",
-        "constants": "Constants"
-    }
-}
-```
-
-
-The most important property to discuss in this command is the `bindings`, which ties the resources in the model to the *bind points* in the dispatchable. The `bindings` field is a dictionary that maps the name of a bind point to an array of resource bindings. Bind points in DML operators are the names of `DML_TENSOR_DESC` fields in the operator desc. For example, the join operator has **two** bind points: `InputTensors` and `OutputTensor`. Each bind point may have 1 or more resources bound to it. In the case of join, `InputTensors` has a variable number of resources bound to it, which is determined using the value of of `InputCount`. The `OutputTensor` bind point must have 1 and only 1 resource bound to it.
-
-```cpp
-struct DML_JOIN_OPERATOR_DESC
-{
-    UINT InputCount;
-    _Field_size_(InputCount) const DML_TENSOR_DESC* InputTensors;
-    const DML_TENSOR_DESC* OutputTensor;
-    UINT Axis;
-};
-```
-
-Bind points in compute shaders are the shader input names. The following HLSL has 4 bind points: `inputA`, `inputB`, `output`, and `constants`:
-
-```c
-StructuredBuffer<float16_t> inputA;
-StructuredBuffer<float16_t> inputB;
-RWStructuredBuffer<float16_t> output;
-cbuffer constants { uint elementCount; };
-```
-
-
-
-### Print
-
-This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. More control over printing may be added in the future.
-
-```json
-{ 
-    "type": "print", 
-    "resource": "Out" 
-}
-```
-
-### Write File
-
-This command writes the contents of a resource to a file, either as raw binary (.dat/.bin) or a NumPy array (.npy, which includes the original dimensions and data type).
-
-```json
-{ 
-    "type": "writeFile",
-    "targetPath": "OutputFile.npy",
-    "resource": "Out"
-}
-```
-
-## Special Parsing Rules
 
 ### Desc Structs (type and void*)
 
@@ -643,6 +497,282 @@ The following `DML_TENSOR_DESC` in JSON is equivalent to the definition above:
 }
 ```
 
+## Dispatchable: HLSL Compute Shader
+
+You can execute custom compute shaders using an HLSL dispatchable. These objects will result in loading and compiling HLSL source at runtime, which can be very useful for prototyping. 
+
+The example below shows how to reference the shader in the JSON model:
+
+```json
+{
+    "type": "hlsl",
+    "sourcePath": "models/hlsl_add_fp16.hlsl",
+    "compiler": "dxc",
+    "compilerArgs": 
+    [
+        "-T", "cs_6_2",
+        "-E", "CSMain",
+        "-D", "NUM_THREADS=6",
+        "-enable-16bit-types"
+    ]
+}
+```
+
+The contents of `models/hlsl_add_fp16.hlsl` could, for example, point at the following contents:
+
+```c
+StructuredBuffer<float16_t> inputA;
+StructuredBuffer<float16_t> inputB;
+RWStructuredBuffer<float16_t> output;
+cbuffer constants { uint elementCount; };
+
+[numthreads(NUM_THREADS, 1, 1)]
+void CSMain(uint3 dtid : SV_DispatchThreadID)
+{
+    if (dtid.x < elementCount)
+    {
+        output[dtid.x] = inputA[dtid.x] + inputB[dtid.x];
+    }
+}
+```
+**Notes**:
+- Only the modern DXC compiler is supported at this time. I may add FXC support later.
+- For command-line arguments refer to [this page](https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll#using-the-compiler-interface). Pay special attention to how the arguments should be split in the array.
+- A compatible root signature will be generated automatically. You do not have control over the root signature and should not declare one inline in the HLSL.
+- A single descriptor table will reference all shader resources (buffers). SRVs, UAVs, and CBVs will be created automatically by reflecting the HLSL source and using appropriate views. You have some control over these views when binding (discussed later).
+- You may declare shader resources using any type of buffer view, but textures are not supported. Arrays of resources (e.g. `Buffer<float> inputs[2];`), including unbounded arrays, are not yet supported. This is on the backlog though!
+- If you declare a resource in HLSL but do not reference it in the shader program then it will likely be optimized away! Binding failures will result if you try to bind a buffer in the model to an unused shader input.
+
+## Dispatchable: ONNX Model
+
+You can execute ONNX models using ONNX Runtime with the DirectML execution provider using an ONNX dispatchable. The example below shows how to reference an ONNX model in the JSON model.
+
+```json
+{
+    "resources": 
+    {
+        "A0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "B0": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
+        "A1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "B1": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6, 7, 8 ] },
+        "Out": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 12, "value": 0 } }
+    },
+
+    "dispatchables": 
+    {
+        "gemm": { "type": "onnx", "sourcePath": "models/onnx_gemm.onnx" }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "gemm",
+            "bindings": 
+            {
+                "A0": "A0",
+                "B0": "B0",
+                "A1": "A1",
+                "B1": "B1",
+                "add": "Out"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "Out"
+        }
+    ]
+}
+```
+
+Resources in the JSON model are bound to the ONNX model's input/output tensors. The `onnx_gemm.onnx` example has four inputs and one output:
+
+![ONNX model binding](images/onnx_model.png)
+
+The above DxDispatch JSON model is executed like any other model:
+
+```
+> dxdispatch.exe .\models\onnx_gemm.json [other options...]
+```
+
+### Static and Dynamic Shapes
+
+The ONNX example shown earlier has all inputs and outputs with *static shapes*, which means every dimension has a constant integer value (e.g. `[3,2]`). Static shapes are ideal for performance: they allow more optimizations to occur, and they also make it possible to preallocate resources for input and output tensors.
+
+Some ONNX models have input and/or output tensors with *dynamic shapes*, which contain symbolic or unspecified dimensions. Dynamic shapes makes models more flexible. The example below shows a model where the two inputs have shape `[N,2]`. The first dimension `N` is a symbolic dimension that may take any value at runtime depending on the input bindings. The output tensor `y` has an unknown shape `[?,?]` that won't be known until after [shape inference](https://github.com/onnx/onnx/blob/main/docs/ShapeInference.md) runs.
+
+![dynamic shape](images/onnx_dynamic_shape.png)
+
+It's important to understand when your model contains dynamic shapes: not only does it affect the performance of the underlying ONNX runtime execution provider, you might need to provide additional information to run the model at all!
+
+### Handling Dynamic Shapes at Initialization
+
+The first way of handling dyanmic shapes is to explicitly override them as part of model loading (session creation, which occurs when the "dispatchable" is created). You can override symbolic dimensions by name or by [denotation](https://github.com/onnx/onnx/blob/main/docs/DimensionDenotation.md).
+
+- Use the `--onnx_free_dim_name_override` (`-f`) option to specify values for symbolic dimensions by name. 
+  - Example: `dxdispatch.exe onnx_dynamic_shapes.onnx -f N:2`
+- Use the `--onnx_free_dim_denotation_override` (`-F`) option to specify values for dimension denotations. 
+  - Example: `dxdispatch.exe another_model.onnx -F DATA_BATCH:8`
+
+You can specify overrides in JSON as well.
+
+```json
+"concat": 
+{
+    "type": "onnx",
+    "sourcePath": "onnx_dynamic_shapes.onnx",
+    "freeDimensionNameOverrides": { "N": 2 } // alternative to "-f N:2" on the command line
+}
+```
+
+If you specify overrides in both JSON and on the command line, the command-line overrides will take priority.
+
+Specifying dimension sizes in this manner comes with an important advantage: the shapes for nodes in the rest of the graph *may* be inferred (depending on shape inference), effectively making their shapes static for the purpose of graph optimization and binding. You should prefer to override symbolic dimensions with overrides for best performance!
+
+### Handling Dynamic Shapes at Session Run
+
+While it's best for performance to handle dynamic shapes as early as possible (using dimension overrides during initialization), it's not always convenient or realistic in certain scenarios. For example, you may want to feed images of different sizes into the same model without recreating the ORT session (dispatchable). In DxDispatch, the way to test this scenario is by providing shapes as part of the bindings:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "concat",
+    "bindings": 
+    {
+        "x0": { "name": "a", "shape": [2,2] },
+        "x1": { "name": "b", "shape": [2,2] },
+        "y": { "name": "c", "shape": [4,2] }
+    }
+}
+```
+
+The equivalent command-line syntax for this is `--binding_shape <tensor_name>:<shape>` (`-b`) (e.g. `-b x0:2,2 -b x1:2,2 -b y:4,2`). If you specify shapes in both JSON and on the command line, the command-line shapes will take priority. 
+
+Take note that *binding shapes* are an attribute of the bindings, not *resources*, which are memory and not tensors. You can reinterpret the same resources with different shapes in different dispatch commands.
+
+There are a few additional considerations when handling dynamic shapes:
+- For input tensors *without binding shapes*, any symbolic dimensions without overriden values ("free dimensions") will be set to 1. In the above example, the shape `[N,2]` will be converted to `[1,2]` if `N` isn't overriden and the tensor has no binding shape. This behavior is a convenience, since it renders several models valid without having to override dimensions or specify binding shapes. However, this behavior does not always result in sensible input shapes. If a model fails to run, be sure to check that all ONNX input tensors are given sensible shapes.
+- Output tensors with free dimensions will be allocated by ONNX runtime, not DxDispatch. This is suboptimal for performance, but it's not safe to make assumptions about output shapes that may only be known during model execution.
+- You only need to specify binding shapes for output tensors when you provide explicit resource bindings for the respective output tensors (see next section on *implicit bindings*).
+
+### Implicit Bindings and Optional JSON
+
+Unlike other dispatchable types, you **do not** need to explicitly specify *resources* and *bindings* for ONNX dispatchables. The reason it's possible to omit bindings is that ONNX files contain tensor shape and type information, and this information can be used to lazily allocate resources and bindings. ONNX Runtime also allows output tensors to be implicitly bound without allocating any memory upfront, so outputs with dynamic shapes can be handled automatically. 
+
+The following JSON is valid, and it will result in appropriately sized (but uninitialized) resources being automatically bound to when dispatching the ONNX model. The implicitly created resources have no names and cannot be referenced in JSON by other commands (you cannot print the output, for example, if you don't provide an explicit resource binding). The main reason you'd want to use this feature is for benchmarking, where resource values are typically irrelevant.
+
+```json
+{
+    "resources": {},
+
+    "dispatchables": { "gemm": { "type": "onnx", "sourcePath": "models/onnx_gemm.onnx" } },
+
+    "commands": 
+    [
+        { "type": "dispatch", "dispatchable": "gemm", "bindings": {} }
+    ]
+}
+```
+
+As a convenience, you can also skip writing the JSON model altogether and simply pass the name of the ONNX model to DxDispatch. This is equivalent to the JSON above with empty resources and bindings. Again, this convenience is primarily intended for benchmarking and debugging.
+
+```
+> dxdispatch.exe .\models\onnx_gemm.onnx [other options...]
+```
+
+## Commands
+### Dispatch
+
+A dispatch command records a dispatchable into a D3D command list and executes it. Each dispatch command has the following fields:
+
+| Member           | Type                     | DML      | HLSL     | Description                                        |
+| ---------------- | ------------------------ | -------- | -------- | -------------------------------------------------- |
+| type             | String                   | Required | Required | Must be `"dispatch"`.                              |
+| dispatchable     | String                   | Required | Required | Name of the dispatchable object.                   |
+| bindings         | String, Object, or Array | Required | Required | Size of each element (or structure) in the buffer. |
+| threadGroupCount | Array                    | -        | Optional | Number of thread groups in X, Y, and Z dimensions. |
+
+The only difference between DML and HLSL dispatches is that DML ops ignore the `threadGroupCount` field (defaults to `[1,1,1]` for HLSL if omitted).
+
+Below is an example of a dispatch command for a DML operator:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "join",
+    "bindings": 
+    {
+        "InputTensors": [ "A", "B", "C" ],
+        "OutputTensor": "Out"
+    }
+}
+```
+
+Below is an example of a dispatch command for an HLSL operator:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "add",
+    "threadGroupCount": [ 2, 1, 1 ],
+    "bindings": 
+    {
+        "inputA": "A",
+        "inputB": "B",
+        "output": "Out",
+        "constants": "Constants"
+    }
+}
+```
+
+
+The most important property to discuss in this command is the `bindings`, which ties the resources in the model to the *bind points* in the dispatchable. The `bindings` field is a dictionary that maps the name of a bind point to an array of resource bindings. Bind points in DML operators are the names of `DML_TENSOR_DESC` fields in the operator desc. For example, the join operator has **two** bind points: `InputTensors` and `OutputTensor`. Each bind point may have 1 or more resources bound to it. In the case of join, `InputTensors` has a variable number of resources bound to it, which is determined using the value of of `InputCount`. The `OutputTensor` bind point must have 1 and only 1 resource bound to it.
+
+```cpp
+struct DML_JOIN_OPERATOR_DESC
+{
+    UINT InputCount;
+    _Field_size_(InputCount) const DML_TENSOR_DESC* InputTensors;
+    const DML_TENSOR_DESC* OutputTensor;
+    UINT Axis;
+};
+```
+
+Bind points in compute shaders are the shader input names. The following HLSL has 4 bind points: `inputA`, `inputB`, `output`, and `constants`:
+
+```c
+StructuredBuffer<float16_t> inputA;
+StructuredBuffer<float16_t> inputB;
+RWStructuredBuffer<float16_t> output;
+cbuffer constants { uint elementCount; };
+```
+
+
+
+### Print
+
+This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. More control over printing may be added in the future.
+
+```json
+{ 
+    "type": "print", 
+    "resource": "Out" 
+}
+```
+
+### Write File
+
+This command writes the contents of a resource to a file, either as raw binary (.dat/.bin) or a NumPy array (.npy, which includes the original dimensions and data type).
+
+```json
+{ 
+    "type": "writeFile",
+    "targetPath": "OutputFile.npy",
+    "resource": "Out"
+}
+```
+
 ## Advanced Binding
 
 In this simplest case you provide a resource binding by its name only (e.g. `"inputA": "A"`). However, you also have the option of providing additional information to view a subrange of the resource or reinterpret its type. Below is an example that fills out a binding object with these additional properties:
@@ -658,13 +788,14 @@ Binding object:
 }
 ```
 
-| Member          | Type                 | DML      | HLSL     | Description                                         |
-| --------------- | -------------------- | -------- | -------- | --------------------------------------------------- |
-| `name`          | String               | Required | Required | Name of the model buffer to bind.                   |
-| `format`        | String (DXGI_FORMAT) | -        | Optional | Format to use for the buffer view.                  |
-| `elementCount`  | Number (UINT32)      | -        | Optional | Number of elements in the buffer.                   |
-| `elementStride` | Number (UINT32)      | -        | Optional | Size of each element (or structure) in the buffer.  |
-| `elementOffset` | Number (UINT32)      | Optional | Optional | Offset (measured in elements) to the first element. |
+| Member          | Type                 | DML      | HLSL     | ONNX     | Description                                         |
+| --------------- | -------------------- | -------- | -------- | -------- | --------------------------------------------------- |
+| `name`          | String               | Required | Required | Optional | Name of the model buffer to bind.                   |
+| `format`        | String (DXGI_FORMAT) | -        | Optional | -        | Format to use for the buffer view.                  |
+| `elementCount`  | Number (UINT32)      | -        | Optional | -        | Number of elements in the buffer.                   |
+| `elementStride` | Number (UINT32)      | -        | Optional | -        | Size of each element (or structure) in the buffer.  |
+| `elementOffset` | Number (UINT32)      | Optional | Optional | -        | Offset (measured in elements) to the first element. |
+| `shape`         | Array (UINT32)       | -        | -        | -        | Specifies shape for input/output tensor.            |
 
 When binding with only a name the above values default to viewing the portion of the resource that is initialized when declared in the model. So, for example, if you have a 64KB buffer named "A" that is initialized with 3x FLOAT32 values the default view will have `elementCount=3`, `elementStride=4`, `elementOffset=0`, `format=R32_FLOAT`. This is generally what you want, but the extra parameters can be useful for experimentation.
 
@@ -685,6 +816,85 @@ Finally, recall that you may bind *multiple* resources to a bind point. This mea
     }
 }
 ```
+
+# Timing
+
+When a dispatchable is executed, DxDispatch prints some basic timing info in a single line summary:
+
+```
+> dxdispatch.exe model.onnx -i 10
+
+Dispatch 'model.onnx': 10 iterations, 4.8255 ms median (CPU), 4.6633 ms median (GPU)
+```
+
+The `--timing_verbosity <level>` (`-v`) option can print more detailed statistics. The default `-v 0` shows only a single line of output, but `-v 1` will show extended statistics for both CPU and GPU timings:
+
+```
+> dxdispatch.exe model.onnx -i 10 -v 1
+
+Initialize 'model.onnx': 43.0756 ms
+Dispatch 'model.onnx': 10 iterations
+CPU Timings (Cold) : 1 samples, 308.7716 ms average, 308.7716 ms min, 308.7716 ms median, 308.7716 ms max
+GPU Timings (Cold) : 1 samples, 308.3858 ms average, 308.3858 ms min, 308.3858 ms median, 308.3858 ms max
+CPU Timings (Hot)  : 9 samples, 4.8065 ms average, 4.4787 ms min, 4.7501 ms median, 5.4578 ms max
+GPU Timings (Hot)  : 9 samples, 4.6433 ms average, 4.3459 ms min, 4.5824 ms median, 5.3678 ms max
+```
+
+In the above output, there were 10 iterations so there will be 10 raw samples; however, the raw samples are categorized as either *cold* or *hot* samples. The first sample (1 by default, this can be controlled with `--warmup_samples` (`-w`)) is considered *cold* since various caches aren't warmed up, and will typically be significantly slower than subsequent iterations.
+
+Using `-v 2` will print timings for every iteration (all raw samples):
+
+```
+> dxdispatch.exe model.onnx -i 10 -v 2
+
+Initialize 'model.onnx': 33.8805 ms
+Dispatch 'model.onnx': 10 iterations
+CPU Timings (Cold) : 1 samples, 313.3770 ms average, 313.3770 ms min, 313.3770 ms median, 313.3770 ms max
+GPU Timings (Cold) : 1 samples, 313.2426 ms average, 313.2426 ms min, 313.2426 ms median, 313.2426 ms max
+CPU Timings (Hot)  : 9 samples, 4.9087 ms average, 4.4412 ms min, 4.8508 ms median, 5.4984 ms max
+GPU Timings (Hot)  : 9 samples, 4.7606 ms average, 4.3571 ms min, 4.7063 ms median, 5.3484 ms max
+The timings of each iteration:
+iteration 0: 313.3770 ms (CPU), 313.2426 ms (GPU)
+iteration 1: 5.4984 ms (CPU), 5.3484 ms (GPU)
+iteration 2: 4.5709 ms (CPU), 4.4083 ms (GPU)
+iteration 3: 4.4412 ms (CPU), 4.3571 ms (GPU)
+iteration 4: 4.7979 ms (CPU), 4.7063 ms (GPU)
+iteration 5: 4.8508 ms (CPU), 4.6592 ms (GPU)
+iteration 6: 5.2723 ms (CPU), 5.1405 ms (GPU)
+iteration 7: 4.8079 ms (CPU), 4.6797 ms (GPU)
+iteration 8: 4.9587 ms (CPU), 4.7493 ms (GPU)
+iteration 9: 4.9798 ms (CPU), 4.7964 ms (GPU)
+```
+
+Another thing to note is that GPU timing samples are recorded into a fixed-sized buffer that can hold 8192 samples. If you run more iterations than this, then the GPU samples will start overwriting the first samples. In other words, you may lose cold timing information for GPU samples.
+
+## CPU Timings
+
+*CPU timings* refer to the duration for the each dispatch (ignoring binding) to complete on the CPU timeline. This measurement will always take longer than the actual GPU work.
+
+| Dispatchable | Work Done                                           |
+| ------------ | --------------------------------------------------- |
+| HLSL         | Command list dispatch and wait (signal)             |
+| DML Operator | Command list dispatch and wait (signal)             |
+| ONNX         | Ort::Session::Run and IOBinding::SynchronizeOutputs |
+
+## GPU Timings
+
+*GPU timings* are recorded using [D3D12 timestamp queries](https://learn.microsoft.com/en-us/windows/win32/direct3d12/timing) inserted into command lists, which gives a more precise view of time spent on the GPU work than the CPU timings. Start/end pairs of timestamps are converted into duration samples on the CPU once all dispatches complete.
+
+Both HLSL and DML operator dispatchables place the start and end timestamps around the respective work in a single command list. However, for ONNX dispatchables, the GPU timestamps are recorded in separate command lists that wrap the OrtSession::Run call. This difference is necessary because the DML execution provider in ORT manages its own command lists, and there may even be CPU/GPU interop if some kernels in ORT run on the CPU execution provider. This is illustrated in the figure below; it's important to keep in mind that the GPU timings for ONNX dispatchables may include more than pure GPU work.
+
+![ort gpu timings](images/ort_gpu_timings.png)
+
+## Target Dispatch Interval
+
+The `--dispatch_interval <int>` command-line option can be used to simulate dispatching at a fixed frequency, which may be useful when analyzing CPU/GPU overhead for certain real-time scenarios. By default, DxDispatch will dispatch in a loop until all iterations are complete (equivalent to `--dispatch_interval 0`). The figure below shows an example where the `--dispatch_interval 15` is used, and most dispatches take less than 15ms to complete:
+
+![dispatch intervals](images/dispatch_interval.png)
+
+Note the following:
+- The interval is a *minimum* time. If a dispatch exceeds the interval time, then the next dispatch will commence without delay.
+- The exact interval duration will vary in practice (typically a few milliseconds, depending on the interval value), since the OS ultimately controls when a sleeping process resumes. Intervals are not intended to be high precision.
 
 # Scenarios
 
@@ -819,4 +1029,180 @@ Below is a modified version of `hlsl_add_fp16.json` used in the example above. W
         "-Zs", "-Od"
     ]
 }
+```
+
+# Examples
+
+## ONNX Model with Dynamic Shapes
+
+The `onnx_dynamic_shapes.onnx` model is a simple network that concatenates two input tensors along their first dimension. The two inputs have dynamic shapes `[N,2]`, so the first dimension is symbolic and may take any value at runtime. The output tensor has a dynamic shape `[?,?]`, which can't be known statically: it depends on the value of `N`. Let's walk through several examples of how you might leverage these dynamic shapes and the implications of each approach.
+
+![](images/onnx_dynamic_shape.png)
+
+**Running the Model with No Arguments**
+
+If you run the model without any additional command-line options it *will* load and execute:
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx
+Running on 'NVIDIA GeForce RTX 4090'
+Dispatch 'onnx_dynamic_shapes.onnx': 1 iterations, 2.3696 ms median (CPU), 1.8207 ms median (GPU)
+```
+
+How is this possible? What are the tensor shapes? In this case, the symbolic dimension `N` is set to 1 because it would otherwise result in an invalid input tensor shape of `[-1,2]`. ONNX runtime won't allow input tensors with a negative dimension sizes. Forcing so-called "free dimensions" to 1, if left unspecified, is a common way to unblock execution and often works for most models. You can verify this by using the `--print_onnx_bindings` (`-p`) option:
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Output Tensor 'y':
+  Resource  = deferred (DirectX)
+  Data Type = FLOAT
+  Shape     = [-1,2]
+```
+
+Note the resource types:
+- **explicit** = binds to a named resource declared in a JSON model and allocated before the ONNX dispatchable is created.
+- **implicit** = binds to an unnamed resource allocated by the ONNX dispatchable during binding (before Session::Run).
+- **deferred** = binds to an unnamed resource allocated by the ONNX runtime execution provider during Session::Run.
+
+The output shape `[-1,2]` still has its first dimension unknown, as indicated by the negative value. The output tensor `y` can't be preallocated because its shape is still not known until after all the inputs are bound: shape inference runs when the ONNX model is loaded (session created), and at that point the value of `N` wasn't known. The `N` dimension was coerced to size 1 during input binding. As a consequence, the output resource will be allocated internally in the DirectML execution provider when Session::Run is invoked. The DirectML execution provider pools allocations to avoid the cost of creating resources from scratch, but it is generally suboptimal when resource creation is deferred.
+
+**Overriding Symbolic Dimensions**
+
+The optimal way to specify symbolic dimensions is before the ONNX runtime session is created. This is done with [dimension overides](#handling-dynamic-shapes-at-initialization). Note the addition of `-f N:5` below, which fixes the `N` dimension to size `5` before the model is loaded. This allows ONNX runtime to infer the output shape, so the output resource is preallocated outside of ONNX runtime!
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -f N:5
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Output Tensor 'y':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [10,2]
+```
+
+**Specifying Binding Shapes**
+
+While it's ideal to override symbolic dimensions upfront, this doesn't always reflect real-world usage (e.g. binding an image of different shape each Session:Run without recreating the session). You can also use binding shapes (see [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)) to fully define shapes instead of relying on the default size of 1 for symbolic dimensions:
+
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.onnx -p -b x0:5,2 -b x1:3,2
+Input Tensor 'x0':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [5,2]
+
+Input Tensor 'x1':
+  Resource  = implicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Output Tensor 'y':
+  Resource  = deferred (DirectX)
+  Data Type = FLOAT
+  Shape     = [-1,2]
+```
+
+Note that the output resource is still deferred (shape not fully known during binding). This is a key difference between specifying binding shapes versus dimension overrides.
+
+**JSON with Multiple Dynamic Shapes**
+
+All of the above examples used the command line syntax, but you can set the same things in JSON as well. The final example here shows the same ONNX dispatchable dispatching twice with different binding shapes:
+
+```json
+{
+    "resources": 
+    {
+        "a": { "initialValuesDataType": "FLOAT32", "initialValues": [ 1, 2, 3, 4, 5, 6 ] },
+        "b": { "initialValuesDataType": "FLOAT32", "initialValues": [ 7, 8, 9, 10, 11, 12 ] },
+        "c": { "initialValuesDataType": "FLOAT32", "initialValues": { "valueCount": 12, "value": 0 } }
+    },
+
+    "dispatchables": { "concat": { "type": "onnx", "sourcePath": "onnx_dynamic_shapes.onnx" } },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [1,2] },
+                "x1": { "name": "b", "shape": [1,2] },
+                "y": { "name": "c", "shape": [2,2] }
+            }
+        },
+        { "type": "print", "resource": "c" },
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [3,2] },
+                "x1": { "name": "b", "shape": [3,2] },
+                "y": { "name": "c", "shape": [6,2] }
+            }
+        },
+        { "type": "print", "resource": "c" }
+    ]
+}
+```
+
+Output below. Note the first dispatch interprets the input buffers as `[1,2]` tensors, so the first two elements of each are concatenated. The second dispatch interprets the input buffers as `[3,2]` tensors, so the first 3*2=6 elements are concatened.
+```
+> .\dxdispatch.exe onnx_dynamic_shapes.json
+
+Input Tensor 'x0':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Input Tensor 'x1':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [1,2]
+
+Output Tensor 'y':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [2,2]
+
+Dispatch 'concat': 1 iterations, 1.8071 ms median (CPU), 1.7224 ms median (GPU)
+Resource 'c': 1, 2, 7, 8, 0, 0, 0, 0, 0, 0, 0, 0
+--------------------------------------------------------
+
+Input Tensor 'x0':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Input Tensor 'x1':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [3,2]
+
+Output Tensor 'y':
+  Resource  = explicit (DirectX)
+  Data Type = FLOAT
+  Shape     = [6,2]
+
+Dispatch 'concat': 1 iterations, 0.1888 ms median (CPU), 0.1342 ms median (GPU)
+Resource 'c': 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 ```

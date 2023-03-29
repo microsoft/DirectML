@@ -13,8 +13,8 @@ public:
         const CommandLineArgs& args);
 
     void Initialize() final;
-    void Bind(const Bindings& bindings) final;
-    void Dispatch(const Model::DispatchCommand& args) final;
+    void Bind(const Bindings& bindings, uint32_t iteration) final;
+    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 
 private:
@@ -25,7 +25,21 @@ private:
     const OrtDmlApi* m_ortDmlApi = nullptr;
     const CommandLineArgs& m_args;
 
+    struct TensorBinding
+    {
+        std::string name;
+        std::string resourceType;
+        std::vector<int64_t> shape;
+        ONNXTensorElementDataType dataType;
+        bool isInput;
+        Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+        Microsoft::WRL::ComPtr<IUnknown> wrapper;
+        std::optional<Ort::Value> ortValue;
+    };
+
+    // ONNX dispatchables allow resources & bindings to be lazily instantiated. The merged bindings 
+    // are the union of JSON bindings and bindings to lazily-allocated resources from the first Bind().
+    std::vector<TensorBinding> m_mergedBindings;
+
     std::optional<Ort::IoBinding> m_ioBindings;
-    std::vector<Ort::Value> m_tensors;
-    std::vector<Microsoft::WRL::ComPtr<IUnknown>> m_tensorWrappers;
 };

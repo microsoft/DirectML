@@ -12,6 +12,7 @@ struct Dispatchable
         std::optional<DXGI_FORMAT> format;
         ID3D12Resource* counterResource;
         uint64_t counterOffsetBytes;
+        std::vector<int64_t> shape;
     };
 
     // Maps bind points (target names) to a source resources.
@@ -20,7 +21,7 @@ struct Dispatchable
     virtual ~Dispatchable() {};
 
     virtual void Initialize() = 0;
-    virtual void Bind(const Bindings& bindings) = 0;
-    virtual void Dispatch(const Model::DispatchCommand& args) = 0;
+    virtual void Bind(const Bindings& bindings, uint32_t iteration) = 0;
+    virtual void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) = 0;
     virtual void Wait() = 0;
 };

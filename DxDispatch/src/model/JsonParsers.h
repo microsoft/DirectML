@@ -48,6 +48,8 @@ namespace JsonParsers
     // INT64
     int64_t ParseInt64(const rapidjson::Value& object);
     int64_t ParseInt64Field(const rapidjson::Value& object, std::string_view fieldName, bool required = true, int64_t defaultValue = 0);
+    std::vector<int64_t> ParseInt64ArrayAsVector(const rapidjson::Value& object);
+    std::vector<int64_t> ParseInt64ArrayAsVectorField(const rapidjson::Value& object, std::string_view fieldName, bool required = true, std::vector<int64_t> defaultValue = {});
 
     // UINT8
     uint8_t ParseUInt8(const rapidjson::Value& object);

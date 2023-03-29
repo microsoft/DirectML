@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.12.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.13.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -68,14 +68,6 @@ add_library(
     src/model/NpyReaderWriter.h
 )
 
-if(NOT onnxruntime_type STREQUAL None)
-    target_sources(
-        model PRIVATE
-        src/model/OnnxParsers.cpp
-        src/model/OnnxParsers.h
-    )
-endif()
-
 target_link_libraries(
     model 
     PRIVATE 
@@ -87,7 +79,6 @@ target_link_libraries(
     wil
     d3d12
     directml
-    onnxruntime
 )
 
 target_compile_features(model PRIVATE cxx_std_17)

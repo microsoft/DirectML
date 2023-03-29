@@ -364,6 +364,24 @@ std::vector<uint64_t> Device::ResolveTimestamps()
     return timestamps;
 }
 
+std::vector<double> Device::ResolveTimingSamples()
+{
+    std::vector<uint64_t> timestamps = ResolveTimestamps();
+
+    uint64_t frequency;
+    THROW_IF_FAILED(m_queue->GetTimestampFrequency(&frequency));
+
+    std::vector<double> samples(timestamps.size() / 2);
+
+    for (uint32_t i = 0; i < samples.size(); ++i) 
+    {
+        uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
+        samples[i] = double(timestampDelta) / frequency;
+    }
+
+    return samples;
+}
+
 #ifndef DXCOMPILER_NONE
 void Device::EnsureDxcInterfaces()
 {

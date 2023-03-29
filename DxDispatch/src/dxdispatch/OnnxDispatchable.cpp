@@ -4,7 +4,6 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "OnnxDispatchable.h"
-#include "OnnxParsers.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -74,6 +73,113 @@ static ID3D12Resource* GetResourceFromModelBinding(
     return bindingSource.resource;
 }
 
+
+static std::string GetTensorName(size_t index, Ort::Session const& session, bool isInput)
+{
+    Ort::AllocatorWithDefaultOptions allocator;
+    auto name = isInput ? session.GetInputNameAllocated(index, allocator) : session.GetOutputNameAllocated(index, allocator);
+    std::string returnName(name.get());
+    return returnName;
+}
+
+struct DataTypeInfo
+{
+    ONNXTensorElementDataType onnxDataType;
+    DML_TENSOR_DATA_TYPE dmlDataType;
+    uint32_t sizeInBytes;
+};
+
+static DataTypeInfo GetDataTypeInfo(ONNXTensorElementDataType dataType)
+{
+    DataTypeInfo info = {};
+    info.onnxDataType = dataType;
+    info.dmlDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
+
+    switch (dataType)
+    {
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT8;
+        info.sizeInBytes = 1;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT8;
+        info.sizeInBytes = 1;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT16;
+        info.sizeInBytes = 2;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT32;
+        info.sizeInBytes = 4;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_INT64;
+        info.sizeInBytes = 8;
+        break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
+        info.sizeInBytes = 8;
+        break;
+    }
+
+    return info;
+}
+
+const char* GetOnnxTensorTypeString(ONNXTensorElementDataType dataType)
+{
+    switch (dataType)
+    {
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT: return "FLOAT";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8: return "UINT8";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8: return "INT8";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16: return "UINT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16: return "INT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32: return "INT32";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64: return "INT64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING: return "STRING";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL: return "BOOL";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16: return "FLOAT16";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE: return "DOUBLE";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32: return "UINT32";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64: return "UINT64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX64: return "COMPLEX64";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_COMPLEX128: return "COMPLEX128";
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_BFLOAT16: return "BFLOAT16";
+        default: return "UNDEFINED";
+    }
+}
+
 OnnxDispatchable::OnnxDispatchable(
     std::shared_ptr<Device> device, 
     const Model::OnnxDispatchableDesc& desc,
@@ -87,21 +193,51 @@ void OnnxDispatchable::Initialize()
     const OrtApi& ortApi = Ort::GetApi();
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
-    m_environment = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "DxDispatch"); // Note ORT_LOGGING_LEVEL_VERBOSE is useful too.
+    OrtLoggingLevel loggingLevel = m_args.GetOnnxLoggingLevel() ? 
+        static_cast<OrtLoggingLevel>(*m_args.GetOnnxLoggingLevel()) : 
+        static_cast<OrtLoggingLevel>(m_desc.loggingLevel);
+
+    m_environment = Ort::Env(loggingLevel, "DxDispatch");
 
     Ort::SessionOptions sessionOptions;
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
-    sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL); // Note ORT_ENABLE_BASIC is useful for debugging.
+
+    GraphOptimizationLevel graphOptimizationLevel = m_args.GetOnnxGraphOptimizationLevel() ? 
+        static_cast<GraphOptimizationLevel>(*m_args.GetOnnxGraphOptimizationLevel()) :
+        static_cast<GraphOptimizationLevel>(m_desc.graphOptimizationLevel);
+
+    sessionOptions.SetGraphOptimizationLevel(graphOptimizationLevel);
  
-    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionNameOverrides())
+    using DimOverridesList = std::initializer_list<gsl::span<const std::pair<std::string, uint32_t>>>;
+
+    // Dimension name overrides (command-line overrides take priority over JSON values)
+    for (auto& overrides : DimOverridesList{ m_desc.freeDimNameOverrides, m_args.GetOnnxFreeDimensionNameOverrides() })
     {
-        Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+        for (auto& override : overrides)
+        {
+            Ort::ThrowOnError(ortApi.AddFreeDimensionOverrideByName(sessionOptions, override.first.c_str(), override.second));
+        }
     }
 
-    for (auto& freeDimOverride : m_args.GetOnnxFreeDimensionDenotationOverrides())
+    // Denotation overrides (command-line overrides take priority over JSON values)
+    for (auto& overrides : DimOverridesList{ m_desc.freeDimDenotationOverrides, m_args.GetOnnxFreeDimensionDenotationOverrides() })
     {
-        Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, freeDimOverride.first.c_str(), freeDimOverride.second));
+        for (auto& override : overrides)
+        {
+            Ort::ThrowOnError(ortApi.AddFreeDimensionOverride(sessionOptions, override.first.c_str(), override.second));
+        }
+    }
+
+    using ConfigEntriesList = std::initializer_list<gsl::span<const std::pair<std::string, std::string>>>;
+
+    // SessionOptions config entries (command-line entries take priority over JSON values)
+    for (auto& configEntries : ConfigEntriesList{ m_desc.sessionOptionsConfigEntries, m_args.GetOnnxSessionOptionConfigEntries() })
+    {
+        for (auto& configEntry : configEntries)
+        {
+            Ort::ThrowOnError(ortApi.AddSessionConfigEntry(sessionOptions, configEntry.first.c_str(), configEntry.second.c_str()));
+        }
     }
 
     const OrtDmlApi* ortDmlApi;
@@ -112,153 +248,250 @@ void OnnxDispatchable::Initialize()
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
-void OnnxDispatchable::Bind(const Bindings& bindings)
+void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
 {
-    // This table summarizes the resource bindings provided to the ONNX Runtime session:
-    //
-    // Kind   | Type       | DXD Binding    | DML Supported Data Type | ORT binding
-    // -------|------------|----------------|-------------------------|----------------------------------
-    // input  | tensor     | true           | *                       | pre-allocated DX resource
-    // input  | tensor     | false          | true                    | explicit DX resource (uninitialized values)
-    // input  | tensor     | false          | false                   | explicit CPU resource (uninitialized values)
-    // input  | non-tensor | *              | *                       | none
-    // output | tensor     | true           | *                       | pre-allocated DX resource
-    // output | tensor     | false          | true                    | implicit DX resource
-    // output | tensor     | false          | false                   | implicit CPU resource
-    // output | non-tensor | *              | *                       | implicit CPU resource
-    //
-    // - "DXD Binding" refers to the binding specified in a DxDispatch JSON model or created by OnnxParsers::ParseModel. 
-    // - "ORT Binding" refers to the final binding passed to the ONNX Runtime session.
-    // - A pre-allocated DX resource is a buffer that is created by DxDispatch (independently of the ONNX model/session).
-    // - An explicit ORT binding means creating an Ort::Value and storing it in m_tensors.
-    // - An implicit ORT binding means passing an Ort::MemoryInfo to Ort::IoBinding::BindOutput, which lets the underlying
-    //   execution provider allocate as necessary. This is useful when outputs have dynamic shapes that can't be pre-allocated.
+    // Early exit for all iterations after the first. Bindings are cached in m_ioBindings.
+    if (iteration > 0)
+    {
+        return;
+    }
+
+    // Binding behavior is complex. The motivation behind these rules:
+    // 1. Be flexible in running models without explicit JSON bindings (most likely profiling; generate either CPU or DX resources to unblock execution).
+    // 2. Be strict when using explicit JSON bindings (fail if the binding doesn't make sense).
+    // While it may be possible to ignore an invalid binding in JSON to unblock execution, this is most likely not what the user wants.
 
     m_ioBindings->ClearBoundInputs();
     m_ioBindings->ClearBoundOutputs();
-    m_tensors.clear();
-    m_tensorWrappers.clear();
+    m_mergedBindings.clear();
 
     Ort::MemoryInfo cpuMemoryInformation = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo dmlMemoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 
-    auto inputCount = m_session->GetInputCount();
-    auto outputCount = m_session->GetOutputCount();
-
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
         const bool isInputTensor = (bindingPass == 0);
-        const size_t tensorCount = isInputTensor ? inputCount : outputCount;
+        const size_t tensorCount = isInputTensor ? m_session->GetInputCount() : m_session->GetOutputCount();
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
-            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
-            std::string tensorName = OnnxParsers::GetTensorName(tensorIndex, *m_session, isInputTensor);
-            bool isDmlSupportedType = false;
+            TensorBinding binding = {};
+            auto tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
+            binding.name = tensorName;
+            binding.isInput = isInputTensor;
 
-            std::vector<int64_t> tensorShape;
+            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
+
+            bool isDmlSupportedType = false;
 
             if (typeInfo.GetONNXType() == ONNXType::ONNX_TYPE_TENSOR)
             {
                 auto shapeInfo = typeInfo.GetTensorTypeAndShapeInfo();
-
-                tensorShape = shapeInfo.GetShape();
-                for (auto& dim : tensorShape)
-                {
-                    dim = std::abs(dim);
-                }
-
-                auto dataTypeInfo = OnnxParsers::GetDataTypeInfo(shapeInfo.GetElementType());
+                auto dataTypeInfo = GetDataTypeInfo(shapeInfo.GetElementType());
                 isDmlSupportedType = dataTypeInfo.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN;
 
-                if (bindings.find(tensorName) == bindings.end())
+                // Get shape stored in ONNX model.
+                binding.shape = shapeInfo.GetShape();
+                binding.dataType = shapeInfo.GetElementType();
+                
+                // Check if the tensor shape is static or dynamic, which determines if resources can be preallocated.
+                bool tensorShapeHasFreeDimensions = false;
+                for (int64_t& dimSize : binding.shape)
                 {
-                    // No DXD binding exists, so allocate input tensors on the CPU.
-                    // Outputs are implicitly allocated using memInfo to handle dynamic shapes.
-                    if (isInputTensor)
+                    // Dimensions that aren't statically known/inferrable are "free dimensions" with size -1. 
+                    if (dimSize == -1)
                     {
-                        if (isDmlSupportedType)
+                        // Try fixing any free dimensions that appear on *inputs* to size 1, which may make the graph valid
+                        // for execution (e.g. dim represents batch size). This trick cannot be done for outputs, since their 
+                        // free dimensions may correspond to symbolic dimensions that are only known at runtime. Tensors with 
+                        // free dimensions have "dynamic shapes" and cannot be preallocated; their total size is unknown.
+                        if (isInputTensor)
                         {
-                            // Allocate a DX resource.
-                            std::vector<uint32_t> sizes;
-                            for (auto& dimSize : tensorShape) { sizes.push_back(static_cast<uint32_t>(dimSize)); }
-                            auto resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
-                                dataTypeInfo.dmlDataType,
-                                sizes.size(),
-                                sizes.data(),
-                                nullptr
-                                ));
-
-                            // Wrap the explicitly allocated DX resource.
-                            Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-                            m_tensors.emplace_back(CreateTensorFromResource(
-                                m_ortDmlApi,
-                                dmlMemoryInformation,
-                                resource.Get(),
-                                tensorShape,
-                                dataTypeInfo.onnxDataType,
-                                &resourceWrapper));
-
-                            m_tensorWrappers.push_back(std::move(resourceWrapper));
+                            dimSize = 1;
                         }
                         else
                         {
-                            auto allocator = static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions());
-                            m_tensors.emplace_back(Ort::Value::CreateTensor(
-                                allocator, 
-                                tensorShape.data(),
-                                tensorShape.size(), 
-                                dataTypeInfo.onnxDataType));
+                            tensorShapeHasFreeDimensions = true;
                         }
+                    }
+                }
+
+                // Override tensorShape with the one specified in JSON, if any.
+                auto jsonBinding = jsonBindings.find(tensorName);
+                ID3D12Resource* jsonResource = nullptr;
+                if (jsonBinding != jsonBindings.end())
+                {
+                    auto& bindingShape = jsonBinding->second[0].shape;
+                    if (!bindingShape.empty())
+                    {
+                        binding.shape = bindingShape;
+                        tensorShapeHasFreeDimensions = false;
+                    }
+
+                    // The JSON binding may also include the name of a JSON resource.
+                    binding.resource = jsonBinding->second[0].resource;
+                }
+
+                // Override tensorShape with the one specified on the command line, if any.
+                auto commandLineBindingShape = m_args.GetOnnxBindingShapes().find(tensorName);
+                if (commandLineBindingShape != m_args.GetOnnxBindingShapes().end())
+                {
+                    auto& bindingShape = commandLineBindingShape->second;
+                    if (!bindingShape.empty())
+                    {
+                        binding.shape = bindingShape;
+                        tensorShapeHasFreeDimensions = false;
+                    }
+                }
+
+                // Attempt to preallocate/wrap resources where possible.
+                if (binding.resource)
+                {
+                    // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
+                    // Simply wrap the existing DX resource as an OrtValue.
+                    if (!tensorShapeHasFreeDimensions)
+                    {
+                        if (isDmlSupportedType)
+                        {
+                            binding.ortValue = CreateTensorFromResource(
+                                m_ortDmlApi,
+                                dmlMemoryInformation,
+                                binding.resource.Get(),
+                                binding.shape,
+                                dataTypeInfo.onnxDataType,
+                                &binding.wrapper
+                            );
+                            binding.resourceType = "explicit (DirectX)";
+                        }
+                        else
+                        {
+                            throw std::invalid_argument(fmt::format(
+                                "Binding resource '{}' to tensor '{}' is invalid because the ONNX model tensor's data type is not supported by DML.",
+                                jsonBinding->second[0].resourceDesc->name, 
+                                tensorName
+                            ));
+                        }
+                    }
+                    else
+                    {
+                        throw std::invalid_argument(fmt::format("Binding resource '{}' to tensor '{}' is invalid because the tensor shape is not static.", 
+                            jsonBinding->second[0].resourceDesc->name, 
+                            tensorName
+                        ));
                     }
                 }
                 else
                 {
-                    // Wrap the pre-allocated DX resource.
-                    Microsoft::WRL::ComPtr<IUnknown> resourceWrapper;
-                    m_tensors.emplace_back(CreateTensorFromResource(
-                        m_ortDmlApi,
-                        dmlMemoryInformation,
-                        GetResourceFromModelBinding(tensorName, bindings),
-                        tensorShape,
-                        dataTypeInfo.onnxDataType,
-                        &resourceWrapper));
+                    // Attempt to lazily create resources/bindings for tensors not bound in the JSON model.
+                    // Only tensors with static shapes can be preallocated.
+                    if (!tensorShapeHasFreeDimensions)
+                    {
+                        if (isDmlSupportedType)
+                        {
+                            // Convert int64_t tensorShape to uint32_t for DML
+                            std::vector<uint32_t> tensorShapeUint32;
+                            for (int64_t dimSize : binding.shape)
+                            {
+                                tensorShapeUint32.push_back(static_cast<uint32_t>(std::abs(dimSize)));
+                            }
 
-                    m_tensorWrappers.push_back(std::move(resourceWrapper));
+                            // Scalars have empty shapes. DML stores these as [1].
+                            if (tensorShapeUint32.empty())
+                            {
+                                tensorShapeUint32.push_back(1);
+                            }
+
+                            binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
+                                dataTypeInfo.dmlDataType,
+                                tensorShapeUint32.size(),
+                                tensorShapeUint32.data(),
+                                nullptr
+                            ));
+
+                            binding.ortValue = CreateTensorFromResource(
+                                m_ortDmlApi,
+                                dmlMemoryInformation,
+                                binding.resource.Get(),
+                                binding.shape,
+                                dataTypeInfo.onnxDataType,
+                                &binding.wrapper
+                            );
+
+                            binding.resourceType = "implicit (DirectX)";
+                        }
+                        else
+                        {
+                            // Preallocate as a CPU resource.
+                            binding.ortValue = Ort::Value::CreateTensor(
+                                static_cast<OrtAllocator*>(Ort::AllocatorWithDefaultOptions()), 
+                                binding.shape.data(),
+                                binding.shape.size(), 
+                                dataTypeInfo.onnxDataType
+                            );
+
+                            binding.resourceType = "implicit (CPU)";
+                        }
+                    }
                 }
             }
 
+            // Finally, set the ORT IO binding for the tensor.
             if (isInputTensor)
             {
-                if (typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR)
+                if (binding.ortValue)
                 {
-                    // Don't bind non-tensor inputs.
-                    continue;
+                    m_ioBindings->BindInput(tensorName.c_str(), *binding.ortValue);
                 }
-
-                // Bind the input tensor.
-                m_ioBindings->BindInput(tensorName.c_str(), m_tensors.back());
+                else
+                {
+                    // Only non-tensor inputs should remain unbound.
+                    assert(typeInfo.GetONNXType() != ONNXType::ONNX_TYPE_TENSOR);
+                }
             }
             else
             {
                 assert(!isInputTensor);
 
-                if (bindings.find(tensorName) == bindings.end())
+                if (binding.ortValue)
                 {
-                    // Let the execution provider allocate the output.
-                    m_ioBindings->BindOutput(tensorName.c_str(), isDmlSupportedType ? dmlMemoryInformation : cpuMemoryInformation);
+                    m_ioBindings->BindOutput(tensorName.c_str(), *binding.ortValue);
                 }
                 else
                 {
-                    // Bind the pre-allocated DX resource.
-                    m_ioBindings->BindOutput(tensorName.c_str(), m_tensors.back());
+                    // Let the execution provider allocate the output.
+                    m_ioBindings->BindOutput(tensorName.c_str(), isDmlSupportedType ? dmlMemoryInformation : cpuMemoryInformation);
+                    binding.resourceType = isDmlSupportedType ? "deferred (DirectX)" : "deferred (CPU)";
                 }
             }
+
+            m_mergedBindings.emplace_back(std::move(binding));
+        }
+    }
+
+    if (m_args.PrintVerboseOnnxBindingInfo())
+    {
+        for (auto& binding : m_mergedBindings)
+        {
+            LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name));
+            LogInfo(fmt::format("  Resource  = {}", binding.resourceType));
+            LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)));
+            std::string shapeString = "[";
+            for (size_t i = 0; i < binding.shape.size(); i++)
+            {
+                shapeString += std::to_string(binding.shape[i]);
+                if (i < binding.shape.size() - 1)
+                {
+                    shapeString += ",";
+                }
+            }
+            shapeString += "]";
+            LogInfo(fmt::format("  Shape     = {}", shapeString));
+            LogInfo("");
         }
     }
 }
 
-void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args)
+void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
     PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
     m_device->RecordTimestamp();

@@ -1,5 +1,9 @@
 #include "pch.h"
 #include "CommandLineArgs.h"
+// cxxopts will parse comma-separated arguments as vectors by default (e.g. --foo 1,2,3,4 can be
+// parsed as a vector<int>. This interferes with binding shape syntax, so we override the delimiter
+// and parse manually.
+#define CXXOPTS_VECTOR_DELIMITER '\0'
 #include <cxxopts.hpp>
 #include "config.h"
 
@@ -28,10 +32,19 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<decltype(m_modelPath)>()
         )
         (
-            "d,debug", 
-            "Enable D3D and DML debug layers", 
+            "h,help", 
+            "Print command-line usage help", 
             cxxopts::value<bool>()
         )
+        (
+            "S,show_dependencies",
+            "Show version info for dependencies including DirectX components",
+            cxxopts::value<bool>()
+        )
+        ;
+
+    // TIMING OPTIONS
+    options.add_options("Timing")
         (
             "i,dispatch_iterations", 
             "The number of times to repeat each dispatch", 
@@ -43,13 +56,27 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<uint32_t>()
         )
         (
-            "v,verbose_timings",
-            "Print verbose timing information",
-            cxxopts::value<bool>()
+            "I,dispatch_interval",
+            "The minimum time in milliseconds between dispatches (a large interval may introduce sleeps between dispatches)",
+            cxxopts::value<uint32_t>()->default_value("0")
         )
         (
-            "h,help", 
-            "Print command-line usage help", 
+            "w,warmup_samples",
+            "Max number of warmup samples to discard from timing statistics",
+            cxxopts::value<uint32_t>()
+        )
+        (
+            "v,timing_verbosity",
+            "Timing verbosity level. 0 = show hot timings, 1 = init/cold/hot timings, 2 = show all timing info",
+            cxxopts::value<uint32_t>()->default_value("0")
+        )
+        ;
+
+    // DIRECTX OPTIONS
+    options.add_options("DirectX")
+        (
+            "d,debug", 
+            "Enable D3D and DML debug layers", 
             cxxopts::value<bool>()
         )
         (
@@ -60,11 +87,6 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "s,show_adapters", 
             "Show all available DirectX adapters", 
-            cxxopts::value<bool>()
-        )
-        (
-            "S,show_dependencies",
-            "Show version info for dependencies including DirectX components",
             cxxopts::value<bool>()
         )
         (
@@ -93,18 +115,48 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Name used for PIX capture files.",
             cxxopts::value<std::string>()->default_value("dxdispatch")
         )
+        ;
+
+    // ONNX OPTIONS
+    options.add_options("ONNX")
         (
             "f,onnx_free_dim_name_override",
-            "List of free dimension overrides by name (ONNX models only). Can be repeated. Example: -f foo:3 -f bar:5",
+            "List of free dimension overrides by name. Can be repeated. Example: -f foo:3 -f bar:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         (
             "F,onnx_free_dim_denotation_override",
-            "List of free dimension overrides by denotation (ONNX models only). Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
+            "List of free dimension overrides by denotation. Can be repeated. Example: -F DATA_BATCH:3 -F DATA_CHANNEL:5",
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
+        (
+            "e,onnx_session_config_entry",
+            "List of SessionOption config keys and values. Can be repeated. Example: -e foo:0 -e bar:1",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
+        (
+            "b,binding_shape",
+            "Explicit shapes for ONNX model tensors (-b <tensor_name>:<shape>, where <shape> is a comma-separated list of "
+            "dimension sizes without whitespace). Can be repeated. Example: -b input1:2,2 -b input2:3,2",
+            cxxopts::value<std::vector<std::string>>()->default_value({})
+        )
+        (
+            "l,onnx_graph_optimization_level",
+            "Sets the ONNX Runtime graph optimization level. 0 = Disabled; 1 = Basic; 2 = Extended; 99 = All",
+            cxxopts::value<uint32_t>()->default_value("99")
+        )
+        (
+            "L,onnx_logging_level",
+            "Sets the ONNX Runtime logging level. 0 = Verbose; 1 = Info; 2 = Warning; 3 = Error, 4 = Fatal",
+            cxxopts::value<uint32_t>()->default_value("2")
+        )
+        (
+            "p,print_onnx_bindings",
+            "Prints verbose ONNX model binding information.",
+            cxxopts::value<bool>()
+        )
         ;
-    
+
     options.positional_help("<PATH_TO_MODEL>");
 
     options.parse_positional({"model"});
@@ -128,6 +180,16 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_dispatchIterations = std::numeric_limits<uint32_t>::max();   // override the "iterations" setting
     }
 
+    if (result.count("dispatch_interval"))
+    {
+        m_minDispatchIntervalInMilliseconds =result["dispatch_interval"].as<uint32_t>();
+    }
+
+    if (result.count("warmup_samples"))
+    {
+        m_maxWarmupSamples =result["warmup_samples"].as<uint32_t>();
+    }
+
     if (result.count("model")) 
     { 
         m_modelPath = result["model"].as<decltype(m_modelPath)>(); 
@@ -143,9 +205,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
 
-    if (result.count("verbose_timings"))
+    if (result.count("timing_verbosity"))
     {
-        m_verboseTimings = result["verbose_timings"].as<bool>();
+        m_timingVerbosity = static_cast<TimingVerbosity>(result["timing_verbosity"].as<uint32_t>());
     }
 
     if (result.count("show_dependencies"))
@@ -220,8 +282,74 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     };
 
-    ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_freeDimensionNameOverrides);
-    ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_freeDimensionDenotationOverrides);
+    ParseFreeDimensionOverrides("onnx_free_dim_name_override", m_onnxFreeDimensionNameOverrides);
+    ParseFreeDimensionOverrides("onnx_free_dim_denotation_override", m_onnxFreeDimensionDenotationOverrides);
+
+    auto ParseConfigOptionEntries = [&](const char* parameterName, std::vector<std::pair<std::string, std::string>>& overrides)
+    {
+        if (result.count(parameterName))
+        {
+            auto freeDimOverrides = result[parameterName].as<std::vector<std::string>>(); 
+            for (auto& value : freeDimOverrides)
+            {
+                auto splitPos = value.find(":");
+                if (splitPos == std::string::npos)
+                {
+                    throw std::invalid_argument("Expected ':' separating name/denotation and its value");
+                }
+                auto overrideName = value.substr(0, splitPos);
+                auto overrideValue = value.substr(splitPos + 1);
+                overrides.emplace_back(overrideName, overrideValue);
+            }
+        }
+    };
+
+    ParseConfigOptionEntries("onnx_session_config_entry", m_onnxSessionOptionConfigEntries);
+
+    if (result.count("onnx_graph_optimization_level")) 
+    { 
+        m_onnxGraphOptimizationLevel = result["onnx_graph_optimization_level"].as<uint32_t>(); 
+    }
+
+    if (result.count("onnx_logging_level")) 
+    { 
+        m_onnxLoggingLevel = result["onnx_logging_level"].as<uint32_t>(); 
+    }
+
+    // Parse binding shapes
+    if (result.count("binding_shape"))
+    {
+        auto bindingShapes = result["binding_shape"].as<std::vector<std::string>>(); 
+        for (auto& bindingShapeArg : bindingShapes)
+        {
+            auto splitPos = bindingShapeArg.rfind(":");
+            if (splitPos == std::string::npos)
+            {
+                throw std::invalid_argument("Expected ':' separating tensor name and its shape");
+            }
+            auto tensorName = bindingShapeArg.substr(0, splitPos);
+            auto tensorShapeStr = bindingShapeArg.substr(splitPos + 1);
+
+            // Tokenize shape string (e.g "1,2,15,8") by commas -> [1,2,15,8]
+            std::vector<int64_t> shape;
+
+            size_t startPos = 0;
+            while (startPos != std::string::npos)
+            {
+                size_t endPos = tensorShapeStr.find(",", startPos + 1);
+                auto substr = tensorShapeStr.substr(startPos, endPos - startPos);
+                shape.push_back(std::stoll(substr));
+                startPos = endPos == std::string::npos ? std::string::npos : endPos + 1;
+            }
+
+            m_onnxBindShapes[tensorName] = std::move(shape);
+        }
+    }
+
+    if (result.count("print_onnx_bindings")) 
+    { 
+        m_onnxPrintVerboseBindingInfo = result["print_onnx_bindings"].as<bool>(); 
+    }
 
     m_helpText = options.help();
 }
