@@ -6,6 +6,10 @@ from pathlib import Path
 def pip_install_requirements():
     current_dir = Path(os.path.dirname(os.path.realpath(__file__)))
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', '-r', os.path.join(current_dir, 'requirements.txt')])
+    if sys.version_info[0:2] == (3, 10):
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'spacy==2.3.9'])
+    else:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'spacy==2.3.5'])
 
 def spacy_download(language):
     subprocess.check_call([sys.executable, '-m', 'spacy', 'download', language])
