@@ -85,6 +85,8 @@ public:
 
     std::vector<std::byte> Download(Microsoft::WRL::ComPtr<ID3D12Resource>);
 
+    void ClearShaderCaches();
+
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
@@ -97,7 +99,7 @@ private:
 private:
     std::shared_ptr<PixCaptureHelper> m_pixCaptureHelper;
     std::shared_ptr<D3d12Module> m_d3dModule;
-    Microsoft::WRL::ComPtr<ID3D12Device8> m_d3d;
+    Microsoft::WRL::ComPtr<ID3D12Device9> m_d3d;
 #ifndef _GAMING_XBOX
     Microsoft::WRL::ComPtr<ID3D12InfoQueue1> m_infoQueue;
 #endif

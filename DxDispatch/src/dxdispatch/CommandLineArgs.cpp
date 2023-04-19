@@ -94,6 +94,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Type of command queue/list to use ('compute' or 'direct')", 
             cxxopts::value<std::string>()->default_value("direct")
         )
+        (
+            "clear_shader_caches", 
+            "Clears D3D shader caches before running commands", 
+            cxxopts::value<bool>()
+        )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
         // but precompilation requires the root signature to be in the HLSL source itself; to allow use of the
@@ -213,6 +218,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("show_dependencies"))
     {
         m_showDependencies = result["show_dependencies"].as<bool>();
+    }
+
+    if (result.count("clear_shader_caches"))
+    {
+        m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();
