@@ -415,6 +415,26 @@ IDxcCompiler3* Device::GetDxcCompiler()
 }
 #endif // !DXCOMPILER_NONE
 
+void Device::ClearShaderCaches()
+{
+    constexpr D3D12_SHADER_CACHE_KIND_FLAGS cacheKinds[] = 
+    {
+        D3D12_SHADER_CACHE_KIND_FLAG_IMPLICIT_D3D_CACHE_FOR_DRIVER,
+        D3D12_SHADER_CACHE_KIND_FLAG_IMPLICIT_D3D_CONVERSIONS,
+        D3D12_SHADER_CACHE_KIND_FLAG_IMPLICIT_DRIVER_MANAGED,
+        D3D12_SHADER_CACHE_KIND_FLAG_APPLICATION_MANAGED,
+    };
+
+    for (auto cacheKind : cacheKinds)
+    {
+        auto hr = m_d3d->ShaderCacheControl(cacheKind, D3D12_SHADER_CACHE_CONTROL_FLAG_CLEAR);
+        if (FAILED(hr))
+        {
+            LogInfo(fmt::format("Clearing cache {} failed with HRESULT {}", cacheKind, hr));
+        }
+    }
+}
+
 /*static*/ uint32_t Device::GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
 {
     switch (dataType)

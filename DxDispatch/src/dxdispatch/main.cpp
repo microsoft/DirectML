@@ -84,6 +84,11 @@ int main(int argc, char** argv)
             return 1;
         }
 
+        if (args.ClearShaderCaches())
+        {
+            device->ClearShaderCaches();
+        }
+
         Model model;
         try
         {
