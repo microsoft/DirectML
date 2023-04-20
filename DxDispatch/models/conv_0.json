@@ -1,0 +1,69 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 518400, "value": 0 }
+        },
+        "filter": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 432, "value": 0 }
+        },
+        "bias": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 16, "value": 0 }
+        },
+        "output": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 2764800, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "conv2d": 
+        {
+            "type": "DML_OPERATOR_CONVOLUTION",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,3,360,480], "Strides": [0,1,1440,3] },
+                "FilterTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [16,3,3,3], "Strides": [27,9,3,1], "Flags": "OWNED_BY_DML" },
+                "BiasTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,16,1,1], "Strides": [0,1,0,0], "Flags": "OWNED_BY_DML" },
+                "OutputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,16,360,480], "Strides": [0,1,7680,16] },
+                "Mode": "DML_CONVOLUTION_MODE_CROSS_CORRELATION",
+                "Direction": "DML_CONVOLUTION_DIRECTION_FORWARD",
+                "DimensionCount": 2,
+                "Strides": [1,1],
+                "Dilations": [1,1],
+                "StartPadding": [1,1],
+                "EndPadding": [1,1],
+                "OutputPadding": [0,0],
+                "GroupCount": 1
+            },
+            "bindings":
+            {
+                "FilterTensor": "filter",
+                "BiasTensor": "bias"
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "conv2d",
+            "bindings":
+            {
+                "InputTensor": "input",
+                "OutputTensor": "output"
+            }
+        }
+    ]
+}
