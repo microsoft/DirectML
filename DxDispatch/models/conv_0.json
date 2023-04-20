@@ -32,10 +32,10 @@
             "type": "DML_OPERATOR_CONVOLUTION",
             "desc": 
             {
-                "InputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,3,360,480], "Strides": [0,1,1440,3] },
+                "InputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,3,360,480], "Strides": [0,172800,480,1] },
                 "FilterTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [16,3,3,3], "Strides": [27,9,3,1], "Flags": "OWNED_BY_DML" },
                 "BiasTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,16,1,1], "Strides": [0,1,0,0], "Flags": "OWNED_BY_DML" },
-                "OutputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,16,360,480], "Strides": [0,1,7680,16] },
+                "OutputTensor": { "DataType": "FLOAT16", "DimensionCount": 4, "Sizes": [1,16,360,480], "Strides": [0,172800,480,1] },
                 "Mode": "DML_CONVOLUTION_MODE_CROSS_CORRELATION",
                 "Direction": "DML_CONVOLUTION_DIRECTION_FORWARD",
                 "DimensionCount": 2,
@@ -50,7 +50,11 @@
             {
                 "FilterTensor": "filter",
                 "BiasTensor": "bias"
-            }
+            },
+            "executionFlags": [
+                "DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION",
+                "DML_EXECUTION_FLAG_DESCRIPTORS_VOLATILE"
+            ]
         }
     },
 
