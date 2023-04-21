@@ -6,6 +6,7 @@ param(
     $layout = 'nhwc',
     $dataType = 'FLOAT32',
     [switch]$useDml,
+    $numThreads = 128,
     [parameter(ValueFromRemainingArguments=$true, Position=0)][string[]]$ExtraArgs
 )
 
@@ -51,7 +52,6 @@ if ($useDml)
 }
 else
 {
-    $numThreads = 128
     $hlslType = if ($dataType -eq "FLOAT32") { "float" } else { "float16_t" }
     $groupsX = [Math]::Ceiling($elementCount / $numThreads)
     $threadGroupCount = "[$groupsX, 1, 1]"
