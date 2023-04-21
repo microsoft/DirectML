@@ -1,12 +1,13 @@
 param(
-    $n = 1,
-    $c = 32,
-    $h = 360,
-    $w = 640,
+    [int]$n = 1,
+    [int]$c = 32,
+    [int]$h = 360,
+    [int]$w = 640,
     $layout = 'nhwc',
     $dataType = 'FLOAT32',
     [switch]$useDml,
-    $numThreads = 128,
+    $numThreadsPerGroup = 128,
+    $elementsPerThread = 1,
     [parameter(ValueFromRemainingArguments=$true, Position=0)][string[]]$ExtraArgs
 )
 
@@ -14,12 +15,16 @@ $elementCount = $n * $c * $h * $w
 
 if ($layout -eq 'nchw')
 {
+    $stridesList = (($c*$h*$w), ($h*$w), $w, 1)
     $strides = "[$($c*$h*$w), $($h*$w), $($w), 1]"
 }
 else
 {
+    $stridesList = (($h*$w*$c), 1, ($w*$c), $c)
     $strides = "[$($h*$w*$c), 1, $($w*$c), $c]"
 }
+
+$cumulativeShape = (($c * $h * $w), ($h * $w), $w, 1)
 
 if ($useDml)
 {
@@ -53,7 +58,7 @@ if ($useDml)
 else
 {
     $hlslType = if ($dataType -eq "FLOAT32") { "float" } else { "float16_t" }
-    $groupsX = [Math]::Ceiling($elementCount / $numThreads)
+    $groupsX = [Math]::Ceiling($elementCount / ($numThreadsPerGroup * $elementsPerThread))
     $threadGroupCount = "[$groupsX, 1, 1]"
 
     $hlslPath = (Resolve-Path "$PSScriptRoot/../models/hlsl_add.hlsl") -replace '\\','/'
@@ -70,7 +75,28 @@ else
                 "initialValuesDataType": "UNKNOWN",
                 "initialValues": 
                 [
-                    { "name": "elementCount", "type": "UINT32",  "value": $elementCount }
+                    { "name": "elementCount", "type": "UINT32",  "value": $elementCount },
+                    { "name": "elementsPerThread", "type": "UINT32",  "value": $elementsPerThread },
+                    { "name": "shapeN", "type": "UINT32",  "value": $n },
+                    { "name": "shapeC", "type": "UINT32",  "value": $c },
+                    { "name": "shapeH", "type": "UINT32",  "value": $h },
+                    { "name": "shapeW", "type": "UINT32",  "value": $w },
+                    { "name": "aStridesN", "type": "UINT32",  "value": $($stridesList[0]) },
+                    { "name": "aStridesC", "type": "UINT32",  "value": $($stridesList[1]) },
+                    { "name": "aStridesH", "type": "UINT32",  "value": $($stridesList[2]) },
+                    { "name": "aStridesW", "type": "UINT32",  "value": $($stridesList[3]) },
+                    { "name": "bStridesN", "type": "UINT32",  "value": $($stridesList[0]) },
+                    { "name": "bStridesC", "type": "UINT32",  "value": $($stridesList[1]) },
+                    { "name": "bStridesH", "type": "UINT32",  "value": $($stridesList[2]) },
+                    { "name": "bStridesW", "type": "UINT32",  "value": $($stridesList[3]) },
+                    { "name": "outStridesN", "type": "UINT32",  "value": $($stridesList[0]) },
+                    { "name": "outStridesC", "type": "UINT32",  "value": $($stridesList[1]) },
+                    { "name": "outStridesH", "type": "UINT32",  "value": $($stridesList[2]) },
+                    { "name": "outStridesW", "type": "UINT32",  "value": $($stridesList[3]) },
+                    { "name": "cumulativeShapeN", "type": "UINT32",  "value": $($cumulativeShape[0]) },
+                    { "name": "cumulativeShapeC", "type": "UINT32",  "value": $($cumulativeShape[1]) },
+                    { "name": "cumulativeShapeH", "type": "UINT32",  "value": $($cumulativeShape[2]) },
+                    { "name": "cumulativeShapeW", "type": "UINT32",  "value": $($cumulativeShape[3]) },
                 ],
                 "sizeInBytes": 256
             }
@@ -87,7 +113,7 @@ else
                 [
                     "-T", "cs_6_2",
                     "-E", "CSMain",
-                    "-D", "NUM_THREADS=$numThreads",
+                    "-D", "NUM_THREADS=$numThreadsPerGroup",
                     "-D", "T=$hlslType",
                     "-enable-16bit-types"
                 ]
