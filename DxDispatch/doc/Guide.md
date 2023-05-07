@@ -1000,34 +1000,89 @@ The debug layers won't catch everything, but they can be extremely helpful. Keep
 
 ## Benchmarking
 
-DxDispatch shows the time taken for the CPU and GPU to synchronize after each dispatchable is executed. It's important to recognize that executing a small operation (e.g. summing 32 elements) on the GPU is extremely inefficient, so these times may not reflect real-world performance when several expensive operations are being computed in parallel.
+DxDispatch shows the time taken for the CPU and GPU to synchronize after each dispatchable is executed.
 
 ```
 > dxdispatch.exe .\models\dml_reduce.json
 
-Dispatch 'sum': 1 iterations, 0.7452 ms median (CPU), 0.0051 ms median (GPU)
+Dispatch 'sum': 1 iterations, 0.7452 ms median (CPU), 0.005120 ms median (GPU)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
 
-The first dispatch is often slower (especially CPU time, which may involve compiling shaders or fetching them from a cache), so you may find it better to run a dispatchable multiple times to get a more accurate measurement.
+From the above output, you can already see the difference between CPU time and GPU time is large when executing small operations: the CPU-side time is just under 1 millisecond, whereas the GPU time is about 5.1 *microseconds*. Still, these numbers are a bit misleading since we've only measured a single sample and several CPU-side caches (within DirectML, D3D12, GPU driver, etc.) will be cold at this point. Let's try executing the same dispatchable 10 times (in separate command lists):
 
 ```
-> dxdispatch.exe .\models\dml_reduce.json -i 100
+> dxdispatch.exe .\models\dml_reduce.json -i 10 -v 2
 
-Dispatch 'sum': 100 iterations, 0.0847 ms median (CPU), 0.0051 ms median (GPU)
+Initialize 'sum': 2.7878 ms
+Dispatch 'sum': 10 iterations
+CPU Timings (Cold) : 1 samples, 0.4977 ms average, 0.4977 ms min, 0.4977 ms median, 0.4977 ms max
+GPU Timings (Cold) : 1 samples, 0.0051 ms average, 0.0051 ms min, 0.0051 ms median, 0.0051 ms max
+CPU Timings (Hot)  : 9 samples, 0.1499 ms average, 0.1408 ms min, 0.1505 ms median, 0.1557 ms max
+GPU Timings (Hot)  : 9 samples, 0.0050 ms average, 0.0041 ms min, 0.0051 ms median, 0.0051 ms max
+The timings of each iteration: 
+iteration 0: 0.4977 ms (CPU), 0.0051 ms (GPU)
+iteration 1: 0.1450 ms (CPU), 0.0051 ms (GPU)
+iteration 2: 0.1453 ms (CPU), 0.0041 ms (GPU)
+iteration 3: 0.1557 ms (CPU), 0.0051 ms (GPU)
+iteration 4: 0.1504 ms (CPU), 0.0051 ms (GPU)
+iteration 5: 0.1551 ms (CPU), 0.0051 ms (GPU)
+iteration 6: 0.1507 ms (CPU), 0.0051 ms (GPU)
+iteration 7: 0.1555 ms (CPU), 0.0051 ms (GPU)
+iteration 8: 0.1505 ms (CPU), 0.0051 ms (GPU)
+iteration 9: 0.1408 ms (CPU), 0.0051 ms (GPU)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
 
-It's usually better to profile using a dedicated tool like PIX, but this option can be useful for quickly scripting multiple executions with different arguments (e.g. problem size). This built-in measurement becomes more useful and accurate when dispatching large workloads like ONNX models.
+Observe how the first sample is always significantly more expensive on the CPU, but the GPU times are stable. This is *not* always the case, and larger GPU workloads (especially with CPU interop) can have variance in GPU times as well. Below you can see an ONNX model run for 10 iterations showing variance in both CPU and GPU time:
 
 ```
-> dxdispatch.exe vgg16-12.onnx -i 5
+> dxdispatch.exe squeezenet.onnx -i 10 -v 2
 
-Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'vgg16-12.onnx': 9.6295 ms average
+Initialize 'squeezenet.onnx': 378.6467 ms
+Dispatch 'squeezenet.onnx': 10 iterations
+CPU Timings (Cold) : 1 samples, 1.2355 ms average, 1.2355 ms min, 1.2355 ms median, 1.2355 ms max
+GPU Timings (Cold) : 1 samples, 1.1581 ms average, 1.1581 ms min, 1.1581 ms median, 1.1581 ms max
+CPU Timings (Hot)  : 9 samples, 0.6143 ms average, 0.2744 ms min, 0.5045 ms median, 1.1962 ms max
+GPU Timings (Hot)  : 9 samples, 0.3403 ms average, 0.1731 ms min, 0.2355 ms median, 0.6953 ms max
+The timings of each iteration:
+iteration 0: 1.2355 ms (CPU), 1.1581 ms (GPU)
+iteration 1: 0.3046 ms (CPU), 0.2324 ms (GPU)
+iteration 2: 0.7701 ms (CPU), 0.6615 ms (GPU)
+iteration 3: 0.3316 ms (CPU), 0.2406 ms (GPU)
+iteration 4: 0.5045 ms (CPU), 0.2294 ms (GPU)
+iteration 5: 0.9693 ms (CPU), 0.6953 ms (GPU)
+iteration 6: 0.7608 ms (CPU), 0.1731 ms (GPU)
+iteration 7: 0.4173 ms (CPU), 0.3697 ms (GPU)
+iteration 8: 0.2744 ms (CPU), 0.2253 ms (GPU)
+iteration 9: 1.1962 ms (CPU), 0.2355 ms (GPU)
 ```
+
+Returning to smaller operations, however, increasing the iteration count isn't enough to really measure the true cost of the work. When measuring shaders & DML ops, you'll want to set `--dispatch_repeat <N>` (`-r <N>`): this will measure the time not just for 1 dispatch per iteration, but rather the average time for `N` dispatches per iteration. The examples below all measure 2 iterations/samples with 100 dispatches per iteration, but they change the types of barriers issued after each dispatch:
+
+```
+> dxdispatch.exe .\models\dml_reduce.json -i 2 -r 100 --post_dispatch_barriers none
+Dispatch 'sum': 2 iterations, 0.0022 ms median (CPU), 0.000184 ms median (GPU)
+
+> dxdispatch.exe .\models\dml_reduce.json -i 2 -r 100 --post_dispatch_barriers uav
+Dispatch 'sum': 2 iterations, 0.0046 ms median (CPU), 0.002253 ms median (GPU)
+
+> dxdispatch.exe .\models\dml_reduce.json -i 2 -r 100 --post_dispatch_barriers uav+aliasing
+Dispatch 'sum': 2 iterations, 0.0065 ms median (CPU), 0.003031 ms median (GPU)
+
+> dxdispatch.exe .\models\dml_reduce.json -i 2 # "--post_dispatch_barriers uav" is used by default
+Dispatch 'sum': 2 iterations, 0.1285 ms median (CPU), 0.005120 ms median (GPU)
+```
+
+The above results illustrate that a more precise measurement of this work is not 5.1 microseconds but closer to 2-3 microseconds on this specific GPU. This is an exceptionally small workload, however, so disabling barriers (`--post_dispatch_barriers none`) and allowing all dispatches to run in parallel will better saturate the GPU and reduce total time to just ~0.2 microseconds. Which of these measurements should you care about? It depends on the real-world expectation:
+
+- `--post_dispatch_barriers none`: interesting when the profiled workload is run alongside other similar GPU work that can be done in parallel (no ordering dependencies).
+- `--post_dispatch_barriers uav` (default): more representative of the cost of the workload running in isolation, but with the benefit of some degree of GPU memory caching.
+- `--post_dispatch_barriers uav+aliasing`: more representative of the cost of the workload in isolation with cold GPU memory caches.
+
+The `-i`, `-r`, and `--post_dispatch_barriers` options allow for convenient script-based experimentation and benchmarking, but they are not a replacement for a GPU profiler when investigating performance bottlenecks.
 
 ## GPU Captures in PIX
 
