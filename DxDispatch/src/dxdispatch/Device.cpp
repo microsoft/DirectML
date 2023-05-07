@@ -212,15 +212,21 @@ void Device::WaitForGpuWorkToComplete()
     THROW_IF_FAILED(m_fence->SetEventOnCompletion(nextFenceValue, nullptr));
 }
 
+void Device::RecordInitialize(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable)
+{
+    m_commandRecorder->RecordDispatch(m_commandList.Get(), dispatchable, bindingTable);
+}
+
 void Device::RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable)
 {
     RecordTimestamp();
 
     for (uint32_t i = 0; i < m_dispatchRepeat; i++)
+    {
         m_commandRecorder->RecordDispatch(m_commandList.Get(), dispatchable, bindingTable);
-    
-    if (!m_postDispatchBarriers.empty())
-        m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+        if (!m_postDispatchBarriers.empty())
+            m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+    }
 
     RecordTimestamp();
 }
@@ -231,10 +237,11 @@ void Device::RecordDispatch(const char* name, uint32_t threadGroupX, uint32_t th
     RecordTimestamp();
     
     for (uint32_t i = 0; i < m_dispatchRepeat; i++)
+    {
         m_commandList->Dispatch(threadGroupX, threadGroupY, threadGroupZ);
-    
-    if (!m_postDispatchBarriers.empty())
-        m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+        if (!m_postDispatchBarriers.empty())
+            m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+    }
 
     RecordTimestamp();
     PIXEndEvent(m_commandList.Get());

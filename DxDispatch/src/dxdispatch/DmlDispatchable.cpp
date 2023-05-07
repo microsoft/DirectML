@@ -180,7 +180,7 @@ void DmlDispatchable::Initialize()
     }
 
     m_device->KeepAliveUntilNextCommandListDispatch(std::move(descriptorHeap));
-    m_device->RecordDispatch(initializer.Get(), bindingTable.Get());
+    m_device->RecordInitialize(initializer.Get(), bindingTable.Get());
     m_device->ExecuteCommandListAndWait();
 }
 

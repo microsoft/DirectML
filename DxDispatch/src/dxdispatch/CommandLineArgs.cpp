@@ -244,7 +244,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     {
         auto value = result["post_dispatch_barriers"].as<std::string>();
 
-        if (value == "uav")
+        if (value == "none")
         {
             m_uavBarrierAfterDispatch = false;
             m_aliasingBarrierAfterDispatch = false;

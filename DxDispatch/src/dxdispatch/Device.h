@@ -66,6 +66,7 @@ public:
     void ExecuteCommandListAndWait();
 
     // Records the dispatch of an IDMLDispatchable into the device command list.
+    void RecordInitialize(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
 
     // Records the dispatch of an HLSL shader.
