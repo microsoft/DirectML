@@ -74,7 +74,7 @@ public:
     std::vector<uint64_t> ResolveTimestamps();
 
     // Calls ResolveTimestamps() and converts timestamp pairs into timing samples.
-    std::vector<double> ResolveTimingSamples();
+    std::vector<double> ResolveTimingSamples(uint32_t dispatchRepeat);
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {

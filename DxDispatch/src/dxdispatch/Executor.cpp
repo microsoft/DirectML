@@ -245,9 +245,9 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             // Dispatch
             dispatchTimer.Start();
-            dispatchable->Dispatch(command, iterationsCompleted);
+            dispatchable->Dispatch(command, iterationsCompleted, m_commandLineArgs.DispatchRepeat());
             dispatchable->Wait();
-            cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds());
+            cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
             // to potentially introduce a sleep between each iteration.
@@ -276,7 +276,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     // GPU timings are capped at a fixed size ring buffer. The first samples may have been 
     // overwritten, in which case the warmup samples are dropped.
-    gpuTimings.rawSamples = m_device->ResolveTimingSamples();
+    gpuTimings.rawSamples = m_device->ResolveTimingSamples(m_commandLineArgs.DispatchRepeat());
     assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
     uint32_t gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
     auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);

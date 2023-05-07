@@ -364,7 +364,7 @@ std::vector<uint64_t> Device::ResolveTimestamps()
     return timestamps;
 }
 
-std::vector<double> Device::ResolveTimingSamples()
+std::vector<double> Device::ResolveTimingSamples(uint32_t dispatchRepeat)
 {
     std::vector<uint64_t> timestamps = ResolveTimestamps();
 
@@ -376,7 +376,7 @@ std::vector<double> Device::ResolveTimingSamples()
     for (uint32_t i = 0; i < samples.size(); ++i) 
     {
         uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
-        samples[i] = double(timestampDelta) / frequency;
+        samples[i] = double(timestampDelta) / frequency / dispatchRepeat;
     }
 
     return samples;

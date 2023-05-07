@@ -26,6 +26,7 @@ public:
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
+    uint32_t DispatchRepeat() const { return m_dispatchRepeat; }
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     uint32_t MinimumDispatchIntervalInMilliseconds() const { return m_minDispatchIntervalInMilliseconds; }
     uint32_t MaxWarmupSamples() const { return m_maxWarmupSamples; }
@@ -55,6 +56,7 @@ private:
     std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
+    uint32_t m_dispatchRepeat = 1;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
     uint32_t m_minDispatchIntervalInMilliseconds = 0;
     uint32_t m_maxWarmupSamples = 1;

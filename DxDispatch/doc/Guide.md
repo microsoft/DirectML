@@ -28,7 +28,8 @@
     - [Print](#print)
     - [Write File](#write-file)
   - [Advanced Binding](#advanced-binding)
-- [Timing](#timing)
+- [Timing Dispatchables](#timing-dispatchables)
+  - [Verbose Timing Statistics](#verbose-timing-statistics)
   - [CPU Timings](#cpu-timings)
   - [GPU Timings](#gpu-timings)
   - [Target Dispatch Interval](#target-dispatch-interval)
@@ -817,15 +818,42 @@ Finally, recall that you may bind *multiple* resources to a bind point. This mea
 }
 ```
 
-# Timing
+# Timing Dispatchables
 
 When a dispatchable is executed, DxDispatch prints some basic timing info in a single line summary:
 
 ```
-> dxdispatch.exe model.onnx -i 10
+> dxdispatch.exe model.onnx
 
-Dispatch 'model.onnx': 10 iterations, 4.8255 ms median (CPU), 4.6633 ms median (GPU)
+Dispatch 'model.onnx': 1 iterations, 4.8255 ms median (CPU), 4.6633 ms median (GPU)
 ```
+
+The execution time for a dispatchable can vary for many reasons: one-time initialization costs, caching, clock rate boosting, thermal throttling, other processes competing for resources, and so on. Benchmarking compute duration generally involves taking multiple measurements or samples; this is why the number of *iterations* is displayed along with the CPU & GPU times. Every iteration involves *binding*, *dispatching*, and *waiting/synchronizing*, as shown in the following pseudocode (see [Executor.cpp](../src/dxdispatch/Executor.cpp) for the actual logic):
+
+```
+for (i = 0; i < dispatchIterations; i++)
+    // bind GPU resources
+    dispatchable->Bind()
+
+    // execute GPU work
+    cpuTimer.Start()
+    gpuTimer.Start()
+    for (j = 0; j < dispatchRepeat; j++)
+        dispatchable->Dispatch()
+    gpuTimer.Stop();
+    dispatchable->Wait() // block CPU until GPU work is done (sync)
+    cpuTimer.Stop()
+
+    // record a sample
+    cpuTimeSamples += cpuTimer.ElapsedMilliseconds / dispatchRepeat
+    gpuTimeSamples += gpuTimer.ElapsedMilliseconds / dispatchRepeat
+```
+
+Note that there is both an outer loop (*dispatchIterations*) as as well as an inner loop (*dispatchRepeats*). The outer loop is used to record multiple timing samples, and the inner loop is specifically for microbenchmarking very small units of work. Both loops can be controlled with command line args:
+- `--dispatch_iterations` (`-i`) *or* `--milliseconds_to_run` (`-t`) affect the outer loop iteration count, which defaults to 1. The `-i` option sets an explicit iteration count, while the `-t` option runs the outer loop until the time limit is reached.
+- `--dispatch_repeat` (`-r`) affects the inner loop iteration count, which defaults to 1. This is primarily used to microbenchmark small dispatchables like certain shaders or DML ops.
+
+## Verbose Timing Statistics
 
 The `--timing_verbosity <level>` (`-v`) option can print more detailed statistics. The default `-v 0` shows only a single line of output, but `-v 1` will show extended statistics for both CPU and GPU timings:
 
@@ -840,7 +868,7 @@ CPU Timings (Hot)  : 9 samples, 4.8065 ms average, 4.4787 ms min, 4.7501 ms medi
 GPU Timings (Hot)  : 9 samples, 4.6433 ms average, 4.3459 ms min, 4.5824 ms median, 5.3678 ms max
 ```
 
-In the above output, there were 10 iterations so there will be 10 raw samples; however, the raw samples are categorized as either *cold* or *hot* samples. The first sample (1 by default, this can be controlled with `--warmup_samples` (`-w`)) is considered *cold* since various caches aren't warmed up, and will typically be significantly slower than subsequent iterations.
+In the above output, there were 10 iterations so there will be 10 raw samples; however, the raw samples are categorized as either *cold* or *hot* samples. The first sample (1 by default, this can be controlled with `--warmup_samples` (`-w`) is considered *cold* since various caches aren't warmed up, and will typically be significantly slower than subsequent iterations.
 
 Using `-v 2` will print timings for every iteration (all raw samples):
 
@@ -959,19 +987,17 @@ DxDispatch shows the time taken for the CPU and GPU to synchronize after each di
 ```
 > dxdispatch.exe .\models\dml_reduce.json
 
-Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 1.1053 ms average
+Dispatch 'sum': 1 iterations, 0.7452 ms median (CPU), 0.0051 ms median (GPU)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```
 
-Additionally, the first dispatch is often slower, so you may find it better to run a dispatchable multiple times to get a more accurate measurement. The `-i <iterations>` option will repeat each dispatch the given number of times:
+The first dispatch is often slower (especially CPU time, which may involve compiling shaders or fetching them from a cache), so you may find it better to run a dispatchable multiple times to get a more accurate measurement.
 
 ```
 > dxdispatch.exe .\models\dml_reduce.json -i 100
 
-Running on 'NVIDIA GeForce RTX 2070 SUPER'
-Dispatch 'sum': 0.1483 ms average
+Dispatch 'sum': 100 iterations, 0.0847 ms median (CPU), 0.0051 ms median (GPU)
 Resource 'input': 1, 2, 3, 4, 5, 6, 7, 8, 9
 Resource 'output': 6, 15, 24
 ```

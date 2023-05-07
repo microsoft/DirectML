@@ -47,7 +47,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     options.add_options("Timing")
         (
             "i,dispatch_iterations", 
-            "The number of times to repeat each dispatch", 
+            "The number of iterations in bind/dispatch/wait loop", 
+            cxxopts::value<uint32_t>()->default_value("1")
+        )
+        (
+            "r,dispatch_repeat", 
+            "The number of times dispatch is invoked within each loop iteration (for microbenchmarking)", 
             cxxopts::value<uint32_t>()->default_value("1")
         )
         (
@@ -179,6 +184,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
     }
     
+    if (result.count("dispatch_repeat"))
+    {
+        m_dispatchRepeat = result["dispatch_repeat"].as<uint32_t>();
+    }
+
     if (result.count("milliseconds_to_run"))
     {
         m_timeToRunInMilliseconds.emplace(result["milliseconds_to_run"].as<uint32_t>());

@@ -491,14 +491,15 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
     }
 }
 
-void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
+void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, uint32_t repeat)
 {
     PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
     m_device->RecordTimestamp();
     m_device->ExecuteCommandList();
 
     Ort::RunOptions runOptions;
-    m_session->Run(runOptions, *m_ioBindings);
+    for (uint32_t i = 0; i < repeat; i++)
+        m_session->Run(runOptions, *m_ioBindings);
 
     m_device->RecordTimestamp();
     PIXEndEvent(m_device->GetCommandList());
