@@ -29,6 +29,7 @@
     - [Write File](#write-file)
   - [Advanced Binding](#advanced-binding)
 - [Timing Dispatchables](#timing-dispatchables)
+  - [Post-Dispatch Barriers](#post-dispatch-barriers)
   - [Verbose Timing Statistics](#verbose-timing-statistics)
   - [CPU Timings](#cpu-timings)
   - [GPU Timings](#gpu-timings)
@@ -832,6 +833,7 @@ The execution time for a dispatchable can vary for many reasons: one-time initia
 
 ```
 for (i = 0; i < dispatchIterations; i++)
+{
     // bind GPU resources
     dispatchable->Bind()
 
@@ -839,7 +841,10 @@ for (i = 0; i < dispatchIterations; i++)
     cpuTimer.Start()
     gpuTimer.Start()
     for (j = 0; j < dispatchRepeat; j++)
+    {
         dispatchable->Dispatch()
+        postDispatchBarriers()
+    }
     gpuTimer.Stop();
     dispatchable->Wait() // block CPU until GPU work is done (sync)
     cpuTimer.Stop()
@@ -847,11 +852,24 @@ for (i = 0; i < dispatchIterations; i++)
     // record a sample
     cpuTimeSamples += cpuTimer.ElapsedMilliseconds / dispatchRepeat
     gpuTimeSamples += gpuTimer.ElapsedMilliseconds / dispatchRepeat
+}
 ```
 
 Note that there is both an outer loop (*dispatchIterations*) as as well as an inner loop (*dispatchRepeats*). The outer loop is used to record multiple timing samples, and the inner loop is specifically for microbenchmarking very small units of work. Both loops can be controlled with command line args:
 - `--dispatch_iterations` (`-i`) *or* `--milliseconds_to_run` (`-t`) affect the outer loop iteration count, which defaults to 1. The `-i` option sets an explicit iteration count, while the `-t` option runs the outer loop until the time limit is reached.
 - `--dispatch_repeat` (`-r`) affects the inner loop iteration count, which defaults to 1. This is primarily used to microbenchmark small dispatchables like certain shaders or DML ops.
+
+## Post-Dispatch Barriers
+
+The `postDispatchBarriers()` function in the pseucode above determines the synchronization (if any) between dispatches in a single outer-loop iteration. The behavior of this function is controlled with the `--post_dispatch_barriers [none|uav|uav+aliasing]` command-line argument:
+
+1. `none` : no barriers are recorded. All dispatches can potentially be executed in parallel.
+2. `uav` (default) : records a UAV barrier after each dispatch. This forces dispatches to complete in order and may invalidate certain GPU caches.
+3. `uav+aliasing` : records a UAV and aliasing barrier after each dispatch. This forces dispatches to complete in order, and it may invalidate even more GPU caches than a UAV barrier alone. 
+
+The exact effects of D3D12 barriers on caches are an implementation detail and can vary across GPU architectures. However, as one possibility, consider that an aliasing barrier *may* invalidate a GPU L2 cache that would otherwise be warm when repeating several dispatches back to back.
+
+**NOTE**: ONNX dispatchables are not affected by `--post_dispatch_barriers` because the GPU work is recorded into internal (DML provider) command lists that are not visible to DxDispatch.
 
 ## Verbose Timing Statistics
 
