@@ -12,6 +12,9 @@ public:
         IAdapter* adapter, 
         bool debugLayersEnabled, 
         D3D12_COMMAND_LIST_TYPE commandListType, 
+        uint32_t dispatchRepeat,
+        bool uavBarrierAfterDispatch,
+        bool aliasingBarrierAfterDispatch,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
         std::shared_ptr<DmlModule> dmlModule
@@ -65,6 +68,9 @@ public:
     // Records the dispatch of an IDMLDispatchable into the device command list.
     void RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable);
 
+    // Records the dispatch of an HLSL shader.
+    void RecordDispatch(const char* name, uint32_t threadGroupX, uint32_t threadGroupY, uint32_t threadGroupZ);
+
     // Records a GPU timestamp in the device's command list. The device has a limit on the number of 
     // unresolved timestamps; if this capacity is exceeded, the oldest timestamps are dropped.
     void RecordTimestamp();
@@ -74,7 +80,7 @@ public:
     std::vector<uint64_t> ResolveTimestamps();
 
     // Calls ResolveTimestamps() and converts timestamp pairs into timing samples.
-    std::vector<double> ResolveTimingSamples(uint32_t dispatchRepeat);
+    std::vector<double> ResolveTimingSamples();
 
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {
@@ -115,6 +121,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandAllocator;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
     std::vector<Microsoft::WRL::ComPtr<IGraphicsUnknown>> m_temporaryResources;
+    uint32_t m_dispatchRepeat = 1;
+    std::vector<D3D12_RESOURCE_BARRIER> m_postDispatchBarriers;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

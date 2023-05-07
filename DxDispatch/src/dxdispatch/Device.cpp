@@ -25,12 +25,16 @@ Device::Device(
     IAdapter* adapter, 
     bool debugLayersEnabled, 
     D3D12_COMMAND_LIST_TYPE commandListType, 
+    uint32_t dispatchRepeat,
+    bool uavBarrierAfterDispatch,
+    bool aliasingBarrierAfterDispatch,
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
     std::shared_ptr<DmlModule> dmlModule
     ) : m_pixCaptureHelper(std::move(pixCaptureHelper)),
         m_d3dModule(std::move(d3dModule)),
-        m_dmlModule(std::move(dmlModule))
+        m_dmlModule(std::move(dmlModule)),
+        m_dispatchRepeat(dispatchRepeat)
 {
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -123,6 +127,15 @@ Device::Device(
     THROW_IF_FAILED(m_d3d->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&m_timestampHeap)));
 
     m_pixCaptureHelper->Initialize(m_queue.Get());
+
+    if (uavBarrierAfterDispatch)
+    {
+        m_postDispatchBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(nullptr));
+    }
+    if (aliasingBarrierAfterDispatch)
+    {
+        m_postDispatchBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Aliasing(nullptr, nullptr));
+    }
 }
 
 Device::~Device()
@@ -201,9 +214,31 @@ void Device::WaitForGpuWorkToComplete()
 
 void Device::RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bindingTable)
 {
-    m_commandRecorder->RecordDispatch(m_commandList.Get(), dispatchable, bindingTable);
+    RecordTimestamp();
+
+    for (uint32_t i = 0; i < m_dispatchRepeat; i++)
+        m_commandRecorder->RecordDispatch(m_commandList.Get(), dispatchable, bindingTable);
+    
+    if (!m_postDispatchBarriers.empty())
+        m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+
+    RecordTimestamp();
 }
 
+void Device::RecordDispatch(const char* name, uint32_t threadGroupX, uint32_t threadGroupY, uint32_t threadGroupZ)
+{
+    PIXBeginEvent(m_commandList.Get(), PIX_COLOR(255, 255, 0), "HLSL: '%s'", name);
+    RecordTimestamp();
+    
+    for (uint32_t i = 0; i < m_dispatchRepeat; i++)
+        m_commandList->Dispatch(threadGroupX, threadGroupY, threadGroupZ);
+    
+    if (!m_postDispatchBarriers.empty())
+        m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+
+    RecordTimestamp();
+    PIXEndEvent(m_commandList.Get());
+}
 
 Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::span<const std::byte> data, std::wstring_view name)
 {
@@ -364,7 +399,7 @@ std::vector<uint64_t> Device::ResolveTimestamps()
     return timestamps;
 }
 
-std::vector<double> Device::ResolveTimingSamples(uint32_t dispatchRepeat)
+std::vector<double> Device::ResolveTimingSamples()
 {
     std::vector<uint64_t> timestamps = ResolveTimestamps();
 
@@ -376,7 +411,7 @@ std::vector<double> Device::ResolveTimingSamples(uint32_t dispatchRepeat)
     for (uint32_t i = 0; i < samples.size(); ++i) 
     {
         uint64_t timestampDelta = (timestamps[2 * i + 1] - timestamps[2 * i]) * 1000;
-        samples[i] = double(timestampDelta) / frequency / dispatchRepeat;
+        samples[i] = double(timestampDelta) / frequency / m_dispatchRepeat;
     }
 
     return samples;

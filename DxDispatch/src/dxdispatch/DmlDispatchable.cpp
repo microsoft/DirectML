@@ -241,14 +241,9 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
     THROW_IF_FAILED(m_device->DML()->GetDeviceRemovedReason());
 }
 
-void DmlDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, uint32_t repeat)
+void DmlDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
-    m_device->RecordTimestamp();
-    for (uint32_t i = 0; i < repeat; i++)
-    {
-        m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
-    }
-    m_device->RecordTimestamp();
+    m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
 }
 
 void DmlDispatchable::Wait()

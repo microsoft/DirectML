@@ -245,7 +245,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             // Dispatch
             dispatchTimer.Start();
-            dispatchable->Dispatch(command, iterationsCompleted, m_commandLineArgs.DispatchRepeat());
+            dispatchable->Dispatch(command, iterationsCompleted);
             dispatchable->Wait();
             cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
@@ -276,7 +276,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     // GPU timings are capped at a fixed size ring buffer. The first samples may have been 
     // overwritten, in which case the warmup samples are dropped.
-    gpuTimings.rawSamples = m_device->ResolveTimingSamples(m_commandLineArgs.DispatchRepeat());
+    gpuTimings.rawSamples = m_device->ResolveTimingSamples();
     assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
     uint32_t gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
     auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
@@ -285,7 +285,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)", 
+            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)", 
                 command.dispatchableName, 
                 iterationsCompleted,
                 cpuStats.hot.median,

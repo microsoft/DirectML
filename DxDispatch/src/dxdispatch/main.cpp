@@ -72,6 +72,9 @@ int main(int argc, char** argv)
                 adapter.GetAdapter(), 
                 args.DebugLayersEnabled(), 
                 args.CommandListType(),
+                args.DispatchRepeat(),
+                args.GetUavBarrierAfterDispatch(),
+                args.GetAliasingBarrierAfterDispatch(),
                 pixCaptureHelper,
                 d3dModule,
                 dmlModule

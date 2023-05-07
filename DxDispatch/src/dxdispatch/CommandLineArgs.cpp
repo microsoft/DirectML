@@ -104,6 +104,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Clears D3D shader caches before running commands", 
             cxxopts::value<bool>()
         )
+        (
+            "post_dispatch_barriers",
+            "Sets barrier types issued after every dispatch is recorded into a command list: none, uav, or uav+aliasing",
+            cxxopts::value<std::string>()->default_value("uav")
+        )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
         // but precompilation requires the root signature to be in the HLSL source itself; to allow use of the
@@ -233,6 +238,27 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("post_dispatch_barriers"))
+    {
+        auto value = result["post_dispatch_barriers"].as<std::string>();
+
+        if (value == "uav")
+        {
+            m_uavBarrierAfterDispatch = false;
+            m_aliasingBarrierAfterDispatch = false;
+        }
+        else if (value == "uav")
+        {
+            m_uavBarrierAfterDispatch = true;
+            m_aliasingBarrierAfterDispatch = false;
+        }
+        else if (value == "uav+aliasing")
+        {
+            m_uavBarrierAfterDispatch = true;
+            m_aliasingBarrierAfterDispatch = true;
+        }
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();

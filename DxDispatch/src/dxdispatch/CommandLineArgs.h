@@ -9,6 +9,13 @@ enum TimingVerbosity
     All
 };
 
+enum PostDispatchBarriers
+{
+    None = 0,
+    Uav = 1,
+    Aliasing = 2
+};
+
 class CommandLineArgs
 {
 public:
@@ -34,6 +41,9 @@ public:
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
 
+    bool GetUavBarrierAfterDispatch() const { return m_uavBarrierAfterDispatch; }
+    bool GetAliasingBarrierAfterDispatch() const { return m_aliasingBarrierAfterDispatch; }
+
     // ONNX
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionDenotationOverrides() const { return m_onnxFreeDimensionDenotationOverrides; }
@@ -51,6 +61,8 @@ private:
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
+    bool m_uavBarrierAfterDispatch = true;
+    bool m_aliasingBarrierAfterDispatch = false;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
     std::string m_pixCaptureName = "dxdispatch";

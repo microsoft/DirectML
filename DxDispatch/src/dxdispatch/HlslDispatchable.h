@@ -9,7 +9,7 @@ public:
 
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
-    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration, uint32_t repeat) final;
+    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 
     enum class BufferViewType
