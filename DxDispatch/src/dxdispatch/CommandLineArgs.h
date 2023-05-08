@@ -25,6 +25,7 @@ public:
     bool ShowAdapters() const { return m_showAdapters; }
     bool ShowDependencies() const { return m_showDependencies; }
     bool PrintHelp() const { return m_printHelp; }
+    bool PrintHlslDisassembly() const { return m_printHlslDisassembly; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
@@ -57,6 +58,7 @@ private:
     bool m_showAdapters = false;
     bool m_showDependencies = false;
     bool m_printHelp = false;
+    bool m_printHlslDisassembly = false;
     bool m_debugLayersEnabled = false;
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
     bool m_forceDisablePrecompiledShadersOnXbox = true;

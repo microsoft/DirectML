@@ -9,7 +9,7 @@
 using Microsoft::WRL::ComPtr;
 
 HlslDispatchable::HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc, const CommandLineArgs& args) 
-    : m_device(device), m_desc(desc), m_forceDisablePrecompiledShadersOnXbox(args.ForceDisablePrecompiledShadersOnXbox())
+    : m_device(device), m_desc(desc), m_forceDisablePrecompiledShadersOnXbox(args.ForceDisablePrecompiledShadersOnXbox()), m_printHlslDisassembly(args.PrintHlslDisassembly())
 {
 }
 
@@ -275,6 +275,31 @@ void HlslDispatchable::CompileWithDxc()
     THROW_IF_FAILED(m_device->GetDxcUtils()->CreateReflection(
         &reflectionBuffer, 
         IID_PPV_ARGS(m_shaderReflection.ReleaseAndGetAddressOf())));
+
+    if (m_printHlslDisassembly)
+    {
+        DxcBuffer bytecodeBuffer;
+        bytecodeBuffer.Ptr = shaderBlob->GetBufferPointer();
+        bytecodeBuffer.Size = shaderBlob->GetBufferSize();
+        bytecodeBuffer.Encoding = DXC_CP_ACP;
+
+        ComPtr<IDxcResult> result;
+        THROW_IF_FAILED(m_device->GetDxcCompiler()->Disassemble(
+            &bytecodeBuffer, 
+            IID_PPV_ARGS(&result)
+        ));
+
+        ComPtr<IDxcBlob> disassemblyText;
+        THROW_IF_FAILED(result->GetOutput(
+            DXC_OUT_DISASSEMBLY, 
+            IID_PPV_ARGS(&disassemblyText), 
+            nullptr
+        ));
+
+        LogInfo("---------------------------------------------------------");
+        LogInfo(static_cast<LPCSTR>(disassemblyText->GetBufferPointer()));
+        LogInfo("---------------------------------------------------------");
+    }
 
     CreateRootSignatureAndBindingMap();
 

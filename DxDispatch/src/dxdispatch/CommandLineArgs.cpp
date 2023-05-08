@@ -105,6 +105,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
+            "print_hlsl_disassembly", 
+            "Prints disassembled shader bytecode (HLSL dispatchables only)", 
+            cxxopts::value<bool>()
+        )
+        (
             "post_dispatch_barriers",
             "Sets barrier types issued after every dispatch is recorded into a command list: none, uav, or uav+aliasing",
             cxxopts::value<std::string>()->default_value("uav")
@@ -238,6 +243,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("print_hlsl_disassembly"))
+    {
+        m_printHlslDisassembly = result["print_hlsl_disassembly"].as<bool>();
     }
 
     if (result.count("post_dispatch_barriers"))

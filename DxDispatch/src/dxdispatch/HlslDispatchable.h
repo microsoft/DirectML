@@ -40,4 +40,5 @@ private:
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
     std::unordered_map<std::string, BindPoint> m_bindPoints;
+    bool m_printHlslDisassembly = false;
 };
