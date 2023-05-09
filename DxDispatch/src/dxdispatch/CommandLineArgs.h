@@ -9,13 +9,6 @@ enum TimingVerbosity
     All
 };
 
-enum PostDispatchBarriers
-{
-    None = 0,
-    Uav = 1,
-    Aliasing = 2
-};
-
 class CommandLineArgs
 {
 public:
