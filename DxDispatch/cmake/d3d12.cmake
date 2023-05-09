@@ -57,13 +57,13 @@ function(init_d3d12_cache_variables prefix)
 
     # <PREFIX>_D3D12_NUGET_VERSION
     set(${prefix}_D3D12_NUGET_VERSION
-        1.608.2
+        1.610.2
         CACHE STRING "Version of the D3D12 NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_D3D12_NUGET_HASH
     set(${prefix}_D3D12_NUGET_HASH 
-        aef1069b4a7434e07e62994b059ccbc86df08d1cd9acd63c11e079ae078fe21a
+        62C63EF7579E0A6AF35F9E6C9C5FC78C3B6F056695EC8933D8E1A0DA022CC914
         CACHE STRING "SHA256 hash of the D3D12 NuGet package (TYPE == nuget)."
     )
 
