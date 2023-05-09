@@ -36,9 +36,6 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 - Fixed bug in DML_OPERATOR_CONVOLUTION_INTEGER and DML_OPERATOR_QUANTIZED_LINEAR_CONVOLUTION on certain GPU hardware.
 - Fixed crash in DML graph compilation when DML_OPERATOR_ROI_ALIGN_GRAD is used.
 - Fixed Windows App Certification Kit failure in windows app using DirectML.
-
-
-
 # DirectML 1.10.1
 
 - Fixed bug in DMLCreateDevice1 that would cause it to incorrectly fail when a minimumFeatureLevel greater than DML_FEATURE_LEVEL_5_0 is supplied.
