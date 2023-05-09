@@ -4,6 +4,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                  | Feature level                                                                                                            | First available in OS                                             | Redistributable                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [1.11.0](#directml-1110) | [DML_FEATURE_LEVEL_6_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_0) | TBD                                                               | [Microsoft.AI.DirectML.1.11.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.11.0) |
 | [1.10.1](#directml-1101) | [DML_FEATURE_LEVEL_5_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_2) | TBD                                                               | [Microsoft.AI.DirectML.1.10.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.1) |
 | [1.10.0](#directml-1100) | [DML_FEATURE_LEVEL_5_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_2) | TBD                                                               | [Microsoft.AI.DirectML.1.10.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.10.0) |
 | [1.9.1](#directml-191)   | [DML_FEATURE_LEVEL_5_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_5_1) | TBD                                                               | [Microsoft.AI.DirectML.1.9.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.9.1)   |
@@ -21,6 +22,22 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.4.0](#directml-140)   | [DML_FEATURE_LEVEL_3_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                              | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0)   |
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
+
+# DirectML 1.11.0
+
+- Introduced DML_FEATURE_LEVEL 6.0
+  - Added UINT64 and INT64 data type support for DML_OPERATOR_ELEMENT_WISE_DIVIDE, DML_OPERATOR_ELEMENT_WISE_MODULUS_FLOOR, and DML_OPERATOR_ELEMENT_WISE_MODULUS_TRUNCATE.
+  - Added FLOAT16 data type support in ScaleTensor for DML_OPERATOR_ELEMENT_WISE_QUANTIZE_LINEAR
+  - Added FLOAT16 data type support in ScaleTensor and OutputTensor for DML_OPERATOR_ELEMENT_WISE_DEQUANTIZE_LINEAR
+  - Added DML_OPERATOR_ELEMENT_WISE_CLIP operator to the supported fused activation list.
+- Improved performance of DML_OPERATOR_ACTIVATION_SOFTMAX/1.
+- Improved performance of DML_OPERATOR_GEMM on certain GPU hardware.
+- Improved performance of DML_OPERATOR_CONVOLUTION_INTEGER and DML_OPERATOR_QUANTIZED_LINEAR_CONVOLUTION on INT8 tensors.
+- Fixed bug in DML_OPERATOR_CONVOLUTION_INTEGER and DML_OPERATOR_QUANTIZED_LINEAR_CONVOLUTION on certain GPU hardware.
+- Fixed crash in DML graph compilation when DML_OPERATOR_ROI_ALIGN_GRAD is used.
+- Fixed Windows App Certification Kit failure in windows app using DirectML.
+
+
 
 # DirectML 1.10.1
 
