@@ -498,7 +498,8 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
     m_device->ExecuteCommandList();
 
     Ort::RunOptions runOptions;
-    m_session->Run(runOptions, *m_ioBindings);
+    for (uint32_t i = 0; i < m_args.DispatchRepeat(); i++)
+        m_session->Run(runOptions, *m_ioBindings);
 
     m_device->RecordTimestamp();
     PIXEndEvent(m_device->GetCommandList());

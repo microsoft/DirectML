@@ -49,13 +49,13 @@ function(init_dxcompiler_cache_variables prefix)
 
     # <PREFIX>_DXCOMPILER_ARCHIVE_URL
     set(${prefix}_DXCOMPILER_ARCHIVE_URL 
-        https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2212/dxc_2022_12_16.zip
+        https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.7.2212.1/dxc_2023_03_01.zip
         CACHE STRING "URL of the GitHub release archive (TYPE == archive)."
     )
 
     # <PREFIX>_DXCOMPILER_ARCHIVE_HASH
     set(${prefix}_DXCOMPILER_ARCHIVE_HASH 
-        ed77c7775fcf1e117bec8b5bb4de6735af101b733d3920dda083496dceef130f 
+        E4E8CB7326FF7E8A791ACDA6DFB0CB78CC96309098BFDB0AB1E465DC29162422 
         CACHE STRING "SHA256 hash of the GitHub release archive (TYPE == archive)."
     )
     

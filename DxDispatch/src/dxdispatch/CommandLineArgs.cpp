@@ -47,7 +47,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     options.add_options("Timing")
         (
             "i,dispatch_iterations", 
-            "The number of times to repeat each dispatch", 
+            "The number of iterations in bind/dispatch/wait loop", 
+            cxxopts::value<uint32_t>()->default_value("1")
+        )
+        (
+            "r,dispatch_repeat", 
+            "The number of times dispatch is invoked within each loop iteration (for microbenchmarking)", 
             cxxopts::value<uint32_t>()->default_value("1")
         )
         (
@@ -98,6 +103,16 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "clear_shader_caches", 
             "Clears D3D shader caches before running commands", 
             cxxopts::value<bool>()
+        )
+        (
+            "print_hlsl_disassembly", 
+            "Prints disassembled shader bytecode (HLSL dispatchables only)", 
+            cxxopts::value<bool>()
+        )
+        (
+            "post_dispatch_barriers",
+            "Sets barrier types issued after every dispatch is recorded into a command list: none, uav, or uav+aliasing",
+            cxxopts::value<std::string>()->default_value("uav")
         )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
@@ -179,6 +194,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
     }
     
+    if (result.count("dispatch_repeat"))
+    {
+        m_dispatchRepeat = result["dispatch_repeat"].as<uint32_t>();
+    }
+
     if (result.count("milliseconds_to_run"))
     {
         m_timeToRunInMilliseconds.emplace(result["milliseconds_to_run"].as<uint32_t>());
@@ -223,6 +243,32 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("print_hlsl_disassembly"))
+    {
+        m_printHlslDisassembly = result["print_hlsl_disassembly"].as<bool>();
+    }
+
+    if (result.count("post_dispatch_barriers"))
+    {
+        auto value = result["post_dispatch_barriers"].as<std::string>();
+
+        if (value == "none")
+        {
+            m_uavBarrierAfterDispatch = false;
+            m_aliasingBarrierAfterDispatch = false;
+        }
+        else if (value == "uav")
+        {
+            m_uavBarrierAfterDispatch = true;
+            m_aliasingBarrierAfterDispatch = false;
+        }
+        else if (value == "uav+aliasing")
+        {
+            m_uavBarrierAfterDispatch = true;
+            m_aliasingBarrierAfterDispatch = true;
+        }
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();

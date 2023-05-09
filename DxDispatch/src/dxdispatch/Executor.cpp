@@ -247,7 +247,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             dispatchTimer.Start();
             dispatchable->Dispatch(command, iterationsCompleted);
             dispatchable->Wait();
-            cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds());
+            cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
             // to potentially introduce a sleep between each iteration.
@@ -285,7 +285,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.4f} ms median (GPU)", 
+            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)", 
                 command.dispatchableName, 
                 iterationsCompleted,
                 cpuStats.hot.median,

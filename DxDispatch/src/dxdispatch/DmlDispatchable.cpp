@@ -180,7 +180,7 @@ void DmlDispatchable::Initialize()
     }
 
     m_device->KeepAliveUntilNextCommandListDispatch(std::move(descriptorHeap));
-    m_device->RecordDispatch(initializer.Get(), bindingTable.Get());
+    m_device->RecordInitialize(initializer.Get(), bindingTable.Get());
     m_device->ExecuteCommandListAndWait();
 }
 
@@ -243,9 +243,7 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 
 void DmlDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
-    m_device->RecordTimestamp();
     m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
-    m_device->RecordTimestamp();
 }
 
 void DmlDispatchable::Wait()

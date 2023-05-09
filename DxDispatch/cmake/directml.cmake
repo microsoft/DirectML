@@ -52,13 +52,13 @@ function(init_directml_cache_variables prefix)
 
     # <PREFIX>_DIRECTML_NUGET_VERSION
     set(${prefix}_DIRECTML_NUGET_VERSION
-        1.10.1
+        1.11.0
         CACHE STRING "Version of the DirectML NuGet package (TYPE == nuget)."
     )
 
     # <PREFIX>_DIRECTML_NUGET_HASH
     set(${prefix}_DIRECTML_NUGET_HASH 
-        EEF1B87AD9B4B1AFE33B8EE97046A545762B6D65DDC4BDAB90F5A7F7B7A58EF4
+        825393A5B9C6F31AC6941E0929292B983665AA379B479B27D7D83F3C0A7AFA9D
         CACHE STRING "SHA256 hash of the DirectML NuGet package (TYPE == nuget)."
     )
 

@@ -18,6 +18,7 @@ public:
     bool ShowAdapters() const { return m_showAdapters; }
     bool ShowDependencies() const { return m_showDependencies; }
     bool PrintHelp() const { return m_printHelp; }
+    bool PrintHlslDisassembly() const { return m_printHlslDisassembly; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
@@ -26,12 +27,16 @@ public:
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
+    uint32_t DispatchRepeat() const { return m_dispatchRepeat; }
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     uint32_t MinimumDispatchIntervalInMilliseconds() const { return m_minDispatchIntervalInMilliseconds; }
     uint32_t MaxWarmupSamples() const { return m_maxWarmupSamples; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
+
+    bool GetUavBarrierAfterDispatch() const { return m_uavBarrierAfterDispatch; }
+    bool GetAliasingBarrierAfterDispatch() const { return m_aliasingBarrierAfterDispatch; }
 
     // ONNX
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
@@ -46,15 +51,19 @@ private:
     bool m_showAdapters = false;
     bool m_showDependencies = false;
     bool m_printHelp = false;
+    bool m_printHlslDisassembly = false;
     bool m_debugLayersEnabled = false;
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
+    bool m_uavBarrierAfterDispatch = true;
+    bool m_aliasingBarrierAfterDispatch = false;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
     std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
+    uint32_t m_dispatchRepeat = 1;
     std::optional<uint32_t> m_timeToRunInMilliseconds = {};
     uint32_t m_minDispatchIntervalInMilliseconds = 0;
     uint32_t m_maxWarmupSamples = 1;

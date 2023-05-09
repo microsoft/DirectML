@@ -9,7 +9,7 @@
 using Microsoft::WRL::ComPtr;
 
 HlslDispatchable::HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc, const CommandLineArgs& args) 
-    : m_device(device), m_desc(desc), m_forceDisablePrecompiledShadersOnXbox(args.ForceDisablePrecompiledShadersOnXbox())
+    : m_device(device), m_desc(desc), m_forceDisablePrecompiledShadersOnXbox(args.ForceDisablePrecompiledShadersOnXbox()), m_printHlslDisassembly(args.PrintHlslDisassembly())
 {
 }
 
@@ -276,6 +276,31 @@ void HlslDispatchable::CompileWithDxc()
         &reflectionBuffer, 
         IID_PPV_ARGS(m_shaderReflection.ReleaseAndGetAddressOf())));
 
+    if (m_printHlslDisassembly)
+    {
+        DxcBuffer bytecodeBuffer;
+        bytecodeBuffer.Ptr = shaderBlob->GetBufferPointer();
+        bytecodeBuffer.Size = shaderBlob->GetBufferSize();
+        bytecodeBuffer.Encoding = DXC_CP_ACP;
+
+        ComPtr<IDxcResult> result;
+        THROW_IF_FAILED(m_device->GetDxcCompiler()->Disassemble(
+            &bytecodeBuffer, 
+            IID_PPV_ARGS(&result)
+        ));
+
+        ComPtr<IDxcBlob> disassemblyText;
+        THROW_IF_FAILED(result->GetOutput(
+            DXC_OUT_DISASSEMBLY, 
+            IID_PPV_ARGS(&disassemblyText), 
+            nullptr
+        ));
+
+        LogInfo("---------------------------------------------------------");
+        LogInfo(static_cast<LPCSTR>(disassemblyText->GetBufferPointer()));
+        LogInfo("---------------------------------------------------------");
+    }
+
     CreateRootSignatureAndBindingMap();
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
@@ -442,11 +467,7 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 
 void HlslDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
-    PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "HLSL: '%s'", args.dispatchableName.c_str());
-    m_device->RecordTimestamp();
-    m_device->GetCommandList()->Dispatch(args.threadGroupCount[0], args.threadGroupCount[1], args.threadGroupCount[2]);
-    m_device->RecordTimestamp();
-    PIXEndEvent(m_device->GetCommandList());
+    m_device->RecordDispatch(args.dispatchableName.c_str(), args.threadGroupCount[0], args.threadGroupCount[1], args.threadGroupCount[2]);
 }
 
 void HlslDispatchable::Wait()
