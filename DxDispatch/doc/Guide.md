@@ -70,11 +70,11 @@ Resource 'output': 6, 15, 24
 There are more options available to you. If you run the executable with no arguments (or `--help`) it will display the available options:
 
 ```
-dxdispatch version 0.13.0
-  DirectML     : NuGet (Microsoft.AI.DirectML.1.10.1)
-  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.608.2)
-  DXCompiler   : Release (v1.7.2212)
-  PIX          : NuGet (WinPixEventRuntime.1.0.220810001)
+dxdispatch version 0.15.0
+  DirectML     : NuGet (Microsoft.AI.DirectML.1.11.0)
+  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.610.2)
+  DXCompiler   : Release (v1.7.2212.1)
+  PIX          : NuGet (WinPixEventRuntime.1.0.230302001)
   ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.14.1)
 
 Usage:
@@ -85,18 +85,26 @@ Usage:
                            DirectX components
 
  DirectX options:
-  -d, --debug                  Enable D3D and DML debug layers
-  -a, --adapter arg            Substring to match a desired DirectX adapter
-                               (default: )
-  -s, --show_adapters          Show all available DirectX adapters
-  -q, --queue_type arg         Type of command queue/list to use ('compute'
-                               or 'direct') (default: direct)
-      --xbox_allow_precompile  Disables automatically defining
-                               __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
-  -c, --pix_capture_type arg   Type of PIX captures to take: gpu, timing, or
-                               manual. (default: manual)
-  -o, --pix_capture_name arg   Name used for PIX capture files. (default:
-                               dxdispatch)
+  -d, --debug                   Enable D3D and DML debug layers
+  -a, --adapter arg             Substring to match a desired DirectX adapter
+                                (default: )
+  -s, --show_adapters           Show all available DirectX adapters
+  -q, --queue_type arg          Type of command queue/list to use ('compute'
+                                or 'direct') (default: direct)
+      --clear_shader_caches     Clears D3D shader caches before running
+                                commands
+      --print_hlsl_disassembly  Prints disassembled shader bytecode (HLSL
+                                dispatchables only)
+      --post_dispatch_barriers arg
+                                Sets barrier types issued after every
+                                dispatch is recorded into a command list: none, uav,
+                                or uav+aliasing (default: uav)
+      --xbox_allow_precompile   Disables automatically defining
+                                __XBOX_DISABLE_PRECOMPILE when compiling shaders for Xbox
+  -c, --pix_capture_type arg    Type of PIX captures to take: gpu, timing, or
+                                manual. (default: manual)
+  -o, --pix_capture_name arg    Name used for PIX capture files. (default:
+                                dxdispatch)
 
  ONNX options:
   -f, --onnx_free_dim_name_override arg
@@ -128,7 +136,10 @@ Usage:
 
  Timing options:
   -i, --dispatch_iterations arg
-                                The number of times to repeat each dispatch
+                                The number of iterations in
+                                bind/dispatch/wait loop (default: 1)
+  -r, --dispatch_repeat arg     The number of times dispatch is invoked
+                                within each loop iteration (for microbenchmarking)
                                 (default: 1)
   -t, --milliseconds_to_run arg
                                 Specifies the total time to run the test for.
