@@ -28,7 +28,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 - Introduced DML_FEATURE_LEVEL 6.1
   - Added DML_OPERATOR_MULTIHEAD_ATTENTION.
-  - Added DML_OPERATOR_ACTIVATION_SOFTMAX/1 to the list of fusable activations for DML_OPERATOR_GEMM.
+  - Added DML_OPERATOR_ACTIVATION_SOFTMAX and DML_OPERATOR_ACTIVATION_SOFTMAX1 to the list of fusable activations for DML_OPERATOR_GEMM.
 
 # DirectML 1.11.0
 
