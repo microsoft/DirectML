@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.props')" />
+  <Import Project="packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
       <Configuration>Debug</Configuration>
@@ -436,14 +436,14 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
-    <Import Project="packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.targets')" />
+    <Import Project="packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.11.0\build\Microsoft.AI.DirectML.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.12.0\build\Microsoft.AI.DirectML.targets'))" />
   </Target>
 </Project>
