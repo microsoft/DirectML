@@ -1,5 +1,0 @@
-requests
-pillow
-tqdm
-matplotlib
-cifar2png

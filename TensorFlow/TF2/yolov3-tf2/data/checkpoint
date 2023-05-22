@@ -1,2 +1,0 @@
-model_checkpoint_path: "yolov3.tf"
-all_model_checkpoint_paths: "yolov3.tf"

@@ -1,3 +1,0 @@
-pycocotools
-wget
-requests

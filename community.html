@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+   <meta name="description" content="Learn more about how our partners are using DirectML to deliver high-performance AI experiences at scale.">
+   <meta name="keywords" content="DirectML, machine learning, hardware acceleration, cross-platform, AI development">
+
+   <meta property="og:title" content="DirectML Community">
+   <meta property="og:description" content="Learn more about how our partners are using DirectML to deliver high-performance AI experiences at scale.">
+   <meta property="og:image" content="https://microsoft.github.io/DirectML/img/winai-graphic-blue.png">
+
+   <meta name="twitter:title" content="DirectML Community">
+   <meta name="twitter:description" content="Learn more about how our partners are using DirectML to deliver high-performance AI experiences at scale">
+   <meta name="twitter:image" content="https://microsoft.github.io/DirectML/img/winai-graphic-blue.png">
+
+  <title>DirectML | Community</title>
+
+  <script>
+    // Wait for the page to finish loading
+    window.addEventListener('DOMContentLoaded', function() {
+      // Get the fragment identifier from the URL
+      var fragment = window.location.hash.substring(1);
+      
+      // Scroll to the corresponding quote
+      var quoteElement = document.getElementById(fragment);
+      if (quoteElement) {
+        window.scrollTo({
+          top: quoteElement.offsetTop,
+          behavior: 'smooth'
+        });
+      }
+    });
+  </script>
+  
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom fonts for this template -->
+  <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet">
+  <link href="vendor/simple-line-icons/css/simple-line-icons.css" rel="stylesheet" type="text/css">
+
+  <!-- Set favicon -->
+  <link rel='icon' href='img/winai-graphic-blue.png' type='image/x-icon' sizes="16x16" />
+
+  <!-- Custom styles for this template -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+  <script src="index.js"></script> 
+</head>
+
+<body>
+    <!-- Navigation -->
+    <!-- Cookie banner -->
+    <div id="cookie-banner"></div>
+
+    <!-- HTML for UHF header provided by Microsoft. -->
+    <div id="UHF-header"></div>
+
+    <div class="container text-center mt-4">
+        <h2>Organizations and products using DirectML</h2>
+    </div>
+
+    <div class="container customer-section mt-4" id="adobe">
+        <div class="row">
+            <div class="col-3">
+                <img src="img/adobe-logo.png" width="150" height="150"/>
+            </div>
+            <div class="col-9">
+                <p>Innovative AI-powered Adobe Premiere Pro features including Auto Captioning and Auto Reframe are enabling creators to rapidly produce world-changing content. We trust DirectML to enable fast and reliable AI experiences on Windows, ensuring seamless performance across devices. DirectML helps us meet the needs of customers of any size, making great use of new AI accelerator hardware such as the VPU in Intel's upcoming Meteor Lake Platform while freeing up CPU and GPU resources for other pro video tasks.</p>
+            </div>
+        </div>
+        <div class="author">
+            – Sriram Iyer, Head of Product & Partnerships, Digital Audio & Video, Adobe
+        </div>
+    </div>
+
+    <div class="container customer-section mt-4" id="corel" name="corel">
+        <div class="row">
+            <div class="col-3">
+                <img src="img/corel-logo.png" width="150" height="150" />
+            </div>
+            <div class="col-9">
+                <p>We use DirectML to support our AI-powered creativity tools across CorelDRAW Graphics Suite, Corel Painter, and Corel PaintShop Pro because it offers reliability and predictability across a wide range of GPU devices. DirectML helped make sure all our customers have a great AI-powered experience by running performantly and enabling a seamless integration into their existing workflows.</p>
+            </div>
+        </div>
+        <div class="author">
+            – Rus Miller, VP Product Development, Alludo (Corel)
+        </div>
+    </div>
+
+    <div class="container customer-section mt-4" id="edge">
+        <div class="row">
+            <div class="col-3">
+                <img src="img/edge-logo.png" width="150" height="150" />
+            </div>
+            <div class="col-9">
+                <p>The Edge team is excited about the AI experiences that DirectML will allow us to bring to our customers at scale. For a glimpse of the future, check out our blog post on <a href="https://blogs.windows.com/msedgedev/2023/03/08/video-super-resolution-in-microsoft-edge/">video super resolution</a>, a new feature that allows users to enhance the quality of videos without sacrificing bandwidth. </p>
+            </div>
+        </div>
+        <div class="author">
+            – Microsoft Edge team
+        </div>
+    </div>
+
+      <!-- UHF Footer from Microsoft -->
+  <div class="footer bg-light" id="UHF-footer"></div>
+
+    <!-- Javascript: Bootstrap required scripts, UHF header/footer, and custom file -->
+    <script src="vendor/jquery/jquery.slim.min.js"/></script>
+
+    <script src="vendor/popper/popper.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Scripts for Microsoft header/footer -->
+    <script src="https://wcpstatic.microsoft.com/mscc/lib/v2/wcp-consent.js"></script>
+    <script src="https://www.microsoft.com/onerfstatics/marketingsites-eus-prod/shell/_scrf/js/themes=default/54-af9f9f/c0-247156/de-099401/e1-a50eee/e7-954872/d8-97d509/f0-251fe2/46-be1318/77-04a268/11-240c7b/63-077520/a4-34de62/bb-d7480b/db-bc0148/dc-7e9864/6d-c07ea1/9d-b58f60/f6-aa5278/cd-23d3b0/6d-1e7ed0/b7-cadaa7/c4-898cf2/ca-40b7b0/4e-ee3a55/3e-f5c39b/c3-6454d7/f9-7592d3/92-10345d/79-499886/7e-cda2d3/69-13871c/6a-234a32/e0-3c9860/91-97a04f/1f-100dea/33-abe4df/17-f90ef1?ver=2.0&_cf=20210415&iife=1"></script>
+
+</body>
+
+<style>
+.customer-section {
+    border: #d9d9d9 solid thin;
+    border-radius: 1px;
+    height: 11rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    background-color: #e1e6eb;
+}
+
+.author {
+    float: right;
+    font-style: italic;
+    color: blue;
+    margin-top: -20px;
+}
+</style>
+
+<!-- Javascript: Bootstrap required scripts, UHF header/footer, and custom file -->
+<script src="vendor/jquery/jquery.slim.min.js"/></script>
+
+<script src="vendor/popper/popper.min.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+</html>
