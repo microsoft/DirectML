@@ -10,12 +10,15 @@ More information about DirectML can be found in [Introduction to DirectML](https
   - [Hardware requirements](#hardware-requirements)
   - [For application developers](#for-application-developers)
   - [For users, data scientists, and researchers](#for-users-data-scientists-and-researchers)
-- [DirectML Samples](#directml-samples)
-- [DxDispatch Tool](#dxdispatch-tool)
-- [Windows ML on DirectML](#windows-ml-on-directml)
-- [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
-- [TensorFlow with DirectML](#tensorflow-with-directml)
-- [PyTorch with DirectML](#pytorch-with-directml)
+  - [DirectML Samples](#directml-samples)
+- [Support in Machine Learning Frameworks](#support-in-machine-learning-frameworks)
+  - [Windows ML on DirectML](#windows-ml-on-directml)
+  - [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
+  - [TensorFlow with DirectML](#tensorflow-with-directml)
+  - [PyTorch with DirectML](#pytorch-with-directml)
+- [Tools for DirectML](#tools-for-directml)
+  - [Olive (Model Optimization)](#olive-model-optimization)
+  - [DxDispatch (Testing/Benchmarking)](#dxdispatch-testingbenchmarking)
 - [Feedback](#feedback)
 - [External Links](#external-links)
   - [Documentation](#documentation)
@@ -24,13 +27,13 @@ More information about DirectML can be found in [Introduction to DirectML](https
 
 Visit the [DirectX Landing Page](https://devblogs.microsoft.com/directx/landing-page/) for more resources for DirectX developers.
 
-## Getting Started with DirectML
+# Getting Started with DirectML
 
 DirectML is distributed as a system component of Windows 10, and is available as part of the Windows 10 operating system (OS) in Windows 10, version 1903 (10.0; Build 18362), and newer.
 
 Starting with DirectML [version 1.4.0](https://docs.microsoft.com/windows/win32/direct3d12/dml-version-history), DirectML is also available as a standalone redistributable package (see [Microsoft.AI.DirectML](https://www.nuget.org/packages/Microsoft.AI.DirectML/)), which is useful for applications that wish to use a fixed version of DirectML, or when running on older versions of Windows 10.
 
-### Hardware requirements
+## Hardware requirements
 
 DirectML requires a DirectX 12 capable device. Almost all commercially-available graphics cards released in the last several years support DirectX 12. Examples of compatible hardware include:
 
@@ -39,7 +42,7 @@ DirectML requires a DirectX 12 capable device. Almost all commercially-available
 * NVIDIA Kepler (GTX 600 series) and above
 * Qualcomm Adreno 600 and above
 
-### For application developers
+## For application developers
 
 DirectML exposes a native C++ DirectX 12 API. The header and library (DirectML.h/DirectML.lib) are available as part of the [redistributable NuGet package](https://www.nuget.org/packages/Microsoft.AI.DirectML/), and are also included in the Windows 10 SDK version 10.0.18362 or newer.
 
@@ -48,7 +51,7 @@ DirectML exposes a native C++ DirectX 12 API. The header and library (DirectML.h
 * [DirectML programming guide](https://docs.microsoft.com/windows/win32/direct3d12/dml)
 * [DirectML API reference](https://docs.microsoft.com/windows/win32/direct3d12/direct3d-directml-reference)
 
-### For users, data scientists, and researchers
+## For users, data scientists, and researchers
 
 DirectML is built-in as a backend to several frameworks such as Windows ML, ONNX Runtime, and TensorFlow.
 
@@ -74,9 +77,7 @@ DirectML Python sample code is available under [Python/samples](./Python/samples
 * [FNS-Candy](./Python/samples/candy.py): Adapted from the [Windows ML Style Transfer model](https://github.com/microsoft/Windows-Machine-Learning/tree/master/Samples/FNSCandyStyleTransfer) sample, FNS-Candy re-applies specific artistic styles on regular images.
 * [Super Resolution](./Python/samples/superres.py): Adapted from the [ONNX Super Resolution model](https://github.com/onnx/models/tree/master/vision/super_resolution/sub_pixel_cnn_2016), Super-Res upscales and sharpens the input images to refine the details and improve image quality.
 
-## DxDispatch Tool
-
-[DxDispatch](./DxDispatch/README.md) is simple command-line executable for launching DirectX 12 compute programs (including DirectML operators) without writing all the C++ boilerplate.
+# Support in Machine Learning Frameworks
 
 ## Windows ML on DirectML
 
@@ -127,7 +128,17 @@ PyTorch on DirectML is supported on both the latest versions of Windows 10 and t
 * [torch-directml PyPI project](https://pypi.org/project/torch-directml/)
 * [PyTorch homepage](https://pytorch.org/)
 
-## Feedback
+# Tools for DirectML
+
+## Olive (Model Optimization)
+
+[Olive](https://github.com/microsoft/olive) is a model optimization tool that composes industry-leading techniques across model compression, optimization, and compilation. Check out the [Olive and DirectML examples](https://github.com/microsoft/Olive/tree/main/examples/directml) for how you can optimize models to run their best on DirectML.
+
+## DxDispatch (Testing/Benchmarking)
+
+[DxDispatch](./DxDispatch/README.md) is simple command-line executable for launching DirectX 12 compute programs (including DirectML operators) without writing all the C++ boilerplate. It's a great tool for debugging and profiling in conjunction with [PIX on Windows](https://devblogs.microsoft.com/pix/introduction/).
+
+# Feedback
 
 We look forward to hearing from you!
 
@@ -139,21 +150,24 @@ We look forward to hearing from you!
 
 * For ONNX Runtime issues, please file an issue at [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/issues).
 
-## External Links
+# External Links
 
-### Documentation
+## Documentation
 [DirectML programming guide](https://docs.microsoft.com/windows/win32/direct3d12/dml)  
 [DirectML API reference](https://docs.microsoft.com/windows/win32/direct3d12/direct3d-directml-reference)
 
-### More information
+## More information
 [Introducing DirectML (Game Developers Conference '19)](https://www.youtube.com/watch?v=QjQm_wNrvVw)   
 [Accelerating GPU Inferencing with DirectML and DirectX 12 (SIGGRAPH '18)](http://on-demand.gputechconf.com/siggraph/2018/video/sig1814-2-adrian-tsai-gpu-inferencing-directml-and-directx-12.html)  
 [Windows AI: hardware-accelerated ML on Windows devices (Microsoft Build '20)](https://www.youtube.com/watch?v=-qf2PMuOXWI&feature=youtu.be)  
 [Gaming with Windows ML (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/gaming-with-windows-ml/)  
 [DirectML at GDC 2019 (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directml-at-gdc-2019/)  
-[DirectX ❤ Linux (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directx-heart-linux/)
+[DirectX ❤ Linux (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directx-heart-linux/)  
+[DirectML at Build 2023](https://devblogs.microsoft.com/directx/directml-at-build-2023/)  
+[Optimize DirectML performance with Olive](https://devblogs.microsoft.com/directx/optimize-directml-performance-with-olive/)  
+[DirectML ❤ Stable Diffusion](https://devblogs.microsoft.com/directx/dml-stable-diffusion/)  
 
-## Contributing
+# Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
