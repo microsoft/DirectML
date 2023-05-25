@@ -94,7 +94,7 @@ The default redistributable versions of components (e.g. nuget, archives):
 - **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.610.2)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.610.2) -  2023/04/20
 - **DX Compiler (archive)**: [December 2022 (v1.7.2212.1)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2212.1) - 2023/03/02
 - **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.230302001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.230302001) - 2023/03/02
-- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.14.1)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.14.1) - 2023/02/27
+- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.15.0)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.15.0) - 2023/05/24
 
 Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
 
