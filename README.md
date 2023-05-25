@@ -69,6 +69,10 @@ DirectML C++ sample code is available under [Samples](./Samples).
 * [DirectMLSuperResolution](./Samples/DirectMLSuperResolution): A sample that uses DirectML to execute a basic super-resolution model to upscale video from 540p to 1080p in real time.
 * [yolov4](./Samples/yolov4): YOLOv4 is an object detection model capable of recognizing up to 80 different classes of objects in an image. This sample contains a complete end-to-end implementation of the model using DirectML, and is able to run in real time on a user-provided video stream.
 
+The DirectML & Olive samples show how to optimize different types of models to run even better with DirectML:
+* [Stable Diffusion](https://github.com/microsoft/Olive/tree/main/examples/directml/stable_diffusion): illustrates offline optimization of the Stable Diffusion architecture for greatly improved inference speed.
+* [Dolly v2](https://github.com/microsoft/Olive/tree/main/examples/directml/dolly_v2): : illustrates offline optimization of the Dolly v2 model, a large language model that can be run on local hardware.
+
 DirectML Python sample code is available under [Python/samples](./Python/samples). The samples require PyDirectML, an open source Python projection library for DirectML, which can be built and installed to a Python executing environment from [Python/src](./Python/src). Refer to the [Python/README.md](Python/README.md) file for more details.
 
 * [MobileNet](./Python/samples/mobilenet.py): Adapted from the [ONNX MobileNet model](https://github.com/onnx/models/tree/master/vision/classification/mobilenet). MobileNet classifies an image into 1000 different classes. It is highly efficient in speed and size, ideal for mobile applications.
