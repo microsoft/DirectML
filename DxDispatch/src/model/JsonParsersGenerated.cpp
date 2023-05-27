@@ -219,6 +219,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE2") || !strcmp(valueString, "RESAMPLE2")) { return DML_OPERATOR_RESAMPLE2; }
     if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(valueString, "RESAMPLE_GRAD1")) { return DML_OPERATOR_RESAMPLE_GRAD1; }
     if (!strcmp(valueString, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(valueString, "DIAGONAL_MATRIX1")) { return DML_OPERATOR_DIAGONAL_MATRIX1; }
+    if (!strcmp(valueString, "DML_OPERATOR_MULTIHEAD_ATTENTION") || !strcmp(valueString, "MULTIHEAD_ATTENTION")) { return DML_OPERATOR_MULTIHEAD_ATTENTION; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_OPERATOR_TYPE.", valueString));
 }
 
@@ -429,6 +430,10 @@ DML_FEATURE_LEVEL ParseDmlFeatureLevel(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_4_0") || !strcmp(valueString, "4_0")) { return DML_FEATURE_LEVEL_4_0; }
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_4_1") || !strcmp(valueString, "4_1")) { return DML_FEATURE_LEVEL_4_1; }
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_5_0") || !strcmp(valueString, "5_0")) { return DML_FEATURE_LEVEL_5_0; }
+    if (!strcmp(valueString, "DML_FEATURE_LEVEL_5_1") || !strcmp(valueString, "5_1")) { return DML_FEATURE_LEVEL_5_1; }
+    if (!strcmp(valueString, "DML_FEATURE_LEVEL_5_2") || !strcmp(valueString, "5_2")) { return DML_FEATURE_LEVEL_5_2; }
+    if (!strcmp(valueString, "DML_FEATURE_LEVEL_6_0") || !strcmp(valueString, "6_0")) { return DML_FEATURE_LEVEL_6_0; }
+    if (!strcmp(valueString, "DML_FEATURE_LEVEL_6_1") || !strcmp(valueString, "6_1")) { return DML_FEATURE_LEVEL_6_1; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_FEATURE_LEVEL.", valueString));
 }
 
@@ -532,6 +537,28 @@ DML_RANDOM_GENERATOR_TYPE ParseDmlRandomGeneratorTypeField(const rapidjson::Valu
 {
     return ParseFieldHelper<DML_RANDOM_GENERATOR_TYPE>(object, fieldName, required, defaultValue, [](auto& value){
         return ParseDmlRandomGeneratorType(value); 
+    });
+}
+
+DML_MULTIHEAD_ATTENTION_MASK_TYPE ParseDmlMultiheadAttentionMaskType(const rapidjson::Value& value)
+{
+    if (value.GetType() != rapidjson::Type::kStringType)
+    {
+        throw std::invalid_argument("DML_MULTIHEAD_ATTENTION_MASK_TYPE must be a string.");
+    }
+    auto valueString = value.GetString();
+    if (!strcmp(valueString, "DML_MULTIHEAD_ATTENTION_MASK_TYPE_NONE") || !strcmp(valueString, "NONE")) { return DML_MULTIHEAD_ATTENTION_MASK_TYPE_NONE; }
+    if (!strcmp(valueString, "DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_SEQUENCE_LENGTH") || !strcmp(valueString, "KEY_SEQUENCE_LENGTH")) { return DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_SEQUENCE_LENGTH; }
+    if (!strcmp(valueString, "DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_SEQUENCE_END_START") || !strcmp(valueString, "KEY_SEQUENCE_END_START")) { return DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_SEQUENCE_END_START; }
+    if (!strcmp(valueString, "DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_QUERY_SEQUENCE_LENGTH_START_END") || !strcmp(valueString, "KEY_QUERY_SEQUENCE_LENGTH_START_END")) { return DML_MULTIHEAD_ATTENTION_MASK_TYPE_KEY_QUERY_SEQUENCE_LENGTH_START_END; }
+    if (!strcmp(valueString, "DML_MULTIHEAD_ATTENTION_MASK_TYPE_BOOLEAN") || !strcmp(valueString, "BOOLEAN")) { return DML_MULTIHEAD_ATTENTION_MASK_TYPE_BOOLEAN; }
+    throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_MULTIHEAD_ATTENTION_MASK_TYPE.", valueString));
+}
+
+DML_MULTIHEAD_ATTENTION_MASK_TYPE ParseDmlMultiheadAttentionMaskTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, DML_MULTIHEAD_ATTENTION_MASK_TYPE defaultValue)
+{
+    return ParseFieldHelper<DML_MULTIHEAD_ATTENTION_MASK_TYPE>(object, fieldName, required, defaultValue, [](auto& value){
+        return ParseDmlMultiheadAttentionMaskType(value); 
     });
 }
 
@@ -3981,6 +4008,54 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_DIAGONAL_MATRIX1_
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlMultiheadAttentionOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_MULTIHEAD_ATTENTION_OPERATOR_DESC>();
+    desc->QueryTensor = fused ? nullptr : ParseDmlTensorDescField(value, "QueryTensor", allocator, false);
+    desc->KeyTensor = fused ? nullptr : ParseDmlTensorDescField(value, "KeyTensor", allocator, false);
+    desc->ValueTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ValueTensor", allocator, false);
+    desc->StackedQueryKeyTensor = fused ? nullptr : ParseDmlTensorDescField(value, "StackedQueryKeyTensor", allocator, false);
+    desc->StackedKeyValueTensor = fused ? nullptr : ParseDmlTensorDescField(value, "StackedKeyValueTensor", allocator, false);
+    desc->StackedQueryKeyValueTensor = fused ? nullptr : ParseDmlTensorDescField(value, "StackedQueryKeyValueTensor", allocator, false);
+    desc->BiasTensor = fused ? nullptr : ParseDmlTensorDescField(value, "BiasTensor", allocator, false);
+    desc->MaskTensor = fused ? nullptr : ParseDmlTensorDescField(value, "MaskTensor", allocator, false);
+    desc->RelativePositionBiasTensor = fused ? nullptr : ParseDmlTensorDescField(value, "RelativePositionBiasTensor", allocator, false);
+    desc->PastKeyTensor = fused ? nullptr : ParseDmlTensorDescField(value, "PastKeyTensor", allocator, false);
+    desc->PastValueTensor = fused ? nullptr : ParseDmlTensorDescField(value, "PastValueTensor", allocator, false);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->OutputPresentKeyTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputPresentKeyTensor", allocator, false);
+    desc->OutputPresentValueTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputPresentValueTensor", allocator, false);
+    desc->Scale = ParseFloat32Field(value, "Scale", true);
+    desc->MaskFilterValue = ParseFloat32Field(value, "MaskFilterValue", true);
+    desc->HeadCount = ParseUInt32Field(value, "HeadCount", true);
+    desc->MaskType = ParseDmlMultiheadAttentionMaskTypeField(value, "MaskType", true, {});
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_MULTIHEAD_ATTENTION;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_MULTIHEAD_ATTENTION_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"QueryTensor", 1, false});
+    bindPoints.inputs.push_back({"KeyTensor", 1, false});
+    bindPoints.inputs.push_back({"ValueTensor", 1, false});
+    bindPoints.inputs.push_back({"StackedQueryKeyTensor", 1, false});
+    bindPoints.inputs.push_back({"StackedKeyValueTensor", 1, false});
+    bindPoints.inputs.push_back({"StackedQueryKeyValueTensor", 1, false});
+    bindPoints.inputs.push_back({"BiasTensor", 1, false});
+    bindPoints.inputs.push_back({"MaskTensor", 1, false});
+    bindPoints.inputs.push_back({"RelativePositionBiasTensor", 1, false});
+    bindPoints.inputs.push_back({"PastKeyTensor", 1, false});
+    bindPoints.inputs.push_back({"PastValueTensor", 1, false});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputPresentKeyTensor", 1, false});
+    bindPoints.outputs.push_back({"OutputPresentValueTensor", 1, false});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlActivationEluOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
@@ -4651,6 +4726,7 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_RESAMPLE2") || !strcmp(type, "RESAMPLE2")) return ParseDmlResample2OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(type, "RESAMPLE_GRAD1")) return ParseDmlResampleGrad1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(type, "DIAGONAL_MATRIX1")) return ParseDmlDiagonalMatrix1OperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_MULTIHEAD_ATTENTION") || !strcmp(type, "MULTIHEAD_ATTENTION")) return ParseDmlMultiheadAttentionOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_ELU") || !strcmp(type, "ACTIVATION_ELU")) return ParseDmlActivationEluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_CELU") || !strcmp(type, "ACTIVATION_CELU")) return ParseDmlActivationCeluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARDMAX") || !strcmp(type, "ACTIVATION_HARDMAX")) return ParseDmlActivationHardmaxOperatorDesc(descValue, fused, allocator);
@@ -4821,6 +4897,7 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_RESAMPLE2: return GetBindPoints(*reinterpret_cast<const DML_RESAMPLE2_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_RESAMPLE_GRAD1: return GetBindPoints(*reinterpret_cast<const DML_RESAMPLE_GRAD1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_DIAGONAL_MATRIX1: return GetBindPoints(*reinterpret_cast<const DML_DIAGONAL_MATRIX1_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_MULTIHEAD_ATTENTION: return GetBindPoints(*reinterpret_cast<const DML_MULTIHEAD_ATTENTION_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_ELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_ELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_CELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_CELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_HARDMAX: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARDMAX_OPERATOR_DESC*>(desc.Desc));
