@@ -45,7 +45,7 @@ def create_training_dataloader(path, batch_size, input_size=224):
     path = get_data_path(path)
     print('Loading the training dataset from: {}'.format(path))
     train_transform = create_training_data_transform(input_size)       
-    training_set = datasets.CIFAR10(root=path, train=True, download=True, transform=train_transform)
+    training_set = datasets.CIFAR10(root=path, train=True, download=False, transform=train_transform)
     data_loader = DataLoader(dataset=training_set, batch_size=batch_size, shuffle=True, num_workers=0)
     print_dataloader(data_loader, 'Train')
     return data_loader
