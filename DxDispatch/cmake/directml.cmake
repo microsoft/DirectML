@@ -33,16 +33,12 @@ function(init_directml_cache_variables prefix)
     endif()
 
     # <PREFIX>_DIRECTML_TYPE
-    if(TARGET_XBOX)
-        set(default_type local)
-    else()
-        set(default_type nuget)
-    endif()
+    set(default_type nuget)
     set(${prefix}_DIRECTML_TYPE 
         "${default_type}" 
         CACHE STRING "DirectML dependency type"
     )
-    set_property(CACHE ${prefix}_DIRECTML_TYPE PROPERTY STRINGS nuget gdk winsdk wsl)
+    set_property(CACHE ${prefix}_DIRECTML_TYPE PROPERTY STRINGS nuget winsdk wsl)
 
     # <PREFIX>_DIRECTML_NUGET_ID
     set(${prefix}_DIRECTML_NUGET_ID

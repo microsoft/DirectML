@@ -23,6 +23,7 @@ public:
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
+    bool DisableAgilitySDK() const { return m_disableAgilitySDK; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
     const std::filesystem::path& ModelPath() const { return m_modelPath; }
     const std::string& HelpText() const { return m_helpText; }
@@ -56,6 +57,7 @@ private:
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
+    bool m_disableAgilitySDK = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
     std::string m_adapterSubstring = "";

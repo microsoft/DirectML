@@ -100,9 +100,9 @@ void PrintModuleInfo(std::string_view name, const std::optional<ModuleInfo>& loa
 
 void PrintDependencies()
 {
-        PrintModuleInfo("DirectML", GetModuleInfo(c_directmlModuleName), c_directmlConfig);
-        PrintModuleInfo("D3D12", GetModuleInfo(c_direct3dCoreModuleName), c_d3d12Config);
-        PrintModuleInfo("DXCompiler", GetModuleInfo(c_dxcompilerModuleName), c_dxcompilerConfig);
-        PrintModuleInfo("PIX", GetModuleInfo(c_pixModuleName), c_pixConfig);
-        PrintModuleInfo("ONNX Runtime", GetModuleInfo(c_ortModuleName), c_ortConfig);
+    PrintModuleInfo("DirectML", GetModuleInfo(c_directmlModuleName), c_directmlConfig);
+    PrintModuleInfo("D3D12", GetModuleInfo(c_direct3dCoreModuleName), c_d3d12Config);
+    PrintModuleInfo("DXCompiler", GetModuleInfo(c_dxcompilerModuleName), c_dxcompilerConfig);
+    PrintModuleInfo("PIX", GetModuleInfo(c_pixModuleName), c_pixConfig);
+    PrintModuleInfo("ONNX Runtime", GetModuleInfo(c_ortModuleName), c_ortConfig);
 }
