@@ -73,7 +73,7 @@ Device::Device(
 
     THROW_IF_FAILED(m_d3dModule->CreateDevice(
         adapter, 
-        D3D_FEATURE_LEVEL_11_0, 
+        D3D_FEATURE_LEVEL_1_0_CORE,
         IID_PPV_ARGS(&m_d3d)));
 
     if (debugLayersEnabled)
