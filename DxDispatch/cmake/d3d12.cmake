@@ -113,10 +113,6 @@ function(init_d3d12_target_nuget target_name pkg_id pkg_version pkg_hash)
     )
     
     target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_VERSION=${agility_sdk_version})
-    
-    # It is preferred to place the redist DLLs in a subfolder of the application to avoid mismatching
-    # the debug layer and product interfaces.
-    target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_PATH=u8"./D3D12/")
 
     target_append_redist_file(${target_name} "${bin_path}/D3D12Core.dll" "D3D12/D3D12Core.dll")
     target_append_redist_file(${target_name} "${bin_path}/d3d12SDKLayers.dll" "D3D12/d3d12SDKLayers.dll")
@@ -143,6 +139,7 @@ function(init_d3d12_target_gdk target_name)
         xmem.lib
     )
 
+    target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_VERSION=0)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "GDK")
 endfunction()
 
@@ -154,6 +151,8 @@ function(init_d3d12_target_winsdk target_name)
         message(FATAL_ERROR "The SDK version of D3D12 only works on Windows")
     endif()
 
+    target_link_libraries(${target_name} INTERFACE Microsoft::DirectX-Headers Microsoft::DirectX-Guids)
+    target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_VERSION=0)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "Windows SDK")
 endfunction()
 
@@ -164,6 +163,7 @@ function(init_d3d12_target_wsl target_name)
     target_link_libraries(${target_name} INTERFACE Microsoft::DirectX-Headers Microsoft::DirectX-Guids)
     target_link_directories(${target_name} INTERFACE /usr/lib/wsl/lib)
     target_include_directories(${target_name} INTERFACE ${dxheaders_SOURCE_DIR}/include/directx)
+    target_compile_definitions(${target_name} INTERFACE DIRECT3D_AGILITY_SDK_VERSION=0)
     set_property(TARGET ${target_name} PROPERTY DX_COMPONENT_CONFIG "WSL")
 endfunction()
 

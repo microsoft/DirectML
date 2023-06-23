@@ -23,6 +23,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    SetDisableAgilitySDK(args.DisableAgilitySDK());
+
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.

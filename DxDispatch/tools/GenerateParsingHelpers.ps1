@@ -1,7 +1,7 @@
 param
 (
     [string]$SchemaFilePath = "$PSScriptRoot\DmlSchema.json",
-    [string]$MaxFeatureLevel = "5.1"
+    [string]$MaxFeatureLevel = "6.1"
 )
 
 function ConvertSnakeToCamelCase($SnakeCaseName)
@@ -154,12 +154,11 @@ function WriteOperatorFunction($Operator)
         {
             $Cpp += "    desc->$($Field.Name) = AsPointer(ParseUInt32ArrayField(value, `"$($Field.Name)`", allocator, $Required));"
         }
-        elseif ($Field.Type -eq "operatorDesc")
+        elseif ($Field.Type -eq "fusedActivationOperatorDesc")
         {
-            $Fused = if ($Field.Name -eq 'FusedActivation') { 'true' } else { 'false' }
-            $Cpp += "    desc->$($Field.Name) = ParseDmlOperatorDescField(value, `"$($Field.Name)`", $Fused, allocator, $Required);"
+            $Cpp += "    desc->$($Field.Name) = ParseDmlOperatorDescField(value, `"$($Field.Name)`", true, allocator, $Required);"
         }
-        elseif ($Field.Type -eq "operatorDescArray")
+        elseif ($Field.Type -eq "fusedActivationOperatorDescArray")
         {
             $Cpp += "    desc->$($Field.Name) = AsPointer(ParseDmlOperatorDescArrayField(value, `"$($Field.Name)`", true, allocator, $Required));"
         }
@@ -237,7 +236,10 @@ $Cpp += "// $('='*100)"
 $Cpp += ""
 foreach ($Enum in $Schema.ApiEnums)
 {
-    $Cpp += WriteEnumParser $Enum
+    if (!$Enum.private)
+    {
+        $Cpp += WriteEnumParser $Enum
+    }
 }
 
 $Cpp += "// $('='*100)"

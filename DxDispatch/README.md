@@ -34,70 +34,6 @@ The exact system requirements vary depending on how you configure and run DxDisp
   - AMD: [Adrenalin 21.4.1 preview driver](https://www.amd.com/en/support/kb/release-notes/rn-rad-win-21-4-1-dx12-agility-sdk)
   - NVIDIA: drivers with version 466.11 or higher
 
-# Features and DirectX Components
-
-DxDispatch tries to depend on pre-built redistributable versions of its external dependencies. However, the build can be configured to use alternative sources when desired or necessary. Each component can use one of the available (✅) sources in the table below, with the <b><u>default</u></b> selection for each platform listed first. Not all configurations are tested, and some platforms don't include the optional<sup>+</sup> components.
-
-<table>
-  <tr>
-    <th>Platform</th>
-    <th><a href="https://docs.microsoft.com/windows/ai/directml/dml-intro">DirectML</a></th>
-    <th><a href="https://docs.microsoft.com/windows/win32/direct3d12/what-is-directx-12-">Direct3D 12</a></th>
-    <th><a href="https://github.com/microsoft/DirectXShaderCompiler">DX Compiler</a><sup>+</sup></th>
-    <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">PIX Event Runtime</a><sup>+</sup></th>
-    <th><a href="https://onnxruntime.ai/">ONNX Runtime</a><sup>+</sup></th>
-  </tr>
-  <tr>
-    <td>Windows - x64</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
-    <td><b>✅ <u>archive</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-  </tr>
-  <tr>
-    <td>Windows - x86</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
-    <td>❌ none</td>
-    <td>❌ none</td>
-    <td><b>✅ <u>nuget</u></b></td>
-  </tr>
-  <tr>
-    <td>Windows - ARM64</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
-    <td><b>✅ <u>archive</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-  </tr>
-  <tr>
-    <td>Linux - x64 (WSL)</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ local</td>
-    <td><b>✅ <u>wsl</u></b></td>
-    <td>❌ none</td>
-    <td>❌ none</td>
-    <td>❌ none</td>
-  </tr>
-  <!-- <tr>
-    <td>Xbox Scarlett</td>
-    <td><b>✅ <u>local</u></b></td>
-    <td><b>✅ <u>gdk</u></b></td>
-    <td><b>✅ <u>gdk</u></b></td>
-    <td><b>✅ <u>gdk</u></b></td>
-    <td><b>✅ <u>local</u></b></td>
-  </tr> -->
-</table>
-
-The default redistributable versions of components (e.g. nuget, archives):
-- **DirectML (nuget)**: [Microsoft.AI.DirectML (1.12.0)](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.12.0) - 2023/05/18
-- **Direct3D 12 (nuget)**: [Microsoft.Direct3D.D3D12 (1.610.2)](https://www.nuget.org/packages/Microsoft.Direct3D.D3D12/1.610.2) -  2023/04/20
-- **DX Compiler (archive)**: [December 2022 (v1.7.2212.1)](https://github.com/microsoft/DirectXShaderCompiler/releases/tag/v1.7.2212.1) - 2023/03/02
-- **PIX Event Runtime (nuget)**: [WinPixEventRuntime (1.0.230302001)](https://www.nuget.org/packages/WinPixEventRuntime/1.0.230302001) - 2023/03/02
-- **ONNX Runtime (nuget)**: [Microsoft.ML.OnnxRuntime.DirectML (1.14.1)](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML/1.14.1) - 2023/02/27
-
-Configuration is done using CMake cache variables. For example, Direct3D can be switched to a system dependency by adding `-DDXD_DIRECT3D_TYPE=winsdk` to the command line when first configuring the project. Use `cmake-gui` or `ccmake` to view the available variables.
-
 # Building, Testing, and Installing
 
 DxDispatch relies on several external dependencies that are downloaded when the project is configured. See [ThirdPartyNotices.txt](./ThirdPartyNotices.txt) for relevant license info.
@@ -132,3 +68,60 @@ To run tests, change your working directory to the build folder and execute `cte
 > cd build\<configure_preset_name>
 > ctest -C Release .
 ```
+
+# Build Configuration
+
+DxDispatch tries to depend on pre-built redistributable versions of its external dependencies. However, the build can be configured to use alternative sources when desired or necessary. Each component can use one of the available (✅) sources in the table below, with the <b><u>default</u></b> selection for each platform listed first. Not all configurations are tested, and some platforms don't include the optional<sup>+</sup> components.
+
+<table>
+  <tr>
+    <th>Preset</th>
+    <th><a href="https://docs.microsoft.com/windows/ai/directml/dml-intro">DirectML</a></th>
+    <th><a href="https://docs.microsoft.com/windows/win32/direct3d12/what-is-directx-12-">Direct3D 12</a></th>
+    <th><a href="https://github.com/microsoft/DirectXShaderCompiler">DX Compiler</a><sup>+</sup></th>
+    <th><a href="https://devblogs.microsoft.com/pix/winpixeventruntime/">PIX Event Runtime</a><sup>+</sup></th>
+    <th><a href="https://onnxruntime.ai/">ONNX Runtime</a><sup>+</sup></th>
+  </tr>
+  <tr>
+    <td>win-x64</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
+    <td><b>✅ <u>archive</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+  </tr>
+  <tr>
+    <td>win-x86</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
+    <td>❌ none</td>
+    <td>❌ none</td>
+    <td><b>✅ <u>nuget</u></b></td>
+  </tr>
+  <tr>
+    <td>win-arm64</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
+    <td><b>✅ <u>archive</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+  </tr>
+  <tr>
+    <td>linux-x64</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ local</td>
+    <td><b>✅ <u>wsl</u></b></td>
+    <td>❌ none</td>
+    <td>❌ none</td>
+    <td>❌ none</td>
+  </tr>
+  <tr>
+    <td>xbox-scarlett</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ local</td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>gdk</u></b></td>
+    <td><b>✅ <u>local</u></b></td>
+  </tr>
+</table>
+
+Refer to the respective CMake files ([directml.cmake](cmake/directml.cmake), [d3d12.cmake](cmake/d3d12.cmake), [dxcompiler.cmake](cmake/dxcompiler.cmake), [pix.cmake](cmake/pix.cmake), [onnxruntime.cmake](cmake/onnxruntime.cmake)) for descriptions of the CMake cache variables that can be set to change the build configuration. CMake cache variables persist, so make sure to reconfigure or delete your build directory when changing variables.

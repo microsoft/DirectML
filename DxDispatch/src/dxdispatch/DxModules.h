@@ -2,6 +2,9 @@
 
 #include "ModuleInfo.h"
 
+// Must be called before D3D12 is loaded.
+void SetDisableAgilitySDK(bool disableAgilitySDK);
+
 class Module
 {
 public:
