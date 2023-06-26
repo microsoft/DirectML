@@ -1010,6 +1010,14 @@ std::vector<std::byte> GenerateInitialValuesFromConstant(DML_TENSOR_DATA_TYPE da
     }
 }
 
+float randf(float minv = 0.0f, float maxv = 1.0f)
+{
+    if (minv >= maxv) return minv;
+
+    return (float)(rand() / (float)RAND_MAX) * (maxv - minv) + minv;
+    //return (float)(rand() / (float)RAND_MAX);
+};
+
 std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE dataType, const rapidjson::Value& object)
 {
     auto valueCount = ParseUInt32Field(object, "valueCount");
@@ -1017,10 +1025,13 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
     auto AsBytes = [=,&object](auto& parser, auto defaultValue)->std::vector<std::byte>
     {
         auto value = parser(object, "valueStart", true, defaultValue);
+        //auto value = randf();
         auto valueDelta = parser(object, "valueDelta", true, defaultValue);
 
         std::vector<std::byte> allBytes;
         allBytes.reserve(sizeof(value) * valueCount);
+        //allBytes.reserve(sizeof(float) * valueCount);
+
         for (size_t i = 0; i < valueCount; i++)
         {
             for (auto byte : gsl::as_bytes(gsl::make_span(&value, 1)))
@@ -1028,10 +1039,29 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
                 allBytes.push_back(byte);
             }
             value += valueDelta;
+            if (value > 3)
+            {
+                //reset
+                value = 0.001;
+            }
+            //value = randf();
         }
+
+#if 0
+        for (size_t i = 0; i < valueCount; i++)
+        {
+            float val = randf();
+            for (auto byte : gsl::as_bytes(gsl::make_span(&val,1)))
+            {
+                allBytes.push_back(byte);
+            }
+            //value += valueDelta;
+        }
+#endif
         return allBytes;
     };
 
+    
     switch (dataType)
     {
     case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, half_float::half(0));
