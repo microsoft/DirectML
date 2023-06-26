@@ -472,9 +472,9 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
     {
         for (auto& binding : m_mergedBindings)
         {
-            LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name));
-            LogInfo(fmt::format("  Resource  = {}", binding.resourceType));
-            LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)));
+            //LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name));
+            //LogInfo(fmt::format("  Resource  = {}", binding.resourceType));
+            //LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)));
             std::string shapeString = "[";
             for (size_t i = 0; i < binding.shape.size(); i++)
             {

@@ -357,6 +357,7 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
     uint32_t elementCount = view.desc.initialValues.size() / Device::GetSizeInBytes(view.desc.initialValuesDataType);
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
+    printf("elementCount=%d\n", elementCount);
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {
         os << values[elementIndex];
@@ -364,6 +365,7 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
         {
             os << ", ";
         }
+
     }
     return os;
 }
@@ -399,7 +401,12 @@ void Executor::operator()(const Model::PrintCommand& command)
         auto outputValues = m_device->Download(resource.Get());
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-        LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
+        // print only output tensor
+        if (command.resourceName == "output")
+        {
+            LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
+        }
+        
     }
     catch (const std::exception& e)
     {
@@ -441,7 +448,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         }
 
         file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
-        LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath));
+        //LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath));
     }
     catch (const std::exception& e)
     {
