@@ -55,6 +55,9 @@ include(cmake/onnxruntime.cmake)
 add_onnxruntime_target(onnxruntime CACHE_PREFIX DXD)
 get_target_property(onnxruntime_type onnxruntime DX_COMPONENT_CONFIG)
 
+include(cmake/onnxruntime_extensions.cmake)
+add_onnxruntime_extensions_target(onnxruntime_extensions CACHE_PREFIX DXD)
+
 # ==============================================================================
 # Model Library
 # ==============================================================================
@@ -94,6 +97,7 @@ get_target_property(dxcompiler_config dxcompiler DX_COMPONENT_CONFIG)
 get_target_property(pix_config pix DX_COMPONENT_CONFIG)
 get_target_property(gdk_config gdk DX_COMPONENT_CONFIG)
 get_target_property(ort_config onnxruntime DX_COMPONENT_CONFIG)
+get_target_property(ort_extensions_config onnxruntime_extensions DX_COMPONENT_CONFIG)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
 
 add_executable(
@@ -155,6 +159,7 @@ target_link_libraries(
     gdk
     wil
     onnxruntime
+    onnxruntime_extensions
 )
 
 target_compile_features(dxdispatch PRIVATE cxx_std_17)

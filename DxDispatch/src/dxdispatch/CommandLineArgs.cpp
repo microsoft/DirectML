@@ -10,11 +10,12 @@
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
         auto banner = fmt::format(R"({} version {}
-  DirectML     : {}
-  D3D12        : {}
-  DXCompiler   : {}
-  PIX          : {}
-  ONNX Runtime : {}
+  DirectML       : {}
+  D3D12          : {}
+  DXCompiler     : {}
+  PIX            : {}
+  ONNX Runtime   : {}
+  ORT Extensions : {}
 )",
         c_projectName, 
         c_projectVersion,
@@ -22,7 +23,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         c_d3d12Config,
         c_dxcompilerConfig,
         c_pixConfig,
-        c_ortConfig);
+        c_ortConfig,
+        c_ortExtensionsConfig);
     
     cxxopts::Options options(c_projectName, banner);
     options.add_options()

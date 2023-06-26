@@ -9,3 +9,4 @@ static constexpr auto c_dxcompilerConfig = "@dxcompiler_config@";
 static constexpr auto c_pixConfig = "@pix_config@";
 static constexpr auto c_gdkConfig = "@gdk_config@";
 static constexpr auto c_ortConfig = "@ort_config@";
+static constexpr auto c_ortExtensionsConfig = "@ort_extensions_config@";

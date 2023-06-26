@@ -105,4 +105,5 @@ void PrintDependencies()
     PrintModuleInfo("DXCompiler", GetModuleInfo(c_dxcompilerModuleName), c_dxcompilerConfig);
     PrintModuleInfo("PIX", GetModuleInfo(c_pixModuleName), c_pixConfig);
     PrintModuleInfo("ONNX Runtime", GetModuleInfo(c_ortModuleName), c_ortConfig);
+    PrintModuleInfo("ORT Extensions", GetModuleInfo(c_ortExtensionsModuleName), c_ortExtensionsConfig);
 }
