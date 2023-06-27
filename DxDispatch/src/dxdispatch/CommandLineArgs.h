@@ -47,6 +47,7 @@ public:
     std::optional<uint32_t> GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
     std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; }
     bool PrintVerboseOnnxBindingInfo() const { return m_onnxPrintVerboseBindingInfo; } 
+    bool OrtExtensionsEnabled() const { return m_ortExtensionsEnabled; }
 
 private:
     bool m_showAdapters = false;
@@ -94,4 +95,5 @@ private:
     std::optional<uint32_t> m_onnxGraphOptimizationLevel;
     std::optional<uint32_t> m_onnxLoggingLevel;
     bool m_onnxPrintVerboseBindingInfo = false;
+    bool m_ortExtensionsEnabled = false;
 };

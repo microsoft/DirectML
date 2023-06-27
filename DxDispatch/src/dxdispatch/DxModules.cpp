@@ -34,6 +34,15 @@ Module::Module(const char* moduleName)
 #endif
 }
 
+Module::Module(void* handle)
+{
+#ifdef WIN32
+    m_module.reset(reinterpret_cast<HMODULE>(handle));
+#else
+    m_module = handle;
+#endif
+}
+
 Module::Module(Module&& other)
 {
     m_module = std::move(other.m_module);

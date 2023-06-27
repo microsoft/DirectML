@@ -203,6 +203,14 @@ void OnnxDispatchable::Initialize()
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
 
+    if (m_args.OrtExtensionsEnabled())
+    {
+        void* handle = nullptr;
+        Ort::ThrowOnError(ortApi.RegisterCustomOpsLibrary(sessionOptions, "ortextensions.dll", &handle));
+        m_ortExtensionsModule.emplace(handle);
+        handle = nullptr;
+    }
+
     GraphOptimizationLevel graphOptimizationLevel = m_args.GetOnnxGraphOptimizationLevel() ? 
         static_cast<GraphOptimizationLevel>(*m_args.GetOnnxGraphOptimizationLevel()) :
         static_cast<GraphOptimizationLevel>(m_desc.graphOptimizationLevel);
