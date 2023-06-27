@@ -10,11 +10,12 @@
 CommandLineArgs::CommandLineArgs(int argc, char** argv)
 {
         auto banner = fmt::format(R"({} version {}
-  DirectML     : {}
-  D3D12        : {}
-  DXCompiler   : {}
-  PIX          : {}
-  ONNX Runtime : {}
+  DirectML       : {}
+  D3D12          : {}
+  DXCompiler     : {}
+  PIX            : {}
+  ONNX Runtime   : {}
+  ORT Extensions : {}
 )",
         c_projectName, 
         c_projectVersion,
@@ -22,7 +23,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         c_d3d12Config,
         c_dxcompilerConfig,
         c_pixConfig,
-        c_ortConfig);
+        c_ortConfig,
+        c_ortExtensionsConfig);
     
     cxxopts::Options options(c_projectName, banner);
     options.add_options()
@@ -178,6 +180,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "p,print_onnx_bindings",
             "Prints verbose ONNX model binding information.",
+            cxxopts::value<bool>()
+        )
+        (
+            "x,enable_ort_extensions",
+            "Enable use of custom operators in ortextensions.dll.",
             cxxopts::value<bool>()
         )
         ;
@@ -415,6 +422,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("print_onnx_bindings")) 
     { 
         m_onnxPrintVerboseBindingInfo = result["print_onnx_bindings"].as<bool>(); 
+    }
+
+    if (result.count("enable_ort_extensions")) 
+    { 
+        m_ortExtensionsEnabled = result["enable_ort_extensions"].as<bool>(); 
     }
 
     m_helpText = options.help();

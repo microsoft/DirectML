@@ -9,6 +9,7 @@ class Module
 {
 public:
     explicit Module(const char* moduleName);
+    explicit Module(void* handle);
     Module(const Module&) = delete;
     Module(Module&& other);
     Module& operator=(Module&& other);

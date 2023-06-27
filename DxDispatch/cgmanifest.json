@@ -119,6 +119,15 @@
           "version": "1.15.0"
         }
       }
+    },
+    {
+      "component": {
+        "type": "nuget",
+        "nuget": {
+          "name": "Microsoft.ML.OnnxRuntime.Extensions",
+          "version": "0.8.0"
+        }
+      }
     }
   ],
   "Version": 1
