@@ -42,6 +42,4 @@ private:
     std::vector<TensorBinding> m_mergedBindings;
 
     std::optional<Ort::IoBinding> m_ioBindings;
-
-    std::optional<Module> m_ortExtensionsModule;
 };
