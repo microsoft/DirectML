@@ -208,7 +208,7 @@ void OnnxDispatchable::Initialize()
         // NOTE: ORT appears to free the library, despite API comments suggesting otherwise, so the handle isn't used
         // or stored to avoid a double free.
         void* handle = nullptr;
-        Ort::ThrowOnError(ortApi.RegisterCustomOpsLibrary(sessionOptions, "ortextensions.dll", &handle));
+        Ort::ThrowOnError(ortApi.RegisterCustomOpsLibrary(sessionOptions, c_ortExtensionsModuleName, &handle));
     }
 
     GraphOptimizationLevel graphOptimizationLevel = m_args.GetOnnxGraphOptimizationLevel() ? 
