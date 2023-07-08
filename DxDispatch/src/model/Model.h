@@ -121,6 +121,14 @@ public:
         std::string resourceName;
     };
 
+    struct PrintInitTemporaryCommand
+    {
+    };
+
+    struct PrintExecTemporaryCommand
+    {
+    };
+
     struct WriteFileCommand
     {
         std::string resourceName;
@@ -128,7 +136,7 @@ public:
         std::vector<uint32_t> dimensions; // The resources don't store their dimensions. So repeat them here.
     };
 
-    using Command = std::variant<DispatchCommand, PrintCommand, WriteFileCommand>;
+    using Command = std::variant<DispatchCommand, PrintCommand, PrintInitTemporaryCommand, PrintExecTemporaryCommand, WriteFileCommand>;
 
     Model() = default;
 

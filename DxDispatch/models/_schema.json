@@ -398,6 +398,16 @@
             "required": ["resource"]
         },
 
+        "printInitTemporaryCommand":
+        {
+            "type": "object"
+        },
+
+        "printExecTemporaryCommand":
+        {
+            "type": "object"
+        },
+
         "command": 
         {
             "type": "object",
@@ -406,7 +416,7 @@
                 "type": 
                 {
                     "type": "string",
-                    "enum": ["dispatch", "print"],
+                    "enum": ["dispatch", "print", "printInitTemporary", "printExecTemporary"],
                     "description": "The type of command"
                 }
             },

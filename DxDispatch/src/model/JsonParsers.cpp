@@ -1470,6 +1470,18 @@ Model::PrintCommand ParsePrintCommand(const rapidjson::Value& object)
     return command;
 }
 
+Model::PrintInitTemporaryCommand ParsePrintInitTemporaryCommand(const rapidjson::Value& object)
+{
+    Model::PrintInitTemporaryCommand command = {};
+    return command;
+}
+
+Model::PrintExecTemporaryCommand ParsePrintExecTemporaryCommand(const rapidjson::Value& object)
+{
+    Model::PrintExecTemporaryCommand command = {};
+    return command;
+}
+
 Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object)
 {
     Model::WriteFileCommand command = {};
@@ -1494,6 +1506,14 @@ Model::Command ParseModelCommand(const rapidjson::Value& object)
     else if (!_stricmp(type.data(), "print")) 
     {
         command = ParsePrintCommand(object);
+    }
+    else if (!_stricmp(type.data(), "printInitTemporary")) 
+    {
+        command = ParsePrintInitTemporaryCommand(object);
+    }
+    else if (!_stricmp(type.data(), "printExecTemporary")) 
+    {
+        command = ParsePrintExecTemporaryCommand(object);
     }
     else if (!_stricmp(type.data(), "writeFile"))
     {

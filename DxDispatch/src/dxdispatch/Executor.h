@@ -10,6 +10,8 @@ public:
     void Run();
     void operator()(const Model::DispatchCommand& command);
     void operator()(const Model::PrintCommand& command);
+    void operator()(const Model::PrintInitTemporaryCommand& command);
+    void operator()(const Model::PrintExecTemporaryCommand& command);
     void operator()(const Model::WriteFileCommand& command);
 
 private:
@@ -21,4 +23,6 @@ private:
     const CommandLineArgs& m_commandLineArgs;
     std::unordered_map<std::string, std::unique_ptr<Dispatchable>> m_dispatchables;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_resources;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_initTemporaryBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_execTemporaryBuffer;
 };

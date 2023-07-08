@@ -24,4 +24,8 @@ struct Dispatchable
     virtual void Bind(const Bindings& bindings, uint32_t iteration) = 0;
     virtual void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) = 0;
     virtual void Wait() = 0;
+
+    virtual ID3D12Resource* GetInitTemporaryBuffer() const { return nullptr; }
+    virtual ID3D12Resource* GetExecTemporaryBuffer() const { return nullptr; }
+    virtual ID3D12Resource* GetPersistentBuffer() const { return nullptr; }
 };

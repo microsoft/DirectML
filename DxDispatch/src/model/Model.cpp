@@ -82,6 +82,14 @@ Model::Model(
                             printCommand.resourceName));
                     }
                 },
+                [&](PrintInitTemporaryCommand& printCommand)
+                {
+                    // Nothing to validate here
+                },
+                [&](PrintExecTemporaryCommand& printCommand)
+                {
+                    // Nothing to validate here
+                },
                 [&](WriteFileCommand& writeFileCommand)
                 {
                     if (m_resourceDescsByName.find(writeFileCommand.resourceName) == m_resourceDescsByName.end())

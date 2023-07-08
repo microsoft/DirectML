@@ -14,6 +14,10 @@ public:
     void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 
+    ID3D12Resource* GetInitTemporaryBuffer() const final { return m_initTemporaryBuffer.Get(); }
+    ID3D12Resource* GetExecTemporaryBuffer() const final { return m_execTemporaryBuffer.Get(); }
+    ID3D12Resource* GetPersistentBuffer() const final { return m_persistentBuffer.Get(); }
+
 private:
     std::string m_name;
     std::shared_ptr<Device> m_device;
@@ -21,6 +25,8 @@ private:
     Dispatchable::Bindings m_initBindings;
     Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
     Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_initTemporaryBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_execTemporaryBuffer;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
     Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;

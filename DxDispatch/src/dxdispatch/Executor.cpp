@@ -175,6 +175,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 timer.Start();
                 PIXBeginEvent(PIX_COLOR(128,255,0), L"Init");
                 dispatchable.second->Initialize();
+                m_initTemporaryBuffer = dispatchable.second->GetInitTemporaryBuffer();
                 PIXEndEvent();
                 timer.End();
 
@@ -235,6 +236,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             try
             {
                 dispatchable->Bind(bindings, iterationsCompleted);
+                m_execTemporaryBuffer = dispatchable->GetExecTemporaryBuffer();
             }
             catch (const std::exception& e)
             {
@@ -404,6 +406,50 @@ void Executor::operator()(const Model::PrintCommand& command)
     catch (const std::exception& e)
     {
         LogError(fmt::format("Failed to print resource: {}", e.what()));
+    }
+}
+
+void Executor::operator()(const Model::PrintInitTemporaryCommand& command)
+{
+    if (!m_initTemporaryBuffer)
+    {
+        return;
+    }
+
+    PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Print: Init Temporary Buffer");
+
+    try
+    {
+        auto outputValues = m_device->Download(m_initTemporaryBuffer.Get());
+        Model::BufferDesc bufferDesc;
+        bufferDesc.sizeInBytes = m_initTemporaryBuffer->GetDesc().Width;
+        LogInfo(fmt::format("Init Temporary Buffer: {}", ToString(outputValues, bufferDesc)));
+    }
+    catch (const std::exception& e)
+    {
+        LogError(fmt::format("Failed to print the init temporary buffer: {}", e.what()));
+    }
+}
+
+void Executor::operator()(const Model::PrintExecTemporaryCommand& command)
+{
+    if (!m_execTemporaryBuffer)
+    {
+        return;
+    }
+
+    PIXScopedEvent(m_device->GetCommandList(), PIX_COLOR(255,255,0), "Print: Exec Temporary Buffer");
+
+    try
+    {
+        auto outputValues = m_device->Download(m_execTemporaryBuffer.Get());
+        Model::BufferDesc bufferDesc;
+        bufferDesc.sizeInBytes = m_execTemporaryBuffer->GetDesc().Width;
+        LogInfo(fmt::format("Exec Temporary Buffer: {}", ToString(outputValues, bufferDesc)));
+    }
+    catch (const std::exception& e)
+    {
+        LogError(fmt::format("Failed to print the exec temporary buffer: {}", e.what()));
     }
 }
 
