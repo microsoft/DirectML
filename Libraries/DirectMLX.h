@@ -1439,7 +1439,7 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         TensorDesc scaleTensor = scale.Impl()->GetOutputDesc();
         TensorDesc zeroPointTensor = zeroPoint.Impl()->GetOutputDesc();
-        TensorDesc outputTensor(DML_TENSOR_DATA_TYPE_FLOAT32, inputTensor.sizes, builder->GetTensorPolicy());
+        TensorDesc outputTensor(scaleTensor.dataType, inputTensor.sizes, builder->GetTensorPolicy());
 
         DML_ELEMENT_WISE_DEQUANTIZE_LINEAR_OPERATOR_DESC desc = {};
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
