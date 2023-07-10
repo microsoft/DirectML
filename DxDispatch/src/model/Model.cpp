@@ -84,11 +84,17 @@ Model::Model(
                 },
                 [&](PrintInitTemporaryCommand& printCommand)
                 {
-                    // Nothing to validate here
+                    if (printCommand.dataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                    {
+                        throw std::invalid_argument("Command attempts to reinterpret the buffer as an UNKNOWN data type, which is invalid");
+                    }
                 },
                 [&](PrintExecTemporaryCommand& printCommand)
                 {
-                    // Nothing to validate here
+                    if (printCommand.dataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                    {
+                        throw std::invalid_argument("Command attempts to reinterpret the buffer as an UNKNOWN data type, which is invalid");
+                    }
                 },
                 [&](WriteFileCommand& writeFileCommand)
                 {

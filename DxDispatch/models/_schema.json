@@ -400,12 +400,54 @@
 
         "printInitTemporaryCommand":
         {
-            "type": "object"
+            "type": "object",
+            "properties":
+            {
+                "dataType":
+                { 
+                    "$ref": "#/$defs/dmlTensorDataType",
+                    "description": "Data type to reinterpret the temporary buffer as"
+                },
+                "offset":
+                {
+                    "type": "integer",
+                    "inclusiveMinimum": 0,
+                    "description": "Offset to start reading the buffer from. If omitted, start from 0."
+                },
+                "sizeInBytes":
+                {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "description": "How many bytes to print. If omitted, print the entire buffer."
+                }
+            },
+            "required": ["dataType"]
         },
 
         "printExecTemporaryCommand":
         {
-            "type": "object"
+            "type": "object",
+            "properties":
+            {
+                "dataType":
+                { 
+                    "$ref": "#/$defs/dmlTensorDataType",
+                    "description": "Data type to reinterpret the temporary buffer as"
+                },
+                "offset":
+                {
+                    "type": "integer",
+                    "inclusiveMinimum": 0,
+                    "description": "Offset to start reading the buffer from. If omitted, start from 0."
+                },
+                "sizeInBytes":
+                {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "description": "How many bytes to print. If omitted, print the entire buffer."
+                }
+            },
+            "required": ["dataType"]
         },
 
         "command": 

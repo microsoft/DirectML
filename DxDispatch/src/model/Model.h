@@ -123,10 +123,16 @@ public:
 
     struct PrintInitTemporaryCommand
     {
+        DML_TENSOR_DATA_TYPE dataType;
+        uint64_t offset;
+        uint64_t sizeInBytes;
     };
 
     struct PrintExecTemporaryCommand
     {
+        DML_TENSOR_DATA_TYPE dataType;
+        uint64_t offset;
+        uint64_t sizeInBytes;
     };
 
     struct WriteFileCommand

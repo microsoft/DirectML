@@ -47,7 +47,15 @@
             }
         },
         { "type": "print", "resource": "output" },
-        { "type": "printInitTemporary" },
-        { "type": "printExecTemporary" }
+        {
+            "type": "printInitTemporary",
+            "dataType": "FLOAT16",
+            "offset": 0
+        },
+        {
+            "type": "printExecTemporary",
+            "dataType": "FLOAT16",
+            "offset": 0
+        }
     ]
 }

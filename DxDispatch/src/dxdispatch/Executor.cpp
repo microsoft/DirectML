@@ -361,7 +361,16 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {
-        os << values[elementIndex];
+        // Printing uint8_t or int8_t directly prints the ASCII character instead of its numerical value
+        if constexpr (std::is_same_v<T, uint8_t> || std::is_same_v<T, int8_t>)
+        {
+            os << static_cast<int>(values[elementIndex]);
+        }
+        else
+        {
+            os << values[elementIndex];
+        }
+
         if (elementIndex < elementCount - 1)
         {
             os << ", ";
@@ -422,7 +431,10 @@ void Executor::operator()(const Model::PrintInitTemporaryCommand& command)
     {
         auto outputValues = m_device->Download(m_initTemporaryBuffer.Get());
         Model::BufferDesc bufferDesc;
-        bufferDesc.sizeInBytes = m_initTemporaryBuffer->GetDesc().Width;
+        bufferDesc.sizeInBytes = command.sizeInBytes == 0 ? m_initTemporaryBuffer->GetDesc().Width : command.sizeInBytes;
+        bufferDesc.initialValuesDataType = command.dataType;
+        bufferDesc.initialValuesOffsetInBytes = command.offset;
+        bufferDesc.initialValues = outputValues;
         LogInfo(fmt::format("Init Temporary Buffer: {}", ToString(outputValues, bufferDesc)));
     }
     catch (const std::exception& e)
@@ -444,7 +456,10 @@ void Executor::operator()(const Model::PrintExecTemporaryCommand& command)
     {
         auto outputValues = m_device->Download(m_execTemporaryBuffer.Get());
         Model::BufferDesc bufferDesc;
-        bufferDesc.sizeInBytes = m_execTemporaryBuffer->GetDesc().Width;
+        bufferDesc.sizeInBytes = command.sizeInBytes == 0 ? m_execTemporaryBuffer->GetDesc().Width : command.sizeInBytes;
+        bufferDesc.initialValuesDataType = command.dataType;
+        bufferDesc.initialValuesOffsetInBytes = command.offset;
+        bufferDesc.initialValues = outputValues;
         LogInfo(fmt::format("Exec Temporary Buffer: {}", ToString(outputValues, bufferDesc)));
     }
     catch (const std::exception& e)

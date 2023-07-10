@@ -1473,12 +1473,18 @@ Model::PrintCommand ParsePrintCommand(const rapidjson::Value& object)
 Model::PrintInitTemporaryCommand ParsePrintInitTemporaryCommand(const rapidjson::Value& object)
 {
     Model::PrintInitTemporaryCommand command = {};
+    command.dataType = ParseDmlTensorDataTypeField(object, "dataType");
+    command.offset = ParseUInt64Field(object, "offset", false, 0);
+    command.sizeInBytes = ParseUInt64Field(object, "sizeInBytes", false, 0);
     return command;
 }
 
 Model::PrintExecTemporaryCommand ParsePrintExecTemporaryCommand(const rapidjson::Value& object)
 {
     Model::PrintExecTemporaryCommand command = {};
+    command.dataType = ParseDmlTensorDataTypeField(object, "dataType");
+    command.offset = ParseUInt64Field(object, "offset", false, 0);
+    command.sizeInBytes = ParseUInt64Field(object, "sizeInBytes", false, 0);
     return command;
 }
 
