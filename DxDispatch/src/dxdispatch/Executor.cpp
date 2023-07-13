@@ -406,6 +406,10 @@ void Executor::operator()(const Model::PrintCommand& command)
         {
             LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
         }
+        if (command.resourceName == "stackedKeyValue")
+        {
+            LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
+        }
         
     }
     catch (const std::exception& e)

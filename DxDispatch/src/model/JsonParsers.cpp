@@ -3,6 +3,8 @@
 #include "StdSupport.h"
 #include "NpyReaderWriter.h"
 
+#include <random>
+
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
@@ -1010,14 +1012,6 @@ std::vector<std::byte> GenerateInitialValuesFromConstant(DML_TENSOR_DATA_TYPE da
     }
 }
 
-float randf(float minv = 0.0f, float maxv = 1.0f)
-{
-    if (minv >= maxv) return minv;
-
-    return (float)(rand() / (float)RAND_MAX) * (maxv - minv) + minv;
-    //return (float)(rand() / (float)RAND_MAX);
-};
-
 std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE dataType, const rapidjson::Value& object)
 {
     auto valueCount = ParseUInt32Field(object, "valueCount");
@@ -1025,13 +1019,10 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
     auto AsBytes = [=,&object](auto& parser, auto defaultValue)->std::vector<std::byte>
     {
         auto value = parser(object, "valueStart", true, defaultValue);
-        //auto value = randf();
         auto valueDelta = parser(object, "valueDelta", true, defaultValue);
 
         std::vector<std::byte> allBytes;
         allBytes.reserve(sizeof(value) * valueCount);
-        //allBytes.reserve(sizeof(float) * valueCount);
-
         for (size_t i = 0; i < valueCount; i++)
         {
             for (auto byte : gsl::as_bytes(gsl::make_span(&value, 1)))
@@ -1039,29 +1030,55 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
                 allBytes.push_back(byte);
             }
             value += valueDelta;
-            if (value > 3)
-            {
-                //reset
-                value = 0.001;
-            }
-            //value = randf();
         }
-
-#if 0
-        for (size_t i = 0; i < valueCount; i++)
-        {
-            float val = randf();
-            for (auto byte : gsl::as_bytes(gsl::make_span(&val,1)))
-            {
-                allBytes.push_back(byte);
-            }
-            //value += valueDelta;
-        }
-#endif
         return allBytes;
     };
 
-    
+    switch (dataType)
+    {
+    case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, half_float::half(0));
+    case DML_TENSOR_DATA_TYPE_FLOAT32: return AsBytes(ParseFloat32Field, 0.0f);
+    case DML_TENSOR_DATA_TYPE_FLOAT64: return AsBytes(ParseFloat64Field, 0.0);
+    case DML_TENSOR_DATA_TYPE_UINT8: return AsBytes(ParseUInt8Field, static_cast<uint8_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT16: return AsBytes(ParseUInt16Field, static_cast<uint16_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT32: return AsBytes(ParseUInt32Field, static_cast<uint32_t>(0));
+    case DML_TENSOR_DATA_TYPE_UINT64: return AsBytes(ParseUInt64Field, static_cast<uint64_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT8: return AsBytes(ParseInt8Field, static_cast<int8_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT16: return AsBytes(ParseInt16Field, static_cast<int16_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT32: return AsBytes(ParseInt32Field, static_cast<int32_t>(0));
+    case DML_TENSOR_DATA_TYPE_INT64: return AsBytes(ParseInt64Field, static_cast<int64_t>(0));
+    default: throw std::invalid_argument(fmt::format("Invalid tensor data type."));
+    }
+}
+
+std::vector<std::byte> GenerateInitialValuesFromRandom(DML_TENSOR_DATA_TYPE dataType, const rapidjson::Value& object)
+{
+    auto valueCount = ParseUInt32Field(object, "valueCount");
+    auto seed = ParseUInt32Field(object, "seed");
+    auto valueMin = ParseFloat32Field(object, "min");
+    auto valueMax = ParseFloat32Field(object, "max");
+
+    // randomize data
+    std::mt19937 random_generator(seed); // static, create it once!
+    std::uniform_real_distribution<float> uniform_distribution(valueMin, valueMax);
+
+    auto AsBytes = [&](auto& parser, auto defaultValue)->std::vector<std::byte>
+    {
+
+        std::vector<std::byte> allBytes;
+        allBytes.reserve(sizeof(defaultValue) * valueCount);
+        for (size_t i = 0; i < valueCount; i++)
+        {
+            const auto f32 = uniform_distribution(random_generator);
+            const auto value = static_cast<decltype(defaultValue)>(f32);
+            for (auto byte : gsl::as_bytes(gsl::make_span(&value, 1)))
+            {
+                allBytes.push_back(byte);
+            }
+        }
+        return allBytes;
+    };
+
     switch (dataType)
     {
     case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, half_float::half(0));
@@ -1191,6 +1208,11 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         {
             ensureInitialValuesDataType();
             buffer.initialValues = GenerateInitialValuesFromSequence(buffer.initialValuesDataType, initialValuesField->value);
+        }
+        else if (initialValuesField->value.HasMember("seed"))
+        {
+            ensureInitialValuesDataType();
+            buffer.initialValues = GenerateInitialValuesFromRandom(buffer.initialValuesDataType, initialValuesField->value);
         }
         // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
         else if (initialValuesField->value.HasMember("sourcePath"))
