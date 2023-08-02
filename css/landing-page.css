@@ -72,6 +72,14 @@ ul
   outline-offset: 2px;
 }
 
+.tab-button {
+  margin-right: 20px !important;
+}
+
+.tab-button.active {
+  background-color: #ccc;
+}
+
 #sidebar-btn, #sidebar-btn:active {
  background-color: transparent;
  border: none;
@@ -264,8 +272,8 @@ ul
  .showcase .showcase-text {
    padding-top: 2rem;
    padding-bottom: 2rem;
-   padding-left: 8rem;
-   padding-right: 8rem;
+   padding-left: 6rem;
+   padding-right: 6rem;
  }
 
  #download-div {
@@ -670,4 +678,12 @@ a:hover {
 
 .customer_img:hover {
   border: #c7c7c7 solid;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }
