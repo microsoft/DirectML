@@ -60,7 +60,7 @@
                     <div id="mainSubtext" style="color:white">Transform your Windows application with the power of Artificial Intelligence</div>
                   <div>
                     <a role="button"  target="_blank" href="#get-started" class="btn btn-custom mt-2 mr-2" id="learn-more" onclick="scrollToGetStarted()" >Get Started</a> 
-                    <a role="button" href="https://github.com/microsoft/DirectML" class="btn btn-custom mt-2 ml-2" id="download">GitHub</a>
+                    <a role="button" href="https://github.com/microsoft/DirectML" class="btn btn-custom mt-2 mr-2" id="download">GitHub</a>
                   </div><br/>
                 </div>
               </div>
@@ -100,7 +100,7 @@
       </div>
       <br>
       <div class="row justify-content-center">
-        <h2 id="mainSubtext" class="mb-3 mt-0" style="text-align: left">DirectML is already pre-installed on a huge range of Windows 10+ devices and is also available as a NuGet package. You can access DirectML from multiple supported languages (C++, Python, C#). Explore our <a href="#get-started">Get Started guide</a> and <a href="https://github.com/microsoft/DirectML">GitHub repo</a> to learn how to use DirectML to integrate machine learning models into your application  </h2>
+        <h2 id="mainSubtext" class="mb-3 mt-0" style="text-align: left">DirectML is already pre-installed on a huge range of Windows 10+ devices and is also available as a NuGet package. Explore our <a href="#get-started">Get Started guide</a> and <a href="https://github.com/microsoft/DirectML">GitHub repo</a> to learn how to use DirectML to integrate machine learning models into your application  </h2>
       </div>
     </div>
   </section>
@@ -109,7 +109,7 @@
 <section class="showcase" style="background-color:#8dc8e8; padding-top:2rem; padding-bottom:2rem">
   <div class="container">
     <div class="row justify-content-center">
-      <h2 class="mb-3 mt-0">Organizations and products leveraging DirectML</h2>
+      <h1 class="mb-3 mt-0">Organizations and products leveraging DirectML</h1>
     </div>
   </div>
 </section>
@@ -149,37 +149,58 @@
 <section id="get-started" class="showcase" style="background-color:#c4dfee; padding-top:2rem; padding-bottom:2rem">
   <div class="container">
     <div class="row justify-content-center">
-      <h2 class="mb-3 mt-0">Get started with DirectML and the ONNX Runtime</h2>
+      <h1 class="mb-3 mt-0">Get started with DirectML</h1>
     </div>
+    <div class="tab row justify-content-center">
+      <button class="tab-button btn btn-custom mt-2 mr-2" data-tab="tab1">DirectML and ONNX Runtime</button>
+      <button class="tab-button btn btn-custom mt-2 mr-2" data-tab="tab2">DirectML API</button>
+    </div>    
   </div>
 </section>
 
 <!-- Get started section, note that this was originally a showcase section -->
-  <section class="showcase">
+  <section class="showcase tab-content" id="tab1">
     <div class="container-fluid p-0">
       <div id="convert" class="row major-point no-gutters">
         <div class="col-lg-6 order-lg-1 mx-auto showcase-text">
-          <h2>1. Convert</h2>
+          <h2>DirectML and ONNX Runtime</h2>
+          <p class="lead mb-0">Pairing DirectML with the ONNX Runtime is often the fastest, easiest way for many developers to bring hardware-accelerated AI to their users at scale. These three steps are a general guide for using this powerful combo  </p>
+        </div>
+      </div>
+      <div class="col-lg-6 order-lg-1 mx-auto showcase-text">
+        <h3>1. Convert</h3>
           <p class="lead mb-0">The ONNX format enables you to leverage ONNX Runtime with DirectML, which provides cross-hardware capabilities. </p>
           <p class="lead mb-0">To convert your model to the ONNX format, you can utilize <a href="https://github.com/onnx/onnxmltools">ONNXMLTools</a> or <a href="https://github.com/microsoft/Olive#readme">Olive</a>. </p>
         </div>
       </div>
       <div id="optimize" class="row major-point no-gutters">
         <div class="col-lg-6 order-lg-2 mx-auto showcase-text">
-          <h2>2. Optimize</h2>
+          <h3>2. Optimize</h3>
           <p class="lead mb-0">Once you have an .onnx model, leverage <a href="https://github.com/microsoft/Olive/tree/main/examples/directml">Olive</a> powered by DirectML to optimize your model. You'll see dramatic performance improvements that you can deploy across the Windows hardware ecosystem. </p>          
-          </div>
+        </div>
       </div>
       <div id="integrate" class="row major-point no-gutters">
         <div class="col-lg-6 order-lg-1 mx-auto showcase-text" >
-          <h2>3. Integrate</h2>
-          <p class="lead mb-0">When your model is ready, it’s time to bring hardware-accelerated inferencing to your app with ONNX Runtime and DirectML.</p>
-          <p class="lead mb-0">We built some samples to show how you can use DirectML in a range of languages:</p>
-            <ul>
-              <li><a href="https://github.com/microsoft/DirectML/tree/master/Samples"> C++</a></li>
+          <h3>3. Integrate</h3>
+          <p class="lead mb-0">When your model is ready, it's time to bring hardware-accelerated inferencing to your app with ONNX Runtime and DirectML.</p>
+          <p class="lead mb-0">We built some samples to show how you can use DirectML and the ONNX Runtime in Python and C#:</p>
+            <ul> 
               <li><a href="https://github.com/microsoft/Olive/tree/main/examples/directml/stable_diffusion"> Python</a></li>
               <li><a href="https://github.com/onnxruntime/StableDiffusion-v1.5-Onnx-Demo"> C#</a></li>
             </ul>
+        </div>
+      </div>
+    </div>
+   </section>
+
+   <section class="showcase tab-content" id="tab2">
+    <div class="container-fluid p-0">
+      <div class="row major-point no-gutters">
+        <div class="col-lg-6 order-lg-1 mx-auto showcase-text">
+          <h2>DirectML API</h2>
+          <p class="lead mb-0">Even though DirectML can be accessed via other frameworks such as the ONNX Runtime, DirectML can also be accessed directly by developers familiar with C++.</p>
+          <p class="lead mb-0">It has a familiar (native C++, nano-COM) programming interface and workflow in the style of DirectX 12.</p>
+          <p class="lead mb-0">We recommend that developers start by looking at our <a href=https://learn.microsoft.com/en-us/windows/ai/directml/dml>Introduction to DirectML</a> and our <a href="https://learn.microsoft.com/en-us/windows/ai/directml/dml">DirectML overview</a>.</p>
         </div>
       </div>
     </div>
@@ -192,7 +213,7 @@
         <h2 class="mb-3 mt-0" style="text-align: left">Helpful Links</h2>
       </div>
       <div class="row justify-content-center">
-        <h2 id="mainSubtext" class="mb-3 mt-0" style="text-align: left">For some developers, this guide is just the beginning. For more documentation, samples and other helpful content see our <a href="links.html">Links page</a>. </h2>
+        <h2 id="mainSubtext" class="mb-3 mt-0" style="text-align: left">For more documentation, samples and other helpful content see our <a href="links.html">Links page</a>. </h2>
       </div>
     </div>
   </section>
