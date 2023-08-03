@@ -2181,6 +2181,59 @@ namespace dml
         return output;
     }
 
+    inline Expression AveragePooling1(
+        Expression input,
+        Span<const uint32_t> strides,
+        Span<const uint32_t> windowSizes,
+        Span<const uint32_t> startPadding,
+        Span<const uint32_t> endPadding,
+        Span<const uint32_t> dilations,
+        bool includePadding,
+        TensorDimensions outputSizes = {})
+    {
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        const uint32_t defaultStridesAndDilations[2] = { 1, 1 };
+
+        assert(strides.size() == windowSizes.size());
+        assert(strides.size() == startPadding.size());
+        assert(strides.size() == endPadding.size());
+        assert(dilations.empty() || dilations.size() == spatialDimensionCount);
+
+        // Calculate output size, if not explicitly provided
+        if (outputSizes.empty())
+        {
+            outputSizes.push_back(inputTensor.sizes[0]); // N
+            outputSizes.push_back(inputTensor.sizes[1]); // C
+            for (size_t i = 0; i < windowSizes.size(); ++i)
+            {
+                uint32_t paddedInputSize = inputTensor.sizes[2 + i] + startPadding[i] + endPadding[i];
+                uint32_t outputSize = (paddedInputSize - windowSizes[i]) / strides[i] + 1;
+                outputSizes.push_back(outputSize);
+            }
+        }
+
+        TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
+
+        DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
+        averagePoolDesc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        averagePoolDesc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        averagePoolDesc.DimensionCount = static_cast<uint32_t>(windowSizes.size());
+        averagePoolDesc.Strides = strides.data();
+        averagePoolDesc.WindowSize = windowSizes.data();
+        averagePoolDesc.StartPadding = startPadding.data();
+        averagePoolDesc.EndPadding = endPadding.data();
+        averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
+        averagePoolDesc.IncludePadding = includePadding;
+
+        detail::NodeOutput* const inputs[] = { input.Impl() };
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_AVERAGE_POOLING1, &averagePoolDesc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+
     // 
     // TODO: LpPooling
     // 
