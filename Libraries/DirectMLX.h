@@ -2181,6 +2181,8 @@ namespace dml
         return output;
     }
 
+#if DML_TARGET_VERSION >= 0x6200
+
     inline Expression AveragePooling1(
         Expression input,
         Span<const uint32_t> strides,
@@ -2233,6 +2235,8 @@ namespace dml
 
         return output;
     }
+
+#endif // DML_TARGET_VERSION >= 0x6200
 
     // 
     // TODO: LpPooling
