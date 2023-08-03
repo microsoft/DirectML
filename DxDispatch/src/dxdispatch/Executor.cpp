@@ -283,21 +283,37 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
     // GPU timings are capped at a fixed size ring buffer. The first samples may have been 
     // overwritten, in which case the warmup samples are dropped.
-    gpuTimings.rawSamples = m_device->ResolveTimingSamples();
-    assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
-    uint32_t gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
-    auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
+    Timings::SampleStats gpuStats = {};
+    uint32_t gpuSamplesOverwritten = 0;
+    if (!m_commandLineArgs.DisableGpuTiming())
+    {
+        gpuTimings.rawSamples = m_device->ResolveTimingSamples();
+        assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
+        gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
+        gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
+    }
 
     if (iterationsCompleted > 0)
     {
         if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)", 
-                command.dispatchableName, 
-                iterationsCompleted,
-                cpuStats.hot.median,
-                gpuStats.hot.median
-            ));
+            if (!m_commandLineArgs.DisableGpuTiming())
+            {
+                LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)", 
+                    command.dispatchableName, 
+                    iterationsCompleted,
+                    cpuStats.hot.median,
+                    gpuStats.hot.median
+                ));
+            }
+            else
+            {
+                LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU)",
+                    command.dispatchableName,
+                    iterationsCompleted,
+                    cpuStats.hot.median
+                ));
+            }
         }
         else
         {
@@ -309,21 +325,27 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 cpuStats.cold.count, cpuStats.cold.average, cpuStats.cold.min, cpuStats.cold.median, cpuStats.cold.max
             ));
 
-            LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-                gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
-            ));
+            if (!m_commandLineArgs.DisableGpuTiming())
+            {
+                LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                    gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
+                ));
+            }
 
             LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
                 cpuStats.hot.count, cpuStats.hot.average, cpuStats.hot.min, cpuStats.hot.median, cpuStats.hot.max
             ));
 
-            LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
-                gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
-            ));
-
-            if (gpuSamplesOverwritten > 0)
+            if (!m_commandLineArgs.DisableGpuTiming())
             {
-                LogInfo(fmt::format("GPU samples buffer has {} samples overwritten.", gpuSamplesOverwritten));
+                LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+                    gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
+                ));
+
+                if (gpuSamplesOverwritten > 0)
+                {
+                    LogInfo(fmt::format("GPU samples buffer has {} samples overwritten.", gpuSamplesOverwritten));
+                }
             }
         }
 
@@ -333,18 +355,27 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             for (uint32_t i = 0; i < iterationsCompleted; ++i)
             {
-                if (i < gpuSamplesOverwritten)
+                if (!m_commandLineArgs.DisableGpuTiming())
                 {
-                    // GPU samples are limited to a fixed size, so the initial iterations
-                    // may not have timing information (overwritten timestamps).
-                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)", 
-                        i, cpuTimings.rawSamples[i]
-                    ));
+                    if (i < gpuSamplesOverwritten)
+                    {
+                        // GPU samples are limited to a fixed size, so the initial iterations
+                        // may not have timing information (overwritten timestamps).
+                        LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)", 
+                            i, cpuTimings.rawSamples[i]
+                        ));
+                    }
+                    else
+                    {
+                        LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU), {:.4f} ms (GPU)",
+                            i, cpuTimings.rawSamples[i], gpuTimings.rawSamples[i - gpuSamplesOverwritten]
+                        ));
+                    }
                 }
                 else
                 {
-                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU), {:.4f} ms (GPU)",
-                        i, cpuTimings.rawSamples[i], gpuTimings.rawSamples[i - gpuSamplesOverwritten]
+                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)",
+                        i, cpuTimings.rawSamples[i]
                     ));
                 }
             }

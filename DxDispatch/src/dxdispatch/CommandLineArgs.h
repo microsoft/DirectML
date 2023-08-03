@@ -48,6 +48,7 @@ public:
     std::optional<uint32_t> GetOnnxGraphOptimizationLevel() const { return m_onnxGraphOptimizationLevel; }
     std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; }
     bool PrintVerboseOnnxBindingInfo() const { return m_onnxPrintVerboseBindingInfo; }
+    bool DisableGpuTiming() const { return m_onnxDisableGpuTiming; }
 
 private:
     bool m_showAdapters = false;
@@ -95,4 +96,5 @@ private:
     std::optional<uint32_t> m_onnxGraphOptimizationLevel;
     std::optional<uint32_t> m_onnxLoggingLevel;
     bool m_onnxPrintVerboseBindingInfo = false;
+    bool m_onnxDisableGpuTiming = false;
 };

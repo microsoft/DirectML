@@ -181,6 +181,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Prints verbose ONNX model binding information.",
             cxxopts::value<bool>()
         )
+        (
+            "x,onnx_disable_gpu_timing",
+            "Disables collection of GPU timing and PIX events surrounding ONNX Runtime.  This can decrease CPU time by preventing additional command list executions.",
+            cxxopts::value<bool>()
+            )
         ;
 
     options.positional_help("<PATH_TO_MODEL>");
@@ -416,6 +421,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("print_onnx_bindings")) 
     { 
         m_onnxPrintVerboseBindingInfo = result["print_onnx_bindings"].as<bool>(); 
+    }
+
+    if (result.count("onnx_disable_gpu_timing"))
+    {
+        m_onnxDisableGpuTiming = result["onnx_disable_gpu_timing"].as<bool>();
     }
 
     m_helpText = options.help();
