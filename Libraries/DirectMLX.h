@@ -2141,7 +2141,6 @@ namespace dml
 #if DML_TARGET_VERSION >= 0x6200
         Span<const uint32_t> dilations,
 #endif // DML_TARGET_VERSION >= 0x6200
-
         bool includePadding,
         TensorDimensions outputSizes = {})
     {
@@ -2156,7 +2155,6 @@ namespace dml
         DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
         assert(dilations.empty() || dilations.size() == spatialDimensionCount);
         averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
-        assert(!outputSizes.empty());
 #else
         DML_AVERAGE_POOLING_OPERATOR_DESC averagePoolDesc = {};
 #endif // DML_TARGET_VERSION >= 0x6200
