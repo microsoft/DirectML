@@ -3300,7 +3300,7 @@ namespace dml
     //   Scales = computed by dividing the output sizes by the input sizes
     //   InputPixelOffsets = 0.5f for each dimension
     //   OutputPixelOffsets = -0.5f for each dimension
-    dml::Expression Resample(
+    inline Expression Resample(
         Expression input,
         TensorDimensions outputSizes,
         DML_INTERPOLATION_MODE mode,
