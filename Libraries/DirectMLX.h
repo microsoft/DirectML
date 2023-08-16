@@ -2138,12 +2138,26 @@ namespace dml
         Span<const uint32_t> windowSizes,
         Span<const uint32_t> startPadding,
         Span<const uint32_t> endPadding,
+#if DML_TARGET_VERSION >= 0x6200
+        Span<const uint32_t> dilations,
+#endif // DML_TARGET_VERSION >= 0x6200
         bool includePadding,
         TensorDimensions outputSizes = {})
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
 
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+        const uint32_t defaultStridesAndDilations[3] = { 1, 1, 1 };
+        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
+        uint32_t spatialDimensionCount = dimensionCount - 2;
+
+#if DML_TARGET_VERSION >= 0x6200
+        DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
+        assert(dilations.empty() || dilations.size() == spatialDimensionCount);
+        averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
+#else
+        DML_AVERAGE_POOLING_OPERATOR_DESC averagePoolDesc = {};
+#endif // DML_TARGET_VERSION >= 0x6200
 
         assert(strides.size() == windowSizes.size());
         assert(strides.size() == startPadding.size());
@@ -2164,7 +2178,6 @@ namespace dml
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
 
-        DML_AVERAGE_POOLING_OPERATOR_DESC averagePoolDesc = {};
         averagePoolDesc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
         averagePoolDesc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
         averagePoolDesc.DimensionCount = static_cast<uint32_t>(windowSizes.size());
@@ -2175,7 +2188,12 @@ namespace dml
         averagePoolDesc.IncludePadding = includePadding;
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
+#if DML_TARGET_VERSION >= 0x6200
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_AVERAGE_POOLING1, &averagePoolDesc, inputs);
+#else
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_AVERAGE_POOLING, &averagePoolDesc, inputs);
+#endif // DML_TARGET_VERSION >= 0x6200
+
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
         return output;
