@@ -3314,6 +3314,9 @@ namespace dml
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
         assert(outputSizes.size() == dimensionCount);
+        assert(scales.empty() || scales.size() == dimensionCount);
+        assert(inputPixelOffsets.empty() || inputPixelOffsets.size() == dimensionCount);
+        assert(outputPixelOffsets.empty() || outputPixelOffsets.size() == dimensionCount);
 
         SmallVector<float, 4> defaultScales;
         if (scales.empty())
@@ -3346,7 +3349,7 @@ namespace dml
         desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.InterpolationMode = mode;
         desc.RoundingDirection = roundingDirection;
-        desc.DimensionCount = static_cast<UINT>(scales.size());
+        desc.DimensionCount = dimensionCount;
         desc.Scales = scales.data();
         desc.InputPixelOffsets = inputPixelOffsets.data();
         desc.OutputPixelOffsets = outputPixelOffsets.data();
