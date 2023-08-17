@@ -3322,7 +3322,9 @@ namespace dml
         Expression input,
         TensorDimensions outputSizes,
         DML_INTERPOLATION_MODE mode,
+#if DML_TARGET_VERSION >= 0x5100
         DML_AXIS_DIRECTION roundingDirection,
+#endif // DML_TARGET_VERSION >= 0x5100
         Span<const float> scales = {},
         Span<const float> inputPixelOffsets = {},
         Span<const float> outputPixelOffsets = {})
@@ -3362,18 +3364,29 @@ namespace dml
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
 
+#if DML_TARGET_VERSION >= 0x5100
         DML_RESAMPLE2_OPERATOR_DESC desc = {};
+        desc.RoundingDirection = roundingDirection;
+#else
+        DML_RESAMPLE1_OPERATOR_DESC desc = {};
+#endif // DML_TARGET_VERSION >= 0x5100
+
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.InterpolationMode = mode;
-        desc.RoundingDirection = roundingDirection;
         desc.DimensionCount = dimensionCount;
         desc.Scales = scales.data();
         desc.InputPixelOffsets = inputPixelOffsets.data();
         desc.OutputPixelOffsets = outputPixelOffsets.data();
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
+
+#if DML_TARGET_VERSION >= 0x5100
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE2, &desc, inputs);
+#else
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE1, &desc, inputs);
+#endif // DML_TARGET_VERSION >= 0x5100
+
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
         return output;
