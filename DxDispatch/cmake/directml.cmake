@@ -54,7 +54,7 @@ function(init_directml_cache_variables prefix)
 
     # <PREFIX>_DIRECTML_NUGET_HASH
     set(${prefix}_DIRECTML_NUGET_HASH 
-        29B7EC1B5B4112CFDE2DE587C0F3FC72ED799E29C236D6111237D7BC7E342CE9
+        814b628d826be37b244dddb55665bcdf68704db815ece9329452adb211946af6
         CACHE STRING "SHA256 hash of the DirectML NuGet package (TYPE == nuget)."
     )
 
