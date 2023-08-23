@@ -203,6 +203,11 @@ void OnnxDispatchable::Initialize()
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
 
+    if (m_args.ProfilingEnabled())
+    {
+        sessionOptions.EnableProfiling(L"DxDispatch");
+    }
+
     if (m_args.OrtExtensionsEnabled())
     {
         // NOTE: ORT appears to free the library, despite API comments suggesting otherwise, so the handle isn't used

@@ -48,6 +48,7 @@ public:
     std::optional<uint32_t> GetOnnxLoggingLevel() const { return m_onnxLoggingLevel; }
     bool PrintVerboseOnnxBindingInfo() const { return m_onnxPrintVerboseBindingInfo; } 
     bool OrtExtensionsEnabled() const { return m_ortExtensionsEnabled; }
+    bool ProfilingEnabled() const { return m_profilingEnabled; }
 
 private:
     bool m_showAdapters = false;
@@ -96,4 +97,5 @@ private:
     std::optional<uint32_t> m_onnxLoggingLevel;
     bool m_onnxPrintVerboseBindingInfo = false;
     bool m_ortExtensionsEnabled = false;
+    bool m_profilingEnabled = false;
 };
