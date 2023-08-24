@@ -65,7 +65,7 @@ class PatchExtractEncoder(tf.keras.layers.Layer):
         patches = tf.image.extract_patches(
             images=images,
             sizes=[1, self.patch_size, self.patch_size, 1],
-            strides=[1, self.patch_size, self.patch_size, 1],
+            strides=[1, self.patch_stride, self.patch_stride, 1],
             rates=[1, 1, 1, 1],
             padding="VALID",
         )
