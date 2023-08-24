@@ -88,7 +88,7 @@ callbacks_list = [checkpoint, reduce_on_plateau]
 model.fit(
     get_train_dataset(train_dataset),
     validation_data=validation_dataset,
-    validation_steps=10,
+    validation_steps=min(10, len(validation_dataset)),
     epochs=EPOCHS,
     callbacks=callbacks_list,
 )

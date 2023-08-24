@@ -9,7 +9,7 @@ from data_augmentations import random_hue_saturation, random_brightness_contrast
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 if __name__ == "__main__":
-    
+
     #You can uncomment the below line to view DirectML Device Placement logs for the model's operators
     #tf.debugging.set_log_device_placement(True) 
 
@@ -88,7 +88,7 @@ callbacks_list = [checkpoint, reduce_on_plateau]
 model.fit(
     get_train_dataset(train_dataset),
     validation_data=validation_dataset,
-    validation_steps=10,
+    validation_steps=min(10, len(validation_dataset)),
     epochs=EPOCHS,
     callbacks=callbacks_list,
 )
