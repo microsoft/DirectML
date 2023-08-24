@@ -157,6 +157,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<std::vector<std::string>>()->default_value({})
         )
         (
+            "override_initializers",
+            "Whether to override overridable initializers during binding.",
+            cxxopts::value<bool>()
+        )
+        (
             "e,onnx_session_config_entry",
             "List of SessionOption config keys and values. Can be repeated. Example: -e foo:0 -e bar:1",
             cxxopts::value<std::vector<std::string>>()->default_value({})
@@ -422,6 +427,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("print_onnx_bindings")) 
     { 
         m_onnxPrintVerboseBindingInfo = result["print_onnx_bindings"].as<bool>(); 
+    }
+
+    if (result.count("override_initializers"))
+    {
+        m_overrideInitializers = result["override_initializers"].as<bool>(); 
     }
 
     if (result.count("enable_ort_extensions")) 

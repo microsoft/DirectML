@@ -82,6 +82,14 @@ static std::string GetTensorName(size_t index, Ort::Session const& session, bool
     return returnName;
 }
 
+static std::string GetOverridableInitializerTensorName(size_t index, Ort::Session const& session)
+{
+    Ort::AllocatorWithDefaultOptions allocator;
+    auto name = session.GetOverridableInitializerNameAllocated(index, allocator);
+    std::string returnName(name.get());
+    return returnName;
+}
+
 struct DataTypeInfo
 {
     ONNXTensorElementDataType onnxDataType;
@@ -276,19 +284,35 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
     Ort::MemoryInfo cpuMemoryInformation = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::MemoryInfo dmlMemoryInformation("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 
+    const size_t inputCount = m_args.OverrideInitializers()
+        ? m_session->GetInputCount() + m_session->GetOverridableInitializerCount()
+        : m_session->GetInputCount();
+
     for (int bindingPass = 0; bindingPass < 2; ++bindingPass)
     {
         const bool isInputTensor = (bindingPass == 0);
-        const size_t tensorCount = isInputTensor ? m_session->GetInputCount() : m_session->GetOutputCount();
+        const size_t tensorCount = isInputTensor ? inputCount : m_session->GetOutputCount();
 
         for (size_t tensorIndex = 0; tensorIndex < tensorCount; ++tensorIndex)
         {
+            std::string tensorName;
+            Ort::TypeInfo typeInfo(nullptr);
+
+            if (isInputTensor && tensorIndex >= m_session->GetInputCount())
+            {
+                size_t initializerTensorIndex = tensorIndex - m_session->GetInputCount();
+                tensorName = GetOverridableInitializerTensorName(initializerTensorIndex, *m_session);
+                typeInfo = m_session->GetOverridableInitializerTypeInfo(initializerTensorIndex);
+            }
+            else
+            {
+                tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
+                typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
+            }
+
             TensorBinding binding = {};
-            auto tensorName = GetTensorName(tensorIndex, *m_session, isInputTensor);
             binding.name = tensorName;
             binding.isInput = isInputTensor;
-
-            Ort::TypeInfo typeInfo = isInputTensor ? m_session->GetInputTypeInfo(tensorIndex) : m_session->GetOutputTypeInfo(tensorIndex);
 
             bool isDmlSupportedType = false;
 
