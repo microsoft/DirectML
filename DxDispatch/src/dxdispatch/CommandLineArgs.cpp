@@ -188,7 +188,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
-            "enable_profiling",
+            "enable_onnx_profiling",
             "Captures a json file of the CPU and GPU execution that can be viewed in a chromium-based browser.",
             cxxopts::value<bool>()
         )
@@ -434,9 +434,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_ortExtensionsEnabled = result["enable_ort_extensions"].as<bool>(); 
     }
 
-    if (result.count("enable_profiling"))
+    if (result.count("enable_onnx_profiling"))
     {
-        m_profilingEnabled = result["enable_profiling"].as<bool>();
+        m_onnxProfilingEnabled = result["enable_onnx_profiling"].as<bool>();
     }
 
     m_helpText = options.help();

@@ -203,7 +203,7 @@ void OnnxDispatchable::Initialize()
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     sessionOptions.DisableMemPattern();
 
-    if (m_args.ProfilingEnabled())
+    if (m_args.OnnxProfilingEnabled())
     {
         sessionOptions.EnableProfiling(L"DxDispatch");
     }
