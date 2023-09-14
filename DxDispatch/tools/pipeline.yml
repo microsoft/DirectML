@@ -10,6 +10,12 @@ pr:
 
 trigger: none
 
+parameters:
+- name: publishNuget
+  displayName: Publish Internal NuGet
+  type: boolean
+  default: false
+
 stages:
 - stage: buildStage
   displayName: Build
@@ -71,20 +77,26 @@ stages:
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
-    - script: |
-        & '$(findCmake.cpackPath)' -G NuGet
-      displayName: Package
-      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
-
-    - script: |
-        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin/
-      displayName: Copy Package
-
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(buildPreset)
+
+    - ${{if parameters.publishNuget}}:
+      - task: NuGetToolInstaller@1
+
+      - task: NuGetAuthenticate@0
+        displayName: NuGet Authenticate
+
+      - powershell: |
+          & '$(findCmake.cpackPath)' -G NuGet
+        displayName: Package
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+      - script: |
+          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
+        displayName: NuGet Push
 
   # -----------------------------
   # LINUX BUILD
@@ -100,8 +112,6 @@ stages:
     pool:
       vmImage: $(imageName)
     steps:
-    - task: NuGetToolInstaller@1
-
     - script: |
         sudo apt install ninja-build
       displayName: Install Ninja
@@ -118,17 +128,23 @@ stages:
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
-    - script: |
-        cpack -G NuGet
-      displayName: Package
-      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
-
-    - script: |
-        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin/
-      displayName: Copy Package
-
     - task: PublishBuildArtifacts@1
       displayName: Publish Artifacts
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(imageName)-release
+
+    - ${{if parameters.publishNuget}}:
+      - task: NuGetToolInstaller@1
+
+      - task: NuGetAuthenticate@0
+        displayName: NuGet Authenticate
+
+      - script: |
+          cpack -G NuGet
+        displayName: Package
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+      - script: |
+          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
+        displayName: NuGet Push
