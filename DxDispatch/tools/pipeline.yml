@@ -77,7 +77,7 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
     - script: |
-        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/install/bin/
+        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin/
       displayName: Copy Package
 
     - task: PublishBuildArtifacts@1
@@ -124,7 +124,7 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
     - script: |
-        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/install/bin/
+        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin/
       displayName: Copy Package
 
     - task: PublishBuildArtifacts@1
