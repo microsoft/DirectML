@@ -92,8 +92,9 @@ stages:
         displayName: Package
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
-      - script: |
-          nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg -Source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json -ApiKey VSTS
+      - powershell: |
+          $packagePath = (ls "$(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg").fullname
+          nuget push $packagePath -Source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json -ApiKey VSTS -SkipDuplicate
         displayName: NuGet Push
 
   # -----------------------------
@@ -144,5 +145,5 @@ stages:
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
       - script: |
-          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
+          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS --skip-duplicate
         displayName: NuGet Push
