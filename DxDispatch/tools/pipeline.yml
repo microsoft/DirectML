@@ -14,6 +14,9 @@ stages:
 - stage: buildStage
   displayName: Build
   jobs:
+  # -----------------------------
+  # WINDOWS BUILD
+  # -----------------------------
   - job: build_windows
     displayName: Build Windows
     strategy:
@@ -29,6 +32,8 @@ stages:
           buildPreset: win-arm64-release
     pool: DirectML_BuildPool
     steps:
+    - task: NuGetToolInstaller@1
+
     - task: PowerShell@2
       name: findCMake
       displayName: Find CMake
@@ -46,27 +51,44 @@ stages:
 
           # Find cmake.exe within VS 2022 installation.
           $CMakePath = Join-Path $VsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+          $CPackPath = Join-Path $VsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cpack.exe'
           if (!(Test-Path $CMakePath))
           {
               throw "Did not find cmake.exe in VS installation."
           }
 
           Write-Host "CMake found at '$CMakePath'"
-          Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
+          Write-Host "##vso[task.setVariable variable=cmakePath;isOutput=true]$CMakePath"
+          Write-Host "##vso[task.setVariable variable=cpackPath;isOutput=true]$CPackPath"
+          
     - powershell: |
-        & '$(findCmake.path)' --preset $(configurePreset)
+        & '$(findCmake.cmakePath)' --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - powershell: |
-        & '$(findCmake.path)' --build --preset $(buildPreset) --target install
+        & '$(findCmake.cmakePath)' --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
+    - script: |
+        & '$(findCmake.cpackPath)' -G NuGet
+      displayName: Package
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+    - script: |
+        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/install/bin/
+      displayName: Copy Package
+
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(buildPreset)
 
+  # -----------------------------
+  # LINUX BUILD
+  # -----------------------------
   - job: build_linux
     displayName: Build Linux
     strategy:
@@ -78,6 +100,8 @@ stages:
     pool:
       vmImage: $(imageName)
     steps:
+    - task: NuGetToolInstaller@1
+
     - script: |
         sudo apt install ninja-build
       displayName: Install Ninja
@@ -94,21 +118,17 @@ stages:
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Binaries
-      inputs:
-        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
-        ArtifactName: $(imageName)-release
-
-    - task: NuGetToolInstaller@1
-
     - script: |
         cpack -G NuGet
       displayName: Package
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
+    - script: |
+        cp -r $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/install/bin/
+      displayName: Copy Package
+
     - task: PublishBuildArtifacts@1
-      displayName: Publish NuGet
+      displayName: Publish Artifacts
       inputs:
-        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(imageName)-release
