@@ -38,8 +38,6 @@ stages:
           buildPreset: win-arm64-release
     pool: DirectML_BuildPool
     steps:
-    - task: NuGetToolInstaller@1
-
     - task: PowerShell@2
       name: findCMake
       displayName: Find CMake
@@ -95,7 +93,7 @@ stages:
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
       - script: |
-          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
+          nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
         displayName: NuGet Push
 
   # -----------------------------
