@@ -81,18 +81,34 @@ stages:
     - script: |
         sudo apt install ninja-build
       displayName: Install Ninja
+
     - script: |
         export CC=/usr/bin/clang
         export CXX=/usr/bin/clang++
         cmake --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - script: |
         cmake --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - task: PublishBuildArtifacts@1
-      displayName: Publish
+      displayName: Publish Binaries
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
+        ArtifactName: $(imageName)-release
+
+    - task: NuGetToolInstaller@1
+
+    - script: |
+        cpack -G NuGet
+      displayName: Package
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish NuGet
+      inputs:
+        PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg
         ArtifactName: $(imageName)-release
