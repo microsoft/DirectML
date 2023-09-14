@@ -93,7 +93,7 @@ stages:
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
       - script: |
-          nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS
+          nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg -Source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json -ApiKey VSTS
         displayName: NuGet Push
 
   # -----------------------------
