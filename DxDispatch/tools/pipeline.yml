@@ -10,10 +10,19 @@ pr:
 
 trigger: none
 
+parameters:
+- name: publishNuget
+  displayName: Publish Internal NuGet
+  type: boolean
+  default: false
+
 stages:
 - stage: buildStage
   displayName: Build
   jobs:
+  # -----------------------------
+  # WINDOWS BUILD
+  # -----------------------------
   - job: build_windows
     displayName: Build Windows
     strategy:
@@ -46,27 +55,51 @@ stages:
 
           # Find cmake.exe within VS 2022 installation.
           $CMakePath = Join-Path $VsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+          $CPackPath = Join-Path $VsPath 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cpack.exe'
           if (!(Test-Path $CMakePath))
           {
               throw "Did not find cmake.exe in VS installation."
           }
 
           Write-Host "CMake found at '$CMakePath'"
-          Write-Host "##vso[task.setVariable variable=path;isOutput=true]$CMakePath"
+          Write-Host "##vso[task.setVariable variable=cmakePath;isOutput=true]$CMakePath"
+          Write-Host "##vso[task.setVariable variable=cpackPath;isOutput=true]$CPackPath"
+          
     - powershell: |
-        & '$(findCmake.path)' --preset $(configurePreset)
+        & '$(findCmake.cmakePath)' --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - powershell: |
-        & '$(findCmake.path)' --build --preset $(buildPreset) --target install
+        & '$(findCmake.cmakePath)' --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(buildPreset)
 
+    - ${{if parameters.publishNuget}}:
+      - task: NuGetToolInstaller@1
+
+      - task: NuGetAuthenticate@0
+        displayName: NuGet Authenticate
+
+      - powershell: |
+          & '$(findCmake.cpackPath)' -G NuGet
+        displayName: Package
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+      - powershell: |
+          $packagePath = (ls "$(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg").fullname
+          nuget push $packagePath -Source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json -ApiKey VSTS -SkipDuplicate
+        displayName: NuGet Push
+
+  # -----------------------------
+  # LINUX BUILD
+  # -----------------------------
   - job: build_linux
     displayName: Build Linux
     strategy:
@@ -81,18 +114,36 @@ stages:
     - script: |
         sudo apt install ninja-build
       displayName: Install Ninja
+
     - script: |
         export CC=/usr/bin/clang
         export CXX=/usr/bin/clang++
         cmake --preset $(configurePreset)
       displayName: Configure
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - script: |
         cmake --build --preset $(buildPreset) --target install
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - task: PublishBuildArtifacts@1
-      displayName: Publish
+      displayName: Publish Artifacts
       inputs:
         PathtoPublish: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
         ArtifactName: $(imageName)-release
+
+    - ${{if parameters.publishNuget}}:
+      - task: NuGetToolInstaller@1
+
+      - task: NuGetAuthenticate@0
+        displayName: NuGet Authenticate
+
+      - script: |
+          cpack -G NuGet
+        displayName: Package
+        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+      - script: |
+          dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS --skip-duplicate
+        displayName: NuGet Push
