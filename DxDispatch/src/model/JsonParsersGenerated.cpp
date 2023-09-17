@@ -1956,6 +1956,21 @@ DML_OPERATOR_DESC* ParseDmlValueScale2dOperatorDesc(const rapidjson::Value& valu
     opDesc->Desc = desc;
     return opDesc;
 }
+
+DML_OPERATOR_DESC* ParseDmlValueScale3dOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_VALUE_SCALE_3D_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->Scale = ParseFloat32Field(value, "Scale", true);
+    desc->ChannelCount = ParseUInt32Field(value, "ChannelCount", true);
+    desc->Bias = AsPointer(ParseFloat32ArrayField(value, "Bias", allocator, true));
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_VALUE_SCALE_3D;
+    opDesc->Desc = desc;
+    return opDesc;
+}
  
 Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_VALUE_SCALE_2D_OPERATOR_DESC& desc)
 {
@@ -1975,6 +1990,20 @@ DML_OPERATOR_DESC* ParseDmlUpsample2dOperatorDesc(const rapidjson::Value& value,
     desc->InterpolationMode = ParseDmlInterpolationModeField(value, "InterpolationMode", true, {});
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_UPSAMPLE_2D;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlUpsample3dOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_UPSAMPLE_3D_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->ScaleSize = *ParseDmlSize3dField(value, "ScaleSize", allocator, true);
+    desc->InterpolationMode = ParseDmlInterpolationModeField(value, "InterpolationMode", true, {});
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_UPSAMPLE_3D;
     opDesc->Desc = desc;
     return opDesc;
 }
@@ -4646,6 +4675,8 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_PADDING1") || !strcmp(type, "PADDING1")) return ParseDmlPadding1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_VALUE_SCALE_2D") || !strcmp(type, "VALUE_SCALE_2D")) return ParseDmlValueScale2dOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_UPSAMPLE_2D") || !strcmp(type, "UPSAMPLE_2D")) return ParseDmlUpsample2dOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_VALUE_SCALE_3D") || !strcmp(type, "VALUE_SCALE_3D")) return ParseDmlValueScale3dOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_UPSAMPLE_3D") || !strcmp(type, "UPSAMPLE_3D")) return ParseDmlUpsample3dOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_GATHER") || !strcmp(type, "GATHER")) return ParseDmlGatherOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_SPACE_TO_DEPTH") || !strcmp(type, "SPACE_TO_DEPTH")) return ParseDmlSpaceToDepthOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_DEPTH_TO_SPACE") || !strcmp(type, "DEPTH_TO_SPACE")) return ParseDmlDepthToSpaceOperatorDesc(descValue, fused, allocator);

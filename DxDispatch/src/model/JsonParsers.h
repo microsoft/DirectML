@@ -101,6 +101,11 @@ namespace JsonParsers
     DML_SIZE_2D* ParseDmlSize2d(const rapidjson::Value& value, BucketAllocator& allocator);
     DML_SIZE_2D* ParseDmlSize2dField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required = true, DML_SIZE_2D* defaultValue = nullptr);
 
+    // DML_SIZE_3D
+    DML_SIZE_3D ParseDmlSize3d(const rapidjson::Value& value);
+    DML_SIZE_3D* ParseDmlSize3d(const rapidjson::Value& value, BucketAllocator& allocator);
+    DML_SIZE_3D* ParseDmlSize3dField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required = true, DML_SIZE_3D* defaultValue = nullptr);
+
     // DML_SCALAR_UNION
     DML_SCALAR_UNION ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_TYPE dataType);
     DML_SCALAR_UNION* ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_TYPE dataType, BucketAllocator& allocator);

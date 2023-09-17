@@ -702,6 +702,40 @@ DML_SIZE_2D* ParseDmlSize2dField(const rapidjson::Value& object, std::string_vie
 }
 
 // ----------------------------------------------------------------------------
+// DML_SIZE_3D
+// ----------------------------------------------------------------------------
+static void ParseDmlSize3d(const rapidjson::Value& value, DML_SIZE_3D& returnValue)
+{
+    if (!value.IsObject())
+    {
+        throw std::invalid_argument("Expected a non-null JSON object.");
+    }
+    returnValue.Width = ParseUInt32Field(value, "Width");
+    returnValue.Height = ParseUInt32Field(value, "Height");
+}
+
+DML_SIZE_3D ParseDmlSize3d(const rapidjson::Value& value)
+{
+    DML_SIZE_3D returnValue = {};
+    ParseDmlSize3d(value, returnValue);
+    return returnValue;
+}
+
+DML_SIZE_3D* ParseDmlSize3d(const rapidjson::Value& value, BucketAllocator& allocator)
+{
+    auto returnValue = allocator.Allocate<DML_SIZE_3D>();
+    ParseDmlSize3d(value, *returnValue);
+    return returnValue;
+}
+
+DML_SIZE_3D* ParseDmlSize3dField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required, DML_SIZE_3D* defaultValue)
+{
+    return ParseFieldHelper<DML_SIZE_3D*>(object, fieldName, required, defaultValue, [&allocator](auto& value){ 
+        return ParseDmlSize3d(value, allocator); 
+    });
+}
+
+// ----------------------------------------------------------------------------
 // DML_SCALAR_UNION
 // ----------------------------------------------------------------------------
 static void ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_TYPE dataType, DML_SCALAR_UNION& returnValue)

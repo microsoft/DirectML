@@ -1213,6 +1213,55 @@ TEST(ParseDmlSize2dTest, MissingField)
 }
 
 // ----------------------------------------------------------------------------
+// DML_SIZE_3D
+// ----------------------------------------------------------------------------
+
+TEST(ParseDmlSize3dTest, ValidInput) 
+{
+    Document d;
+    d.Parse(R"({
+        "x0": { "Width": 4, "Height": 15 }
+    })");
+    ASSERT_FALSE(d.HasParseError());
+
+    auto result = ParseDmlSize3d(d["x0"]);
+    EXPECT_EQ(result.Width, 4);
+    EXPECT_EQ(result.Height, 15);
+
+    BucketAllocator allocator;
+    auto result2 = ParseDmlSize3dField(d, "x0", allocator);
+    EXPECT_EQ(result2->Width, 4);
+    EXPECT_EQ(result2->Height, 15);
+}
+
+TEST(ParseDmlSize3dTest, InvalidInput) 
+{
+    Document d;
+    d.Parse(R"({
+        "x0": { "Width": 4.2, "Height": 15.1 },
+        "x1": null,
+        "x2": "cat",
+        "x3": [],
+        "x4": 5
+    })");
+    ASSERT_FALSE(d.HasParseError());
+    for (auto field = d.MemberBegin(); field < d.MemberEnd(); field++)
+    {
+        EXPECT_THROW(ParseDmlTensorDataType(field->value), std::invalid_argument);
+    }
+}
+
+TEST(ParseDmlSize3dTest, MissingField) 
+{
+    Document d;
+    d.Parse(R"({})");
+    ASSERT_FALSE(d.HasParseError());
+    BucketAllocator allocator;
+    EXPECT_EQ(ParseDmlSize3dField(d, "x0", allocator, false, nullptr), nullptr);
+    EXPECT_THROW(ParseDmlSize3dField(d, "x0", allocator), std::invalid_argument);
+}
+
+// ----------------------------------------------------------------------------
 // DML_SCALAR_UNION
 // ----------------------------------------------------------------------------
 
