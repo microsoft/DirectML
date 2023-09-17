@@ -375,6 +375,11 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("scale_size"),
         py::arg("interpolation_mode"));
 
+    module.def("up_sample_3d", &dml::Upsample3D, "Create a two-dimensional up-sample expression.",
+        py::arg("input"),
+        py::arg("scale_size"),
+        py::arg("interpolation_mode"));
+
     module.def("activation_relu", &dml::ActivationRelu, "Takes an input tensor and applies the function output = max(0, input) across its elements.",
         py::arg("input"));
 
@@ -457,6 +462,17 @@ PYBIND11_MODULE(pydirectml, module)
             return dml::ValueScale2D(input, scale, bias);
         },
         "Scales and bias the input image per pixel. output = input * scale + bias[C]",
+        py::arg("input"),
+        py::arg("scale"),
+        py::arg("bias"));
+
+    module.def("value_scale_3d", [](
+        dml::Expression input,
+        float scale,
+        std::vector<float> bias) {
+            return dml::ValueScale3D(input, scale, bias);
+        },
+        "Scales and bias the input video per pixel. output = input * scale + bias[C]",
         py::arg("input"),
         py::arg("scale"),
         py::arg("bias"));
