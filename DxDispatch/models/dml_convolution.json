@@ -40,6 +40,25 @@
                 "OutputPadding": [0,0],
                 "GroupCount": 1
             }
+        },
+        "conv3d": 
+        {
+            "type": "DML_OPERATOR_CONVOLUTION",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,3,3,3] },
+                "FilterTensor": { "DataType": "FLOAT32", "Sizes": [1,1,2,2,2] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,2,2,2] },
+                "Mode": "DML_CONVOLUTION_MODE_CROSS_CORRELATION",
+                "Direction": "DML_CONVOLUTION_DIRECTION_FORWARD",
+                "DimensionCount": 3,
+                "Strides": [1,1,1],
+                "Dilations": [1,1,1],
+                "StartPadding": [0,0,0],
+                "EndPadding": [0,0,0],
+                "OutputPadding": [0,0,0],
+                "GroupCount": 1
+            }
         }
     },
 
@@ -48,6 +67,16 @@
         {
             "type": "dispatch",
             "dispatchable": "conv2d",
+            "bindings":
+            {
+                "InputTensor": "input",
+                "FilterTensor": "filter",
+                "OutputTensor": "output"
+            }
+        },
+        {
+            "type": "dispatch",
+            "dispatchable": "conv3d",
             "bindings":
             {
                 "InputTensor": "input",
