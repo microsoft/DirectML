@@ -253,7 +253,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
             // Dispatch
             dispatchTimer.Start();
             dispatchable->Dispatch(command, iterationsCompleted);
-            dispatchable->Wait();
             cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it

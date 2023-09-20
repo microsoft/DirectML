@@ -512,11 +512,16 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
     {
         m_device->RecordTimestamp();
         PIXEndEvent(m_device->GetCommandList());
-        m_device->ExecuteCommandList();
-    }
-}
 
-void OnnxDispatchable::Wait()
-{
-    m_ioBindings->SynchronizeOutputs();
+        // SynchronizeOutputs is not called after this because we've just synchronized on work added later to the same queue.
+        // It is not called before this because it would prevent parallelization of launching the command list.
+        // It that were addressed by calling ExecuteCommandList before SynchronizeOutputs, then the command allocator would
+        // not be reset and lead to a leak.  The command allocator cannot be reset a new command list is recording with it,
+        // and a new command list is started with the allocator during ExecuteCommandList.
+        m_device->ExecuteCommandListAndWait();
+    }
+    else
+    {
+        m_ioBindings->SynchronizeOutputs();
+    }
 }

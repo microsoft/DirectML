@@ -244,9 +244,5 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 void DmlDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
 {
     m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
-}
-
-void DmlDispatchable::Wait()
-{
     m_device->ExecuteCommandListAndWait();
 }

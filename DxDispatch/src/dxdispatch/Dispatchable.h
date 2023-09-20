@@ -23,5 +23,4 @@ struct Dispatchable
     virtual void Initialize() = 0;
     virtual void Bind(const Bindings& bindings, uint32_t iteration) = 0;
     virtual void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) = 0;
-    virtual void Wait() = 0;
 };
