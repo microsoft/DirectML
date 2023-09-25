@@ -119,6 +119,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Binds input and output resources are allocated from custom heaps. Write-combined caching and system memory (L0) are used when this is specified.",
             cxxopts::value<bool>()
         )
+        (
+            "g, set_stable_power_state",
+            "Causes a stable power state to be triggered while running the test, using ID3D12Device::SetStablePowerState.  This requires developer mode be enabled.",
+            cxxopts::value<bool>()
+        )        
 
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
@@ -285,6 +290,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("custom_heaps"))
     {
         m_customHeaps = result["custom_heaps"].as<bool>();
+    }
+
+    if (result.count("set_stable_power_state"))
+    {
+        m_setStablePowerState = result["set_stable_power_state"].as<bool>();
     }
 
     auto queueTypeStr = result["queue_type"].as<std::string>();

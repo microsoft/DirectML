@@ -233,6 +233,11 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         Timer loopTimer, iterationTimer, bindTimer, dispatchTimer;
 
+        if (m_commandLineArgs.GetSetStablePowerState())
+        {
+            THROW_IF_FAILED(m_device->D3D()->SetStablePowerState(TRUE));
+        }
+
         for (; !timedOut && iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
         {
             iterationTimer.Start();
@@ -274,8 +279,20 @@ void Executor::operator()(const Model::DispatchCommand& command)
     catch (const std::exception& e)
     {
         LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
+        
+        if (m_commandLineArgs.GetSetStablePowerState())
+        {
+            m_device->D3D()->SetStablePowerState(FALSE);
+        }
+
         return;
     }
+
+    if (m_commandLineArgs.GetSetStablePowerState())
+    {
+        m_device->D3D()->SetStablePowerState(FALSE);
+    }
+
     PIXEndEvent();
 
     auto cpuStats = cpuTimings.ComputeStats(m_commandLineArgs.MaxWarmupSamples());

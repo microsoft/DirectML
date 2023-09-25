@@ -39,6 +39,7 @@ public:
     bool GetAliasingBarrierAfterDispatch() const { return m_aliasingBarrierAfterDispatch; }
 
     bool GetCustomHeaps() const { return m_customHeaps; }
+    bool GetSetStablePowerState() const { return m_setStablePowerState; }
 
     // ONNX
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
@@ -62,6 +63,7 @@ private:
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
     bool m_customHeaps = false;
+    bool m_setStablePowerState = false;
     std::string m_adapterSubstring = "";
     std::filesystem::path m_modelPath;
     std::string m_pixCaptureName = "dxdispatch";
