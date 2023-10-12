@@ -184,7 +184,7 @@ void DmlDispatchable::Initialize()
     m_device->ExecuteCommandListAndWait();
 }
 
-void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
+void DmlDispatchable::Bind(Bindings& bindings, uint32_t iteration)
 {
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
 

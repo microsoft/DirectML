@@ -13,7 +13,7 @@ public:
         const CommandLineArgs& args);
 
     void Initialize() final;
-    void Bind(const Bindings& bindings, uint32_t iteration) final;
+    void Bind(Bindings& bindings, uint32_t iteration) final;
     void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 
@@ -40,6 +40,6 @@ private:
     // ONNX dispatchables allow resources & bindings to be lazily instantiated. The merged bindings 
     // are the union of JSON bindings and bindings to lazily-allocated resources from the first Bind().
     std::vector<TensorBinding> m_mergedBindings;
-
+    std::optional<Bindings> m_jsonBindings;
     std::optional<Ort::IoBinding> m_ioBindings;
 };

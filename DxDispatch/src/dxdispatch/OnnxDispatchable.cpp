@@ -261,7 +261,7 @@ void OnnxDispatchable::Initialize()
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
-void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
+void OnnxDispatchable::Bind(Bindings& jsonBindings, uint32_t iteration)
 {
     // Early exit for all iterations after the first. Bindings are cached in m_ioBindings.
     if (iteration > 0)
@@ -502,6 +502,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
             LogInfo("");
         }
     }
+    m_jsonBindings = jsonBindings;
 }
 
 void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
@@ -522,4 +523,97 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
 void OnnxDispatchable::Wait()
 {
     m_ioBindings->SynchronizeOutputs();
+    auto values =  m_ioBindings->GetOutputValues();
+    auto names = m_ioBindings->GetOutputNames();
+
+    for (size_t i = 0; i < values.size(); i++)
+    {
+        if (m_jsonBindings.has_value())
+        {
+            auto jsonBinding = m_jsonBindings->find(names[i]);
+            if (jsonBinding != m_jsonBindings->end())
+            {
+                BindingSource &bufferDesc = jsonBinding->second[0];
+                if (bufferDesc.deferredBinding)
+                {
+                    
+                    auto shapeInfo = values[i].GetTensorTypeAndShapeInfo();
+                    auto shape = shapeInfo.GetShape();
+                    LogInfo(fmt::format("Output Tensor '{}':", names[i]));
+                    LogInfo(fmt::format("  Resource  = {}", "resolved"));
+                    LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(shapeInfo.GetElementType())));
+                    std::string shapeString;
+                    for (size_t j = 0; j < shape.size(); j++)
+                    {
+                        shapeString += "[" + std::to_string(shape[j]) + "]";
+                    }
+                    LogInfo(fmt::format("  Shape     = {}", shapeString));
+                    LogInfo("");
+
+                    bufferDesc.shape = shape;
+                    bufferDesc.elementCount = shapeInfo.GetElementCount();
+                    bufferDesc.resourceDesc->name = names[i];
+                    std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
+
+                    Model::BufferDesc desc;
+                    desc.sizeInBytes = (bufferDesc.elementSizeInBytes * bufferDesc.elementCount);
+                    desc.initialValues = std::vector<std::byte>(
+                        tensorData,
+                        tensorData + desc.sizeInBytes);
+                    desc.initialValuesOffsetInBytes = 0;
+
+                    auto elementType = shapeInfo.GetElementType();
+                    if (ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT16;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT32;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT8;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT16;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT32;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT64;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT8;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT16;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT32;
+                    }
+                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64 == elementType)
+                    {
+                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT64;
+                    }
+                    else
+                    {
+                        DebugBreak();
+                    }
+                    bufferDesc.resourceDesc->value = std::move(desc);
+                }
+            }
+        }
+    }
 }

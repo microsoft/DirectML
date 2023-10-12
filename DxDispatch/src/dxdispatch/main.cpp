@@ -71,7 +71,8 @@ int main(int argc, char** argv)
         {
             Adapter adapter = Adapter::Select(dxCoreModule, args.AdapterSubstring());
             device = std::make_shared<Device>(
-                adapter.GetAdapter(), 
+                adapter.GetAdapter(),
+                D3D_FEATURE_LEVEL_1_0_CORE,
                 args.DebugLayersEnabled(), 
                 args.CommandListType(),
                 args.DispatchRepeat(),

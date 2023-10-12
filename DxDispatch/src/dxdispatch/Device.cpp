@@ -17,12 +17,23 @@ static bool DebugMessageCallback(void* context, void* commandList, DWORD message
 #else
 static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
 {
-    LogError(message);
+    auto fmtMessage = fmt::format("{} {} {} {}", cat, id, context, message);
+    if( (D3D12_MESSAGE_SEVERITY_INFO == sev) ||
+        (D3D12_MESSAGE_SEVERITY_MESSAGE == sev) ||
+        (D3D12_MESSAGE_SEVERITY_WARNING == sev))
+    {
+        LogInfo(fmtMessage);
+    }
+    else
+    {
+        LogError(fmtMessage);
+    }
 }
 #endif
 
 Device::Device(
     IAdapter* adapter, 
+    D3D_FEATURE_LEVEL featureLevel,
     bool debugLayersEnabled, 
     D3D12_COMMAND_LIST_TYPE commandListType, 
     uint32_t dispatchRepeat,
@@ -73,7 +84,7 @@ Device::Device(
 
     THROW_IF_FAILED(m_d3dModule->CreateDevice(
         adapter, 
-        D3D_FEATURE_LEVEL_11_0, 
+        featureLevel, 
         IID_PPV_ARGS(&m_d3d)));
 
     if (debugLayersEnabled)

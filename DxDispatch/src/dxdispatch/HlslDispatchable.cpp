@@ -333,7 +333,7 @@ void HlslDispatchable::Initialize()
     }
 }
 
-void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
+void HlslDispatchable::Bind(Bindings& bindings, uint32_t iteration)
 {
     uint32_t descriptorIncrementSize = m_device->D3D()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 

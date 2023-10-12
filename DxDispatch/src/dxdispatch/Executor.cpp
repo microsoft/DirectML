@@ -113,7 +113,14 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             assert(std::holds_alternative<Model::BufferDesc>(desc.value));
             auto& bufferDesc = std::get<Model::BufferDesc>(desc.value);
             auto wName = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(desc.name);
-            m_resources[desc.name] = std::move(device->Upload(bufferDesc.sizeInBytes, bufferDesc.initialValues, wName));
+            if (bufferDesc.sizeInBytes > 0)
+            {
+                m_resources[desc.name] = std::move(device->Upload(bufferDesc.sizeInBytes, bufferDesc.initialValues, wName));
+            }
+            else
+            {
+                m_resources[desc.name] = nullptr;
+            }
         }
     }
     device->ExecuteCommandListAndWait();
@@ -395,10 +402,18 @@ void Executor::operator()(const Model::PrintCommand& command)
 
     try
     {
-        auto resource = m_resources[command.resourceName];
-        auto outputValues = m_device->Download(resource.Get());
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
+        std::vector<std::byte> outputValues;
+        auto resource = m_resources[command.resourceName];
+        if (resource)
+        {
+            outputValues = m_device->Download(resource.Get());
+        }
+        else
+        {
+            outputValues = bufferDesc.initialValues;
+        }
         LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
     }
     catch (const std::exception& e)
@@ -413,10 +428,25 @@ void Executor::operator()(const Model::WriteFileCommand& command)
 
     try
     {
-        auto resource = m_resources[command.resourceName];
-        auto fileData = m_device->Download(resource.Get());
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
+
+        std::vector<std::byte> fileData;
+        auto resource = m_resources[command.resourceName];
+        if (resource)
+        {
+            fileData = m_device->Download(resource.Get());
+        }
+        else
+        {
+            fileData = bufferDesc.initialValues;
+        }
+
+        std::filesystem::path pathToFile(command.targetPath.c_str());
+        if (!std::filesystem::exists(pathToFile.parent_path()))
+        {
+            std::filesystem::create_directories(pathToFile.parent_path());
+        }
 
         std::ofstream file(command.targetPath.c_str(), std::ifstream::trunc | std::ifstream::binary);
         if (!file.is_open())
@@ -431,7 +461,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             std::vector<uint32_t> dimensions(command.dimensions);
             if (dimensions.empty())
             {
-                uint32_t elementCount = bufferDesc.sizeInBytes / Device::GetSizeInBytes(bufferDesc.initialValuesDataType);
+                uint32_t elementCount = static_cast<uint32_t>(bufferDesc.sizeInBytes / Device::GetSizeInBytes(bufferDesc.initialValuesDataType));
                 dimensions.push_back(elementCount);
             }
 
@@ -469,8 +499,9 @@ Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBin
             source.elementOffset = modelSource.elementOffset;
             source.format = modelSource.format;
             source.resource = m_resources[modelSource.name].Get();
-            source.resourceDesc = &resourceDesc;
+            source.resourceDesc = (Model::ResourceDesc *) & resourceDesc;
             source.shape = modelSource.shape;
+            source.deferredBinding = modelSource.deferredBinding;
 
             if (std::holds_alternative<Model::BufferDesc>(resourceDesc.value))
             {

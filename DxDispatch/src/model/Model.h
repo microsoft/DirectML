@@ -21,16 +21,17 @@ public:
     struct BufferBindingSource
     {
         std::string name;
-        uint64_t elementCount;
-        uint64_t elementSizeInBytes;
-        uint64_t elementOffset;
+        uint64_t elementCount  = 0;
+        uint64_t elementSizeInBytes = 0;
+        uint64_t elementOffset = 0;
         std::optional<DXGI_FORMAT> format;
 
         // For Append/Consume buffers only:
         std::optional<std::string> counterName;
-        uint64_t counterOffsetBytes;
+        uint64_t counterOffsetBytes = 0;
 
         std::vector<int64_t> shape;
+        bool deferredBinding = false;
     };
 
     using Bindings = std::unordered_map<std::string, std::vector<BufferBindingSource>>;
