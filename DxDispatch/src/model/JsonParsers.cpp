@@ -1139,6 +1139,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         buffer.initialValues.clear();
         buffer.initialValuesOffsetInBytes = 0;
         buffer.sizeInBytes = 0;
+        buffer.useDeferredBinding = true;
         return buffer;
     }
     else if (initialValuesField->value.IsArray())
@@ -1200,7 +1201,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
     }
     else
     {
-        throw std::invalid_argument("Field 'initialValues' must be an array of numbers or an object.");
+        throw std::invalid_argument("Field 'initialValues' must be an array of numbers, an object, or deferred.");
     }
 
     if (buffer.initialValues.empty())
@@ -1344,28 +1345,23 @@ Model::BufferBindingSource ParseBufferBindingSource(const rapidjson::Value& valu
     if (value.IsString())
     {
         bindingSource.name = value.GetString();
-        bindingSource.deferredBinding = false;
     }
     else if (value.IsObject())
     {
         bindingSource.name = ParseStringField(value, "name");
-        bindingSource.deferredBinding = ParseBoolField(value, "deferred");
-        if (!bindingSource.deferredBinding)
+        bindingSource.elementCount = ParseUInt64Field(value, "elementCount", false, 0);
+        bindingSource.elementSizeInBytes = ParseUInt64Field(value, "elementSizeInBytes", false, 0);
+        bindingSource.elementOffset = ParseUInt64Field(value, "elementOffset", false, 0);
+        if (value.HasMember("format"))
         {
-            bindingSource.elementCount = ParseUInt64Field(value, "elementCount", false, 0);
-            bindingSource.elementSizeInBytes = ParseUInt64Field(value, "elementSizeInBytes", false, 0);
-            bindingSource.elementOffset = ParseUInt64Field(value, "elementOffset", false, 0);
-            if (value.HasMember("format"))
-            {
-                bindingSource.format = ParseDxgiFormat(value["format"]);
-            }
-            if (value.HasMember("counter"))
-            {
-                bindingSource.counterName = ParseStringField(value, "counter");
-                bindingSource.counterOffsetBytes = ParseUInt64Field(value, "counterOffsetBytes", false);
-            }
-            bindingSource.shape = ParseInt64ArrayAsVectorField(value, "shape", false);
+            bindingSource.format = ParseDxgiFormat(value["format"]);
         }
+        if (value.HasMember("counter"))
+        {
+            bindingSource.counterName = ParseStringField(value, "counter");
+            bindingSource.counterOffsetBytes = ParseUInt64Field(value, "counterOffsetBytes", false);
+        }
+        bindingSource.shape = ParseInt64ArrayAsVectorField(value, "shape", false);
     }
 
     return bindingSource;

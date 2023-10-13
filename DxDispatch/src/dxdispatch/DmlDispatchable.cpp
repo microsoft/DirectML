@@ -38,6 +38,17 @@ void FillBindingData(
     bindingData.bufferBindings.resize(totalResourceCount);
     bindingData.bindingDescs.resize(totalResourceCount);
 
+    for (auto& binding : bindings)
+    {
+        for (auto& bindingSource : binding.second)
+        {
+            if (bindingSource.useDeferredBinding)
+            {
+                throw std::invalid_argument("HlslDispatchable doesn't support deferred bindings");
+            }
+        }
+    }
+
     size_t bufferIndex = 0;
 
     for (size_t i = 0; i < bindPoints.size(); i++)

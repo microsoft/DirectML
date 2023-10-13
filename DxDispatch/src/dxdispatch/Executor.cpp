@@ -405,14 +405,14 @@ void Executor::operator()(const Model::PrintCommand& command)
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
         std::vector<std::byte> outputValues;
-        auto resource = m_resources[command.resourceName];
-        if (resource)
+        if (bufferDesc.useDeferredBinding)
         {
-            outputValues = m_device->Download(resource.Get());
+            outputValues = bufferDesc.initialValues;
         }
         else
         {
-            outputValues = bufferDesc.initialValues;
+            auto resource = m_resources[command.resourceName];
+            outputValues = m_device->Download(resource.Get());
         }
         LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
     }
@@ -430,16 +430,20 @@ void Executor::operator()(const Model::WriteFileCommand& command)
     {
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-
         std::vector<std::byte> fileData;
-        auto resource = m_resources[command.resourceName];
-        if (resource)
+        std::vector<uint32_t> dimensions;
+        if (bufferDesc.useDeferredBinding)
         {
-            fileData = m_device->Download(resource.Get());
+            fileData = bufferDesc.initialValues;
+            for (auto dim : bufferDesc.deferredShape)
+            {
+                dimensions.push_back(static_cast<uint32_t>(dim));
+            }
         }
         else
         {
-            fileData = bufferDesc.initialValues;
+            auto resource = m_resources[command.resourceName];
+            fileData = m_device->Download(resource.Get());
         }
 
         std::filesystem::path pathToFile(command.targetPath.c_str());
@@ -457,8 +461,11 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         // If NumPy array, serialize data into .npy file.
         if (IsNpyFilenameExtension(command.targetPath))
         {
+            if (dimensions.empty())
+            {
+                dimensions = std::vector<uint32_t>(command.dimensions);
+            }
             // If no dimensions were given, then treat as a 1D array.
-            std::vector<uint32_t> dimensions(command.dimensions);
             if (dimensions.empty())
             {
                 uint32_t elementCount = static_cast<uint32_t>(bufferDesc.sizeInBytes / Device::GetSizeInBytes(bufferDesc.initialValuesDataType));
@@ -499,9 +506,8 @@ Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBin
             source.elementOffset = modelSource.elementOffset;
             source.format = modelSource.format;
             source.resource = m_resources[modelSource.name].Get();
-            source.resourceDesc = (Model::ResourceDesc *) & resourceDesc;
+            source.resourceDesc = &resourceDesc;
             source.shape = modelSource.shape;
-            source.deferredBinding = modelSource.deferredBinding;
 
             if (std::holds_alternative<Model::BufferDesc>(resourceDesc.value))
             {
@@ -517,6 +523,7 @@ Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBin
                     // If the binding doesn't specify, assume the number of elements used to initialize the buffer.
                     source.elementCount = modelBufferDesc.initialValues.size() / source.elementSizeInBytes;
                 }
+                source.useDeferredBinding = modelBufferDesc.useDeferredBinding;
             }
 
             if (modelSource.counterName)

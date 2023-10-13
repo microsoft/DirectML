@@ -4,16 +4,16 @@ struct Dispatchable
 {
     struct BindingSource
     {
-        ID3D12Resource* resource = nullptr;
-        Model::ResourceDesc* resourceDesc = nullptr;
-        uint64_t elementCount = 0;
-        uint64_t elementSizeInBytes = 0;
-        uint64_t elementOffset = 0;
+        ID3D12Resource* resource;
+        Model::ResourceDesc* resourceDesc;
+        uint64_t elementCount;
+        uint64_t elementSizeInBytes;
+        uint64_t elementOffset;
         std::optional<DXGI_FORMAT> format;
-        ID3D12Resource* counterResource = nullptr;
-        uint64_t counterOffsetBytes = 0;
+        ID3D12Resource* counterResource;
+        uint64_t counterOffsetBytes;
         std::vector<int64_t> shape;
-        bool deferredBinding = false;
+        bool useDeferredBinding;
     };
 
     // Maps bind points (target names) to a source resources.

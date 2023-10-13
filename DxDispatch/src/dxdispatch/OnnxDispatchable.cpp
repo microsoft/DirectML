@@ -534,9 +534,8 @@ void OnnxDispatchable::Wait()
             if (jsonBinding != m_jsonBindings->end())
             {
                 BindingSource &bufferDesc = jsonBinding->second[0];
-                if (bufferDesc.deferredBinding)
+                if (bufferDesc.useDeferredBinding)
                 {
-                    
                     auto shapeInfo = values[i].GetTensorTypeAndShapeInfo();
                     auto shape = shapeInfo.GetShape();
                     LogInfo(fmt::format("Output Tensor '{}':", names[i]));
@@ -549,68 +548,17 @@ void OnnxDispatchable::Wait()
                     }
                     LogInfo(fmt::format("  Shape     = {}", shapeString));
                     LogInfo("");
-
-                    bufferDesc.shape = shape;
-                    bufferDesc.elementCount = shapeInfo.GetElementCount();
-                    bufferDesc.resourceDesc->name = names[i];
                     std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
 
                     Model::BufferDesc desc;
-                    desc.sizeInBytes = (bufferDesc.elementSizeInBytes * bufferDesc.elementCount);
+                    desc.sizeInBytes = (bufferDesc.elementSizeInBytes * shapeInfo.GetElementCount());
                     desc.initialValues = std::vector<std::byte>(
                         tensorData,
                         tensorData + desc.sizeInBytes);
                     desc.initialValuesOffsetInBytes = 0;
+                    desc.deferredShape = shape;
 
-                    auto elementType = shapeInfo.GetElementType();
-                    if (ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT16;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT32;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT8;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT16;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT32;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_INT64;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT8;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT16;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT32;
-                    }
-                    else if (ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64 == elementType)
-                    {
-                        desc.initialValuesDataType = DML_TENSOR_DATA_TYPE_UINT64;
-                    }
-                    else
-                    {
-                        DebugBreak();
-                    }
+                    desc.initialValuesDataType = GetDataTypeInfo(shapeInfo.GetElementType()).dmlDataType;;
                     bufferDesc.resourceDesc->value = std::move(desc);
                 }
             }

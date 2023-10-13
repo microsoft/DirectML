@@ -21,17 +21,16 @@ public:
     struct BufferBindingSource
     {
         std::string name;
-        uint64_t elementCount  = 0;
-        uint64_t elementSizeInBytes = 0;
-        uint64_t elementOffset = 0;
+        uint64_t elementCount;
+        uint64_t elementSizeInBytes;
+        uint64_t elementOffset;
         std::optional<DXGI_FORMAT> format;
 
         // For Append/Consume buffers only:
         std::optional<std::string> counterName;
-        uint64_t counterOffsetBytes = 0;
+        uint64_t counterOffsetBytes;
 
         std::vector<int64_t> shape;
-        bool deferredBinding = false;
     };
 
     using Bindings = std::unordered_map<std::string, std::vector<BufferBindingSource>>;
@@ -45,6 +44,8 @@ public:
         std::vector<std::byte> initialValues;
         DML_TENSOR_DATA_TYPE initialValuesDataType;
         uint64_t initialValuesOffsetInBytes;
+        bool useDeferredBinding;
+        std::vector<int64_t> deferredShape;
     };
 
     struct ResourceDesc
@@ -148,7 +149,7 @@ public:
     gsl::span<const DispatchableDesc> GetDispatchableDescs() const { return m_dispatchableDescs; }
     gsl::span<const Command> GetCommands() const { return m_commands; }
 
-    const ResourceDesc& GetResource(std::string_view name) const { return *m_resourceDescsByName.find(name.data())->second; }
+    ResourceDesc& GetResource(std::string_view name) { return *m_resourceDescsByName.find(name.data())->second; }
     const DispatchableDesc& GetDispatchable(std::string_view name) const { return *m_dispatchableDescsByName.find(name.data())->second; }
 
 private:

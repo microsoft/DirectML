@@ -347,6 +347,10 @@ void HlslDispatchable::Bind(Bindings& bindings, uint32_t iteration)
         assert(source.resource != nullptr);
         assert(source.resourceDesc != nullptr);
 
+        if(source.useDeferredBinding)
+        {
+            throw std::invalid_argument("HlslDispatchable doesn't support deferred bindings");
+        }
         if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
         {
             throw std::invalid_argument("HLSL operators currently only support buffer bindings");
