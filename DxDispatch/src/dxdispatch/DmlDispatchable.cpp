@@ -38,17 +38,6 @@ void FillBindingData(
     bindingData.bufferBindings.resize(totalResourceCount);
     bindingData.bindingDescs.resize(totalResourceCount);
 
-    for (auto& binding : bindings)
-    {
-        for (auto& bindingSource : binding.second)
-        {
-            if (bindingSource.useDeferredBinding)
-            {
-                throw std::invalid_argument("HlslDispatchable doesn't support deferred bindings");
-            }
-        }
-    }
-
     size_t bufferIndex = 0;
 
     for (size_t i = 0; i < bindPoints.size(); i++)
@@ -195,7 +184,7 @@ void DmlDispatchable::Initialize()
     m_device->ExecuteCommandListAndWait();
 }
 
-void DmlDispatchable::Bind(Bindings& bindings, uint32_t iteration)
+void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 {
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
 

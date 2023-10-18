@@ -217,6 +217,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     Dispatchable::Bindings bindings;
     try
     {
+        m_deferredBinding.clear();
         bindings = ResolveBindings(command.bindings);
     }
     catch (const std::exception& e)
@@ -253,7 +254,14 @@ void Executor::operator()(const Model::DispatchCommand& command)
             // Dispatch
             dispatchTimer.Start();
             dispatchable->Dispatch(command, iterationsCompleted);
-            dispatchable->Wait();
+            if (dispatchable->SupportsDeferredBinding())
+            {
+                dispatchable->Wait(m_deferredBinding);
+            }
+            else
+            {
+                dispatchable->Wait();
+            }
             cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
@@ -362,7 +370,8 @@ struct BufferDataView
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
-    uint32_t elementCount = view.desc.initialValues.size() / Device::GetSizeInBytes(view.desc.initialValuesDataType);
+    auto nBytes = std::max(view.desc.sizeInBytes, view.desc.initialValues.size());
+    uint32_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {
@@ -403,18 +412,44 @@ void Executor::operator()(const Model::PrintCommand& command)
     try
     {
         auto& resourceDesc = m_model.GetResource(command.resourceName);
-        auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-        std::vector<std::byte> outputValues;
-        if (bufferDesc.useDeferredBinding)
+        auto& bufferDescTemp = std::get<Model::BufferDesc>(resourceDesc.value);
+
+        std::optional<Model::BufferDesc> bufferDesc;
+        gsl::span<std::byte> outputValues;
+        std::vector<std::byte> outputValuesStorage;
+        ID3D12Resource* resource;
+        if (bufferDescTemp.useDeferredBinding)
         {
-            outputValues = bufferDesc.initialValues;
+            if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
+            {
+                THROW_HR(E_NOT_SET);
+            }
+            auto deferredBinding = &m_deferredBinding[command.resourceName];
+
+            resource = deferredBinding->resource.Get();
+            if (resource == nullptr)
+            {
+                outputValues = gsl::span<std::byte>(deferredBinding->cpuValues);
+            }
+            bufferDesc = {
+                (deferredBinding->elementCount * deferredBinding->elementSizeInBytes),
+                std::vector<std::byte>(),
+                deferredBinding->type,
+                0,
+                true };
         }
         else
         {
-            auto resource = m_resources[command.resourceName];
-            outputValues = m_device->Download(resource.Get());
+            resource = m_resources[command.resourceName].Get();
+            bufferDesc = bufferDescTemp;
+        } 
+        if(resource)
+        {
+            outputValuesStorage = m_device->Download(resource);
+            outputValues = outputValuesStorage;
         }
-        LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc)));
+        
+        LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc.value())));
     }
     catch (const std::exception& e)
     {
@@ -430,20 +465,37 @@ void Executor::operator()(const Model::WriteFileCommand& command)
     {
         auto& resourceDesc = m_model.GetResource(command.resourceName);
         auto& bufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-        std::vector<std::byte> fileData;
+        gsl::span<std::byte> fileData;
+        std::vector<std::byte> fileDataStorage;
+
         std::vector<uint32_t> dimensions;
+        ID3D12Resource* resource;
         if (bufferDesc.useDeferredBinding)
         {
-            fileData = bufferDesc.initialValues;
-            for (auto dim : bufferDesc.deferredShape)
+            if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
+            {
+                THROW_HR(E_NOT_SET);
+            }
+            auto deferredBinding = &m_deferredBinding[command.resourceName];
+            for (auto dim : deferredBinding->shape)
             {
                 dimensions.push_back(static_cast<uint32_t>(dim));
+            }
+            resource = deferredBinding->resource.Get();
+            if (resource == nullptr)
+            {
+                fileData = gsl::span<std::byte>(deferredBinding->cpuValues);
             }
         }
         else
         {
-            auto resource = m_resources[command.resourceName];
-            fileData = m_device->Download(resource.Get());
+            resource = m_resources[command.resourceName].Get();
+            dimensions = std::vector<uint32_t>(command.dimensions);
+        } 
+        if(resource)
+        {
+            fileDataStorage = m_device->Download(resource);
+            fileData = fileDataStorage;
         }
 
         std::filesystem::path pathToFile(command.targetPath.c_str());
@@ -461,10 +513,6 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         // If NumPy array, serialize data into .npy file.
         if (IsNpyFilenameExtension(command.targetPath))
         {
-            if (dimensions.empty())
-            {
-                dimensions = std::vector<uint32_t>(command.dimensions);
-            }
             // If no dimensions were given, then treat as a 1D array.
             if (dimensions.empty())
             {
@@ -474,7 +522,8 @@ void Executor::operator()(const Model::WriteFileCommand& command)
 
             std::vector<std::byte> npyFileData;
             WriteNpy(fileData, bufferDesc.initialValuesDataType, dimensions, /*out*/ npyFileData);
-            std::swap(fileData, npyFileData);
+            std::swap(fileDataStorage, npyFileData);
+            fileData = fileDataStorage;
         }
 
         file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
@@ -512,18 +561,25 @@ Dispatchable::Bindings Executor::ResolveBindings(const Model::Bindings& modelBin
             if (std::holds_alternative<Model::BufferDesc>(resourceDesc.value))
             {
                 auto& modelBufferDesc = std::get<Model::BufferDesc>(resourceDesc.value);
-                if (source.elementSizeInBytes == 0 && modelBufferDesc.initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+                if (modelBufferDesc.useDeferredBinding)
                 {
-                    // If the binding doesn't specify, assume the data type size used to initialize the buffer.
-                    source.elementSizeInBytes = Device::GetSizeInBytes(modelBufferDesc.initialValuesDataType);
+                    auto key = modelSource.name;
+                    m_deferredBinding[key].name = modelBinding.first;
                 }
+                else
+                {
+                    if (source.elementSizeInBytes == 0 && modelBufferDesc.initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+                    {
+                        // If the binding doesn't specify, assume the data type size used to initialize the buffer.
+                        source.elementSizeInBytes = Device::GetSizeInBytes(modelBufferDesc.initialValuesDataType);
+                    }
 
-                if (source.elementCount == 0 && source.elementSizeInBytes != 0)
-                {
-                    // If the binding doesn't specify, assume the number of elements used to initialize the buffer.
-                    source.elementCount = modelBufferDesc.initialValues.size() / source.elementSizeInBytes;
+                    if (source.elementCount == 0 && source.elementSizeInBytes != 0)
+                    {
+                        // If the binding doesn't specify, assume the number of elements used to initialize the buffer.
+                        source.elementCount = modelBufferDesc.initialValues.size() / source.elementSizeInBytes;
+                    }
                 }
-                source.useDeferredBinding = modelBufferDesc.useDeferredBinding;
             }
 
             if (modelSource.counterName)

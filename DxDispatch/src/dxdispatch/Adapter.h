@@ -87,4 +87,8 @@ private:
 
     // Maximum bytes of system memory that may be consumed by the adapter during operation.
     uint64_t m_sharedSystemMemory = 0;
+
+    bool m_isSupported_D3D12_GRAPHICS = false;
+    bool m_isSupported_D3D11_GRAPHICS = false;
+    bool m_isSupported_CORE_COMPUTE = false;
 };

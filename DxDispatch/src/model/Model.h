@@ -45,7 +45,6 @@ public:
         DML_TENSOR_DATA_TYPE initialValuesDataType;
         uint64_t initialValuesOffsetInBytes;
         bool useDeferredBinding;
-        std::vector<int64_t> deferredShape;
     };
 
     struct ResourceDesc
@@ -149,7 +148,7 @@ public:
     gsl::span<const DispatchableDesc> GetDispatchableDescs() const { return m_dispatchableDescs; }
     gsl::span<const Command> GetCommands() const { return m_commands; }
 
-    ResourceDesc& GetResource(std::string_view name) { return *m_resourceDescsByName.find(name.data())->second; }
+    const ResourceDesc& GetResource(std::string_view name) const { return *m_resourceDescsByName.find(name.data())->second; }
     const DispatchableDesc& GetDispatchable(std::string_view name) const { return *m_dispatchableDescsByName.find(name.data())->second; }
 
 private:

@@ -17,6 +17,11 @@
         {
             "initialValuesDataType": "FLOAT32",
             "initialValues": { "valueCount": 12, "value": 0 }
+        },
+        "deferredY":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": "deferred"
         }
     },
 
@@ -45,6 +50,20 @@
             "type": "print",
             "resource": "c"
         },
+        {
+            "type": "dispatch",
+            "dispatchable": "concat",
+            "bindings": 
+            {
+                "x0": { "name": "a", "shape": [3,2] },
+                "x1": { "name": "b", "shape": [3,2] },
+                "y": { "name": "deferredY" }
+            }
+        },
+        {
+            "type": "print",
+            "resource": "deferredY"
+        }
         {
             "type": "dispatch",
             "dispatchable": "concat",

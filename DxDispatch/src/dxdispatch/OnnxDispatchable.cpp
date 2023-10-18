@@ -261,7 +261,7 @@ void OnnxDispatchable::Initialize()
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
 }
 
-void OnnxDispatchable::Bind(Bindings& jsonBindings, uint32_t iteration)
+void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
 {
     // Early exit for all iterations after the first. Bindings are cached in m_ioBindings.
     if (iteration > 0)
@@ -502,7 +502,6 @@ void OnnxDispatchable::Bind(Bindings& jsonBindings, uint32_t iteration)
             LogInfo("");
         }
     }
-    m_jsonBindings = jsonBindings;
 }
 
 void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
@@ -520,27 +519,34 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
     m_device->ExecuteCommandList();
 }
 
-void OnnxDispatchable::Wait()
+void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
 {
     m_ioBindings->SynchronizeOutputs();
-    auto values =  m_ioBindings->GetOutputValues();
-    auto names = m_ioBindings->GetOutputNames();
 
-    for (size_t i = 0; i < values.size(); i++)
+    if (deferredBindings.size() == 0)
     {
-        if (m_jsonBindings.has_value())
+        return;
+    }
+    auto values = m_ioBindings->GetOutputValues();
+    auto names = m_ioBindings->GetOutputNames();
+    for (auto &output : deferredBindings)
+    {
+        bool isFound = false;
+        auto deferredBinding = &output.second;
+        for (size_t i = 0; i < values.size(); i++)
         {
-            auto jsonBinding = m_jsonBindings->find(names[i]);
-            if (jsonBinding != m_jsonBindings->end())
+            if (deferredBinding->name == names[i])
             {
-                BindingSource &bufferDesc = jsonBinding->second[0];
-                if (bufferDesc.useDeferredBinding)
+                isFound = true;
+                auto shapeInfo = values[i].GetTensorTypeAndShapeInfo();
+                auto shape = shapeInfo.GetShape();
+                auto type = shapeInfo.GetElementType();
+
+                if (m_args.PrintVerboseOnnxBindingInfo())
                 {
-                    auto shapeInfo = values[i].GetTensorTypeAndShapeInfo();
-                    auto shape = shapeInfo.GetShape();
                     LogInfo(fmt::format("Output Tensor '{}':", names[i]));
                     LogInfo(fmt::format("  Resource  = {}", "resolved"));
-                    LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(shapeInfo.GetElementType())));
+                    LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(type)));
                     std::string shapeString;
                     for (size_t j = 0; j < shape.size(); j++)
                     {
@@ -548,18 +554,34 @@ void OnnxDispatchable::Wait()
                     }
                     LogInfo(fmt::format("  Shape     = {}", shapeString));
                     LogInfo("");
+                }
+
+                const OrtApi& ortApi = Ort::GetApi();
+
+                deferredBinding->elementCount = shapeInfo.GetElementCount();
+                deferredBinding->shape = shape;
+                deferredBinding->type = GetDataTypeInfo(type).dmlDataType;
+                deferredBinding->elementSizeInBytes = Device::GetSizeInBytes(deferredBinding->type);
+
+                if (shapeInfo.GetElementType() == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                {
                     std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
-
-                    Model::BufferDesc desc;
-                    desc.sizeInBytes = (bufferDesc.elementSizeInBytes * shapeInfo.GetElementCount());
-                    desc.initialValues = std::vector<std::byte>(
+                    deferredBinding->cpuValues = std::vector<std::byte>(
                         tensorData,
-                        tensorData + desc.sizeInBytes);
-                    desc.initialValuesOffsetInBytes = 0;
-                    desc.deferredShape = shape;
+                        tensorData + deferredBinding->elementSizeInBytes);
+                }
+                else
+                {
+                    auto memInfo = Ort::MemoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
+                    auto allocator = Ort::Allocator(m_session.value(), memInfo);
 
-                    desc.initialValuesDataType = GetDataTypeInfo(shapeInfo.GetElementType()).dmlDataType;;
-                    bufferDesc.resourceDesc->value = std::move(desc);
+                    ComPtr<ID3D12Resource> resource;
+                    auto mutableData = values[i].GetTensorMutableData<void>();
+                    Ort::ThrowOnError(m_ortDmlApi->GetD3D12ResourceFromAllocation(
+                        allocator,
+                        mutableData,
+                        &deferredBinding->resource
+                    ));
                 }
             }
         }

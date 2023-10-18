@@ -98,8 +98,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "q,queue_type", 
-            "Type of command queue/list to use ('compute' or 'direct')", 
-            cxxopts::value<std::string>()->default_value("direct")
+            "Type of command queue/list to use ('compute' or 'direct')"
         )
         (
             "clear_shader_caches", 
@@ -293,18 +292,21 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     }
 
-    auto queueTypeStr = result["queue_type"].as<std::string>();
-    if (queueTypeStr == "direct")
+    if (result.count("queue_type"))
     {
-        m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    }
-    else if (queueTypeStr == "compute")
-    {
-        m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-    }
-    else
-    {
-        throw std::invalid_argument("Unexpected value for queue_type. Must be 'compute' or 'direct'");
+        auto queueTypeStr = result["queue_type"].as<std::string>();
+        if (queueTypeStr == "direct")
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        else if (queueTypeStr == "compute")
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        else
+        {
+            throw std::invalid_argument("Unexpected value for queue_type. Must be 'compute' or 'direct'");
+        }
     }
 
     if (result.count("xbox_allow_precompile") && result["xbox_allow_precompile"].as<bool>())
@@ -440,4 +442,25 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     }
 
     m_helpText = options.help();
+}
+
+void CommandLineArgs::SetAdapter(IAdapter* adapter)
+{
+    if (D3D12_COMMAND_LIST_TYPE_NONE == m_commandListType)
+    {
+        if (adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS) ||
+            adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D11_GRAPHICS))
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        else if(adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
+        {
+            m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        else
+        {
+            LogError("Unsupported Adapter");
+            THROW_HR(E_NOTIMPL);
+        }
+    }
 }

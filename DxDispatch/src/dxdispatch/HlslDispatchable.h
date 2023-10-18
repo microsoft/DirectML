@@ -8,7 +8,7 @@ public:
     HlslDispatchable(std::shared_ptr<Device> device, const Model::HlslDispatchableDesc& desc, const CommandLineArgs& args);
 
     void Initialize() final;
-    void Bind(Bindings& bindings, uint32_t iteration) final;
+    void Bind(const Bindings& bindings, uint32_t iteration) final;
     void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
     void Wait() final;
 

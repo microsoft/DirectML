@@ -70,6 +70,8 @@ int main(int argc, char** argv)
         try
         {
             Adapter adapter = Adapter::Select(dxCoreModule, args.AdapterSubstring());
+            LogInfo(adapter.GetDetailedDescription() + "\n");
+            args.SetAdapter(adapter.GetAdapter());
             device = std::make_shared<Device>(
                 adapter.GetAdapter(),
                 D3D_FEATURE_LEVEL_1_0_CORE,

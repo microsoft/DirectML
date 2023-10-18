@@ -333,7 +333,7 @@ void HlslDispatchable::Initialize()
     }
 }
 
-void HlslDispatchable::Bind(Bindings& bindings, uint32_t iteration)
+void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 {
     uint32_t descriptorIncrementSize = m_device->D3D()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -347,10 +347,6 @@ void HlslDispatchable::Bind(Bindings& bindings, uint32_t iteration)
         assert(source.resource != nullptr);
         assert(source.resourceDesc != nullptr);
 
-        if(source.useDeferredBinding)
-        {
-            throw std::invalid_argument("HlslDispatchable doesn't support deferred bindings");
-        }
         if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
         {
             throw std::invalid_argument("HLSL operators currently only support buffer bindings");
