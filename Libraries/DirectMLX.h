@@ -3318,6 +3318,7 @@ namespace dml
     //   Scales = computed by dividing the output sizes by the input sizes
     //   InputPixelOffsets = 0.5f for each dimension
     //   OutputPixelOffsets = -0.5f for each dimension
+    //   Antialiased = false
     inline Expression Resample(
         Expression input,
         TensorDimensions outputSizes,
@@ -3327,7 +3328,11 @@ namespace dml
 #endif // DML_TARGET_VERSION >= 0x5100
         Span<const float> scales = {},
         Span<const float> inputPixelOffsets = {},
-        Span<const float> outputPixelOffsets = {})
+        Span<const float> outputPixelOffsets = {}, 
+# if DML_TARGET_VERSION >= 0x6200
+        bool antialiased = false
+#endif
+        )
     {
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
 
@@ -3364,7 +3369,11 @@ namespace dml
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
 
-#if DML_TARGET_VERSION >= 0x5100
+#if DML_TARGET_VERSION >= 0x6200
+        DML_RESAMPLE3_OPERATOR_DESC desc = {};
+        desc.RoundingDirection = roundingDirection;
+        desc.Antialiased = antialiased;
+#elif DML_TARGET_VERSION >= 0x5100
         DML_RESAMPLE2_OPERATOR_DESC desc = {};
         desc.RoundingDirection = roundingDirection;
 #else
@@ -3381,12 +3390,13 @@ namespace dml
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
 
-#if DML_TARGET_VERSION >= 0x5100
+#if DML_TARGET_VERSION >= 0x6200
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE3, &desc, inputs);
+#elif DML_TARGET_VERSION >= 0x5100
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE2, &desc, inputs);
 #else
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE1, &desc, inputs);
 #endif // DML_TARGET_VERSION >= 0x5100
-
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
         return output;
