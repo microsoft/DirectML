@@ -370,7 +370,7 @@ struct BufferDataView
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
-    auto nBytes = std::max(view.desc.sizeInBytes, view.desc.initialValues.size());
+    auto nBytes = std::max(view.desc.sizeInBytes, (uint64_t) view.desc.initialValues.size());
     uint32_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
@@ -476,7 +476,9 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         {
             if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
             {
-                THROW_HR(E_NOT_SET);
+                auto message = fmt::format("Could not find deferred resource {}", command.resourceName);
+                LogError(message);
+                throw std::invalid_argument(message);
             }
             auto deferredBinding = &m_deferredBinding[command.resourceName];
             for (auto dim : deferredBinding->shape)
