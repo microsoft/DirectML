@@ -422,7 +422,9 @@ void Executor::operator()(const Model::PrintCommand& command)
         {
             if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
             {
-                THROW_HR(E_NOT_SET);
+                auto message = fmt::format("Could not find deferred resource {}", command.resourceName);
+                LogError(message);
+                throw std::invalid_argument(message);
             }
             auto deferredBinding = &m_deferredBinding[command.resourceName];
 

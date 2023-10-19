@@ -585,5 +585,10 @@ void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
                 }
             }
         }
+
+        if (!isFound)
+        {
+            throw std::invalid_argument(fmt::format("Could not find deferred binding {}", deferredBinding->name));
+        }
     }
 }

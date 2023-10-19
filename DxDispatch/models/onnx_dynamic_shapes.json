@@ -57,13 +57,13 @@
             {
                 "x0": { "name": "a", "shape": [3,2] },
                 "x1": { "name": "b", "shape": [3,2] },
-                "y": { "name": "deferredY" }
+                "y": { "name": "c", "shape": [6,2] }
             }
         },
         {
             "type": "print",
-            "resource": "deferredY"
-        }
+            "resource": "c"
+        },
         {
             "type": "dispatch",
             "dispatchable": "concat",
@@ -71,12 +71,12 @@
             {
                 "x0": { "name": "a", "shape": [3,2] },
                 "x1": { "name": "b", "shape": [3,2] },
-                "y": { "name": "c", "shape": [6,2] }
+                "y": { "name": "deferredY" }
             }
         },
         {
             "type": "print",
-            "resource": "c"
+            "resource": "deferredY"
         }
     ]
 }

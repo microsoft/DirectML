@@ -98,7 +98,8 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "q,queue_type", 
-            "Type of command queue/list to use ('compute' or 'direct')"
+            "Type of command queue/list to use ('compute' or 'direct')",
+            cxxopts::value<std::string>()
         )
         (
             "clear_shader_caches", 
@@ -294,7 +295,9 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
     if (result.count("queue_type"))
     {
-        auto queueTypeStr = result["queue_type"].as<std::string>();
+        auto temp = result["queue_type"];
+        auto queueTypeStr = temp.as<std::string>();
+
         if (queueTypeStr == "direct")
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -448,8 +451,7 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
 {
     if (D3D12_COMMAND_LIST_TYPE_NONE == m_commandListType)
     {
-        if (adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS) ||
-            adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D11_GRAPHICS))
+        if (adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
         }
