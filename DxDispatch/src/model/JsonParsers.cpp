@@ -1130,7 +1130,19 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         throw std::invalid_argument("Field 'initialValues' is required."); 
     }
 
-    if (initialValuesField->value.IsArray())
+    if (initialValuesField->value.IsString())
+    {
+        if (initialValuesField->value != "deferred")
+        {
+            throw std::invalid_argument("The 'initialValuesDataType' only supports deferred");
+        }
+        buffer.initialValues.clear();
+        buffer.initialValuesOffsetInBytes = 0;
+        buffer.sizeInBytes = 0;
+        buffer.useDeferredBinding = true;
+        return buffer;
+    }
+    else if (initialValuesField->value.IsArray())
     {
         // e.g. "initialValues": [{"type": "UINT32", "value": 42}, {"type": "FLOAT32", "value": 3.14159}]
         if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
@@ -1189,7 +1201,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
     }
     else
     {
-        throw std::invalid_argument("Field 'initialValues' must be an array of numbers or an object.");
+        throw std::invalid_argument("Field 'initialValues' must be an array of numbers, an object, or deferred.");
     }
 
     if (buffer.initialValues.empty())

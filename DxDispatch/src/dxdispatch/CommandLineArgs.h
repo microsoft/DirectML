@@ -32,7 +32,14 @@ public:
     std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
     uint32_t MinimumDispatchIntervalInMilliseconds() const { return m_minDispatchIntervalInMilliseconds; }
     uint32_t MaxWarmupSamples() const { return m_maxWarmupSamples; }
-    D3D12_COMMAND_LIST_TYPE CommandListType() const { return m_commandListType; }
+    D3D12_COMMAND_LIST_TYPE CommandListType() const 
+    {
+        if (D3D12_COMMAND_LIST_TYPE_NONE == m_commandListType)
+        {
+            return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        return m_commandListType; 
+    }
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
 
@@ -50,6 +57,7 @@ public:
     bool OrtExtensionsEnabled() const { return m_ortExtensionsEnabled; }
     bool OnnxProfilingEnabled() const { return m_onnxProfilingEnabled; }
 
+    void SetAdapter(IAdapter* adapter);
 private:
     bool m_showAdapters = false;
     bool m_showDependencies = false;
@@ -73,7 +81,7 @@ private:
     uint32_t m_maxWarmupSamples = 1;
 
     // Tools like PIX generally work better when work is recorded into a graphics queue, so it's set as the default here.
-    D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    D3D12_COMMAND_LIST_TYPE m_commandListType = D3D12_COMMAND_LIST_TYPE_NONE;
     PixCaptureType m_pixCaptureType = PixCaptureType::Manual;
 
     // [onnx models] Overrides for free dimensions by name. 

@@ -519,7 +519,76 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
     m_device->ExecuteCommandList();
 }
 
-void OnnxDispatchable::Wait()
+void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
 {
     m_ioBindings->SynchronizeOutputs();
+
+    if (deferredBindings.size() == 0)
+    {
+        return;
+    }
+    auto values = m_ioBindings->GetOutputValues();
+    auto names = m_ioBindings->GetOutputNames();
+    for (auto &output : deferredBindings)
+    {
+        bool isFound = false;
+        auto deferredBinding = &output.second;
+        for (size_t i = 0; i < values.size(); i++)
+        {
+            if (deferredBinding->name == names[i])
+            {
+                isFound = true;
+                auto shapeInfo = values[i].GetTensorTypeAndShapeInfo();
+                auto shape = shapeInfo.GetShape();
+                auto type = shapeInfo.GetElementType();
+
+                if (m_args.PrintVerboseOnnxBindingInfo())
+                {
+                    LogInfo(fmt::format("Output Tensor '{}':", names[i]));
+                    LogInfo(fmt::format("  Resource  = {}", "resolved"));
+                    LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(type)));
+                    std::string shapeString;
+                    for (size_t j = 0; j < shape.size(); j++)
+                    {
+                        shapeString += "[" + std::to_string(shape[j]) + "]";
+                    }
+                    LogInfo(fmt::format("  Shape     = {}", shapeString));
+                    LogInfo("");
+                }
+
+                const OrtApi& ortApi = Ort::GetApi();
+
+                deferredBinding->elementCount = shapeInfo.GetElementCount();
+                deferredBinding->shape = shape;
+                deferredBinding->type = GetDataTypeInfo(type).dmlDataType;
+                deferredBinding->elementSizeInBytes = Device::GetSizeInBytes(deferredBinding->type);
+
+                if (shapeInfo.GetElementType() == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                {
+                    std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
+                    deferredBinding->cpuValues = std::vector<std::byte>(
+                        tensorData,
+                        tensorData + deferredBinding->elementSizeInBytes);
+                }
+                else
+                {
+                    auto memInfo = Ort::MemoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
+                    auto allocator = Ort::Allocator(m_session.value(), memInfo);
+
+                    ComPtr<ID3D12Resource> resource;
+                    auto mutableData = values[i].GetTensorMutableData<void>();
+                    Ort::ThrowOnError(m_ortDmlApi->GetD3D12ResourceFromAllocation(
+                        allocator,
+                        mutableData,
+                        &deferredBinding->resource
+                    ));
+                }
+            }
+        }
+
+        if (!isFound)
+        {
+            throw std::invalid_argument(fmt::format("Could not find deferred binding {}", deferredBinding->name));
+        }
+    }
 }

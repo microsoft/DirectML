@@ -15,7 +15,8 @@ public:
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
     void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) final;
-    void Wait() final;
+    bool SupportsDeferredBinding() final { return true; }
+    void Wait(DeferredBindings& defferedBindings) final;
 
 private:
     std::shared_ptr<Device> m_device;
