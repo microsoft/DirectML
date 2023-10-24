@@ -3330,7 +3330,7 @@ namespace dml
         Span<const float> inputPixelOffsets = {},
         Span<const float> outputPixelOffsets = {} 
 #if DML_TARGET_VERSION >= 0x6200
-        ,bool antialiased = false
+        , bool antialiased = false
 #endif
         )
     {
