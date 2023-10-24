@@ -22,6 +22,7 @@
 #include <functional>
 #include <numeric>
 #include <thread>
+#include <mutex>
 
 #ifndef _WIN32
 #include <wsl/winadapter.h>
@@ -68,4 +69,5 @@ using IAdapter = IDXCoreAdapter;
 #include <DirectML.h>
 #include "DirectMLX.h"
 
+#include "DxDispatchInterface.h"
 #include "Logging.h"

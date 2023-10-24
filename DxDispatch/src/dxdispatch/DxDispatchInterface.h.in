@@ -1,0 +1,72 @@
+#pragma once
+
+// {46B302CE-BF11-4BFE-BB7E-4496BFD08C52}
+static const GUID DxDispatch_DxDevice = 
+{ 0x46b302ce, 0xbf11, 0x4bfe, { 0xbb, 0x7e, 0x44, 0x96, 0xbf, 0xd0, 0x8c, 0x52 } };
+
+// {B7C9961F-44DA-4E1C-AAFD-7A9106F932BB}
+static const GUID DxDispatch_DmlDevice = 
+{ 0xb7c9961f, 0x44da, 0x4e1c, { 0xaa, 0xfd, 0x7a, 0x91, 0x6, 0xf9, 0x32, 0xbb } };
+
+
+MIDL_INTERFACE("E05E128D-9A97-4AEE-85D8-1725C92E4172")
+IDxDispatchLogger : public IUnknown
+{
+    virtual void STDMETHODCALLTYPE  LogInfo(
+                    _In_ PCSTR message) = 0;
+
+    virtual void STDMETHODCALLTYPE  LogWarning(
+                    _In_ PCSTR message) = 0;
+
+    virtual void STDMETHODCALLTYPE  LogError(
+                    _In_ PCSTR message) = 0;
+
+    virtual void STDMETHODCALLTYPE  LogCommandStarted(
+                    UINT32 index,
+                    _In_ PCSTR jsonString)  = 0;
+
+    virtual void STDMETHODCALLTYPE  LogCommandCompleted(
+                    UINT32 index, 
+                    HRESULT hr, 
+                    _In_opt_ PCSTR statusString) = 0;
+};
+
+MIDL_INTERFACE("1D5837DF-8496-42A6-AA5B-AA0DD127C3B4")
+IDxDispatch : public IUnknown
+{
+
+    // run all the commands
+    virtual HRESULT STDMETHODCALLTYPE  RunAll(
+                ) = 0;
+
+    // allows running of commands individually 
+    virtual UINT32 GetCommandCount(
+                ) = 0;
+    virtual HRESULT STDMETHODCALLTYPE  RunCommand(
+                UINT32 index) = 0;
+
+    // GetDevice returns DxDevice or DMLDevice if available
+    virtual HRESULT STDMETHODCALLTYPE GetObject(
+                REFGUID objectId,
+                REFIID riid,
+                _COM_Outptr_  void **ppvObject) = 0;
+
+ };
+
+STDAPI CreateDxDispatchFromString(
+   _In_           PCSTR args,                         // DxDispatch commandArgs
+   _In_           PCSTR jsonConfig,                   // DxDisPatch Json contents
+   _In_opt_       IUnknown *adapter,                 // will use DxDispatch logic to pick device if nullptr
+   _In_opt_       IDxDispatchLogger *customLogger,   // will log to console if not overwritten
+   _COM_Outptr_   IDxDispatch **dxDispatch
+);
+
+STDAPI CreateDxDispatchFromArgs(
+   _In_           int argc,
+   _In_           char** argv,
+   _In_           PCSTR jsonConfig,                   // DxDisPatch Json contents
+   _In_opt_       IUnknown *adapter,                  // will use DxDispatch logic to pick device if nullptr
+   _In_opt_       IDxDispatchLogger *customLogger,    // will log to console if not overwritten
+   _COM_Outptr_   IDxDispatch **dxDispatch
+);
+

@@ -183,8 +183,9 @@ const char* GetOnnxTensorTypeString(ONNXTensorElementDataType dataType)
 OnnxDispatchable::OnnxDispatchable(
     std::shared_ptr<Device> device, 
     const Model::OnnxDispatchableDesc& desc,
-    const CommandLineArgs& args
-    ) : m_device(device), m_desc(desc), m_args(args)
+    const CommandLineArgs& args,
+    IDxDispatchLogger* logger
+    ) : m_device(device), m_desc(desc), m_args(args), m_logger(logger)
 {
 }
 
@@ -485,9 +486,9 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
     {
         for (auto& binding : m_mergedBindings)
         {
-            LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name));
-            LogInfo(fmt::format("  Resource  = {}", binding.resourceType));
-            LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)));
+            m_logger->LogInfo(fmt::format("{} Tensor '{}':", (binding.isInput ? "Input" : "Output"), binding.name).c_str());
+            m_logger->LogInfo(fmt::format("  Resource  = {}", binding.resourceType).c_str());
+            m_logger->LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(binding.dataType)).c_str());
             std::string shapeString = "[";
             for (size_t i = 0; i < binding.shape.size(); i++)
             {
@@ -498,8 +499,8 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                 }
             }
             shapeString += "]";
-            LogInfo(fmt::format("  Shape     = {}", shapeString));
-            LogInfo("");
+            m_logger->LogInfo(fmt::format("  Shape     = {}", shapeString).c_str());
+            m_logger->LogInfo("");
         }
     }
 }
@@ -544,16 +545,16 @@ void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
 
                 if (m_args.PrintVerboseOnnxBindingInfo())
                 {
-                    LogInfo(fmt::format("Output Tensor '{}':", names[i]));
-                    LogInfo(fmt::format("  Resource  = {}", "resolved"));
-                    LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(type)));
+                    m_logger->LogInfo(fmt::format("Output Tensor '{}':", names[i]).c_str());
+                    m_logger->LogInfo(fmt::format("  Resource  = {}", "resolved").c_str());
+                    m_logger->LogInfo(fmt::format("  Data Type = {}", GetOnnxTensorTypeString(type)).c_str());
                     std::string shapeString;
                     for (size_t j = 0; j < shape.size(); j++)
                     {
                         shapeString += "[" + std::to_string(shape[j]) + "]";
                     }
-                    LogInfo(fmt::format("  Shape     = {}", shapeString));
-                    LogInfo("");
+                    m_logger->LogInfo(fmt::format("  Shape     = {}", shapeString).c_str());
+                    m_logger->LogInfo("");
                 }
 
                 const OrtApi& ortApi = Ort::GetApi();

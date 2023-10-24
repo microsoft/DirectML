@@ -31,7 +31,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "m,model", 
             "Path to JSON/ONNX model file", 
-            cxxopts::value<decltype(m_modelPath)>()
+            cxxopts::value<std::filesystem::path>()
         )
         (
             "h,help", 
@@ -41,6 +41,21 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "S,show_dependencies",
             "Show version info for dependencies including DirectX components",
+            cxxopts::value<bool>()
+        )
+        (
+            "RelInputPath",
+            "Provide input path relative to Inputs",
+            cxxopts::value<std::filesystem::path>()
+        )
+        (
+            "RelOutputPath",
+            "Provide input path relative to Inputs",
+            cxxopts::value<std::filesystem::path>()
+        )
+        (
+            "print_commands",
+            "Prints detail message before and after each command.",
             cxxopts::value<bool>()
         )
         ;
@@ -234,7 +249,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
     if (result.count("model")) 
     { 
-        m_modelPath = result["model"].as<decltype(m_modelPath)>(); 
+        m_modelPath = result["model"].as<std::filesystem::path>();
     }
 
     if (result.count("adapter")) 
@@ -246,6 +261,22 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     { 
         m_showAdapters = result["show_adapters"].as<bool>(); 
     }
+
+    if (result.count("print_commands"))
+    {
+        m_commandPrinting = result["print_commands"].as<bool>();
+    }
+
+    if (result.count("RelInputPath"))
+    {
+        m_inputRelPath = result["RelInputPath"].as<std::filesystem::path>();
+    }
+
+    if(result.count("RelOutputPath"))
+    {
+        m_outputRelPath = result["RelOutputPath"].as<std::filesystem::path>();
+    }
+
 
     if (result.count("timing_verbosity"))
     {
@@ -461,7 +492,6 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
         }
         else
         {
-            LogError("Unsupported Adapter");
             THROW_HR(E_NOTIMPL);
         }
     }

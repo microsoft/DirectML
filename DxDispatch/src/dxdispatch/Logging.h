@@ -1,7 +1,38 @@
 #pragma once
 
-void LogInfo(std::string_view msg);
+class DxDispatchConsoleLogger : public IDxDispatchLogger
+{
+public:
+    DxDispatchConsoleLogger() = default;
+    // IUnknown
+    HRESULT STDMETHODCALLTYPE QueryInterface(
+        REFIID riid,
+        _COM_Outptr_ void** ppvObject) final;
 
-void LogError(std::string_view msg);
+    ULONG STDMETHODCALLTYPE AddRef(void) final;
 
-void LogError(std::wstring_view msg);
+    ULONG STDMETHODCALLTYPE Release(void) final;
+
+    // IDxDispatchLogger
+    void STDMETHODCALLTYPE  LogInfo(
+        _In_ PCSTR message) final;
+
+    void STDMETHODCALLTYPE  LogWarning(
+        _In_ PCSTR message) final;
+
+    void STDMETHODCALLTYPE  LogError(
+        _In_ PCSTR message) final;
+
+    void STDMETHODCALLTYPE  LogCommandStarted(
+        UINT32 index,
+        _In_ PCSTR jsonString)  final;
+
+    void STDMETHODCALLTYPE  LogCommandCompleted(
+        UINT32 index,
+        HRESULT hr,
+        _In_opt_ PCSTR statusString) final;
+
+protected:
+    virtual ~DxDispatchConsoleLogger() = default;
+    std::atomic<ULONG>        m_refCount = 0;
+};

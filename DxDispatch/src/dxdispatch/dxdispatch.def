@@ -1,0 +1,8 @@
+
+EXPORTS
+
+;
+; DxDispatch exports
+;
+    CreateDxDispatchFromString      @1
+    CreateDxDispatchFromArgs        @2

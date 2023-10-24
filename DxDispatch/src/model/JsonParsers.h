@@ -133,8 +133,17 @@ namespace JsonParsers
 
     Model::ResourceDesc ParseModelResourceDesc(std::string_view name, const std::filesystem::path& parentPath, const rapidjson::Value& object);
     Model::DispatchableDesc ParseModelDispatchableDesc(std::string_view name, const std::filesystem::path& parentPath, const rapidjson::Value& object, BucketAllocator& allocator);
-    Model::Command ParseModelCommand(const rapidjson::Value& object);
+    Model::Command ParseModelCommand(const rapidjson::Value& object, const std::filesystem::path& outputPath);
+    Model::CommandDesc ParseModelCommandDesc(const rapidjson::Value& object, const std::filesystem::path& outputPath);
 
-    Model ParseModel(const rapidjson::Document& doc);
-    Model ParseModel(const std::filesystem::path& filePath);
+    Model ParseModel(
+        const rapidjson::Document& doc,
+        std::string_view jsonDocumentText,
+        const std::filesystem::path& inputPath,
+        const std::filesystem::path& outputPath);
+
+    Model ParseModel(
+        const std::filesystem::path& filePath, 
+        std::filesystem::path inputPath,
+        std::filesystem::path outputPath);
 }

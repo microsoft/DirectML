@@ -131,12 +131,19 @@ public:
 
     using Command = std::variant<DispatchCommand, PrintCommand, WriteFileCommand>;
 
+    struct CommandDesc
+    {
+        std::string type;
+        std::string parameters;
+        Command command;
+    };
+
     Model() = default;
 
     Model(
         std::vector<ResourceDesc>&& resourceDescs,
         std::vector<DispatchableDesc>&& dispatchableDescs,
-        std::vector<Command>&& commands,
+        std::vector<CommandDesc>&& commands,
         BucketAllocator&& allocator);
 
     Model(const Model&) = delete;
@@ -146,7 +153,7 @@ public:
 
     gsl::span<const ResourceDesc> GetResourceDescs() const { return m_resourceDescs; }
     gsl::span<const DispatchableDesc> GetDispatchableDescs() const { return m_dispatchableDescs; }
-    gsl::span<const Command> GetCommands() const { return m_commands; }
+    gsl::span<const CommandDesc> GetCommands() const { return m_commands; }
 
     const ResourceDesc& GetResource(std::string_view name) const { return *m_resourceDescsByName.find(name.data())->second; }
     const DispatchableDesc& GetDispatchable(std::string_view name) const { return *m_dispatchableDescsByName.find(name.data())->second; }
@@ -154,7 +161,7 @@ public:
 private:
     std::vector<ResourceDesc> m_resourceDescs;
     std::vector<DispatchableDesc> m_dispatchableDescs;
-    std::vector<Command> m_commands;
+    std::vector<CommandDesc> m_commands;
     BucketAllocator m_allocator;
     std::unordered_map<std::string, ResourceDesc*> m_resourceDescsByName;
     std::unordered_map<std::string, DispatchableDesc*> m_dispatchableDescsByName;

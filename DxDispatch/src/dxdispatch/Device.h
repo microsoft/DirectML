@@ -18,7 +18,8 @@ public:
         bool aliasingBarrierAfterDispatch,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
-        std::shared_ptr<DmlModule> dmlModule
+        std::shared_ptr<DmlModule> dmlModule,
+        IDxDispatchLogger *logger
         );
     ~Device();
 
@@ -125,10 +126,12 @@ private:
     std::vector<Microsoft::WRL::ComPtr<IGraphicsUnknown>> m_temporaryResources;
     uint32_t m_dispatchRepeat = 1;
     std::vector<D3D12_RESOURCE_BARRIER> m_postDispatchBarriers;
+    DWORD m_callbackCookie = 0;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;
     Microsoft::WRL::ComPtr<IDxcIncludeHandler> m_dxcIncludeHandler;
     Microsoft::WRL::ComPtr<IDxcCompiler3> m_dxcCompiler;
+    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
 #endif
 };
