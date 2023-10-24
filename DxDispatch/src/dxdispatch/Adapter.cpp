@@ -33,6 +33,8 @@ Adapter::Adapter(IAdapter* adapter, std::shared_ptr<DxCoreModule> dxCoreModule)
         oss << m_driverVersionRaw.parts.d;
         m_driverVersion = oss.str();
     }
+    m_isSupported_D3D12_GRAPHICS = m_adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS);
+    m_isSupported_CORE_COMPUTE = m_adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
 #endif
 }
 
@@ -53,14 +55,18 @@ std::string Adapter::GetDetailedDescription() const
 -Integrated: {}
 -Dedicated Adapter Memory: {}
 -Dedicated System Memory: {}
--Shared System Memory: {})", 
+-Shared System Memory: {}
+-D3D12_GRAPHICS: {}
+-CORE_COMPUTE: {})",
         m_description, 
         m_driverVersion,
         m_isHardware,
         m_isIntegrated,
         FormatBytes(m_dedicatedAdapterMemory),
         FormatBytes(m_dedicatedSystemMemory),
-        FormatBytes(m_sharedSystemMemory)
+        FormatBytes(m_sharedSystemMemory),
+        m_isSupported_D3D12_GRAPHICS,
+        m_isSupported_CORE_COMPUTE
         );
 }
 

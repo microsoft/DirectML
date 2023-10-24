@@ -21,4 +21,5 @@ private:
     const CommandLineArgs& m_commandLineArgs;
     std::unordered_map<std::string, std::unique_ptr<Dispatchable>> m_dispatchables;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_resources;
+    Dispatchable::DeferredBindings m_deferredBinding;
 };

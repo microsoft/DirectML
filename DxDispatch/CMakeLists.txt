@@ -271,6 +271,7 @@ if(DXD_TESTS)
     endif()
     if(NOT onnxruntime_type STREQUAL None)
         model_test(onnx_gemm "Resource 'Out': 22, 28, 34, 40, 46, 60, 74, 88, 70, 92, 114, 136")
+        model_test(onnx_dynamic_shapes "Resource 'deferredY': 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12")
     endif()
 endif()
 

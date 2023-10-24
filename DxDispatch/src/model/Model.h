@@ -44,6 +44,7 @@ public:
         std::vector<std::byte> initialValues;
         DML_TENSOR_DATA_TYPE initialValuesDataType;
         uint64_t initialValuesOffsetInBytes;
+        bool useDeferredBinding;
     };
 
     struct ResourceDesc

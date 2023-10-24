@@ -16,7 +16,7 @@
         "output": 
         {
             "initialValuesDataType": "FLOAT32",
-            "initialValues": { "valueCount": 4, "value": 0 }
+            "initialValues": { "valueCount": 8, "value": 0 }
         }
     },
 
