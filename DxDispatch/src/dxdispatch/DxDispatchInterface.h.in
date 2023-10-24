@@ -40,7 +40,7 @@ IDxDispatch : public IUnknown
                 ) = 0;
 
     // allows running of commands individually 
-    virtual UINT32 GetCommandCount(
+    virtual UINT32 STDMETHODCALLTYPE GetCommandCount(
                 ) = 0;
     virtual HRESULT STDMETHODCALLTYPE  RunCommand(
                 UINT32 index) = 0;

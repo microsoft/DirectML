@@ -8,12 +8,13 @@ class PixCaptureHelper;
 class CommandLineArgs;
 class ModelWrapper;
 
+#ifdef WIN32
 
 extern ULONG AddDllRef();
 
 extern ULONG ReleaseDllRef();
 
-extern BOOL CanUnload();
+#endif
 
 class DxDispatch final : public IDxDispatch
 {
@@ -29,7 +30,7 @@ public:
     // IUnknown
     HRESULT STDMETHODCALLTYPE QueryInterface( 
         REFIID riid,
-        _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) final;
+        _COM_Outptr_ void **ppvObject) final;
 
     ULONG STDMETHODCALLTYPE AddRef( void) final;
 
@@ -65,7 +66,7 @@ private:
     std::mutex                                  m_lock;
     UINT32                                      m_currentIndex = 0;
     UINT32                                      m_commandCount = 0;
-    volatile ULONG                              m_refCount = 0;
+    std::atomic<ULONG>                          m_refCount = 0;
 
     Microsoft::WRL::ComPtr<IDxDispatchLogger>   m_logger;
     std::unique_ptr<ModelWrapper>               m_modelWrapper;

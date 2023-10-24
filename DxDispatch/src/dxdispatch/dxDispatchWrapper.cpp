@@ -49,7 +49,7 @@ HRESULT DxDispatch::CreateDxDispatchFromJsonString(
 
 HRESULT DxDispatch::QueryInterface( 
     REFIID riid,
-    _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    _COM_Outptr_ void** ppvObject)
 {
     if((IID_IUnknown ==  riid) || 
         __uuidof(IDxDispatch) == riid)
@@ -66,12 +66,12 @@ HRESULT DxDispatch::QueryInterface(
 
 ULONG DxDispatch::AddRef( void)
 {
-    return InterlockedIncrement(&m_refCount);
+    return ++m_refCount;
 }
 
 ULONG DxDispatch::Release( void)
 {
-    auto ref = InterlockedDecrement(&m_refCount);
+    auto ref = --m_refCount;
     if(ref == 0)
     {
         delete this;
@@ -96,10 +96,10 @@ HRESULT DxDispatch::RunAll() try
     
 } CATCH_RETURN();
 
-UINT32 DxDispatch::GetCommandCount() try
+UINT32 DxDispatch::GetCommandCount()
 {
     return m_commandCount;
-} CATCH_FAIL_FAST();
+}
 
 HRESULT DxDispatch::RunCommand(
             UINT32 index) try
@@ -121,7 +121,9 @@ HRESULT DxDispatch::GetObject(
 
 DxDispatch::DxDispatch()
 {
+#ifdef WIN32
     AddDllRef();
+#endif
 }
 
 DxDispatch::~DxDispatch()
@@ -132,8 +134,9 @@ DxDispatch::~DxDispatch()
     m_options.reset();
     m_pixCaptureHelper.reset();
     m_device.reset();
-
+#ifdef WIN32
     ReleaseDllRef();
+#endif
 }
 
 HRESULT DxDispatch::Intialize(

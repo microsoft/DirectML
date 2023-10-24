@@ -1,13 +1,14 @@
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#include <wsl/winadapter.h>
 #endif
 
-#include <wrl/client.h>
 #include <wil/result.h>
-#include "dxDispatchInterface.h"
+#include <wrl/client.h>
+#include "DxDispatchInterface.h"
 
-using Microsoft::WRL::ComPtr;
-interface IAdapter;
+using namespace Microsoft::WRL;
 
 int main(int argc, char** argv)
 {

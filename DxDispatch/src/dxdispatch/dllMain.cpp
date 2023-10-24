@@ -1,23 +1,6 @@
 #include "pch.h"
 #include "dxDispatchWrapper.h"
 
-volatile std::atomic<ULONG> g_ModuleCount = 0;
-
-ULONG AddDllRef()
-{
-    return ++g_ModuleCount;
-}
-
-ULONG ReleaseDllRef()
-{
-    return --g_ModuleCount;
-}
-
-BOOL CanUnload()
-{
-    return (g_ModuleCount == 0 ? TRUE : FALSE);
-}
-
 class StringToArgs
 {
 public:
@@ -96,8 +79,11 @@ private:
     std::vector<char*> m_args;
 };
 
-
- STDAPI CreateDxDispatchFromString(
+#ifdef WIN32
+STDAPI CreateDxDispatchFromString(
+#else
+STDAPI __attribute__((visibility("default"))) CreateDxDispatchFromString(
+#endif
    _In_           PCSTR args,                         // DxDispatch commandArgs
    _In_           PCSTR jsonConfig,                   // DxDisPatch Json contents
    _In_opt_       IUnknown *adapter,                 // will use DxDispatch logic to pick device if nullptr
@@ -115,7 +101,11 @@ private:
         dxDispatch);
 }
 
+#ifdef WIN32
 STDAPI CreateDxDispatchFromArgs(
+#else
+STDAPI __attribute__((visibility("default"))) CreateDxDispatchFromArgs(
+#endif
    _In_           int argc,
    _In_           char** argv,
    _In_           PCSTR jsonConfig,                   // DxDisPatch Json contents
@@ -132,6 +122,25 @@ STDAPI CreateDxDispatchFromArgs(
         dxDispatch);
 }
 
+#ifdef WIN32
+
+volatile LONG g_ModuleCount = 0;
+
+ULONG AddDllRef()
+{
+    return InterlockedIncrement(&g_ModuleCount);
+}
+
+ULONG ReleaseDllRef()
+{
+    return InterlockedDecrement(&g_ModuleCount);
+}
+
+STDAPI 
+DllCanUnloadNow()
+{
+    return (InterlockedCompareExchange(&g_ModuleCount, 0, 0) == 0 ? S_OK : S_FALSE);
+}
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, ULONG reason, CONTEXT* context)
 {
@@ -147,3 +156,4 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, ULONG reason, CONTEXT* conte
     };
     return SUCCEEDED(hr);
 }
+#endif

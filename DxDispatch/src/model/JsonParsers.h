@@ -138,7 +138,7 @@ namespace JsonParsers
 
     Model ParseModel(
         const rapidjson::Document& doc,
-        std::string_view jsonDocumentText,
+        const std::string_view &jsonDocumentText,
         const std::filesystem::path& inputPath,
         const std::filesystem::path& outputPath);
 

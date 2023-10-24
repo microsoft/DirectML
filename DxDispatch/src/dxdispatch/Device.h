@@ -127,11 +127,11 @@ private:
     uint32_t m_dispatchRepeat = 1;
     std::vector<D3D12_RESOURCE_BARRIER> m_postDispatchBarriers;
     DWORD m_callbackCookie = 0;
+    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;
     Microsoft::WRL::ComPtr<IDxcIncludeHandler> m_dxcIncludeHandler;
     Microsoft::WRL::ComPtr<IDxcCompiler3> m_dxcCompiler;
-    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
 #endif
 };

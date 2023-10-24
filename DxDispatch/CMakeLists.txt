@@ -236,6 +236,8 @@ target_link_libraries(
     PRIVATE 
     wil
     dxdispatch_DLL
+    d3d12
+    directml
 )
 
 target_compile_features(dxdispatch_EXE PRIVATE cxx_std_17)

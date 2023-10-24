@@ -202,7 +202,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 
 void Executor::Run()
 {
-    auto &commandDescs = m_model.GetCommands();
+    auto commandDescs = m_model.GetCommands();
 
     for (size_t i = 0; i< commandDescs.size(); i++)
     {
@@ -219,8 +219,15 @@ void Executor::Run()
         {
             if (m_commandLineArgs.PrintCommands())
             {
-                auto hr = wil::ResultFromCaughtException();
+                HRESULT hr = E_FAIL;
+                #ifdef WIN32
+                hr = wil::ResultFromCaughtException();
+                #endif
                 m_logger->LogCommandCompleted((UINT32)i, hr, ex.what());
+            }
+            else
+            {
+                m_logger->LogError(ex.what());
             }
             return;
         }
