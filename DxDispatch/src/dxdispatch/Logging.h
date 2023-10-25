@@ -1,17 +1,9 @@
 #pragma once
 
-class DxDispatchConsoleLogger : public IDxDispatchLogger
+class DxDispatchConsoleLogger : public Microsoft::WRL::Base<IDxDispatchLogger>
 {
 public:
     DxDispatchConsoleLogger() = default;
-    // IUnknown
-    HRESULT STDMETHODCALLTYPE QueryInterface(
-        REFIID riid,
-        _COM_Outptr_ void** ppvObject) final;
-
-    ULONG STDMETHODCALLTYPE AddRef(void) final;
-
-    ULONG STDMETHODCALLTYPE Release(void) final;
 
     // IDxDispatchLogger
     void STDMETHODCALLTYPE  LogInfo(
@@ -34,5 +26,4 @@ public:
 
 protected:
     virtual ~DxDispatchConsoleLogger() = default;
-    std::atomic<ULONG>        m_refCount = 0;
 };

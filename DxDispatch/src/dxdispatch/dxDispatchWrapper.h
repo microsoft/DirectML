@@ -7,16 +7,21 @@ class DxCoreModule;
 class PixCaptureHelper;
 class CommandLineArgs;
 class ModelWrapper;
+class Executor;
 
 #ifdef WIN32
 
 extern ULONG AddDllRef();
-
 extern ULONG ReleaseDllRef();
+
+#else
+
+WINADAPTER_IID(IDxDispatchLogger, 0xE05E128D, 0x9A97, 0x4AEE, 0x85, 0xD8, 0x17, 0x25, 0xC9, 0x2E, 0x41, 0x72);
+WINADAPTER_IID(IDxDispatch,       0x1D5837DF, 0x8496, 0x42A6, 0xAA, 0x5B, 0xAA, 0x0D, 0xD1, 0x27, 0xC3, 0xB4);
 
 #endif
 
-class DxDispatch final : public IDxDispatch
+class DxDispatch : public Microsoft::WRL::Base<IDxDispatch>
 {
 public:
     static HRESULT STDMETHODCALLTYPE CreateDxDispatchFromJsonString(
@@ -27,14 +32,13 @@ public:
         _In_opt_        IDxDispatchLogger *pCustomLogger,
         _COM_Outptr_    IDxDispatch **dxDispatch );
 
-    // IUnknown
-    HRESULT STDMETHODCALLTYPE QueryInterface( 
-        REFIID riid,
-        _COM_Outptr_ void **ppvObject) final;
-
-    ULONG STDMETHODCALLTYPE AddRef( void) final;
-
-    ULONG STDMETHODCALLTYPE Release( void) final;
+    DxDispatch();
+    HRESULT RuntimeClassInitialize(
+        _In_            int argc,
+        _In_            char** argv,
+        _In_opt_        LPCSTR jsonConfig,
+        _In_opt_        IAdapter* adapter,
+        _In_opt_        IDxDispatchLogger* customLogger);
 
     // IDxDispatch
     HRESULT STDMETHODCALLTYPE  RunAll(
@@ -51,22 +55,13 @@ public:
         REFIID riid,
         _COM_Outptr_  void **ppvObject) final;
 
-private:
-    DxDispatch();
-
-    HRESULT Intialize(
-        _In_            int argc,
-        _In_            char** argv,
-        _In_opt_        LPCSTR jsonConfig,
-        _In_opt_        IAdapter *adapter,
-        _In_opt_        IDxDispatchLogger *customLogger);
+protected:
 
     virtual ~DxDispatch();
 
     std::mutex                                  m_lock;
     UINT32                                      m_currentIndex = 0;
     UINT32                                      m_commandCount = 0;
-    std::atomic<ULONG>                          m_refCount = 0;
 
     Microsoft::WRL::ComPtr<IDxDispatchLogger>   m_logger;
     std::unique_ptr<ModelWrapper>               m_modelWrapper;
@@ -76,4 +71,5 @@ private:
     std::shared_ptr<DxCoreModule>               m_dxCoreModule;
     std::shared_ptr<PixCaptureHelper>           m_pixCaptureHelper;
     std::shared_ptr<CommandLineArgs>            m_options;
+    std::shared_ptr<Executor>                   m_executor;
 };

@@ -1,39 +1,6 @@
 #include "pch.h"
 #include <iostream>
 
-HRESULT DxDispatchConsoleLogger::QueryInterface(
-    REFIID riid,
-    _COM_Outptr_ void ** ppvObject)
-{
-    *ppvObject = nullptr;
-    if ((IID_IUnknown == riid) ||
-        __uuidof(IDxDispatchLogger) == riid)
-    {
-        *ppvObject = static_cast<IDxDispatchLogger*>(this);
-    }
-    else
-    {
-        return E_NOTIMPL;
-    }
-    AddRef();
-    return S_OK;
-}
-
-ULONG DxDispatchConsoleLogger::AddRef(void)
-{
-    return ++m_refCount;
-}
-
-ULONG DxDispatchConsoleLogger::Release(void)
-{
-    auto ref = --m_refCount;
-    if (ref == 0)
-    {
-        delete this;
-    }
-    return ref;
-}
-
 void DxDispatchConsoleLogger::LogInfo(_In_ PCSTR msg)
 {
     std::cout << msg << std::endl;

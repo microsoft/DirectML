@@ -200,42 +200,73 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
     }
 }
 
-void Executor::Run()
+UINT32 Executor::GetCommandCount()
 {
-    auto commandDescs = m_model.GetCommands();
+    return static_cast<UINT32>(m_model.GetCommands().size());
+}
 
-    for (size_t i = 0; i< commandDescs.size(); i++)
+HRESULT Executor::RunCommand(UINT32 id)
+{
+    HRESULT hr = S_OK;
+    auto commandDescs = m_model.GetCommands();
+    auto maxCommands = GetCommandCount();
+    if (id == m_nextId)
     {
         if (m_commandLineArgs.PrintCommands())
         {
-            m_logger->LogCommandStarted((UINT32)i, commandDescs[i].parameters.c_str());
+            m_logger->LogCommandStarted((UINT32)id, commandDescs[id].parameters.c_str());
         }
 
         try
         {
-            std::visit(*this, commandDescs[i].command);
+            std::visit(*this, commandDescs[id].command);
+            if (m_commandLineArgs.PrintCommands())
+            {
+                m_logger->LogCommandCompleted((UINT32)id, S_OK, "");
+            }
         }
         catch (std::exception& ex)
         {
+
+#ifdef WIN32
+            hr = wil::ResultFromCaughtException();
+#else
+            hr = E_FAIL;
+#endif
             if (m_commandLineArgs.PrintCommands())
             {
-                HRESULT hr = E_FAIL;
-                #ifdef WIN32
-                hr = wil::ResultFromCaughtException();
-                #endif
-                m_logger->LogCommandCompleted((UINT32)i, hr, ex.what());
+                m_logger->LogCommandCompleted((UINT32)id, hr, ex.what());
             }
             else
             {
                 m_logger->LogError(ex.what());
             }
-            return;
-        }
-        if (m_commandLineArgs.PrintCommands())
-        {
-            m_logger->LogCommandCompleted((UINT32)i, S_OK, "");
         }
     }
+    else
+    {
+        auto msg = fmt::format("Invalid Id={} ExpectedId={}", id, m_nextId);
+        m_logger->LogError(msg.c_str());
+        return E_INVALIDARG;
+    }
+    if ((m_nextId++) >= maxCommands)
+    {
+        m_nextId = 0;
+    }
+    return hr;
+}
+
+
+void Executor::Run()
+{
+    for (UINT i = 0, c = GetCommandCount(); i < c; i++)
+    {
+        if (FAILED(RunCommand(i)))
+        {
+            return;
+        }
+    }
+    return;
 }
 
 void Executor::operator()(const Model::DispatchCommand& command)

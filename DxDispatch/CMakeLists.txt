@@ -84,6 +84,10 @@ target_link_libraries(
     directml
 )
 
+if(TARGET_WSL)
+    set_target_properties(model PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 target_compile_features(model PRIVATE cxx_std_17)
 target_precompile_headers(model PRIVATE src/model/pch.h)
 target_include_directories(model INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
@@ -102,7 +106,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h.in DxDispatchInterface.h)
 
 add_library(
-    dxdispatch_DLL SHARED
+    dxdispatchImpl SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/DxDispatchInterface.h
     src/dxdispatch/dllMain.cpp
     src/dxdispatch/dxDispatchWrapper.cpp
@@ -128,29 +132,29 @@ add_library(
 )
 
 if(NOT dxcompiler_type STREQUAL None)
-    target_sources(dxdispatch_DLL PRIVATE src/dxdispatch/HlslDispatchable.cpp)
+    target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
 endif()
 
 if(NOT onnxruntime_type STREQUAL None)
-    target_sources(dxdispatch_DLL PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
+    target_sources(dxdispatchImpl PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
-    target_sources(dxdispatch_DLL PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
-    target_link_libraries(dxdispatch_DLL PRIVATE version.lib)
+    target_sources(dxdispatchImpl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_link_libraries(dxdispatchImpl PRIVATE version.lib)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
 endif()
 
 if(TARGET_WSL)
-    target_link_libraries(dxdispatch_DLL PRIVATE -ldl)
+    target_link_libraries(dxdispatchImpl PRIVATE -ldl)
 endif()
 
-target_include_directories(dxdispatch_DLL PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(dxdispatchImpl PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(
-    dxdispatch_DLL
+    dxdispatchImpl
     PRIVATE 
     Microsoft.GSL::GSL
     fmt::fmt-header-only
@@ -166,20 +170,19 @@ target_link_libraries(
     onnxruntime_extensions
 )
 
-target_compile_features(dxdispatch_DLL PRIVATE cxx_std_17)
-target_precompile_headers(dxdispatch_DLL PRIVATE src/dxdispatch/pch.h)
-target_copy_redist_dependencies(dxdispatch_DLL)
+target_compile_features(dxdispatchImpl PRIVATE cxx_std_17)
+target_precompile_headers(dxdispatchImpl PRIVATE src/dxdispatch/pch.h)
+target_copy_redist_dependencies(dxdispatchImpl)
 
-set_target_properties(dxdispatch_DLL PROPERTIES OUTPUT_NAME dxdispatchImpl)
 if(MSVC)
     # Include the import definition, add VS debugger visualizations, remove unused functions, and fold identical code segments.
-    set_target_properties(dxdispatch_DLL PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def  ")
+    set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def  ")
 endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION bin)
 install(
     FILES 
-    $<TARGET_FILE:dxdispatch_DLL> 
+    $<TARGET_FILE:dxdispatchImpl> 
     ${CMAKE_CURRENT_BINARY_DIR}/DxDispatchInterface.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ThirdPartyNotices.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/doc/Guide.md
@@ -192,10 +195,10 @@ endif()
 
 if(TARGET_XBOX)
     # Deploy to the console instead of running on local machine.
-    set_property(TARGET dxdispatch_DLL PROPERTY VS_SOLUTION_DEPLOY ON)
+    set_property(TARGET dxdispatchImpl PROPERTY VS_SOLUTION_DEPLOY ON)
 
     # No need for logos/assets; this is a developer-only app.
-    target_sources(dxdispatch_DLL PRIVATE ${CMAKE_BINARY_DIR}/MicrosoftGame.config )
+    target_sources(dxdispatchImpl PRIVATE ${CMAKE_BINARY_DIR}/MicrosoftGame.config )
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.config.in MicrosoftGame.config)
     set_source_files_properties(${CMAKE_BINARY_DIR}/MicrosoftGame.config PROPERTIES VS_TOOL_OVERRIDE "MGCCompile")
 
@@ -207,9 +210,9 @@ if(TARGET_XBOX)
     # set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
     include(InstallRequiredSystemLibraries)
     add_custom_command(
-        TARGET dxdispatch_DLL 
+        TARGET dxdispatchImpl 
         POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} $<TARGET_FILE_DIR:dxdispatch_DLL>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} $<TARGET_FILE_DIR:dxdispatchImpl>
     )
 
     # For Copy models to the deployment directory even if other targets don't need to be built.
@@ -235,13 +238,13 @@ target_link_libraries(
     dxdispatch_EXE
     PRIVATE 
     wil
-    dxdispatch_DLL
+    dxdispatchImpl
     d3d12
     directml
 )
 
 target_compile_features(dxdispatch_EXE PRIVATE cxx_std_17)
-set_target_properties(dxdispatch_EXE PROPERTIES OUTPUT_NAME dxdispatch)
+set_target_properties(dxdispatch_EXE PROPERTIES OUTPUT_NAME dxdispatch.exe)
 target_copy_redist_dependencies(dxdispatch_EXE)
 
 install(

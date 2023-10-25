@@ -135,6 +135,15 @@ do \
         return hr; \
     } \
 } while (0)
+
+#define RETURN_HR_IF_NULL(hr, ptr) \
+do \
+{ \
+    if (!ptr) \
+    { \
+        return hr; \
+    } \
+} while (0)
     ]])
 
     target_include_directories(${target_name} INTERFACE ${stub_root})

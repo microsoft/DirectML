@@ -8,7 +8,6 @@ static const GUID DxDispatch_DxDevice =
 static const GUID DxDispatch_DmlDevice = 
 { 0xb7c9961f, 0x44da, 0x4e1c, { 0xaa, 0xfd, 0x7a, 0x91, 0x6, 0xf9, 0x32, 0xbb } };
 
-
 MIDL_INTERFACE("E05E128D-9A97-4AEE-85D8-1725C92E4172")
 IDxDispatchLogger : public IUnknown
 {

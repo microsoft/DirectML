@@ -5,20 +5,19 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-
-std::string rapidJsonToString(const rapidjson::Value &value)
-{
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer<rapidjson::StringBuffer > writer(buffer);
-    value.Accept(writer);
-    return buffer.GetString();
-}
-
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
 
 using Microsoft::WRL::ComPtr;
+
+std::string RapidJsonToString(const rapidjson::Value& value)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    value.Accept(writer);
+    return buffer.GetString();
+}
 
 static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
 {
@@ -1514,7 +1513,7 @@ Model::CommandDesc ParseModelCommandDesc(const rapidjson::Value& object, const s
     Model::CommandDesc commandDesc = {};
 
     commandDesc.type = ParseStringField(object, "type");
-    commandDesc.parameters = rapidJsonToString(object);
+    commandDesc.parameters = RapidJsonToString(object);
 
     if (!_stricmp(commandDesc.type.data(), "dispatch"))
     { 

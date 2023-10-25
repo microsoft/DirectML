@@ -42,82 +42,14 @@ HRESULT DxDispatch::CreateDxDispatchFromJsonString(
     {
         RETURN_IF_FAILED(adapterUnk->QueryInterface(IID_PPV_ARGS(&adapter)));
     }
-    dxDispatchImpl = new DxDispatch();
-    RETURN_IF_FAILED(dxDispatchImpl->Intialize(argc, argv, jsonConfig, adapter.Get(), customLogger));
+#ifdef WIN32
+    RETURN_IF_FAILED(Microsoft::WRL::MakeAndInitialize<DxDispatch>(&dxDispatchImpl, argc, argv, jsonConfig, adapter.Get(), customLogger));
+#else
+     dxDispatchImpl = Make<DxDispatch>();
+     dxDispatchImpl->RuntimeClassInitialize(argc, argv, jsonConfig, adapter.Get(), customLogger);
+#endif
     return dxDispatchImpl->QueryInterface(IID_PPV_ARGS(dxDispatch));
 }
-
-HRESULT DxDispatch::QueryInterface( 
-    REFIID riid,
-    _COM_Outptr_ void** ppvObject)
-{
-    if((IID_IUnknown ==  riid) || 
-        __uuidof(IDxDispatch) == riid)
-    {
-        *ppvObject = static_cast<IDxDispatch*>(this);
-    }
-    else
-    {
-        return E_NOTIMPL;
-    }
-    AddRef();
-    return S_OK;
-} 
-
-ULONG DxDispatch::AddRef( void)
-{
-    return ++m_refCount;
-}
-
-ULONG DxDispatch::Release( void)
-{
-    auto ref = --m_refCount;
-    if(ref == 0)
-    {
-        delete this;
-    }
-    return ref;
-}
-
-HRESULT DxDispatch::RunAll() try
-{
-    if(m_modelWrapper)
-    {
-        RETURN_IF_FAILED(m_pixCaptureHelper->BeginCapturableWork());
-        Executor executor{m_modelWrapper->Value(), m_device, *m_options, m_logger.Get()};
-        executor.Run();
-        RETURN_IF_FAILED(m_pixCaptureHelper->EndCapturableWork());
-        return S_OK;
-    }
-    else
-    {
-        RETURN_IF_FAILED(E_UNEXPECTED);
-    }
-    
-} CATCH_RETURN();
-
-UINT32 DxDispatch::GetCommandCount()
-{
-    return m_commandCount;
-}
-
-HRESULT DxDispatch::RunCommand(
-            UINT32 index) try
-{
-    if(index != m_currentIndex)
-    {
-        return E_INVALIDARG;
-    }
-    return E_NOTIMPL;
-}  CATCH_RETURN();
-
-HRESULT DxDispatch::GetObject(
-            REFGUID objectId,
-            REFIID riid,
-            _COM_Outptr_  void **ppvObject) try
-{
-    return E_NOTIMPL;
-} CATCH_RETURN();
 
 DxDispatch::DxDispatch()
 {
@@ -126,33 +58,27 @@ DxDispatch::DxDispatch()
 #endif
 }
 
-DxDispatch::~DxDispatch()
-{
-    // Ensure remaining D3D references are released before the D3D module is released,
-    // regardless of normal exit or exception.
-    m_modelWrapper.reset();
-    m_options.reset();
-    m_pixCaptureHelper.reset();
-    m_device.reset();
-#ifdef WIN32
-    ReleaseDllRef();
-#endif
-}
-
-HRESULT DxDispatch::Intialize(
-        _In_            int argc,
-        _In_            char** argv,
-        _In_opt_        LPCSTR jsonConfig,
-        _In_opt_        IAdapter *adapter,
+HRESULT DxDispatch::RuntimeClassInitialize(
+    _In_            int argc,
+    _In_            char** argv,
+    _In_opt_        LPCSTR jsonConfig,
+    _In_opt_        IAdapter* adapter,
     _In_opt_        IDxDispatchLogger* customLogger) try
 {
+    auto lock = std::scoped_lock(m_lock);
+    if (m_logger) // Should only initialize once
+    {
+        m_logger->LogError(fmt::format("{} can only be initialized once", __FUNCTION__).c_str());
+        return E_UNEXPECTED;
+    }
     if (customLogger)
     {
         m_logger = customLogger;
     }
     else
     {
-        m_logger = new DxDispatchConsoleLogger();
+        m_logger = Microsoft::WRL::Make<DxDispatchConsoleLogger>();
+        RETURN_HR_IF_NULL(E_OUTOFMEMORY, m_logger);
     }
 
     m_options = std::make_shared<CommandLineArgs>(argc, (char**)argv);
@@ -250,33 +176,33 @@ HRESULT DxDispatch::Intialize(
         outputPath = std::filesystem::current_path();
     }
 
-    if(jsonConfig)
+    if (jsonConfig)
     {
         std::string_view fileContent(jsonConfig);
 
         rapidjson::Document doc;
 
         constexpr rapidjson::ParseFlag parseFlags = rapidjson::ParseFlag(
-            rapidjson::kParseFullPrecisionFlag | 
+            rapidjson::kParseFullPrecisionFlag |
             rapidjson::kParseCommentsFlag |
             rapidjson::kParseTrailingCommasFlag |
             rapidjson::kParseStopWhenDoneFlag);
 
-        std::vector<char> input{jsonConfig, jsonConfig+strlen(jsonConfig)};
+        std::vector<char> input{ jsonConfig, jsonConfig + strlen(jsonConfig) };
         doc.ParseInsitu<parseFlags>(&input[0]);
         m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(
             JsonParsers::ParseModel(
-                doc, 
-                fileContent, 
+                doc,
+                fileContent,
                 inputPath.value(),
                 outputPath.value())));
     }
     else if (model.value().extension() == ".json")
     {
-       m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(JsonParsers::ParseModel(
-           model.value(),
-           inputPath.value(),
-           outputPath.value())));
+        m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(JsonParsers::ParseModel(
+            model.value(),
+            inputPath.value(),
+            outputPath.value())));
     }
     else if (model.value().extension() == ".onnx")
     {
@@ -302,3 +228,84 @@ HRESULT DxDispatch::Intialize(
     }
     return S_OK;
 } CATCH_RETURN();
+
+HRESULT DxDispatch::RunAll() try
+{
+    auto lock = std::scoped_lock(m_lock);
+    if (nullptr == m_modelWrapper) // Should only initialize once
+    {
+        m_logger->LogError(fmt::format("{} called before initialize", __FUNCTION__).c_str());
+        return E_UNEXPECTED;
+    }
+
+    RETURN_IF_FAILED(m_pixCaptureHelper->BeginCapturableWork());
+    m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
+    m_executor->Run();
+    RETURN_IF_FAILED(m_pixCaptureHelper->EndCapturableWork());
+    return S_OK;
+    
+} CATCH_RETURN();
+
+UINT32 DxDispatch::GetCommandCount()
+{
+    auto lock = std::scoped_lock(m_lock);
+    if (nullptr == m_modelWrapper) // Should only initialize once
+    {
+        m_logger->LogError(fmt::format("{} called before initialize", __FUNCTION__).c_str());
+        return E_UNEXPECTED;
+    }
+    if (m_executor == nullptr)
+    {
+        m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
+    }
+    return m_executor->GetCommandCount();
+}
+
+HRESULT DxDispatch::RunCommand(
+            UINT32 index) try
+{
+    auto lock = std::scoped_lock(m_lock);
+    if (nullptr == m_modelWrapper) // Should only initialize once
+    {
+        m_logger->LogError(fmt::format("{} called before initialize", __FUNCTION__).c_str());
+        return E_UNEXPECTED;
+    }
+    if (m_executor == nullptr)
+    {
+        m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
+    }
+    return m_executor->RunCommand(index);
+}  CATCH_RETURN();
+
+HRESULT DxDispatch::GetObject(
+            REFGUID objectId,
+            REFIID riid,
+            _COM_Outptr_  void **ppvObject) try
+{
+    if (DxDispatch_DmlDevice == objectId)
+    {
+        return m_device->DML()->QueryInterface(riid, ppvObject);
+    }
+    else if (DxDispatch_DxDevice == objectId)
+    {
+        return m_device->D3D()->QueryInterface(riid, ppvObject);
+    }
+    else
+    {
+        return E_NOINTERFACE;
+    }    
+} CATCH_RETURN();
+
+DxDispatch::~DxDispatch()
+{
+    // Ensure remaining D3D references are released before the D3D module is released,
+    // regardless of normal exit or exception.
+    m_modelWrapper.reset();
+    m_options.reset();
+    m_pixCaptureHelper.reset();
+    m_device.reset();
+#ifdef WIN32
+    ReleaseDllRef();
+#endif
+}
+

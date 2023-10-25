@@ -44,13 +44,13 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
-            "RelInputPath",
-            "Provide input path relative to Inputs",
+            "input_path",
+            "Base path for reading input files",
             cxxopts::value<std::filesystem::path>()
         )
         (
-            "RelOutputPath",
-            "Provide input path relative to Inputs",
+            "output_path",
+            "Base path for writing output files",
             cxxopts::value<std::filesystem::path>()
         )
         (
