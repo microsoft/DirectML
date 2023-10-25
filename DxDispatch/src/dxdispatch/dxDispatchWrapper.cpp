@@ -42,13 +42,17 @@ HRESULT DxDispatch::CreateDxDispatchFromJsonString(
     {
         RETURN_IF_FAILED(adapterUnk->QueryInterface(IID_PPV_ARGS(&adapter)));
     }
+    HRESULT hr = S_OK;
 #ifdef WIN32
-    RETURN_IF_FAILED(Microsoft::WRL::MakeAndInitialize<DxDispatch>(&dxDispatchImpl, argc, argv, jsonConfig, adapter.Get(), customLogger));
+    hr = Microsoft::WRL::MakeAndInitialize<DxDispatch>(&dxDispatchImpl, argc, argv, jsonConfig, adapter.Get(), customLogger);
+    RETURN_IF_FAILED(hr);
 #else
      dxDispatchImpl = Make<DxDispatch>();
-     dxDispatchImpl->RuntimeClassInitialize(argc, argv, jsonConfig, adapter.Get(), customLogger);
+     hr = dxDispatchImpl->RuntimeClassInitialize(argc, argv, jsonConfig, adapter.Get(), customLogger);
+     RETURN_IF_FAILED(hr);
 #endif
-    return dxDispatchImpl->QueryInterface(IID_PPV_ARGS(dxDispatch));
+    RETURN_IF_FAILED(dxDispatchImpl->QueryInterface(IID_PPV_ARGS(dxDispatch)));
+    return hr;
 }
 
 DxDispatch::DxDispatch()
@@ -158,7 +162,7 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     }
 
     auto inputPath = m_options->InputPath();
-    auto outputPath = m_options->InputPath();
+    auto outputPath = m_options->OutputPath();
 
     if (!inputPath.has_value())
     {

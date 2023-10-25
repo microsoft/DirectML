@@ -6,6 +6,7 @@
 
 #include <wil/result.h>
 #include <wrl/client.h>
+#include <iostream>
 #include "DxDispatchInterface.h"
 
 using namespace Microsoft::WRL;
@@ -29,7 +30,10 @@ int main(int argc, char** argv)
     else
     {
         // ignores S_FALSE
-        RETURN_IF_FAILED(hr);
+        if(FAILED(hr))
+        {
+            printf("%s failed with hr=0x%08x\n",argv[0], hr);
+        }
     }
 
     return hr;

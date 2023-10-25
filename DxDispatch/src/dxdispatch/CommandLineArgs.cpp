@@ -267,14 +267,14 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_commandPrinting = result["print_commands"].as<bool>();
     }
 
-    if (result.count("RelInputPath"))
+    if (result.count("input_path"))
     {
-        m_inputRelPath = result["RelInputPath"].as<std::filesystem::path>();
+        m_inputRelPath = result["input_path"].as<std::filesystem::path>();
     }
 
-    if(result.count("RelOutputPath"))
+    if(result.count("output_path"))
     {
-        m_outputRelPath = result["RelOutputPath"].as<std::filesystem::path>();
+        m_outputRelPath = result["output_path"].as<std::filesystem::path>();
     }
 
 

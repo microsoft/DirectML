@@ -103,7 +103,7 @@ get_target_property(gdk_config gdk DX_COMPONENT_CONFIG)
 get_target_property(ort_config onnxruntime DX_COMPONENT_CONFIG)
 get_target_property(ort_extensions_config onnxruntime_extensions DX_COMPONENT_CONFIG)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h.in DxDispatchInterface.h)
+install(FILES DxDispatchInterface.h DESTINATION bin)
 
 add_library(
     dxdispatchImpl SHARED

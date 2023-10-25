@@ -200,9 +200,9 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
     }
 }
 
-UINT32 Executor::GetCommandCount()
+uint32_t Executor::GetCommandCount()
 {
-    return static_cast<UINT32>(m_model.GetCommands().size());
+    return static_cast<uint32_t>(m_model.GetCommands().size());
 }
 
 HRESULT Executor::RunCommand(UINT32 id)

@@ -6,14 +6,18 @@ class StringToArgs
 public:
     StringToArgs(LPCSTR commandline)
     {
-        //Add additional parameter for parser
-        std::vector<char> arg({'t','e','.','e','x','e'});
+        //Add additional parameter for parser it is ignored
+        std::vector<char> arg({'d','x', 'd', 'i', 's', 'p', 'a', 't', 'c', 'h', '.','e','x','e'});
         bool isQuote = false;
         auto AddWord = [&](){
             if (arg.size() > 0)
             {
                 auto argRawString = (char*)calloc((arg.size() + 1), sizeof(char));
+#ifdef WIN32
+                memcpy_s(argRawString, (arg.size() + 1), arg.data(), arg.size());
+#else 
                 memcpy(argRawString, arg.data(), arg.size());
+#endif
                 m_args.push_back(argRawString);
                 arg.clear();
             }
