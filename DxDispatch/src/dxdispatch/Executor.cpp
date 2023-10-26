@@ -102,7 +102,8 @@ struct Timings
     }
 };
 
-Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args) : m_model(model), m_device(device), m_commandLineArgs(args)
+Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args, IDxDispatchLogger* logger) : 
+    m_model(model), m_device(device), m_commandLineArgs(args), m_logger(logger)
 {
     // Initialize buffer resources.
     {
@@ -135,7 +136,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 #ifdef DXCOMPILER_NONE
                 throw std::invalid_argument("HLSL dispatchables require DXCompiler");
 #else
-                m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value), args);
+                m_dispatchables[desc.name] = std::make_unique<HlslDispatchable>(device, std::get<Model::HlslDispatchableDesc>(desc.value), args, m_logger.Get());
 #endif
             }
             else if (std::holds_alternative<Model::OnnxDispatchableDesc>(desc.value))
@@ -143,7 +144,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 #ifdef ONNXRUNTIME_NONE
                 throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
 #else
-                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args);
+                m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args, m_logger.Get());
 #endif
             }
             else
@@ -157,7 +158,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 }
                 catch (const std::exception& e)
                 {
-                    LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
+                    m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
                     return;
                 }
 
@@ -187,7 +188,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 
                 if (m_commandLineArgs.GetTimingVerbosity() >= TimingVerbosity::Extended)
                 {
-                    LogInfo(fmt::format("Initialize '{}': {:.4f} ms", dispatchable.first, timer.DurationInMilliseconds()));
+                    m_logger->LogInfo(fmt::format("Initialize '{}': {:.4f} ms", dispatchable.first, timer.DurationInMilliseconds()).c_str());
                 }
             }
             catch (const std::exception& e)
@@ -199,12 +200,65 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
     }
 }
 
+uint32_t Executor::GetCommandCount()
+{
+    return static_cast<uint32_t>(m_model.GetCommands().size());
+}
+
+void Executor::RunCommand(UINT32 id)
+{
+    auto commandDescs = m_model.GetCommands();
+    auto maxCommands = GetCommandCount();
+    if (id == m_nextId)
+    {
+        if (m_commandLineArgs.PrintCommands())
+        {
+            m_logger->LogCommandStarted((UINT32)id, commandDescs[id].parameters.c_str());
+        }
+
+        try
+        {
+            std::visit(*this, commandDescs[id].command);
+            if (m_commandLineArgs.PrintCommands())
+            {
+                m_logger->LogCommandCompleted((UINT32)id, S_OK, "");
+            }
+        }
+        catch (std::exception& ex)
+        {
+            if (m_commandLineArgs.PrintCommands())
+            {
+#ifdef WIN32
+            HRESULT hr = wil::ResultFromCaughtException();
+#else
+            HRESULT hr = E_FAIL;
+#endif
+                m_logger->LogCommandCompleted((UINT32)id, hr, ex.what());
+            }
+            throw;
+        }
+    }
+    else
+    {
+        auto msg = fmt::format("Invalid Id={} ExpectedId={}", id, m_nextId);
+        m_logger->LogError(msg.c_str());
+        throw std::invalid_argument(msg);
+    }
+    if ((m_nextId++) >= maxCommands)
+    {
+        m_nextId = 0;
+    }
+    return;
+}
+
+
 void Executor::Run()
 {
-    for (auto& command : m_model.GetCommands())
+    for (uint32_t i = 0, c = GetCommandCount(); i < c; i++)
     {
-        std::visit(*this, command);
+        RunCommand(i);
     }
+    return;
 }
 
 void Executor::operator()(const Model::DispatchCommand& command)
@@ -222,8 +276,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     catch (const std::exception& e)
     {
-        LogError(fmt::format("Failed to resolve bindings: {}", e.what()));
-        return;
+        m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
+        throw;
     }
 
     // Dispatch
@@ -246,8 +300,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
             }
             catch (const std::exception& e)
             {
-                LogError(fmt::format("ERROR while binding resources: {}\n", e.what()));
-                return;
+                m_logger->LogError(fmt::format("ERROR while binding resources: {}\n", e.what()).c_str());
+                throw;
             }
             PIXEndEvent();
 
@@ -282,8 +336,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
     }
     catch (const std::exception& e)
     {
-        LogError(fmt::format("Failed to execute dispatchable: {}", e.what()));
-        return;
+        m_logger->LogError(fmt::format("Failed to execute dispatchable: {}", e.what()).c_str());
+        throw;
     }
     PIXEndEvent();
 
@@ -300,44 +354,44 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)", 
+            m_logger->LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)",
                 command.dispatchableName, 
                 iterationsCompleted,
                 cpuStats.hot.median,
                 gpuStats.hot.median
-            ));
+            ).c_str());
         }
         else
         {
-            LogInfo(fmt::format("Dispatch '{}': {} iterations", 
+            m_logger->LogInfo(fmt::format("Dispatch '{}': {} iterations",
                 command.dispatchableName, iterationsCompleted
-            ));
+            ).c_str());
 
-            LogInfo(fmt::format("CPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+            m_logger->LogInfo(fmt::format("CPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
                 cpuStats.cold.count, cpuStats.cold.average, cpuStats.cold.min, cpuStats.cold.median, cpuStats.cold.max
-            ));
+            ).c_str());
 
-            LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+            m_logger->LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
                 gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
-            ));
+            ).c_str());
 
-            LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+            m_logger->LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
                 cpuStats.hot.count, cpuStats.hot.average, cpuStats.hot.min, cpuStats.hot.median, cpuStats.hot.max
-            ));
+            ).c_str());
 
-            LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max", 
+            m_logger->LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
                 gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
-            ));
+            ).c_str());
 
             if (gpuSamplesOverwritten > 0)
             {
-                LogInfo(fmt::format("GPU samples buffer has {} samples overwritten.", gpuSamplesOverwritten));
+                m_logger->LogInfo(fmt::format("GPU samples buffer has {} samples overwritten.", gpuSamplesOverwritten).c_str());
             }
         }
 
         if (m_commandLineArgs.GetTimingVerbosity() >= TimingVerbosity::All)
         {
-            LogInfo("The timings of each iteration: ");
+            m_logger->LogInfo("The timings of each iteration: ");
 
             for (uint32_t i = 0; i < iterationsCompleted; ++i)
             {
@@ -345,15 +399,15 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 {
                     // GPU samples are limited to a fixed size, so the initial iterations
                     // may not have timing information (overwritten timestamps).
-                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)", 
+                    m_logger->LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU)",
                         i, cpuTimings.rawSamples[i]
-                    ));
+                    ).c_str());
                 }
                 else
                 {
-                    LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU), {:.4f} ms (GPU)",
+                    m_logger->LogInfo(fmt::format("iteration {}: {:.4f} ms (CPU), {:.4f} ms (GPU)",
                         i, cpuTimings.rawSamples[i], gpuTimings.rawSamples[i - gpuSamplesOverwritten]
-                    ));
+                    ).c_str());
                 }
             }
         }
@@ -423,7 +477,7 @@ void Executor::operator()(const Model::PrintCommand& command)
             if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
             {
                 auto message = fmt::format("Could not find deferred resource {}", command.resourceName);
-                LogError(message);
+                m_logger->LogError(message.c_str());
                 throw std::invalid_argument(message);
             }
             auto deferredBinding = &m_deferredBinding[command.resourceName];
@@ -450,12 +504,13 @@ void Executor::operator()(const Model::PrintCommand& command)
             outputValuesStorage = m_device->Download(resource);
             outputValues = outputValuesStorage;
         }
-        
-        LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc.value())));
+
+        m_logger->LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc.value())).c_str());
     }
     catch (const std::exception& e)
     {
-        LogError(fmt::format("Failed to print resource: {}", e.what()));
+        m_logger->LogError(fmt::format("Failed to print resource: {}", e.what()).c_str());
+        throw;
     }
 }
 
@@ -477,7 +532,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
             {
                 auto message = fmt::format("Could not find deferred resource {}", command.resourceName);
-                LogError(message);
+                m_logger->LogError(message.c_str());
                 throw std::invalid_argument(message);
             }
             auto deferredBinding = &m_deferredBinding[command.resourceName];
@@ -531,11 +586,11 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         }
 
         file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
-        LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath));
+        m_logger->LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath).c_str());
     }
     catch (const std::exception& e)
     {
-        LogError(fmt::format("Failed to write resource to file '{}': {}", command.targetPath, e.what()));
+        m_logger->LogError(fmt::format("Failed to write resource to file '{}': {}", command.targetPath, e.what()).c_str());
     }
 }
 

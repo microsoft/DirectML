@@ -17,16 +17,23 @@ static bool DebugMessageCallback(void* context, void* commandList, DWORD message
 #else
 static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MESSAGE_SEVERITY sev, D3D12_MESSAGE_ID id, LPCSTR message, void* context)
 {
-    auto fmtMessage = fmt::format("{} {} {} {}", cat, id, context, message);
-    if( (D3D12_MESSAGE_SEVERITY_INFO == sev) ||
-        (D3D12_MESSAGE_SEVERITY_MESSAGE == sev) ||
-        (D3D12_MESSAGE_SEVERITY_WARNING == sev))
+    if (context)
     {
-        LogInfo(fmtMessage);
-    }
-    else
-    {
-        LogError(fmtMessage);
+        auto logger = (IDxDispatchLogger*)context;
+        auto fmtMessage = fmt::format("{} {} {} {}", cat, id, context, message);
+        if ((D3D12_MESSAGE_SEVERITY_INFO == sev) ||
+            (D3D12_MESSAGE_SEVERITY_MESSAGE == sev))
+        {
+            logger->LogInfo(fmtMessage.c_str());
+        }
+        else if (D3D12_MESSAGE_SEVERITY_WARNING == sev)
+        {
+            logger->LogWarning(fmtMessage.c_str());
+        }
+        else
+        {
+            logger->LogError(fmtMessage.c_str());
+        }
     }
 }
 #endif
@@ -41,11 +48,13 @@ Device::Device(
     bool aliasingBarrierAfterDispatch,
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
-    std::shared_ptr<DmlModule> dmlModule
+    std::shared_ptr<DmlModule> dmlModule,
+    IDxDispatchLogger *logger
     ) : m_pixCaptureHelper(std::move(pixCaptureHelper)),
         m_d3dModule(std::move(d3dModule)),
         m_dmlModule(std::move(dmlModule)),
-        m_dispatchRepeat(dispatchRepeat)
+        m_dispatchRepeat(dispatchRepeat),
+        m_logger(logger)
 {
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -90,12 +99,11 @@ Device::Device(
     if (debugLayersEnabled)
     {
         THROW_IF_FAILED(m_d3d->QueryInterface(m_infoQueue.GetAddressOf()));
-        DWORD callbackCookie = 0;
         m_infoQueue->RegisterMessageCallback(
             DebugMessageCallback, 
             D3D12_MESSAGE_CALLBACK_FLAG_NONE, 
             nullptr, 
-            &callbackCookie);
+            &m_callbackCookie);
     }
 #endif // !_GAMING_XBOX
 
@@ -151,6 +159,11 @@ Device::Device(
 
 Device::~Device()
 {
+    if (m_callbackCookie != 0)
+    {
+        m_infoQueue->UnregisterMessageCallback(m_callbackCookie);
+        m_callbackCookie = 0;
+    }
 }
 
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
@@ -487,11 +500,11 @@ void Device::ClearShaderCaches()
         auto hr = m_d3d->ShaderCacheControl(cache.kind, D3D12_SHADER_CACHE_CONTROL_FLAG_CLEAR);
         if (FAILED(hr))
         {
-            LogInfo(fmt::format("Clearing {} failed. Do you have developer mode enabled?", cache.name));
+            m_logger->LogInfo(fmt::format("Clearing {} failed. Do you have developer mode enabled?", cache.name).c_str());
         }
         else
         {
-            LogInfo(fmt::format("Clearing {} succeeded.", cache.name));
+            m_logger->LogInfo(fmt::format("Clearing {} succeeded.", cache.name).c_str());
         }
     }
 }

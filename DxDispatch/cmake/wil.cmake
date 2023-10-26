@@ -83,6 +83,35 @@ function(init_wil_target_none target_name)
     file(WRITE ${stub_root}/wil/result.h [[
 #pragma once
 
+#define CATCH_RETURN() \
+catch (HRESULT hr) \
+{ \
+    if(FAILED(hr)) \
+        return hr; \
+    else \
+        return hr + 0x80000000; \
+} \
+catch (std::invalid_argument const& ex) \
+{ \
+    return E_INVALIDARG; \
+} \
+catch (std::out_of_range const& ex) \
+{ \
+    return E_INVALIDARG; \
+} \
+catch (std::bad_alloc const& ex) \
+{ \
+    return E_OUTOFMEMORY; \
+} \
+catch (std::exception const& ex) \
+{ \
+    return E_UNEXPECTED; \
+} \
+catch (...) \
+{ \
+    return E_FAIL; \
+}
+
 #define THROW_IF_FAILED(hr) \
 do \
 { \
@@ -96,6 +125,24 @@ do \
 do \
 { \
     throw hr; \
+} while (0)
+
+#define RETURN_IF_FAILED(hr) \
+do \
+{ \
+    if (FAILED(hr)) \
+    { \
+        return hr; \
+    } \
+} while (0)
+
+#define RETURN_HR_IF_NULL(hr, ptr) \
+do \
+{ \
+    if (!ptr) \
+    { \
+        return hr; \
+    } \
 } while (0)
     ]])
 

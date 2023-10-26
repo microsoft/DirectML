@@ -107,6 +107,8 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
 
             return S_OK;
         }
+        default:
+            break;
     }
 
     return E_UNEXPECTED;
@@ -158,6 +160,8 @@ HRESULT PixCaptureHelper::EndCapturableWork()
 #endif
             return S_OK;
         }
+        default:
+            break;
     }
 
     return E_UNEXPECTED;

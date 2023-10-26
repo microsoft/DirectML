@@ -4,7 +4,7 @@
 Model::Model(
     std::vector<ResourceDesc>&& resourceDescs,
     std::vector<DispatchableDesc>&& dispatchableDescs,
-    std::vector<Command>&& commands,
+    std::vector<CommandDesc>&& commands,
     BucketAllocator&& allocator) : 
         m_resourceDescs(std::move(resourceDescs)),
         m_dispatchableDescs(std::move(dispatchableDescs)),
@@ -39,8 +39,9 @@ Model::Model(
     }
 
     // Validate references to ops/resources in the model.
-    for (auto& command : m_commands)
+    for (auto& commandDesc : m_commands)
     {
+        auto& command = commandDesc.command;
         std::visit(
             overload{
                 [&](DispatchCommand& command)

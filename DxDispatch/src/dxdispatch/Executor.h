@@ -5,8 +5,10 @@ class CommandLineArgs;
 class Executor
 {
 public:
-    Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args);
+    Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args, IDxDispatchLogger* logger);
 
+    uint32_t GetCommandCount();
+    void RunCommand(UINT32 id);
     void Run();
     void operator()(const Model::DispatchCommand& command);
     void operator()(const Model::PrintCommand& command);
@@ -22,4 +24,6 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Dispatchable>> m_dispatchables;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_resources;
     Dispatchable::DeferredBindings m_deferredBinding;
+    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
+    UINT32 m_nextId = 0;
 };

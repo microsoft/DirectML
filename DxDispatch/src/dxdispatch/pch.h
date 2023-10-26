@@ -22,13 +22,27 @@
 #include <functional>
 #include <numeric>
 #include <thread>
+#include <mutex>
 
 #ifndef _WIN32
 #include <wsl/winadapter.h>
 #include "directml_guids.h"
 #else
 #include <Windows.h>
+#include <wrl\implements.h>
+
+namespace Microsoft::WRL
+{
+    // Helper wrapper over Microsoft::WRL::RuntimeClass. This is already implemented in 
+    // common/inc/linux/wrl/linux_impl.h.
+    template <typename... TInterfaces>
+    using Base = Microsoft::WRL::RuntimeClass<
+        Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+        TInterfaces...
+    >;
+}
 #endif
+
 #include <wil/result.h>
 #include <wrl/client.h>
 #include <gsl/gsl>
@@ -68,4 +82,5 @@ using IAdapter = IDXCoreAdapter;
 #include <DirectML.h>
 #include "DirectMLX.h"
 
+#include "DxDispatchInterface.h"
 #include "Logging.h"

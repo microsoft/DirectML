@@ -2,12 +2,22 @@
 #include "JsonParsers.h"
 #include "StdSupport.h"
 #include "NpyReaderWriter.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
 
 using Microsoft::WRL::ComPtr;
+
+std::string RapidJsonToString(const rapidjson::Value& value)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    value.Accept(writer);
+    return buffer.GetString();
+}
 
 static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType)
 {
@@ -1482,41 +1492,47 @@ Model::PrintCommand ParsePrintCommand(const rapidjson::Value& object)
     return command;
 }
 
-Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object)
+Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object, const std::filesystem::path& outputPath)
 {
     Model::WriteFileCommand command = {};
     command.resourceName = ParseStringField(object, "resource");
-    command.targetPath = ResolveOutputFilePath(".", ParseStringField(object, "targetPath")).string();
+    command.targetPath = ResolveOutputFilePath(outputPath, ParseStringField(object, "targetPath")).string();
     BucketAllocator allocator;
     auto dimensions = ParseUInt32ArrayField(object, "dimensions", allocator, false);
     command.dimensions.assign(dimensions.begin(), dimensions.end());
 
     return command;
 }
-
-Model::Command ParseModelCommand(const rapidjson::Value& object)
+Model::Command ParseModelCommand(const rapidjson::Value& object, const std::filesystem::path& outputPath)
 {
-    Model::Command command = {};
+    return ParseModelCommandDesc(object, outputPath).command;
+}
 
-    auto type = ParseStringField(object, "type");
-    if (!_stricmp(type.data(), "dispatch")) 
+Model::CommandDesc ParseModelCommandDesc(const rapidjson::Value& object, const std::filesystem::path& outputPath)
+{
+    Model::CommandDesc commandDesc = {};
+
+    commandDesc.type = ParseStringField(object, "type");
+    commandDesc.parameters = RapidJsonToString(object);
+
+    if (!_stricmp(commandDesc.type.data(), "dispatch"))
     { 
-        command = ParseDispatchCommand(object);
+        commandDesc.command = ParseDispatchCommand(object);
     }
-    else if (!_stricmp(type.data(), "print")) 
+    else if (!_stricmp(commandDesc.type.data(), "print"))
     {
-        command = ParsePrintCommand(object);
+        commandDesc.command = ParsePrintCommand(object);
     }
-    else if (!_stricmp(type.data(), "writeFile"))
+    else if (!_stricmp(commandDesc.type.data(), "writeFile"))
     {
-        command = ParseWriteFileCommand(object);
+        commandDesc.command = ParseWriteFileCommand(object, outputPath);
     }
     else
     {
         throw std::invalid_argument("Unrecognized command");
     }
 
-    return command;
+    return commandDesc;
 }
 
 // Determine the line and column in text by counting the line breaking characters
@@ -1605,8 +1621,9 @@ std::string GetJsonParseErrorMessage(
 
 Model ParseModel(
     const rapidjson::Document& doc,
-    const std::filesystem::path& parentPath,
-    std::string_view jsonDocumentText)
+    const std::string_view& jsonDocumentText,
+    const std::filesystem::path& inputPath,
+    const std::filesystem::path& outputPath)
 {
     if (doc.HasParseError())
     {
@@ -1626,7 +1643,7 @@ Model ParseModel(
     {
         try
         {
-            resources.emplace_back(std::move(ParseModelResourceDesc(field->name.GetString(), parentPath, field->value)));
+            resources.emplace_back(std::move(ParseModelResourceDesc(field->name.GetString(), inputPath, field->value)));
         }
         catch (std::exception& e)
         {
@@ -1644,7 +1661,7 @@ Model ParseModel(
     {
         try
         {
-            operators.emplace_back(std::move(ParseModelDispatchableDesc(field->name.GetString(), parentPath, field->value, allocator)));
+            operators.emplace_back(std::move(ParseModelDispatchableDesc(field->name.GetString(), inputPath, field->value, allocator)));
         }
         catch (std::exception& e)
         {
@@ -1652,7 +1669,7 @@ Model ParseModel(
         }
     }
 
-    std::vector<Model::Command> commands;
+    std::vector<Model::CommandDesc> commands;
     auto commandsField = doc.FindMember("commands");
     if (commandsField == doc.MemberEnd() || !commandsField->value.IsArray())
     {
@@ -1663,7 +1680,7 @@ Model ParseModel(
     {
         try
         {
-            commands.emplace_back(std::move(ParseModelCommand(commandsArray[i])));
+            commands.emplace_back(std::move(ParseModelCommandDesc(commandsArray[i], outputPath)));
         }
         catch (std::exception& e)
         {
@@ -1674,19 +1691,27 @@ Model ParseModel(
     return {std::move(resources), std::move(operators), std::move(commands), std::move(allocator)};
 }
 
-Model ParseModel(const std::filesystem::path& filePath)
+Model ParseModel(
+    const std::filesystem::path& filePath,
+    std::filesystem::path inputPath,
+    std::filesystem::path outputPath)
 {
+
+    std::filesystem::path modelPath = filePath;
     if (!std::filesystem::exists(filePath))
     {
-        throw std::invalid_argument(fmt::format("Model does not exist. Path given: '{}'.", filePath.string()));
+        modelPath = inputPath / filePath;
+        if (!std::filesystem::exists(modelPath))
+        {
+            throw std::invalid_argument(fmt::format("Model does not exist. Path given: '{}'.", filePath.string()));
+        }
     }
-    if (std::filesystem::is_directory(filePath))
+    if (std::filesystem::is_directory(modelPath))
     {
-        throw std::invalid_argument(fmt::format("Model must be a JSON file, not a directory. Path given: '{}'", filePath.string()));
+        throw std::invalid_argument(fmt::format("Model must be a JSON file, not a directory. Path given: '{}'", modelPath.string()));
     }
-    std::filesystem::path parentPath = filePath.parent_path();
 
-    std::vector<std::byte> allBytes = ReadFileContent(filePath.string());
+    std::vector<std::byte> allBytes = ReadFileContent(modelPath.string());
     allBytes.push_back(std::byte(0)); // Ensure null terminated for parser.
     char* fileContentBegin = reinterpret_cast<char*>(allBytes.data());
     std::string_view fileContent{fileContentBegin, allBytes.size()};
@@ -1701,7 +1726,7 @@ Model ParseModel(const std::filesystem::path& filePath)
 
     doc.ParseInsitu<parseFlags>(fileContentBegin);
 
-    return ParseModel(doc, parentPath, fileContent);
+    return ParseModel(doc, fileContent, inputPath, outputPath);
 }
 
 } // namespace JsonParsers

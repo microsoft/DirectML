@@ -25,7 +25,11 @@ public:
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
     bool DisableAgilitySDK() const { return m_disableAgilitySDK; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
-    const std::filesystem::path& ModelPath() const { return m_modelPath; }
+
+    const std::optional<std::filesystem::path>& ModelPath() const { return m_modelPath; }
+    const std::optional<std::filesystem::path>& InputPath() const { return m_inputRelPath;; }
+    const std::optional<std::filesystem::path>& OutputPath() const { return m_outputRelPath; }
+
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     uint32_t DispatchRepeat() const { return m_dispatchRepeat; }
@@ -45,6 +49,7 @@ public:
 
     bool GetUavBarrierAfterDispatch() const { return m_uavBarrierAfterDispatch; }
     bool GetAliasingBarrierAfterDispatch() const { return m_aliasingBarrierAfterDispatch; }
+    bool  PrintCommands() const { return m_commandPrinting; }
 
     // ONNX
     gsl::span<const std::pair<std::string, uint32_t>> GetOnnxFreeDimensionNameOverrides() const { return m_onnxFreeDimensionNameOverrides; }
@@ -71,7 +76,9 @@ private:
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
     std::string m_adapterSubstring = "";
-    std::filesystem::path m_modelPath;
+    std::optional<std::filesystem::path> m_modelPath;
+    std::optional<std::filesystem::path> m_inputRelPath;
+    std::optional<std::filesystem::path> m_outputRelPath;
     std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
     uint32_t m_dispatchIterations = 1;
@@ -106,4 +113,5 @@ private:
     bool m_onnxPrintVerboseBindingInfo = false;
     bool m_ortExtensionsEnabled = false;
     bool m_onnxProfilingEnabled = false;
+    bool m_commandPrinting = false;
 };
