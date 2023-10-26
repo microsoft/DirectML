@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.15.4 LANGUAGES CXX)
+project(dxdispatch VERSION 0.16.0 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -103,11 +103,10 @@ get_target_property(gdk_config gdk DX_COMPONENT_CONFIG)
 get_target_property(ort_config onnxruntime DX_COMPONENT_CONFIG)
 get_target_property(ort_extensions_config onnxruntime_extensions DX_COMPONENT_CONFIG)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/config.h.in config.h)
-install(FILES DxDispatchInterface.h DESTINATION bin)
 
 add_library(
     dxdispatchImpl SHARED
-    ${CMAKE_CURRENT_BINARY_DIR}/DxDispatchInterface.h
+    src/dxdispatch/DxDispatchInterface.h
     src/dxdispatch/dllMain.cpp
     src/dxdispatch/dxDispatchWrapper.cpp
     src/dxdispatch/dxDispatchWrapper.h
@@ -130,6 +129,7 @@ add_library(
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
+target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
@@ -142,9 +142,9 @@ endif()
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
-    target_sources(dxdispatchImpl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_sources(dxdispatchImpl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatchImpl.rc)
     target_link_libraries(dxdispatchImpl PRIVATE version.lib)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatch.rc.in dxdispatch.rc)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/dxdispatchImpl.rc.in dxdispatchImpl.rc)
 endif()
 
 if(TARGET_WSL)
@@ -179,11 +179,11 @@ if(MSVC)
     set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def  ")
 endif()
 
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h DESTINATION bin)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION bin)
 install(
     FILES 
     $<TARGET_FILE:dxdispatchImpl> 
-    ${CMAKE_CURRENT_BINARY_DIR}/DxDispatchInterface.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ThirdPartyNotices.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/doc/Guide.md
     DESTINATION bin
@@ -244,9 +244,18 @@ target_link_libraries(
 )
 
 target_compile_features(dxdispatch_EXE PRIVATE cxx_std_17)
-set_target_properties(dxdispatch_EXE PROPERTIES OUTPUT_NAME dxdispatch.exe)
-target_copy_redist_dependencies(dxdispatch_EXE)
+set_target_properties(dxdispatch_EXE PROPERTIES 
+    OUTPUT_NAME "dxdispatch"
+    SUFFIX ".exe")
 
+
+if(WIN32)
+    target_sources(dxdispatch_EXE PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_link_libraries(dxdispatch_EXE PRIVATE version.lib)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/exe/dxdispatch.rc.in dxdispatch.rc)
+endif()
+
+target_copy_redist_dependencies(dxdispatch_EXE)
 install(
     FILES 
     $<TARGET_FILE:dxdispatch_EXE>

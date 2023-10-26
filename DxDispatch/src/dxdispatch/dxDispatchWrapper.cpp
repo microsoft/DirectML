@@ -85,7 +85,16 @@ HRESULT DxDispatch::RuntimeClassInitialize(
         RETURN_HR_IF_NULL(E_OUTOFMEMORY, m_logger);
     }
 
-    m_options = std::make_shared<CommandLineArgs>(argc, (char**)argv);
+    try
+    {
+         m_options = std::make_shared<CommandLineArgs>(argc, (char**)argv);
+    }
+    catch (const std::exception& e)
+    {
+        m_logger->LogError(fmt::format("Failed to parse command-line arguments: {}", e.what()).c_str());
+        throw;
+    }
+   
 
     SetDisableAgilitySDK(m_options->DisableAgilitySDK());
 
@@ -130,30 +139,48 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     }
 
     std::optional<Adapter> dxDispatchAdapter;
-    if (nullptr == adapter)
+    try
     {
-        dxDispatchAdapter = Adapter::Select(
-            m_dxCoreModule,
-            m_options->AdapterSubstring());
+        if (nullptr == adapter)
+        {
+            dxDispatchAdapter = Adapter::Select(
+                m_dxCoreModule,
+                m_options->AdapterSubstring());
+        }
+        else
+        {
+            dxDispatchAdapter = Adapter(adapter, m_dxCoreModule);
+        }
     }
-    else
+    catch(const std::exception& e)
     {
-        dxDispatchAdapter = Adapter(adapter, m_dxCoreModule);
+         m_logger->LogError(fmt::format("Failed to create adapter: {}", e.what()).c_str());
+         throw;
     }
-    m_options->SetAdapter(dxDispatchAdapter->GetAdapter());
-    m_device = std::make_shared<Device>(
-        dxDispatchAdapter->GetAdapter(),
-        D3D_FEATURE_LEVEL_1_0_CORE,
-        m_options->DebugLayersEnabled(),
-        m_options->CommandListType(),
-        m_options->DispatchRepeat(),
-        m_options->GetUavBarrierAfterDispatch(),
-        m_options->GetAliasingBarrierAfterDispatch(),
-        m_pixCaptureHelper,
-        m_d3dModule,
-        m_dmlModule,
-        m_logger.Get()
-    );
+    
+    try
+    {
+            m_options->SetAdapter(dxDispatchAdapter->GetAdapter());
+            m_device = std::make_shared<Device>(
+                dxDispatchAdapter->GetAdapter(),
+                D3D_FEATURE_LEVEL_1_0_CORE,
+                m_options->DebugLayersEnabled(),
+                m_options->CommandListType(),
+                m_options->DispatchRepeat(),
+                m_options->GetUavBarrierAfterDispatch(),
+                m_options->GetAliasingBarrierAfterDispatch(),
+                m_pixCaptureHelper,
+                m_d3dModule,
+                m_dmlModule,
+                m_logger.Get()
+            );
+    }
+    catch(const std::exception& e)
+    {
+        m_logger->LogError(fmt::format("Failed to create a device: {}", e.what()).c_str());
+        throw;
+    }
+
     m_logger->LogInfo(fmt::format("Running on '{}'", dxDispatchAdapter->GetDescription()).c_str());
 
     if (m_options->ClearShaderCaches())
@@ -164,71 +191,78 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     auto inputPath = m_options->InputPath();
     auto outputPath = m_options->OutputPath();
 
-    if (!inputPath.has_value())
+    try
     {
-        if (model.has_value())
+        if (!inputPath.has_value())
         {
-            inputPath = model.value().parent_path();
+            if (model.has_value())
+            {
+                inputPath = model.value().parent_path();
+            }
+            else
+            {
+                inputPath = std::filesystem::current_path();
+            }
+        }
+        if (!outputPath.has_value())
+        {
+            outputPath = std::filesystem::current_path();
+        }
+
+        if (jsonConfig)
+        {
+            std::string_view fileContent(jsonConfig);
+
+            rapidjson::Document doc;
+
+            constexpr rapidjson::ParseFlag parseFlags = rapidjson::ParseFlag(
+                rapidjson::kParseFullPrecisionFlag |
+                rapidjson::kParseCommentsFlag |
+                rapidjson::kParseTrailingCommasFlag |
+                rapidjson::kParseStopWhenDoneFlag);
+
+            std::vector<char> input{ jsonConfig, jsonConfig + strlen(jsonConfig) };
+            doc.ParseInsitu<parseFlags>(&input[0]);
+            m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(
+                JsonParsers::ParseModel(
+                    doc,
+                    fileContent,
+                    inputPath.value(),
+                    outputPath.value())));
+        }
+        else if (model.value().extension() == ".json")
+        {
+            m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(JsonParsers::ParseModel(
+                model.value(),
+                inputPath.value(),
+                outputPath.value())));
+        }
+        else if (model.value().extension() == ".onnx")
+        {
+    #ifdef ONNXRUNTIME_NONE
+            throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
+    #else
+            auto name = model.value().filename().string();
+            m_modelWrapper = std::unique_ptr<ModelWrapper>(
+                new ModelWrapper(
+                    Model(
+                        {}, // resource
+                        { {name, Model::OnnxDispatchableDesc{model.value()}} },  // dispatchables
+                        { {"dispatch", name, Model::DispatchCommand{name, {}, {}} } }, // commands
+                        BucketAllocator{})
+                )
+            );
+    #endif
         }
         else
         {
-            inputPath = std::filesystem::current_path();
+            m_logger->LogError("Expected a .json or .onnx file");
+            return E_NOTIMPL;
         }
     }
-    if (!outputPath.has_value())
+    catch(const std::exception& e) 
     {
-        outputPath = std::filesystem::current_path();
-    }
-
-    if (jsonConfig)
-    {
-        std::string_view fileContent(jsonConfig);
-
-        rapidjson::Document doc;
-
-        constexpr rapidjson::ParseFlag parseFlags = rapidjson::ParseFlag(
-            rapidjson::kParseFullPrecisionFlag |
-            rapidjson::kParseCommentsFlag |
-            rapidjson::kParseTrailingCommasFlag |
-            rapidjson::kParseStopWhenDoneFlag);
-
-        std::vector<char> input{ jsonConfig, jsonConfig + strlen(jsonConfig) };
-        doc.ParseInsitu<parseFlags>(&input[0]);
-        m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(
-            JsonParsers::ParseModel(
-                doc,
-                fileContent,
-                inputPath.value(),
-                outputPath.value())));
-    }
-    else if (model.value().extension() == ".json")
-    {
-        m_modelWrapper = std::unique_ptr<ModelWrapper>(new ModelWrapper(JsonParsers::ParseModel(
-            model.value(),
-            inputPath.value(),
-            outputPath.value())));
-    }
-    else if (model.value().extension() == ".onnx")
-    {
-#ifdef ONNXRUNTIME_NONE
-        throw std::invalid_argument("ONNX dispatchables require ONNX Runtime");
-#else
-        auto name = model.value().filename().string();
-        m_modelWrapper = std::unique_ptr<ModelWrapper>(
-            new ModelWrapper(
-                Model(
-                    {}, // resource
-                    { {name, Model::OnnxDispatchableDesc{model.value()}} },  // dispatchables
-                    { {"dispatch", name, Model::DispatchCommand{name, {}, {}} } }, // commands
-                    BucketAllocator{})
-            )
-        );
-#endif
-    }
-    else
-    {
-        m_logger->LogError("Expected a .json or .onnx file");
-        return E_NOTIMPL;
+        m_logger->LogError(fmt::format("Failed to parse the model: {}", e.what()).c_str());
     }
     return S_OK;
 } CATCH_RETURN();
@@ -242,10 +276,19 @@ HRESULT DxDispatch::RunAll() try
         return E_UNEXPECTED;
     }
 
-    RETURN_IF_FAILED(m_pixCaptureHelper->BeginCapturableWork());
-    m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
-    m_executor->Run();
-    RETURN_IF_FAILED(m_pixCaptureHelper->EndCapturableWork());
+    try
+    {
+        RETURN_IF_FAILED(m_pixCaptureHelper->BeginCapturableWork());
+        m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
+        m_executor->Run();
+        RETURN_IF_FAILED(m_pixCaptureHelper->EndCapturableWork());
+    }
+    catch(const std::exception& e)
+    {
+        m_logger->LogError(fmt::format("Failed to execute the model: {}", e.what()).c_str());
+        throw;
+    }
+    
     return S_OK;
     
 } CATCH_RETURN();
@@ -278,7 +321,16 @@ HRESULT DxDispatch::RunCommand(
     {
         m_executor = std::make_unique<Executor>(m_modelWrapper->Value(), m_device, *m_options, m_logger.Get());
     }
-    return m_executor->RunCommand(index);
+    try
+    {
+        m_executor->RunCommand(index);
+    }
+    catch(const std::exception& e)
+    {
+        m_logger->LogError(fmt::format("Failed to execute the model Index: {} {}", index, e.what()).c_str());
+        throw;
+    }
+    return S_OK;
 }  CATCH_RETURN();
 
 HRESULT DxDispatch::GetObject(

@@ -205,9 +205,8 @@ uint32_t Executor::GetCommandCount()
     return static_cast<uint32_t>(m_model.GetCommands().size());
 }
 
-HRESULT Executor::RunCommand(UINT32 id)
+void Executor::RunCommand(UINT32 id)
 {
-    HRESULT hr = S_OK;
     auto commandDescs = m_model.GetCommands();
     auto maxCommands = GetCommandCount();
     if (id == m_nextId)
@@ -227,33 +226,29 @@ HRESULT Executor::RunCommand(UINT32 id)
         }
         catch (std::exception& ex)
         {
-
-#ifdef WIN32
-            hr = wil::ResultFromCaughtException();
-#else
-            hr = E_FAIL;
-#endif
             if (m_commandLineArgs.PrintCommands())
             {
+#ifdef WIN32
+            HRESULT hr = wil::ResultFromCaughtException();
+#else
+            HRESULT hr = E_FAIL;
+#endif
                 m_logger->LogCommandCompleted((UINT32)id, hr, ex.what());
             }
-            else
-            {
-                m_logger->LogError(ex.what());
-            }
+            throw;
         }
     }
     else
     {
         auto msg = fmt::format("Invalid Id={} ExpectedId={}", id, m_nextId);
         m_logger->LogError(msg.c_str());
-        return E_INVALIDARG;
+        throw std::invalid_argument(msg);
     }
     if ((m_nextId++) >= maxCommands)
     {
         m_nextId = 0;
     }
-    return hr;
+    return;
 }
 
 
@@ -261,10 +256,7 @@ void Executor::Run()
 {
     for (UINT i = 0, c = GetCommandCount(); i < c; i++)
     {
-        if (FAILED(RunCommand(i)))
-        {
-            return;
-        }
+        RunCommand(i);
     }
     return;
 }
@@ -285,7 +277,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     catch (const std::exception& e)
     {
         m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
-        return;
+        throw;
     }
 
     // Dispatch
@@ -309,7 +301,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             catch (const std::exception& e)
             {
                 m_logger->LogError(fmt::format("ERROR while binding resources: {}\n", e.what()).c_str());
-                return;
+                throw;
             }
             PIXEndEvent();
 
@@ -345,7 +337,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     catch (const std::exception& e)
     {
         m_logger->LogError(fmt::format("Failed to execute dispatchable: {}", e.what()).c_str());
-        return;
+        throw;
     }
     PIXEndEvent();
 
@@ -518,6 +510,7 @@ void Executor::operator()(const Model::PrintCommand& command)
     catch (const std::exception& e)
     {
         m_logger->LogError(fmt::format("Failed to print resource: {}", e.what()).c_str());
+        throw;
     }
 }
 

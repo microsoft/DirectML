@@ -10,15 +10,10 @@ class ModelWrapper;
 class Executor;
 
 #ifdef WIN32
-
 extern ULONG AddDllRef();
 extern ULONG ReleaseDllRef();
-
 #else
-
-WINADAPTER_IID(IDxDispatchLogger, 0xE05E128D, 0x9A97, 0x4AEE, 0x85, 0xD8, 0x17, 0x25, 0xC9, 0x2E, 0x41, 0x72);
 WINADAPTER_IID(IDxDispatch,       0x1D5837DF, 0x8496, 0x42A6, 0xAA, 0x5B, 0xAA, 0x0D, 0xD1, 0x27, 0xC3, 0xB4);
-
 #endif
 
 class DxDispatch : public Microsoft::WRL::Base<IDxDispatch>

@@ -8,7 +8,7 @@ public:
     Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args, IDxDispatchLogger* logger);
 
     uint32_t GetCommandCount();
-    HRESULT RunCommand(UINT32 id);
+    void RunCommand(UINT32 id);
     void Run();
     void operator()(const Model::DispatchCommand& command);
     void operator()(const Model::PrintCommand& command);
