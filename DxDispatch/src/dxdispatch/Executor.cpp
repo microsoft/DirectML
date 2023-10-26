@@ -254,7 +254,7 @@ void Executor::RunCommand(UINT32 id)
 
 void Executor::Run()
 {
-    for (UINT i = 0, c = GetCommandCount(); i < c; i++)
+    for (uint32_t i = 0, c = GetCommandCount(); i < c; i++)
     {
         RunCommand(i);
     }
