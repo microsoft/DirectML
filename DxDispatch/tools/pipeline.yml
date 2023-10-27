@@ -75,6 +75,21 @@ stages:
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
+    - task: NuGetToolInstaller@1
+
+    - task: NuGetAuthenticate@0
+      displayName: NuGet Authenticate
+
+    - powershell: |
+        & '$(findCmake.cpackPath)' -G NuGet -C RelWithDebInfo
+      displayName: Package
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+    - powershell: |
+        copy "$(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg" $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
+      displayName: Configure
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - task: PublishBuildArtifacts@1
       displayName: Publish
       inputs:
@@ -82,16 +97,6 @@ stages:
         ArtifactName: $(buildPreset)
 
     - ${{if parameters.publishNuget}}:
-      - task: NuGetToolInstaller@1
-
-      - task: NuGetAuthenticate@0
-        displayName: NuGet Authenticate
-
-      - powershell: |
-          & '$(findCmake.cpackPath)' -G NuGet -C RelWithDebInfo
-        displayName: Package
-        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
-
       - powershell: |
           $packagePath = (ls "$(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg").fullname
           nuget push $packagePath -Source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json -ApiKey VSTS -SkipDuplicate
@@ -127,6 +132,21 @@ stages:
       displayName: Build
       workingDirectory: $(Build.SourcesDirectory)/DxDispatch
 
+    - task: NuGetToolInstaller@1
+
+    - task: NuGetAuthenticate@0
+      displayName: NuGet Authenticate
+
+    - script: |
+        cpack -G NuGet -C RelWithDebInfo
+      displayName: Package
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
+
+    - script: |
+        cp $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/install/bin
+      displayName: Copy Package
+      workingDirectory: $(Build.SourcesDirectory)/DxDispatch
+
     - task: PublishBuildArtifacts@1
       displayName: Publish Artifacts
       inputs:
@@ -134,16 +154,6 @@ stages:
         ArtifactName: $(imageName)-release
 
     - ${{if parameters.publishNuget}}:
-      - task: NuGetToolInstaller@1
-
-      - task: NuGetAuthenticate@0
-        displayName: NuGet Authenticate
-
-      - script: |
-          cpack -G NuGet -C RelWithDebInfo
-        displayName: Package
-        workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
-
       - script: |
           dotnet nuget push $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)/*.nupkg --source https://pkgs.dev.azure.com/microsoft/WindowsAI/_packaging/WindowsAI/nuget/v3/index.json --api-key VSTS --skip-duplicate
         displayName: NuGet Push
