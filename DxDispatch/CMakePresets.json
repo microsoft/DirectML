@@ -59,7 +59,7 @@
             "name": "win-x64-release",
             "displayName": "Release",
             "configurePreset": "win-x64",
-            "configuration": "Release"
+            "configuration": "RelWithDebInfo"
         },
         {
             "name": "win-x86-debug",
@@ -71,7 +71,7 @@
             "name": "win-x86-release",
             "displayName": "Release",
             "configurePreset": "win-x86",
-            "configuration": "Release"
+            "configuration": "RelWithDebInfo"
         },
         {
             "name": "win-arm64-debug",
@@ -83,7 +83,7 @@
             "name": "win-arm64-release",
             "displayName": "Release",
             "configurePreset": "win-arm64",
-            "configuration": "Release"
+            "configuration": "RelWithDebInfo"
         },
         {
             "name": "xbox-scarlett-debug",
@@ -95,7 +95,7 @@
             "name": "xbox-scarlett-release",
             "displayName": "Release",
             "configurePreset": "xbox-scarlett",
-            "configuration": "Release"
+            "configuration": "RelWithDebInfo"
         },
         {
             "name": "linux-x64-debug",
@@ -107,7 +107,7 @@
             "name": "linux-x64-release",
             "displayName": "Release",
             "configurePreset": "linux-x64",
-            "configuration": "Release"
+            "configuration": "RelWithDebInfo"
         }
     ]
 }
