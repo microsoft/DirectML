@@ -88,7 +88,7 @@ stages:
         displayName: NuGet Authenticate
 
       - powershell: |
-          & '$(findCmake.cpackPath)' -G NuGet
+          & '$(findCmake.cpackPath)' -G NuGet -C RelWithDebInfo
         displayName: Package
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
@@ -140,7 +140,7 @@ stages:
         displayName: NuGet Authenticate
 
       - script: |
-          cpack -G NuGet
+          cpack -G NuGet -C RelWithDebInfo
         displayName: Package
         workingDirectory: $(Build.SourcesDirectory)/DxDispatch/build/$(configurePreset)
 
