@@ -36,7 +36,8 @@ stages:
         win_arm64_release:
           configurePreset: win-arm64
           buildPreset: win-arm64-release
-    pool: DirectML_BuildPool
+    pool:
+      vmImage: windows-2022
     steps:
     - task: PowerShell@2
       name: findCMake
