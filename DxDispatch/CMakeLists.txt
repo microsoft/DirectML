@@ -239,16 +239,16 @@ endif()
 # Main Executable
 # ==============================================================================
 add_executable(
-    dxdispatch_EXE
+    dxdispatch
     src/exe/main.cpp
 )
 
 target_include_directories(
-    dxdispatch_EXE 
+    dxdispatch 
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(
-    dxdispatch_EXE
+    dxdispatch
     PRIVATE 
     wil
     dxdispatchImpl
@@ -256,26 +256,22 @@ target_link_libraries(
     directml
 )
 
-target_compile_features(dxdispatch_EXE PRIVATE cxx_std_17)
-set_target_properties(dxdispatch_EXE PROPERTIES 
-    OUTPUT_NAME "dxdispatch"
-    SUFFIX ".exe")
-
+target_compile_features(dxdispatch PRIVATE cxx_std_17)
 
 if(WIN32)
-    target_sources(dxdispatch_EXE PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
-    target_link_libraries(dxdispatch_EXE PRIVATE version.lib)
+    target_sources(dxdispatch PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatch.rc)
+    target_link_libraries(dxdispatch PRIVATE version.lib)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/exe/dxdispatch.rc.in dxdispatch.rc)
 endif()
 
-target_copy_redist_dependencies(dxdispatch_EXE)
+target_copy_redist_dependencies(dxdispatch)
 install(
     FILES 
-    $<TARGET_FILE:dxdispatch_EXE>
+    $<TARGET_FILE:dxdispatch>
     DESTINATION bin
 )
 if(WIN32)
-    install(FILES $<TARGET_PDB_FILE:dxdispatch_EXE>
+    install(FILES $<TARGET_PDB_FILE:dxdispatch>
         DESTINATION bin
         OPTIONAL)
 endif()
@@ -315,11 +311,11 @@ if(DXD_TESTS)
     # Hacky. Needed for silly reasons related to defining GUIDs in winadapter. This should
     # ideally be cleaned up at some point.
     if(NOT WIN32)
-        add_dependencies(jsontests dxdispatch_EXE)
+        add_dependencies(jsontests dxdispatch)
     endif()
 
     function(model_test model_name expected_output)
-        add_test(NAME test_${model_name} COMMAND dxdispatch_EXE models/${model_name}.json WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        add_test(NAME test_${model_name} COMMAND dxdispatch models/${model_name}.json WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_tests_properties(test_${model_name} PROPERTIES PASS_REGULAR_EXPRESSION ${expected_output})
     endfunction()
 
