@@ -188,9 +188,11 @@ install(TARGETS dxdispatchImpl
 install(FILES $<TARGET_LINKER_FILE:dxdispatchImpl> 
     DESTINATION bin
     OPTIONAL)
-install(FILES $<TARGET_PDB_FILE:dxdispatchImpl>
-    DESTINATION bin
-    OPTIONAL)
+if(WIN32)
+    install(FILES $<TARGET_PDB_FILE:dxdispatchImpl>
+        DESTINATION bin
+        OPTIONAL)
+endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION bin)
 install(
@@ -272,9 +274,11 @@ install(
     $<TARGET_FILE:dxdispatch_EXE>
     DESTINATION bin
 )
-install(FILES $<TARGET_PDB_FILE:dxdispatch_EXE>
-    DESTINATION bin
-    OPTIONAL)
+if(WIN32)
+    install(FILES $<TARGET_PDB_FILE:dxdispatch_EXE>
+        DESTINATION bin
+        OPTIONAL)
+endif()
 
 # ==============================================================================
 # Tests
