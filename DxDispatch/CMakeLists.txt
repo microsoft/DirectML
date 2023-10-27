@@ -176,17 +176,21 @@ target_copy_redist_dependencies(dxdispatchImpl)
 
 if(MSVC)
     # Include the import definition, add VS debugger visualizations, remove unused functions, and fold identical code segments.
-    set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def /DEBUG ")
+    set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def ")
 endif()
 
 set_target_properties(dxdispatchImpl PROPERTIES PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h)
-target_link_libraries(dxdispatchImpl PRIVATE ${CMAKE_DL_LIBS})
 
 install(TARGETS dxdispatchImpl
     RUNTIME DESTINATION bin 
     LIBRARY DESTINATION bin
     PUBLIC_HEADER DESTINATION bin)
-install(FILES $<TARGET_LINKER_FILE:dxdispatchImpl> DESTINATION bin)
+install(FILES $<TARGET_LINKER_FILE:dxdispatchImpl> 
+    DESTINATION bin
+    OPTIONAL)
+install(FILES $<TARGET_PDB_FILE:dxdispatchImpl>
+    DESTINATION bin
+    OPTIONAL)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION bin)
 install(
@@ -268,6 +272,9 @@ install(
     $<TARGET_FILE:dxdispatch_EXE>
     DESTINATION bin
 )
+install(FILES $<TARGET_PDB_FILE:dxdispatch_EXE>
+    DESTINATION bin
+    OPTIONAL)
 
 # ==============================================================================
 # Tests
