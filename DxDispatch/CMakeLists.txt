@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(dxdispatch VERSION 0.16.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.16.1 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -176,14 +176,21 @@ target_copy_redist_dependencies(dxdispatchImpl)
 
 if(MSVC)
     # Include the import definition, add VS debugger visualizations, remove unused functions, and fold identical code segments.
-    set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def  ")
+    set_target_properties(dxdispatchImpl PROPERTIES LINK_FLAGS "/DEF:${PROJECT_SOURCE_DIR}/src/dxdispatch/dxdispatch.def /DEBUG ")
 endif()
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h DESTINATION bin)
+set_target_properties(dxdispatchImpl PROPERTIES PUBLIC_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DxDispatchInterface.h)
+target_link_libraries(dxdispatchImpl PRIVATE ${CMAKE_DL_LIBS})
+
+install(TARGETS dxdispatchImpl
+    RUNTIME DESTINATION bin 
+    LIBRARY DESTINATION bin
+    PUBLIC_HEADER DESTINATION bin)
+install(FILES $<TARGET_LINKER_FILE:dxdispatchImpl> DESTINATION bin)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION bin)
 install(
     FILES 
-    $<TARGET_FILE:dxdispatchImpl> 
     ${CMAKE_CURRENT_SOURCE_DIR}/ThirdPartyNotices.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/doc/Guide.md
     DESTINATION bin

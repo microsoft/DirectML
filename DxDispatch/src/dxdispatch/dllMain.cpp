@@ -23,7 +23,7 @@ public:
             }
         };
         AddWord();
-        for (size_t i = 0, c = strlen(commandline); i <= c; i++)
+        for (size_t i = 0, c = (nullptr == commandline ? 0 : strlen(commandline)); i <= c; i++)
         {
             if (i == c)
             {
