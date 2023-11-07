@@ -65,7 +65,7 @@ endfunction()
 # Init using a NuGet distribution.
 # -----------------------------------------------------------------------------
 function(init_onnxruntime_extensions_target_nuget target_name pkg_id pkg_version pkg_hash)
-    if(NOT (TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|X86|ARM|ARM64$"))
+    if(NOT (TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|X86|ARM|ARM64|ARM64EC$"))
         message(FATAL_ERROR "ONNX Runtime extensions NuGet isn't available on this platform")
     endif()
 

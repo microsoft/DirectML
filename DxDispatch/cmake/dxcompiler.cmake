@@ -36,7 +36,8 @@ function(init_dxcompiler_cache_variables prefix)
     # <PREFIX>_DXCOMPILER_TYPE
     if(TARGET_XBOX)
         set(default_type gdk)
-    elseif(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$")
+    #elseif(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$")
+    elseif(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64|ARM64EC$")
         set(default_type archive)
     else()
         set(default_type none) # "source" type isn't implemented yet
@@ -70,7 +71,8 @@ endfunction()
 # Init using GitHub release archive.
 # -----------------------------------------------------------------------------
 function(init_dxcompiler_target_archive target_name url hash)
-    if(NOT(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$"))
+    if(NOT(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64|ARM64EC$"))
+    #if(NOT(TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$"))
         message(FATAL_ERROR "DXCompiler release archives aren't supported on this platform.")
     endif()
 

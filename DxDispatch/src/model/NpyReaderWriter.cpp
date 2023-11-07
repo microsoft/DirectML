@@ -124,7 +124,7 @@ void MapNumPyArrayDataTypeToDml(
     DML_TENSOR_DATA_TYPE resolvedDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
     uint32_t elementByteSize = 0;
 
-    #if !(defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM) || defined(_M_ARM64) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)))
+    #if !(defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM) || defined(_M_ARM64) || defined(_M_ARM64EC) || (defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)))
     // Technically ARM machines can accept either, but the vast majority of ARM machines
     // default to logical endian, including all 2021 Windows ones and Android phones.
     static_assert(false, "Double check that endianness is specified correctly for this architecture when using '='.");

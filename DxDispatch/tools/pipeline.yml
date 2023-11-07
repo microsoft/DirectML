@@ -36,6 +36,9 @@ stages:
         win_arm64_release:
           configurePreset: win-arm64
           buildPreset: win-arm64-release
+        win_arm64ec_release:
+          configurePreset: win-arm64ec
+          buildPreset: win-arm64ec-release
     pool:
       vmImage: windows-2022
     steps:

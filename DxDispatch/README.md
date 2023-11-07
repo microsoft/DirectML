@@ -46,6 +46,7 @@ Available configure presets:
   "win-x64"       - Windows x64
   "win-x86"       - Windows x86
   "win-arm64"     - Windows ARM64
+  "win-arm64ec"   - Windows ARM64EC
   "xbox-scarlett" - Xbox Scarlett
   "linux-x64"     - Linux x64
 ```
@@ -100,6 +101,14 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
   </tr>
   <tr>
     <td>win-arm64</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
+    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
+    <td><b>✅ <u>archive</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+    <td><b>✅ <u>nuget</u></b></td>
+  </tr>
+  <tr>
+    <td>win-arm64ec</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
     <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
     <td><b>✅ <u>archive</u></b></td>

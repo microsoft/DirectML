@@ -30,6 +30,12 @@
             "architecture": { "value": "arm64", "strategy": "set" }
         },
         { 
+          "name": "win-arm64ec",
+          "displayName": "Windows ARM64EC",
+          "inherits": "vs2022",
+          "architecture": { "value": "arm64ec", "strategy": "set" }
+        },
+        { 
             "name": "xbox-scarlett", 
             "displayName": "Xbox Scarlett",
             "inherits": "vs2022", 
@@ -83,6 +89,18 @@
             "name": "win-arm64-release",
             "displayName": "Release",
             "configurePreset": "win-arm64",
+            "configuration": "RelWithDebInfo"
+        },
+        {
+            "name": "win-arm64ec-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-arm64ec",
+            "configuration": "Debug"
+        },
+        {
+            "name": "win-arm64ec-release",
+            "displayName": "Release",
+            "configurePreset": "win-arm64ec",
             "configuration": "RelWithDebInfo"
         },
         {

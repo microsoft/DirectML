@@ -11,11 +11,13 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
 		Debug|ARM64 = Debug|ARM64
+		Debug|ARM64EC = Debug|ARM64EC
 		Debug|Gaming.Xbox.Scarlett.x64 = Debug|Gaming.Xbox.Scarlett.x64
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|ARM = Release|ARM
 		Release|ARM64 = Release|ARM64
+		Release|ARM64EC = Release|ARM64EC
 		Release|Gaming.Xbox.Scarlett.x64 = Release|Gaming.Xbox.Scarlett.x64
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
@@ -23,8 +25,10 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM.ActiveCfg = Debug|ARM
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM.Build.0 = Debug|ARM
-		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.Build.0 = Debug|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.ActiveCfg = Release|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64.Build.0 = Release|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64EC.ActiveCfg = Debug|ARM64EC
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|ARM64EC.Build.0 = Debug|ARM64EC
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.Build.0 = Debug|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Debug|Gaming.Xbox.Scarlett.x64.Deploy.0 = Debug|Gaming.Xbox.Scarlett.x64
@@ -36,6 +40,8 @@ Global
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM.Build.0 = Release|ARM
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64.ActiveCfg = Release|ARM64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64.Build.0 = Release|ARM64
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64EC.ActiveCfg = Release|ARM64EC
+		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|ARM64EC.Build.0 = Release|ARM64EC
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
 		{13DB3BA1-0F18-40C6-8346-824A7F14DDD3}.Release|Gaming.Xbox.Scarlett.x64.Deploy.0 = Release|Gaming.Xbox.Scarlett.x64
@@ -47,6 +53,8 @@ Global
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM.Build.0 = Debug|ARM
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64.ActiveCfg = Debug|ARM64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64.Build.0 = Debug|ARM64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64EC.ActiveCfg = Debug|ARM64EC
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|ARM64EC.Build.0 = Debug|ARM64EC
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.ActiveCfg = Debug|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.Build.0 = Debug|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Debug|Gaming.Xbox.Scarlett.x64.Deploy.0 = Debug|Gaming.Xbox.Scarlett.x64
@@ -58,6 +66,8 @@ Global
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM.Build.0 = Release|ARM
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64.ActiveCfg = Release|ARM64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64.Build.0 = Release|ARM64
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64EC.ActiveCfg = Release|ARM64EC
+		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|ARM64EC.Build.0 = Release|ARM64EC
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.ActiveCfg = Release|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.Build.0 = Release|Gaming.Xbox.Scarlett.x64
 		{3E1FCFF4-7D64-41A3-967E-C0350365C0F3}.Release|Gaming.Xbox.Scarlett.x64.Deploy.0 = Release|Gaming.Xbox.Scarlett.x64
