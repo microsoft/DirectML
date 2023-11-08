@@ -69,7 +69,6 @@ endfunction()
 # -----------------------------------------------------------------------------
 function(init_pix_target_nuget target_name pkg_id pkg_version pkg_hash)
     if(NOT (TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64|ARM64EC$"))
-    #if(NOT (TARGET_WINDOWS AND TARGET_ARCH MATCHES "^X64|ARM64$"))
         message(FATAL_ERROR "PIX NuGet isn't available on this platform")
     endif()
 

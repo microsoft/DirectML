@@ -108,14 +108,6 @@ DxDispatch tries to depend on pre-built redistributable versions of its external
     <td><b>✅ <u>nuget</u></b></td>
   </tr>
   <tr>
-    <td>win-arm64ec</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk<br>✅ local</td>
-    <td><b>✅ <u>nuget</u></b><br>✅ winsdk</td>
-    <td><b>✅ <u>archive</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-    <td><b>✅ <u>nuget</u></b></td>
-  </tr>
-  <tr>
     <td>linux-x64</td>
     <td><b>✅ <u>nuget</u></b><br>✅ local</td>
     <td><b>✅ <u>wsl</u></b></td>
