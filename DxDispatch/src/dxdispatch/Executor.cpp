@@ -527,6 +527,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
 
         std::vector<uint32_t> dimensions;
         ID3D12Resource* resource;
+        DML_TENSOR_DATA_TYPE tensorType;
         if (bufferDesc.useDeferredBinding)
         {
             if (m_deferredBinding.find(command.resourceName) == m_deferredBinding.end())
@@ -545,11 +546,13 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             {
                 fileData = gsl::span<std::byte>(deferredBinding->cpuValues);
             }
+            tensorType = deferredBinding->type;
         }
         else
         {
             resource = m_resources[command.resourceName].Get();
             dimensions = std::vector<uint32_t>(command.dimensions);
+            tensorType = bufferDesc.initialValuesDataType;
         } 
         if(resource)
         {
@@ -580,7 +583,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             }
 
             std::vector<std::byte> npyFileData;
-            WriteNpy(fileData, bufferDesc.initialValuesDataType, dimensions, /*out*/ npyFileData);
+            WriteNpy(fileData, tensorType, dimensions, /*out*/ npyFileData);
             std::swap(fileDataStorage, npyFileData);
             fileData = fileDataStorage;
         }

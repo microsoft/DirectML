@@ -564,25 +564,28 @@ void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
                 deferredBinding->type = GetDataTypeInfo(type).dmlDataType;
                 deferredBinding->elementSizeInBytes = Device::GetSizeInBytes(deferredBinding->type);
 
-                if (shapeInfo.GetElementType() == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                if (deferredBinding->elementCount > 0)
                 {
-                    std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
-                    deferredBinding->cpuValues = std::vector<std::byte>(
-                        tensorData,
-                        tensorData + deferredBinding->elementSizeInBytes);
-                }
-                else
-                {
-                    auto memInfo = Ort::MemoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
-                    auto allocator = Ort::Allocator(m_session.value(), memInfo);
+                    if (shapeInfo.GetElementType() == DML_TENSOR_DATA_TYPE_UNKNOWN)
+                    {
+                        std::byte* tensorData = static_cast<std::byte*>(values[i].GetTensorMutableRawData());
+                        deferredBinding->cpuValues = std::vector<std::byte>(
+                            tensorData,
+                            tensorData + deferredBinding->elementSizeInBytes);
+                    }
+                    else
+                    {
+                        auto memInfo = Ort::MemoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
+                        auto allocator = Ort::Allocator(m_session.value(), memInfo);
 
-                    ComPtr<ID3D12Resource> resource;
-                    auto mutableData = values[i].GetTensorMutableData<void>();
-                    Ort::ThrowOnError(m_ortDmlApi->GetD3D12ResourceFromAllocation(
-                        allocator,
-                        mutableData,
-                        &deferredBinding->resource
-                    ));
+                        ComPtr<ID3D12Resource> resource;
+                        auto mutableData = values[i].GetTensorMutableData<void>();
+                        Ort::ThrowOnError(m_ortDmlApi->GetD3D12ResourceFromAllocation(
+                            allocator,
+                            mutableData,
+                            &deferredBinding->resource
+                        ));
+                    }
                 }
             }
         }
