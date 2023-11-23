@@ -370,21 +370,33 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 command.dispatchableName, iterationsCompleted
             ).c_str());
 
-            m_logger->LogInfo(fmt::format("CPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-                cpuStats.cold.count, cpuStats.cold.average, cpuStats.cold.min, cpuStats.cold.median, cpuStats.cold.max
-            ).c_str());
+            if (cpuStats.cold.count > 0)
+            {
+                m_logger->LogInfo(fmt::format("CPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
+                    cpuStats.cold.count, cpuStats.cold.average, cpuStats.cold.min, cpuStats.cold.median, cpuStats.cold.max
+                ).c_str());
+            }
 
-            m_logger->LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-                gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
-            ).c_str());
+            if (gpuStats.cold.count > 0)
+            {
+                m_logger->LogInfo(fmt::format("GPU Timings (Cold) : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
+                    gpuStats.cold.count, gpuStats.cold.average, gpuStats.cold.min, gpuStats.cold.median, gpuStats.cold.max
+                ).c_str());
+            }
 
-            m_logger->LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-                cpuStats.hot.count, cpuStats.hot.average, cpuStats.hot.min, cpuStats.hot.median, cpuStats.hot.max
-            ).c_str());
+            if (cpuStats.hot.count > 0)
+            {
+                m_logger->LogInfo(fmt::format("CPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
+                    cpuStats.hot.count, cpuStats.hot.average, cpuStats.hot.min, cpuStats.hot.median, cpuStats.hot.max
+                ).c_str());
+            }
 
-            m_logger->LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
-                gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
-            ).c_str());
+            if (gpuStats.hot.count > 0)
+            {
+                m_logger->LogInfo(fmt::format("GPU Timings (Hot)  : {} samples, {:.4f} ms average, {:.4f} ms min, {:.4f} ms median, {:.4f} ms max",
+                    gpuStats.hot.count, gpuStats.hot.average, gpuStats.hot.min, gpuStats.hot.median, gpuStats.hot.max
+                ).c_str());
+            }
 
             if (gpuSamplesOverwritten > 0)
             {
