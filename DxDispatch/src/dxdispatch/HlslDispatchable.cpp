@@ -465,12 +465,8 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
     m_device->GetCommandList()->SetComputeRootDescriptorTable(0, m_descriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
 
-void HlslDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
+void HlslDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBinings)
 {
     m_device->RecordDispatch(args.dispatchableName.c_str(), args.threadGroupCount[0], args.threadGroupCount[1], args.threadGroupCount[2]);
-}
-
-void HlslDispatchable::Wait()
-{
     m_device->ExecuteCommandListAndWait();
 }

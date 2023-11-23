@@ -16,6 +16,7 @@ public:
         uint32_t dispatchRepeat,
         bool uavBarrierAfterDispatch,
         bool aliasingBarrierAfterDispatch,
+        uint32_t maxGpuTimeMeasurements,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
         std::shared_ptr<DmlModule> dmlModule,
@@ -85,6 +86,8 @@ public:
     // Calls ResolveTimestamps() and converts timestamp pairs into timing samples.
     std::vector<double> ResolveTimingSamples();
 
+    bool GpuTimingEnabled() const { return m_timestampCapacity > 0; }
+
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {
         m_temporaryResources.emplace_back(std::move(object));
@@ -98,9 +101,6 @@ public:
 
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
-
-    // Max number of timestamps that may be saved in GPU memory. 
-    static constexpr uint32_t timestampCapacity = 16384;
 
 private:
     void EnsureDxcInterfaces();
@@ -117,6 +117,7 @@ private:
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
     Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_timestampHeap;
+    uint32_t m_timestampCapacity = 0;
     uint32_t m_timestampHeadIndex = 0;
     uint32_t m_timestampCount = 0;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;

@@ -21,6 +21,7 @@ public:
     bool PrintHlslDisassembly() const { return m_printHlslDisassembly; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
+    uint32_t MaxGpuTimeMeasurements() const { return m_maxGpuTimeMeasurements; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
     bool DisableBackgroundProcessing() const { return m_disableBackgroundProcessing; }
@@ -72,6 +73,7 @@ private:
     bool m_printHlslDisassembly = false;
     bool m_debugLayersEnabled = false;
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
+    uint32_t m_maxGpuTimeMeasurements = 8192;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
     bool m_disableBackgroundProcessing = false;

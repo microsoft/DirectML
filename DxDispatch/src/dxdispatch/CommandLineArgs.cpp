@@ -92,6 +92,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Timing verbosity level. 0 = show hot timings, 1 = init/cold/hot timings, 2 = show all timing info",
             cxxopts::value<uint32_t>()->default_value("0")
         )
+        (
+            "max_gpu_time_measurements",
+            "Determines the size of the GPU timestamp buffer. A value of 0 will disable GPU timing.",
+            cxxopts::value<uint32_t>()
+        )
         ;
 
     // DIRECTX OPTIONS
@@ -290,6 +295,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("timing_verbosity"))
     {
         m_timingVerbosity = static_cast<TimingVerbosity>(result["timing_verbosity"].as<uint32_t>());
+    }
+
+    if (result.count("max_gpu_time_measurements"))
+    {
+        m_maxGpuTimeMeasurements = result["max_gpu_time_measurements"].as<uint32_t>();
     }
 
     if (result.count("show_dependencies"))

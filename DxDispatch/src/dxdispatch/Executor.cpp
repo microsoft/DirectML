@@ -307,15 +307,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             // Dispatch
             dispatchTimer.Start();
-            dispatchable->Dispatch(command, iterationsCompleted);
-            if (dispatchable->SupportsDeferredBinding())
-            {
-                dispatchable->Wait(m_deferredBinding);
-            }
-            else
-            {
-                dispatchable->Wait();
-            }
+            dispatchable->Dispatch(command, iterationsCompleted, m_deferredBinding);
             cpuTimings.rawSamples.push_back(dispatchTimer.End().DurationInMilliseconds() / m_commandLineArgs.DispatchRepeat());
 
             // The dispatch interval defaults to 0 (dispatch as fast as possible). However, the user may increase it
@@ -346,20 +338,31 @@ void Executor::operator()(const Model::DispatchCommand& command)
     // GPU timings are capped at a fixed size ring buffer. The first samples may have been 
     // overwritten, in which case the warmup samples are dropped.
     gpuTimings.rawSamples = m_device->ResolveTimingSamples();
-    assert (cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
-    uint32_t gpuSamplesOverwritten = cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
+    assert(cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
+    uint32_t gpuSamplesOverwritten = gpuTimings.rawSamples.empty() ? 0 : cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
     auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
 
     if (iterationsCompleted > 0)
     {
         if (m_commandLineArgs.GetTimingVerbosity() == TimingVerbosity::Basic)
         {
-            m_logger->LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)",
-                command.dispatchableName, 
-                iterationsCompleted,
-                cpuStats.hot.median,
-                gpuStats.hot.median
-            ).c_str());
+            if (gpuTimings.rawSamples.empty())
+            {
+                m_logger->LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU)",
+                    command.dispatchableName, 
+                    iterationsCompleted,
+                    cpuStats.hot.median
+                ).c_str());
+            }
+            else
+            {
+                m_logger->LogInfo(fmt::format("Dispatch '{}': {} iterations, {:.4f} ms median (CPU), {:.6f} ms median (GPU)",
+                    command.dispatchableName, 
+                    iterationsCompleted,
+                    cpuStats.hot.median,
+                    gpuStats.hot.median
+                ).c_str());
+            }
         }
         else
         {
@@ -395,7 +398,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             for (uint32_t i = 0; i < iterationsCompleted; ++i)
             {
-                if (i < gpuSamplesOverwritten)
+                if (i < gpuSamplesOverwritten || gpuTimings.rawSamples.empty())
                 {
                     // GPU samples are limited to a fixed size, so the initial iterations
                     // may not have timing information (overwritten timestamps).

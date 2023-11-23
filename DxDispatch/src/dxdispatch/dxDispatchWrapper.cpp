@@ -169,6 +169,7 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_options->DispatchRepeat(),
                 m_options->GetUavBarrierAfterDispatch(),
                 m_options->GetAliasingBarrierAfterDispatch(),
+                m_options->MaxGpuTimeMeasurements(),
                 m_pixCaptureHelper,
                 m_d3dModule,
                 m_dmlModule,
