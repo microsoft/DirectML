@@ -63,10 +63,15 @@ Alternatively, build from the command line by using `--build` option and appendi
 > cmake --build --preset <configure_preset_name>-(release|debug)
 ```
 
-To run tests, change your working directory to the build folder and execute `ctest` (only supported on some platforms). You need to specify the build configuration (release or debug) since the presets use VS, which is a multi-configuration generator:
+To run tests, change your working directory to the build folder and execute `ctest` (only supported on some platforms). You need to specify the build configuration (relwithdebinfo or debug) since the presets use VS, which is a multi-configuration generator:
 ```
 > cd build\<configure_preset_name>
-> ctest -C Release .
+
+# Test release config
+> ctest -C RelWithDebInfo .
+
+# Test debug config
+> ctest -C Debug .
 ```
 
 # Build Configuration
