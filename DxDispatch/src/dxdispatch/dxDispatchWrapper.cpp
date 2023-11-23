@@ -188,6 +188,24 @@ HRESULT DxDispatch::RuntimeClassInitialize(
         m_device->ClearShaderCaches();
     }
 
+    if (m_options->DisableBackgroundProcessing())
+    {
+        THROW_IF_FAILED(m_device->D3D()->SetBackgroundProcessingMode(
+            D3D12_BACKGROUND_PROCESSING_MODE_DISABLE_BACKGROUND_WORK,
+            D3D12_MEASUREMENTS_ACTION_KEEP_ALL,
+            nullptr,
+            nullptr
+        ));
+        m_logger->LogInfo("Background processing disabled");
+    }
+
+    if (m_options->SetStablePowerState())
+    {
+        // TODO: smart object to unset state
+        THROW_IF_FAILED(m_device->D3D()->SetStablePowerState(TRUE));
+        m_logger->LogInfo("Stable power state enabled");
+    }
+
     auto inputPath = m_options->InputPath();
     auto outputPath = m_options->OutputPath();
 

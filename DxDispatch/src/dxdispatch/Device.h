@@ -24,7 +24,7 @@ public:
     ~Device();
 
     D3d12Module* D3DModule() { return m_d3dModule.get(); }
-    ID3D12Device2* D3D() { return m_d3d.Get(); }
+    ID3D12Device9* D3D() { return m_d3d.Get(); }
     IDMLDevice1* DML() { return m_dml.Get(); }
     ID3D12CommandQueue* GetCommandQueue() { return m_queue.Get(); }
     ID3D12QueryHeap* GetTimestampHeap() { return m_timestampHeap.Get(); }

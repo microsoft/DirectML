@@ -122,6 +122,16 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
+            "disable_background_processing", 
+            "Disallows UMD from performing PGO in background threads", 
+            cxxopts::value<bool>()
+        )
+        (
+            "set_stable_power_state", 
+            "Sets a device clock rate that may be lower than the maximum but more stable", 
+            cxxopts::value<bool>()
+        )
+        (
             "disable_agility_sdk", 
             "Force use of the system version of D3D12Core.dll", 
             cxxopts::value<bool>()
@@ -277,7 +287,6 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_outputRelPath = result["output_path"].as<std::filesystem::path>();
     }
 
-
     if (result.count("timing_verbosity"))
     {
         m_timingVerbosity = static_cast<TimingVerbosity>(result["timing_verbosity"].as<uint32_t>());
@@ -291,6 +300,16 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("disable_background_processing"))
+    {
+        m_disableBackgroundProcessing = result["disable_background_processing"].as<bool>();
+    }
+
+    if (result.count("set_stable_power_state"))
+    {
+        m_setStablePowerState = result["set_stable_power_state"].as<bool>();
     }
 
     if (result.count("disable_agility_sdk"))
