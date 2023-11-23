@@ -114,6 +114,7 @@ Device::Device(
         IID_GRAPHICS_PPV_ARGS(m_fence.ReleaseAndGetAddressOf())));
 
     D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT;
     queueDesc.Type = commandListType;
     THROW_IF_FAILED(m_d3d->CreateCommandQueue(
         &queueDesc, 
