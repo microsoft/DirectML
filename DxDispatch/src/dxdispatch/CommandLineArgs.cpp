@@ -133,12 +133,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "disable_background_processing", 
-            "Disallows UMD from performing PGO in background threads", 
+            "Disallows UMD from performing PGO in background threads. Requires developer mode.", 
             cxxopts::value<bool>()
         )
         (
             "set_stable_power_state", 
-            "Sets a device clock rate that may be lower than the maximum but more stable", 
+            "Sets a device clock rate that may be lower than the maximum but more stable. Requires developer mode.", 
             cxxopts::value<bool>()
         )
         (
