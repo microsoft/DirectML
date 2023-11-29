@@ -169,6 +169,10 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_options->DispatchRepeat(),
                 m_options->GetUavBarrierAfterDispatch(),
                 m_options->GetAliasingBarrierAfterDispatch(),
+                m_options->ClearShaderCaches(),
+                m_options->DisableGpuTimeout(),
+                m_options->DisableBackgroundProcessing(),
+                m_options->SetStablePowerState(),
                 m_options->MaxGpuTimeMeasurements(),
                 m_pixCaptureHelper,
                 m_d3dModule,
@@ -183,46 +187,6 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     }
 
     m_logger->LogInfo(fmt::format("Running on '{}'", dxDispatchAdapter->GetDescription()).c_str());
-
-    if (m_options->ClearShaderCaches())
-    {
-        m_device->ClearShaderCaches();
-    }
-
-    if (m_options->DisableBackgroundProcessing())
-    {
-        HRESULT hr = m_device->D3D()->SetBackgroundProcessingMode(
-            D3D12_BACKGROUND_PROCESSING_MODE_DISABLE_BACKGROUND_WORK,
-            D3D12_MEASUREMENTS_ACTION_KEEP_ALL,
-            nullptr,
-            nullptr
-        );
-
-        if (FAILED(hr))
-        {
-            m_logger->LogError("Failed to disable background processing. Do you have developer mode enabled?");
-            return hr;
-        }
-        else
-        {
-            m_logger->LogInfo("Background processing DISABLED");
-        }
-    }
-
-    if (m_options->SetStablePowerState())
-    {
-        // TODO: smart object to unset state
-        HRESULT hr = m_device->D3D()->SetStablePowerState(TRUE);
-        if (FAILED(hr))
-        {
-            m_logger->LogError("Failed to set stable power state. Do you have developer mode enabled?");
-            return hr;
-        }
-        else
-        {
-            m_logger->LogInfo("Stable power state ENABLED");
-        }
-    }
 
     auto inputPath = m_options->InputPath();
     auto outputPath = m_options->OutputPath();

@@ -16,6 +16,10 @@ public:
         uint32_t dispatchRepeat,
         bool uavBarrierAfterDispatch,
         bool aliasingBarrierAfterDispatch,
+        bool clearShaderCaches,
+        bool disableGpuTimeout,
+        bool disableBackgroundProcessing,
+        bool setStablePowerState,
         uint32_t maxGpuTimeMeasurements,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
@@ -129,6 +133,8 @@ private:
     std::vector<D3D12_RESOURCE_BARRIER> m_postDispatchBarriers;
     DWORD m_callbackCookie = 0;
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
+    bool m_restoreBackgroundProcessing = false;
+    bool m_restoreStablePowerState = false;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

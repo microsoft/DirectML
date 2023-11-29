@@ -127,6 +127,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
+            "disable_gpu_timeout", 
+            "Sets D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT on the command queue", 
+            cxxopts::value<bool>()
+        )
+        (
             "disable_background_processing", 
             "Disallows UMD from performing PGO in background threads", 
             cxxopts::value<bool>()
@@ -310,6 +315,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("disable_gpu_timeout"))
+    {
+        m_disableGpuTimeout = result["disable_gpu_timeout"].as<bool>();
     }
 
     if (result.count("disable_background_processing"))
