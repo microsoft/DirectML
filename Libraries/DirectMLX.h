@@ -3329,7 +3329,7 @@ namespace dml
         Span<const float> scales = {},
         Span<const float> inputPixelOffsets = {},
         Span<const float> outputPixelOffsets = {} 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         , bool antialiased = false
 #endif
         )
@@ -3369,7 +3369,7 @@ namespace dml
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         DML_RESAMPLE3_OPERATOR_DESC desc = {};
         desc.RoundingDirection = roundingDirection;
         desc.Antialiased = antialiased;
@@ -3390,7 +3390,7 @@ namespace dml
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE3, &desc, inputs);
 #elif DML_TARGET_VERSION >= 0x5100
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE2, &desc, inputs);
