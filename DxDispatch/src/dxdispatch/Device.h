@@ -16,6 +16,11 @@ public:
         uint32_t dispatchRepeat,
         bool uavBarrierAfterDispatch,
         bool aliasingBarrierAfterDispatch,
+        bool clearShaderCaches,
+        bool disableGpuTimeout,
+        bool disableBackgroundProcessing,
+        bool setStablePowerState,
+        uint32_t maxGpuTimeMeasurements,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
         std::shared_ptr<DmlModule> dmlModule,
@@ -24,7 +29,7 @@ public:
     ~Device();
 
     D3d12Module* D3DModule() { return m_d3dModule.get(); }
-    ID3D12Device2* D3D() { return m_d3d.Get(); }
+    ID3D12Device9* D3D() { return m_d3d.Get(); }
     IDMLDevice1* DML() { return m_dml.Get(); }
     ID3D12CommandQueue* GetCommandQueue() { return m_queue.Get(); }
     ID3D12QueryHeap* GetTimestampHeap() { return m_timestampHeap.Get(); }
@@ -85,6 +90,8 @@ public:
     // Calls ResolveTimestamps() and converts timestamp pairs into timing samples.
     std::vector<double> ResolveTimingSamples();
 
+    bool GpuTimingEnabled() const { return m_timestampCapacity > 0; }
+
     void KeepAliveUntilNextCommandListDispatch(Microsoft::WRL::ComPtr<IGraphicsUnknown>&& object)
     {
         m_temporaryResources.emplace_back(std::move(object));
@@ -98,9 +105,6 @@ public:
 
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
-
-    // Max number of timestamps that may be saved in GPU memory. 
-    static constexpr uint32_t timestampCapacity = 16384;
 
 private:
     void EnsureDxcInterfaces();
@@ -117,6 +121,7 @@ private:
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
     Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_timestampHeap;
+    uint32_t m_timestampCapacity = 0;
     uint32_t m_timestampHeadIndex = 0;
     uint32_t m_timestampCount = 0;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
@@ -128,6 +133,8 @@ private:
     std::vector<D3D12_RESOURCE_BARRIER> m_postDispatchBarriers;
     DWORD m_callbackCookie = 0;
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
+    bool m_restoreBackgroundProcessing = false;
+    bool m_restoreStablePowerState = false;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

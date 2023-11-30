@@ -21,8 +21,12 @@ public:
     bool PrintHlslDisassembly() const { return m_printHlslDisassembly; }
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
+    uint32_t MaxGpuTimeMeasurements() const { return m_maxGpuTimeMeasurements; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
+    bool DisableGpuTimeout() const { return m_disableGpuTimeout; }
+    bool DisableBackgroundProcessing() const { return m_disableBackgroundProcessing; }
+    bool SetStablePowerState() const { return m_setStablePowerState; }
     bool DisableAgilitySDK() const { return m_disableAgilitySDK; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
 
@@ -70,8 +74,12 @@ private:
     bool m_printHlslDisassembly = false;
     bool m_debugLayersEnabled = false;
     TimingVerbosity m_timingVerbosity = TimingVerbosity::Basic;
+    uint32_t m_maxGpuTimeMeasurements = 8192;
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
+    bool m_disableGpuTimeout = false;
+    bool m_disableBackgroundProcessing = false;
+    bool m_setStablePowerState = false;
     bool m_disableAgilitySDK = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;

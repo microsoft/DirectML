@@ -92,6 +92,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Timing verbosity level. 0 = show hot timings, 1 = init/cold/hot timings, 2 = show all timing info",
             cxxopts::value<uint32_t>()->default_value("0")
         )
+        (
+            "max_gpu_time_measurements",
+            "Determines the size of the GPU timestamp buffer. A value of 0 will disable GPU timing.",
+            cxxopts::value<uint32_t>()
+        )
         ;
 
     // DIRECTX OPTIONS
@@ -119,6 +124,21 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "clear_shader_caches", 
             "Clears D3D shader caches before running commands", 
+            cxxopts::value<bool>()
+        )
+        (
+            "disable_gpu_timeout", 
+            "Sets D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT on the command queue", 
+            cxxopts::value<bool>()
+        )
+        (
+            "disable_background_processing", 
+            "Disallows UMD from performing PGO in background threads. Requires developer mode.", 
+            cxxopts::value<bool>()
+        )
+        (
+            "set_stable_power_state", 
+            "Sets a device clock rate that may be lower than the maximum but more stable. Requires developer mode.", 
             cxxopts::value<bool>()
         )
         (
@@ -277,10 +297,14 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_outputRelPath = result["output_path"].as<std::filesystem::path>();
     }
 
-
     if (result.count("timing_verbosity"))
     {
         m_timingVerbosity = static_cast<TimingVerbosity>(result["timing_verbosity"].as<uint32_t>());
+    }
+
+    if (result.count("max_gpu_time_measurements"))
+    {
+        m_maxGpuTimeMeasurements = result["max_gpu_time_measurements"].as<uint32_t>();
     }
 
     if (result.count("show_dependencies"))
@@ -291,6 +315,21 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("clear_shader_caches"))
     {
         m_clearShaderCaches = result["clear_shader_caches"].as<bool>();
+    }
+
+    if (result.count("disable_gpu_timeout"))
+    {
+        m_disableGpuTimeout = result["disable_gpu_timeout"].as<bool>();
+    }
+
+    if (result.count("disable_background_processing"))
+    {
+        m_disableBackgroundProcessing = result["disable_background_processing"].as<bool>();
+    }
+
+    if (result.count("set_stable_power_state"))
+    {
+        m_setStablePowerState = result["set_stable_power_state"].as<bool>();
     }
 
     if (result.count("disable_agility_sdk"))

@@ -169,6 +169,11 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_options->DispatchRepeat(),
                 m_options->GetUavBarrierAfterDispatch(),
                 m_options->GetAliasingBarrierAfterDispatch(),
+                m_options->ClearShaderCaches(),
+                m_options->DisableGpuTimeout(),
+                m_options->DisableBackgroundProcessing(),
+                m_options->SetStablePowerState(),
+                m_options->MaxGpuTimeMeasurements(),
                 m_pixCaptureHelper,
                 m_d3dModule,
                 m_dmlModule,
@@ -182,11 +187,6 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     }
 
     m_logger->LogInfo(fmt::format("Running on '{}'", dxDispatchAdapter->GetDescription()).c_str());
-
-    if (m_options->ClearShaderCaches())
-    {
-        m_device->ClearShaderCaches();
-    }
 
     auto inputPath = m_options->InputPath();
     auto outputPath = m_options->OutputPath();
