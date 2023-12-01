@@ -28,21 +28,21 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 # DirectML 1.13.0
 
--	Enabled Intel Core Ultra NPU support with performance focused on select deep learning models. 
+- Enabled Intel Core Ultra NPU support with performance focused on select deep learning models. 
 - Introduced DML_FEATURE_LEVEL 6.2:
-  -	Added 6 new operators:
-    -	DML_OPERATOR_LP_POOLING1
-    -	DML_OPERATOR_AVERAGE_POOLING1
-    -	DML_OPERATOR_ACTIVATION_SWISH
-    -	DML_OPERATOR_ACTIVATION_HARD_SWISH
-    -	DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING
-    -	DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT
--	Made ZeroPointTensor optional for DML_OPERATOR_ELEMENT_WISE_QUANTIZE_LINEAR and DML_OPERATOR_ELEMENT_WISE_DEQUANTIZE_LINEAR.
--	Added a new graph node type DML_GRAPH_NODE_TYPE_CONSTANT to enable compile-time optimizations that require content of small tensors.
--	Fixed bug in DML_OPERATOR_LSTM when used with reduction-based activation function like DML_OPERATOR_ACTIVATION_HARDMAX. 
--	Fixed bug in DML_OPERATOR_GEMM when there is additional padding and channel axis is a multiple of 16 bytes.
--	Added UINT8/INT8 data type support for DML_OPERATOR_RESAMPLE2.
--	Added ARM64EC variant for DirectML redistributable package in NuGet.
+  - Added 6 new operators:
+    - DML_OPERATOR_LP_POOLING1
+    - DML_OPERATOR_AVERAGE_POOLING1
+    - DML_OPERATOR_ACTIVATION_SWISH
+    - DML_OPERATOR_ACTIVATION_HARD_SWISH
+    - DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING
+    - DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT
+- Made ZeroPointTensor optional for DML_OPERATOR_ELEMENT_WISE_QUANTIZE_LINEAR and DML_OPERATOR_ELEMENT_WISE_DEQUANTIZE_LINEAR.
+- Added a new graph node type DML_GRAPH_NODE_TYPE_CONSTANT to enable compile-time optimizations that require content of small tensors.
+- Fixed bug in DML_OPERATOR_LSTM when used with reduction-based activation function like DML_OPERATOR_ACTIVATION_HARDMAX. 
+- Fixed bug in DML_OPERATOR_GEMM when there is additional padding and channel axis is a multiple of 16 bytes.
+- Added UINT8/INT8 data type support for DML_OPERATOR_RESAMPLE2.
+- Added ARM64EC variant for DirectML redistributable package in NuGet.
 - Updated Xbox Series X/S binaries to support the 230307, 230603, and 231000 GDK editions.
 - Bug fixes.
 
