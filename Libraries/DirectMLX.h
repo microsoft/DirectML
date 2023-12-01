@@ -2152,6 +2152,7 @@ namespace dml
         const uint32_t defaultStridesAndDilations[3] = { 1, 1, 1 };
 
         DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
+        // dilations must be omitted or have the same rank as the spatial dimension count (inputTensor rank - 2)
         assert(dilations.empty() || dilations.size() == inputTensor.sizes.size() - 2);
         averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
 #else
