@@ -366,7 +366,7 @@ int main()
         nullptr,
         IID_GRAPHICS_PPV_ARGS(inputBuffer.GetAddressOf())));
 
-    std::wcout << std::fixed; std::wcout.precision(2);
+    std::wcout << std::fixed; std::wcout.precision(4);
     std::array<FLOAT, tensorElementCount> inputTensorElementArray;
     {
         std::wcout << L"input tensor: ";
