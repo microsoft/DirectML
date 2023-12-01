@@ -2147,9 +2147,10 @@ namespace dml
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
 
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
-        const uint32_t defaultStridesAndDilations[3] = { 1, 1, 1 };
 
 #if DML_TARGET_VERSION >= 0x6200
+        const uint32_t defaultStridesAndDilations[3] = { 1, 1, 1 };
+
         DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
         assert(dilations.empty() || dilations.size() == inputTensor.sizes.size() - 2);
         averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
