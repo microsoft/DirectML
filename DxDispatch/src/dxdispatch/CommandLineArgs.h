@@ -35,9 +35,9 @@ public:
     const std::optional<std::filesystem::path>& OutputPath() const { return m_outputRelPath; }
 
     const std::string& HelpText() const { return m_helpText; }
-    uint32_t DispatchIterations() const { return m_dispatchIterations; }
+    uint32_t MinDispatchIterations() const { return m_minDispatchIterations; }
     uint32_t DispatchRepeat() const { return m_dispatchRepeat; }
-    std::optional<uint32_t> TimeToRunInMilliseconds() const { return m_timeToRunInMilliseconds; }
+    uint32_t MinTimeToRunInMilliseconds() const { return m_minTimeToRunInMilliseconds; }
     uint32_t MinimumDispatchIntervalInMilliseconds() const { return m_minDispatchIntervalInMilliseconds; }
     uint32_t MaxWarmupSamples() const { return m_maxWarmupSamples; }
     D3D12_COMMAND_LIST_TYPE CommandListType() const 
@@ -89,9 +89,9 @@ private:
     std::optional<std::filesystem::path> m_outputRelPath;
     std::string m_pixCaptureName = "dxdispatch";
     std::string m_helpText;
-    uint32_t m_dispatchIterations = 1;
+    uint32_t m_minDispatchIterations = 1;
     uint32_t m_dispatchRepeat = 1;
-    std::optional<uint32_t> m_timeToRunInMilliseconds = {};
+    uint32_t m_minTimeToRunInMilliseconds = 0;
     uint32_t m_minDispatchIntervalInMilliseconds = 0;
     uint32_t m_maxWarmupSamples = 1;
 

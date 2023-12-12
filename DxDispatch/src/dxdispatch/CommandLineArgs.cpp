@@ -64,7 +64,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     options.add_options("Timing")
         (
             "i,dispatch_iterations", 
-            "The number of iterations in bind/dispatch/wait loop", 
+            "The minimum number of iterations in bind/dispatch/wait loop. If milliseconds_to_run is also specified, then more measurements will be taken if time permits.", 
             cxxopts::value<uint32_t>()->default_value("1")
         )
         (
@@ -74,7 +74,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         )
         (
             "t,milliseconds_to_run",
-            "Specifies the total time to run the test for. Overrides dispatch_iterations",
+            "The minimum number of milliseconds to run the bind/dispatch/wait loop. The program may run for longer to obtain at least dispatch_iterations number of measurements.",
             cxxopts::value<uint32_t>()
         )
         (
@@ -243,7 +243,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     
     if (result.count("dispatch_iterations"))
     {
-        m_dispatchIterations = result["dispatch_iterations"].as<uint32_t>();
+        m_minDispatchIterations = result["dispatch_iterations"].as<uint32_t>();
     }
     
     if (result.count("dispatch_repeat"))
@@ -253,13 +253,12 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
 
     if (result.count("milliseconds_to_run"))
     {
-        m_timeToRunInMilliseconds.emplace(result["milliseconds_to_run"].as<uint32_t>());
-        m_dispatchIterations = std::numeric_limits<uint32_t>::max();   // override the "iterations" setting
+        m_minTimeToRunInMilliseconds = result["milliseconds_to_run"].as<uint32_t>();
     }
 
     if (result.count("dispatch_interval"))
     {
-        m_minDispatchIntervalInMilliseconds =result["dispatch_interval"].as<uint32_t>();
+        m_minDispatchIntervalInMilliseconds = result["dispatch_interval"].as<uint32_t>();
     }
 
     if (result.count("warmup_samples"))

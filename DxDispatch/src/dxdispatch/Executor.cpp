@@ -288,7 +288,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     {
         Timer loopTimer, iterationTimer, bindTimer, dispatchTimer;
 
-        for (; !timedOut && iterationsCompleted < m_commandLineArgs.DispatchIterations(); iterationsCompleted++)
+        for (; !timedOut || iterationsCompleted < m_commandLineArgs.MinDispatchIterations(); iterationsCompleted++)
         {
             iterationTimer.Start();
 
@@ -314,8 +314,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
             // to potentially introduce a sleep between each iteration.
             double timeToSleep = std::max(0.0, m_commandLineArgs.MinimumDispatchIntervalInMilliseconds() - iterationTimer.End().DurationInMilliseconds());
 
-            if (m_commandLineArgs.TimeToRunInMilliseconds() &&
-                loopTimer.End().DurationInMilliseconds() + timeToSleep > m_commandLineArgs.TimeToRunInMilliseconds().value())
+            if (loopTimer.End().DurationInMilliseconds() + timeToSleep > m_commandLineArgs.MinTimeToRunInMilliseconds())
             {
                 timedOut = true;
             }
