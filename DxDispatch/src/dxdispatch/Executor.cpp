@@ -324,6 +324,13 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 // Not particularly precise (may be off by some milliseconds). Consider using OS APIs in the future.
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(timeToSleep)));
             }
+
+#if defined(DX_PRESENT_SEPARATOR)
+            if (m_commandLineArgs.GetPresentSeparator())
+            {
+                m_device->DummyPreset();
+            }
+#endif
         }
     }
     catch (const std::exception& e)

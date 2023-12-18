@@ -51,6 +51,10 @@ public:
     PixCaptureType GetPixCaptureType() const { return m_pixCaptureType; }
     const std::string& PixCaptureName() const { return m_pixCaptureName; }
 
+#if defined(DX_PRESENT_SEPARATOR)
+    bool GetPresentSeparator() const { return m_presentSeparator; }
+#endif
+
     bool GetUavBarrierAfterDispatch() const { return m_uavBarrierAfterDispatch; }
     bool GetAliasingBarrierAfterDispatch() const { return m_aliasingBarrierAfterDispatch; }
     bool  PrintCommands() const { return m_commandPrinting; }
@@ -81,6 +85,9 @@ private:
     bool m_disableBackgroundProcessing = false;
     bool m_setStablePowerState = false;
     bool m_disableAgilitySDK = false;
+#if defined(DX_PRESENT_SEPARATOR)
+    bool m_presentSeparator = false;
+#endif
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
     std::string m_adapterSubstring = "";

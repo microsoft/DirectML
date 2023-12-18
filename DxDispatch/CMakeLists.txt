@@ -82,6 +82,7 @@ target_link_libraries(
     wil
     d3d12
     directml
+    dxgi
 )
 
 if(TARGET_WSL)
