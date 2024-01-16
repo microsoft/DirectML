@@ -30,8 +30,8 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 # DirectML 1.13.1
 
 - Fixed performance and output regressions introduced in the 1.13 release for models that use the Join operator.
-- Fix performance and failure issues for models that contain GEMM followed by Add.
-- Fix bug with constant nodes for large data sizes.
+- Fixed performance and failure issues for models that contain GEMM followed by Add.
+- Fixed bug with constant nodes for large data sizes.
 
 # DirectML 1.13.0
 
