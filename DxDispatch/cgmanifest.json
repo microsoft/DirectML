@@ -24,7 +24,7 @@
         "type": "nuget",
         "nuget": {
           "name": "Microsoft.AI.DirectML",
-          "version": "1.13.0"
+          "version": "1.13.1"
         }
       }
     },
