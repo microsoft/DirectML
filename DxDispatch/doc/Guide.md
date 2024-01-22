@@ -72,7 +72,7 @@ There are more options available to you. If you run the executable with no argum
 ```
 dxdispatch version 0.15.0
   DirectML     : NuGet (Microsoft.AI.DirectML.1.11.0)
-  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.610.2)
+  D3D12        : NuGet (Microsoft.Direct3D.D3D12.1.611.2)
   DXCompiler   : Release (v1.7.2212.1)
   PIX          : NuGet (WinPixEventRuntime.1.0.230302001)
   ONNX Runtime : NuGet (Microsoft.ML.OnnxRuntime.DirectML.1.14.1)

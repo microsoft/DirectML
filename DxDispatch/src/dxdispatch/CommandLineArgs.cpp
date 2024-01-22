@@ -132,6 +132,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<bool>()
         )
         (
+            "enable_dred", 
+            "Enables SetAutoBreadcrumbsEnablement and SetPageFaultEnablement on the device", 
+            cxxopts::value<bool>()
+        )
+        (
             "disable_background_processing", 
             "Disallows UMD from performing PGO in background threads. Requires developer mode.", 
             cxxopts::value<bool>()
@@ -320,6 +325,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("disable_gpu_timeout"))
     {
         m_disableGpuTimeout = result["disable_gpu_timeout"].as<bool>();
+    }
+
+    if (result.count("enable_dred"))
+    {
+        m_enableDred = result["enable_dred"].as<bool>();
     }
 
     if (result.count("disable_background_processing"))

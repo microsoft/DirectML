@@ -48,6 +48,7 @@ Device::Device(
     bool aliasingBarrierAfterDispatch,
     bool clearShaderCaches,
     bool disableGpuTimeout,
+    bool enableDred,
     bool disableBackgroundProcessing,
     bool setStablePowerState,
     uint32_t maxGpuTimeMeasurements,
@@ -102,6 +103,17 @@ Device::Device(
         adapter, 
         featureLevel, 
         IID_PPV_ARGS(&m_d3d)));
+
+    if(enableDred)
+    {
+        ComPtr<ID3D12DeviceRemovedExtendedDataSettings> pDredSettings;
+        if(SUCCEEDED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&pDredSettings))))
+        {
+            // Turn on AutoBreadcrumbs and Page Fault reportingc:
+            pDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            pDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        }
+    }
 
     if (debugLayersEnabled)
     {

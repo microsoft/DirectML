@@ -25,6 +25,7 @@ public:
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
     bool DisableGpuTimeout() const { return m_disableGpuTimeout; }
+    bool EnableDred() const { return m_enableDred; }
     bool DisableBackgroundProcessing() const { return m_disableBackgroundProcessing; }
     bool SetStablePowerState() const { return m_setStablePowerState; }
     bool DisableAgilitySDK() const { return m_disableAgilitySDK; }
@@ -78,6 +79,7 @@ private:
     bool m_forceDisablePrecompiledShadersOnXbox = true;
     bool m_clearShaderCaches = false;
     bool m_disableGpuTimeout = false;
+    bool m_enableDred = false;
     bool m_disableBackgroundProcessing = false;
     bool m_setStablePowerState = false;
     bool m_disableAgilitySDK = false;
