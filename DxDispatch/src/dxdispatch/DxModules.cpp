@@ -78,16 +78,11 @@ D3d12Module::D3d12Module(bool disableAgilitySDK, const char* moduleName) : Modul
             if(m_d3d12SDKConfiguration)
             {
                 ComPtr<ID3D12SDKConfiguration1> pD3D12SDKConfiguration;
-                HRESULT hr = m_d3d12SDKConfiguration(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&pD3D12SDKConfiguration));
+                THROW_IF_FAILED(m_d3d12SDKConfiguration(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&pD3D12SDKConfiguration)));
+
                 ComPtr<ID3D12DeviceFactory> deviceFactory;
-                if(SUCCEEDED(hr))
-                {
-                    hr = pD3D12SDKConfiguration->CreateDeviceFactory(D3D12SDKVersion, D3D12SDKPath, IID_PPV_ARGS(&deviceFactory));
-                }
-                if(SUCCEEDED(hr))
-                {
-                    hr = deviceFactory->ApplyToGlobalState();
-                }
+                THROW_IF_FAILED(pD3D12SDKConfiguration->CreateDeviceFactory(D3D12SDKVersion, D3D12SDKPath, IID_PPV_ARGS(&deviceFactory)));
+                THROW_IF_FAILED(deviceFactory->ApplyToGlobalState());
             }
         }
 #endif

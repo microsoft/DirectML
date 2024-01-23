@@ -94,6 +94,10 @@ HRESULT DxDispatch::RuntimeClassInitialize(
         m_logger->LogError(fmt::format("Failed to parse command-line arguments: {}", e.what()).c_str());
         throw;
     }
+
+    // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
+    // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
+    // message.
     m_pixCaptureHelper = std::make_shared<PixCaptureHelper>(m_options->GetPixCaptureType(), m_options->PixCaptureName());
     m_d3dModule = std::make_shared<D3d12Module>(m_options->DisableAgilitySDK());
     m_dxCoreModule = std::make_shared<DxCoreModule>();
