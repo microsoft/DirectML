@@ -15,7 +15,7 @@
         "type": "nuget",
         "nuget": {
           "name": "Microsoft.Direct3D.D3D12",
-          "version": "1.610.2"
+          "version": "1.611.2"
         }
       }
     },
