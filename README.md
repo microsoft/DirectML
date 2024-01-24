@@ -56,8 +56,8 @@ See the following sections for more information:
 
 * [Windows ML on DirectML](#Windows-ML-on-DirectML)
 * [ONNX Runtime on DirectML](#ONNX-Runtime-on-DirectML)
-* [TensorFlow with DirectML (Preview)](#TensorFlow-with-DirectML-Preview)
-* [PyTorch with DirectML (Preview)](#pytorch-with-DirectML-Preview)
+* [TensorFlow with DirectML](#TensorFlow-with-DirectML)
+* [PyTorch with DirectML](#pytorch-with-DirectML)
 
 ## DirectML Samples
 
@@ -147,7 +147,7 @@ We look forward to hearing from you!
 
 ### More information
 [Introducing DirectML (Game Developers Conference '19)](https://www.youtube.com/watch?v=QjQm_wNrvVw)   
-[Accelerating GPU Inferencing with DirectML and DirectX 12 (SIGGRAPH '18)](http://on-demand.gputechconf.com/siggraph/2018/video/sig1814-2-adrian-tsai-gpu-inferencing-directml-and-directx-12.html)  
+[Accelerating GPU Inferencing with DirectML and DirectX 12 (SIGGRAPH '18)](https://on-demand.gputechconf.com/siggraph/2018/video/sig1814-2-adrian-tsai-gpu-inferencing-directml-and-directx-12.html)  
 [Windows AI: hardware-accelerated ML on Windows devices (Microsoft Build '20)](https://www.youtube.com/watch?v=-qf2PMuOXWI&feature=youtu.be)  
 [Gaming with Windows ML (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/gaming-with-windows-ml/)  
 [DirectML at GDC 2019 (DirectX Developer Blog)](https://devblogs.microsoft.com/directx/directml-at-gdc-2019/)  
