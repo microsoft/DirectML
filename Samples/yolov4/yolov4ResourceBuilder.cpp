@@ -455,7 +455,11 @@ void Sample::CreateDirectMLResources()
 
         // Bilinearly rescale the input image to 608x608, which is what yolov4 expects
         auto modelInputSizes = { 1u, 3u, YoloV4Constants::c_inputHeight, YoloV4Constants::c_inputWidth };
-        input = dml::Resample(input, modelInputSizes, DML_INTERPOLATION_MODE_LINEAR);
+        input = dml::Resample(input, modelInputSizes, DML_INTERPOLATION_MODE_LINEAR
+#if DML_TARGET_VERSION >= 0x5100
+            , DML_AXIS_DIRECTION_INCREASING
+#endif // DML_TARGET_VERSION >= 0x5100
+        );
 
         // Construct the yolov4 model
         YoloV4 model(&graph, input, YoloV4Constants::c_numClasses);
