@@ -24,6 +24,7 @@
 #else
 #include "d3dx12.h" // The D3D12 Helper Library that you downloaded.
 #include <dxgi1_4.h>
+#include "dxcore.h"
 #define IID_GRAPHICS_PPV_ARGS IID_PPV_ARGS
 #endif
 
