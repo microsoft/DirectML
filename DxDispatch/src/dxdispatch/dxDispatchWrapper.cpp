@@ -94,16 +94,13 @@ HRESULT DxDispatch::RuntimeClassInitialize(
         m_logger->LogError(fmt::format("Failed to parse command-line arguments: {}", e.what()).c_str());
         throw;
     }
-   
-
-    SetDisableAgilitySDK(m_options->DisableAgilitySDK());
 
     // Needs to be constructed *before* D3D12 device. A warning is printed if DXCore.dll is loaded first,
     // even though the D3D12Device isn't created yet, so we create the capture helper first to avoid this
     // message.
     m_pixCaptureHelper = std::make_shared<PixCaptureHelper>(m_options->GetPixCaptureType(), m_options->PixCaptureName());
+    m_d3dModule = std::make_shared<D3d12Module>(m_options->DisableAgilitySDK());
     m_dxCoreModule = std::make_shared<DxCoreModule>();
-    m_d3dModule = std::make_shared<D3d12Module>();
     m_dmlModule = std::make_shared<DmlModule>();
 
     if (m_options->PrintHelp())
@@ -169,6 +166,12 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_options->DispatchRepeat(),
                 m_options->GetUavBarrierAfterDispatch(),
                 m_options->GetAliasingBarrierAfterDispatch(),
+                m_options->ClearShaderCaches(),
+                m_options->DisableGpuTimeout(),
+                m_options->EnableDred(),
+                m_options->DisableBackgroundProcessing(),
+                m_options->SetStablePowerState(),
+                m_options->MaxGpuTimeMeasurements(),
                 m_pixCaptureHelper,
                 m_d3dModule,
                 m_dmlModule,
@@ -182,11 +185,6 @@ HRESULT DxDispatch::RuntimeClassInitialize(
     }
 
     m_logger->LogInfo(fmt::format("Running on '{}'", dxDispatchAdapter->GetDescription()).c_str());
-
-    if (m_options->ClearShaderCaches())
-    {
-        m_device->ClearShaderCaches();
-    }
 
     auto inputPath = m_options->InputPath();
     auto outputPath = m_options->OutputPath();

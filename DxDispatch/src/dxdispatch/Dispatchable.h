@@ -35,20 +35,5 @@ struct Dispatchable
 
     virtual void Initialize() = 0;
     virtual void Bind(const Bindings& bindings, uint32_t iteration) = 0;
-    virtual void Dispatch(const Model::DispatchCommand& args, uint32_t iteration) = 0;
-
-    virtual bool SupportsDeferredBinding(){ return false; }
-
-    virtual void Wait()
-    {
-        // Only one Wait needs to be implemented, depending on SupportsDeferredBinding()
-        THROW_HR(E_NOTIMPL);
-    }
-
-    virtual void Wait(DeferredBindings& deferredBinings)
-    {
-        // Only one Wait needs to be implemented, depending on SupportsDeferredBinding()
-        THROW_HR(E_NOTIMPL);
-    }
-
+    virtual void Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBinings) = 0;
 };

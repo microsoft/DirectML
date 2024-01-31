@@ -505,29 +505,39 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
     }
 }
 
-void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration)
+void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBindings)
 {
-    PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
-    m_device->RecordTimestamp();
-    m_device->ExecuteCommandList();
+    if (m_device->GpuTimingEnabled())
+    {
+        PIXBeginEvent(m_device->GetCommandList(), PIX_COLOR(255, 255, 0), "ONNX: '%s'", args.dispatchableName.c_str());
+        m_device->RecordTimestamp();
+        m_device->ExecuteCommandList();
+    }
 
     Ort::RunOptions runOptions;
     for (uint32_t i = 0; i < m_args.DispatchRepeat(); i++)
         m_session->Run(runOptions, *m_ioBindings);
 
-    m_device->RecordTimestamp();
-    PIXEndEvent(m_device->GetCommandList());
-    m_device->ExecuteCommandList();
-}
+    if (m_device->GpuTimingEnabled())
+    {
+        m_device->RecordTimestamp();
+        PIXEndEvent(m_device->GetCommandList());
+        m_device->ExecuteCommandListAndWait();
 
-void OnnxDispatchable::Wait(DeferredBindings& deferredBindings)
-{
-    m_ioBindings->SynchronizeOutputs();
+        // No need to call SynchronizeOutputs(), since ExecuteCommandListAndWait() will sync the CPU/GPU timelines.
+        // Calling ExecuteCommandList() followed by SynchronizeOutputs() would also sync CPU/GPU, but it would result 
+        // in the internal command allocator in m_device never being reset (i.e., slow memory leak).
+    }
+    else
+    {
+        m_ioBindings->SynchronizeOutputs();
+    }
 
     if (deferredBindings.size() == 0)
     {
         return;
     }
+
     auto values = m_ioBindings->GetOutputValues();
     auto names = m_ioBindings->GetOutputNames();
     for (auto &output : deferredBindings)

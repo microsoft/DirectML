@@ -2150,11 +2150,10 @@ namespace dml
 
 #if DML_TARGET_VERSION >= 0x6200
         const uint32_t defaultStridesAndDilations[3] = { 1, 1, 1 };
-        uint32_t dimensionCount = static_cast<uint32_t>(inputTensor.sizes.size());
-        uint32_t spatialDimensionCount = dimensionCount - 2;
 
         DML_AVERAGE_POOLING1_OPERATOR_DESC averagePoolDesc = {};
-        assert(dilations.empty() || dilations.size() == spatialDimensionCount);
+        // dilations must be omitted or have the same rank as the spatial dimension count (inputTensor rank - 2)
+        assert(dilations.empty() || dilations.size() == inputTensor.sizes.size() - 2);
         averagePoolDesc.Dilations = dilations.empty() ? defaultStridesAndDilations : dilations.data();
 #else
         DML_AVERAGE_POOLING_OPERATOR_DESC averagePoolDesc = {};
@@ -3325,12 +3324,12 @@ namespace dml
         TensorDimensions outputSizes,
         DML_INTERPOLATION_MODE mode,
 #if DML_TARGET_VERSION >= 0x5100
-        DML_AXIS_DIRECTION roundingDirection,
+        DML_AXIS_DIRECTION roundingDirection = DML_AXIS_DIRECTION_INCREASING,
 #endif // DML_TARGET_VERSION >= 0x5100
         Span<const float> scales = {},
         Span<const float> inputPixelOffsets = {},
         Span<const float> outputPixelOffsets = {} 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         , bool antialiased = false
 #endif
         )
@@ -3370,7 +3369,7 @@ namespace dml
 
         TensorDesc outputTensor(inputTensor.dataType, std::move(outputSizes), builder->GetTensorPolicy());
 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         DML_RESAMPLE3_OPERATOR_DESC desc = {};
         desc.RoundingDirection = roundingDirection;
         desc.Antialiased = antialiased;
@@ -3391,7 +3390,7 @@ namespace dml
 
         detail::NodeOutput* const inputs[] = { input.Impl() };
 
-#if DML_TARGET_VERSION >= 0x6200
+#if DML_TARGET_VERSION >= 0x6300
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE3, &desc, inputs);
 #elif DML_TARGET_VERSION >= 0x5100
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_RESAMPLE2, &desc, inputs);

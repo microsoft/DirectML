@@ -4,6 +4,8 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                  | Feature level                                                                                                            | First available in OS                                             | Redistributable                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [1.13.1](#directml-1131) | [DML_FEATURE_LEVEL_6_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_2) | TBD                                                               | [Microsoft.AI.DirectML.1.13.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.13.1) |
+| [1.13.0](#directml-1130) | [DML_FEATURE_LEVEL_6_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_2) | TBD                                                               | [Microsoft.AI.DirectML.1.13.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.13.0) |
 | [1.12.1](#directml-1121) | [DML_FEATURE_LEVEL_6_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_1) | TBD                                                               | [Microsoft.AI.DirectML.1.12.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.12.1) |
 | [1.12.0](#directml-1120) | [DML_FEATURE_LEVEL_6_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_1) | TBD                                                               | [Microsoft.AI.DirectML.1.12.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.12.0) |
 | [1.11.0](#directml-1110) | [DML_FEATURE_LEVEL_6_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_0) | TBD                                                               | [Microsoft.AI.DirectML.1.11.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.11.0) |
@@ -24,6 +26,38 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.4.0](#directml-140)   | [DML_FEATURE_LEVEL_3_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                              | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0)   |
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
+
+# DirectML 1.13.1
+
+- Fixed performance issues and bugs introduced in the 1.13 release for models that use the Join operator.
+- Fixed performance issues bugs for models that contain GEMM followed by Add.
+- Fixed bug with constant nodes for large data sizes.
+
+# DirectML 1.13.0
+
+- Enabled Intel Core Ultra NPU support with performance focused on select deep learning models. 
+- Introduced DML_FEATURE_LEVEL 6.2:
+  - Added 6 new operators:
+    - DML_OPERATOR_LP_POOLING1
+    - DML_OPERATOR_AVERAGE_POOLING1
+    - DML_OPERATOR_ACTIVATION_SWISH
+    - DML_OPERATOR_ACTIVATION_HARD_SWISH
+    - DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING
+    - DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT
+- Made ZeroPointTensor optional for DML_OPERATOR_ELEMENT_WISE_QUANTIZE_LINEAR and DML_OPERATOR_ELEMENT_WISE_DEQUANTIZE_LINEAR.
+- Added a new graph node type DML_GRAPH_NODE_TYPE_CONSTANT to enable compile-time optimizations that require content of small tensors.
+- Fixed bug in DML_OPERATOR_LSTM when used with reduction-based activation function like DML_OPERATOR_ACTIVATION_HARDMAX. 
+- Fixed bug in DML_OPERATOR_GEMM when there is additional padding and channel axis is a multiple of 16 bytes.
+- Added UINT8/INT8 data type support for DML_OPERATOR_RESAMPLE2.
+- Added ARM64EC variant for DirectML redistributable package in NuGet.
+- Updated Xbox Series X/S binaries to support the 230307, 230603, and 231000 GDK editions.
+- Bug fixes.
+
+**Known Issue**: models containing Join operations may exhibit a slight performance regression relative to 1.12.1, particularly if the model is low-precision or memory-bandwidth limited. This issue will be fixed in the 1.13.1 release.
+
+# DirectML 1.12.1
+
+- Fixed bug in compiled graphs with elided cast nodes that could result in some models producing invalid output values ([issue](https://github.com/microsoft/DirectML/issues/483)).
 
 # DirectML 1.12.0
 
@@ -60,6 +94,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 - Fixed DML_OPERATOR_ELEMENT_WISE_MODULUS_TRUNCATE/FLOOR precision issue with non-power of 2 on specific GPUs.
 - Fixed DML_OPERATOR_CAST casting between 16-bit and 64-bit data types on specific GPUs.
 - Fixed DML_OPERATOR_ACTIVATION_HARDMAX/1 result for certain OutputTensor stride.
+- Added Xbox Series X/S binaries to support the 220301, 220604, and 221000 GDK editions.
 
 # DirectML 1.9.1
 
