@@ -90,4 +90,5 @@ private:
 
     bool m_isSupported_D3D12_GRAPHICS = false;
     bool m_isSupported_CORE_COMPUTE = false;
+    bool m_isSupported_GENERIC_ML = false;
 };

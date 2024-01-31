@@ -68,8 +68,9 @@ function(init_d3d12_cache_variables prefix)
     )
 
     # <PREFIX>_D3D12_HEADERS_TAG
+    # The DirectX-Headers SHA is based on the main branch as of 2024-01-23
     set(${prefix}_D3D12_HEADERS_TAG
-        fb9a40f1b8165c848cf49fdb396722af7181ff97
+        05ada009b2d8a3d8a81869cb93cfc4c715f6788b
         CACHE STRING "Git commit/tag for headers in the DirectX-Headers repo."
     )
 endfunction()
