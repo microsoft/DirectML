@@ -16,8 +16,8 @@ void InitializeDirect3D12(
 #if defined(_DEBUG) && !defined(_GAMING_XBOX)
     ComPtr<ID3D12Debug> d3D12Debug;
     // Throws if the D3D12 debug layer is missing - you must install the Graphics Tools optional feature
-    THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(d3D12Debug.GetAddressOf())));
-    d3D12Debug->EnableDebugLayer();
+    //THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(d3D12Debug.GetAddressOf())));
+    //d3D12Debug->EnableDebugLayer();
 #endif
 
 #if !defined(_GAMING_XBOX)
