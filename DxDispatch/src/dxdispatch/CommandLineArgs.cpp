@@ -535,7 +535,8 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
         }
-        else if(adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
+        else if (adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE) ||
+                 adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML))
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
         }
