@@ -151,9 +151,6 @@ void main()
 
     auto start = std::chrono::high_resolution_clock::now();
     session.Run(Ort::RunOptions{ nullptr }, &inputName, &inputTensor, 1, &outputName, &outputTensor, 1);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> duration = end - start;
-    printf("Evaluate Took: %fus\n", duration.count());
 
     // Wait for completion
     ComPtr<ID3D12Fence> fence;
@@ -163,6 +160,10 @@ void main()
     wil::unique_handle fenceEvent(CreateEvent(nullptr, FALSE, FALSE, nullptr));
     fence->SetEventOnCompletion(1, fenceEvent.get());
     WaitForSingleObject(fenceEvent.get(), INFINITE);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::micro> duration = end - start;
+    printf("Evaluate Took: %fus\n", duration.count());
 
     // Read results
     ComPtr<ID3D12Resource> outputResource;
