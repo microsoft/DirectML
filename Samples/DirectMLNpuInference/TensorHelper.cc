@@ -123,7 +123,7 @@ std::pair<Ort::Value, UniqueNativePtr> CreateDmlValue(
     Ort::ThrowOnError(ortDmlApi->FreeGPUAllocation(ptr));
   });
 
-  auto memoryInfo = Ort::MemoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
+  Ort::MemoryInfo memoryInfo("DML", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemType::OrtMemTypeDefault);
 
   // create the OrtValue as a tensor letting ort know that we own the data buffer
   OrtValue* value;

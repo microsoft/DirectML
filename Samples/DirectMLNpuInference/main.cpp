@@ -11,8 +11,6 @@
 
 #include "TensorHelper.h"
 
-#pragma warning(disable : 4238) // References to temporary classes are okay because they are only used as function parameters.
-
 using Microsoft::WRL::ComPtr;
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut) {
@@ -102,7 +100,7 @@ void main()
     // Add the DML execution provider to ORT using the DML Device and D3D12 Command Queue created above.
     if (!dmlDevice)
     {
-        return;
+        printf("No device found\n");
     }
 
     const OrtApi& ortApi = Ort::GetApi();
@@ -111,17 +109,17 @@ void main()
     s_OrtEnv.DisableTelemetryEvents();
 
     auto sessionOptions = Ort::SessionOptions{};
-
+    sessionOptions.DisableMemPattern();
+    sessionOptions.DisablePerSessionThreads();
+    sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
     const OrtDmlApi* ortDmlApi = nullptr;
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, dmlDevice.Get(), commandQueue.Get()));
 
-    sessionOptions.DisableMemPattern();
-    sessionOptions.DisablePerSessionThreads();
-    sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-
     // Create the session
     auto session = Ort::Session(s_OrtEnv, L"mobilenetv2-7-fp16.onnx", sessionOptions);
+    const char* inputName = "input";
+    const char* outputName = "output";
 
     // Create input tensor
     Ort::TypeInfo type_info = session.GetInputTypeInfo(0);
@@ -132,12 +130,9 @@ void main()
     const auto memoryInfo = inputTensor.GetTensorMemoryInfo();
     Ort::Allocator allocator(session, memoryInfo);
     
+    // Get the inputResource and populate!
     ComPtr<ID3D12Resource> inputResource;
     Ort::ThrowOnError(ortDmlApi->GetD3D12ResourceFromAllocation(allocator, inputTensor.GetTensorMutableData<void*>(), &inputResource));
-
-    //
-    // Populate the inputResource!
-    //
 
     // Create output tensor
     type_info = session.GetOutputTypeInfo(0);
@@ -146,13 +141,10 @@ void main()
     auto outputTensor = std::move(output.first);
 
     // Run
-    const char* inputName = "input";
-    const char* outputName = "output";
-
     auto start = std::chrono::high_resolution_clock::now();
     session.Run(Ort::RunOptions{ nullptr }, &inputName, &inputTensor, 1, &outputName, &outputTensor, 1);
 
-    // Wait for completion
+    // Queue fence, and wait for completion
     ComPtr<ID3D12Fence> fence;
     d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf()));
     commandQueue->Signal(fence.Get(), 1);
