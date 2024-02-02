@@ -155,6 +155,15 @@ void main()
     std::chrono::duration<double, std::micro> duration = end - start;
     printf("Evaluate Took: %fus\n", duration.count());
 
+    // Wait for completion
+    ComPtr<ID3D12Fence> fence;
+    d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf()));
+    commandQueue->Signal(fence.Get(), 1);
+
+    wil::unique_handle fenceEvent(CreateEvent(nullptr, FALSE, FALSE, nullptr));
+    fence->SetEventOnCompletion(1, fenceEvent.get());
+    WaitForSingleObject(fenceEvent.get(), INFINITE);
+
     // Read results
     ComPtr<ID3D12Resource> outputResource;
     Ort::ThrowOnError(ortDmlApi->GetD3D12ResourceFromAllocation(allocator, outputTensor.GetTensorMutableData<void*>(), &outputResource));
