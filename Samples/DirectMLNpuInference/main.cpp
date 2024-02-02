@@ -140,8 +140,7 @@ void main()
     auto output = CreateDmlValue(tensor_info, commandQueue.Get());
     auto outputTensor = std::move(output.first);
 
-    // Run
-    auto start = std::chrono::high_resolution_clock::now();
+    // Run warmup
     session.Run(Ort::RunOptions{ nullptr }, &inputName, &inputTensor, 1, &outputName, &outputTensor, 1);
 
     // Queue fence, and wait for completion
@@ -153,9 +152,24 @@ void main()
     fence->SetEventOnCompletion(1, fenceEvent.get());
     WaitForSingleObject(fenceEvent.get(), INFINITE);
 
+    // Run performance test
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 100; i++)
+    {
+        session.Run(Ort::RunOptions{ nullptr }, &inputName, &inputTensor, 1, &outputName, &outputTensor, 1);
+    }
+
+    commandQueue->Signal(fence.Get(), 2);
+
+    ResetEvent(fenceEvent.get());
+    fence->SetEventOnCompletion(2, fenceEvent.get());
+    WaitForSingleObject(fenceEvent.get(), INFINITE);
+
+    // Run
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::micro> duration = end - start;
-    printf("Evaluate Took: %fus\n", duration.count());
+    printf("Evaluate Took: %fus\n", float(duration.count())/100);
 
     // Read results
     ComPtr<ID3D12Resource> outputResource;
