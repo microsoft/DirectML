@@ -18,6 +18,7 @@ public:
         bool aliasingBarrierAfterDispatch,
         bool clearShaderCaches,
         bool disableGpuTimeout,
+        bool enableDred,
         bool disableBackgroundProcessing,
         bool setStablePowerState,
         uint32_t maxGpuTimeMeasurements,

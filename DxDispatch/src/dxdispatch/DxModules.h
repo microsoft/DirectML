@@ -2,9 +2,6 @@
 
 #include "ModuleInfo.h"
 
-// Must be called before D3D12 is loaded.
-void SetDisableAgilitySDK(bool disableAgilitySDK);
-
 class Module
 {
 public:
@@ -53,9 +50,9 @@ class D3d12Module : public Module
 public:
 #if defined(_GAMING_XBOX)
     // Intentionally set to null; D3D12 is dynamically linked for Xbox.
-    D3d12Module(const char* moduleName = nullptr);
+    D3d12Module(bool disableAgilitySDK, const char* moduleName = nullptr);
 #else
-    D3d12Module(const char* moduleName = c_direct3dModuleName);
+    D3d12Module(bool disableAgilitySDK, const char* moduleName = c_direct3dModuleName);
 #endif
 
 #ifndef _GAMING_XBOX
@@ -83,6 +80,7 @@ private:
     decltype(&D3D12CreateDevice) m_d3d12CreateDevice = nullptr;
     decltype(&D3D12GetDebugInterface) m_d3d12GetDebugInterface = nullptr;
     decltype(&D3D12SerializeVersionedRootSignature) m_d3d12SerializeVersionedRootSignature = nullptr;
+    decltype(&D3D12GetInterface) m_d3d12SDKConfiguration = nullptr;
 };
 
 // Wraps dxcore.dll / libdxcore.so. Not used for Xbox.
