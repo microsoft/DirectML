@@ -17,7 +17,7 @@ using Microsoft::WRL::ComPtr;
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut) {
     // Whether to skip adapters which support Graphics in order to target NPU for testing
-    bool forceComputeOnlyDevice = false;
+    bool forceComputeOnlyDevice = true;
     ComPtr<IDXCoreAdapterFactory> factory;
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
     if (dxCoreModule)
