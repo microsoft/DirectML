@@ -51,7 +51,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateD3D12Resource(
     ID3D12Device* device,
     ONNXTensorElementDataType type,
     const std::vector<int64_t>& shape,
-    D3D12_HEAP_TYPE heap_type) {
+    D3D12_HEAP_TYPE heapType) {
   // Try to allocate the backing memory for the caller
   auto bufferSize =
       std::accumulate(
@@ -67,14 +67,14 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateD3D12Resource(
     bufferByteSize += 4 - (bufferByteSize % 4);
   }
 
-  auto resource_flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-  if (heap_type == D3D12_HEAP_TYPE_UPLOAD ||
-      heap_type == D3D12_HEAP_TYPE_READBACK) {
-    resource_flags = D3D12_RESOURCE_FLAG_NONE;
+  auto flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+  if (heapType == D3D12_HEAP_TYPE_UPLOAD ||
+      heapType == D3D12_HEAP_TYPE_READBACK) {
+    flags = D3D12_RESOURCE_FLAG_NONE;
   }
 
   D3D12_HEAP_PROPERTIES heapProperties = {
-      heap_type, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0};
+      heapType, D3D12_CPU_PAGE_PROPERTY_UNKNOWN, D3D12_MEMORY_POOL_UNKNOWN, 0, 0};
   D3D12_RESOURCE_DESC resourceDesc = {
       D3D12_RESOURCE_DIMENSION_BUFFER,
       0,
@@ -85,7 +85,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> CreateD3D12Resource(
       DXGI_FORMAT_UNKNOWN,
       {1, 0},
       D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-      resource_flags};
+      flags};
 
   Microsoft::WRL::ComPtr<ID3D12Resource> resource;
   ThrowOnFailed(device->CreateCommittedResource(
@@ -136,5 +136,5 @@ std::pair<Ort::Value, UniqueNativePtr> CreateDmlValue(
       tensor_info.GetElementType(),
       &value));
   
-  return { Ort::Value(value), std::move(uniqueDmlAllocatorResource)};
+  return { Ort::Value(value), std::move(uniqueDmlAllocatorResource) };
 }
