@@ -153,9 +153,10 @@ void main()
     fence->SetEventOnCompletion(1, fenceEvent.get());
     WaitForSingleObject(fenceEvent.get(), INFINITE);
 
-    // Run performance test
+    // Record start
     auto start = std::chrono::high_resolution_clock::now();
 
+    // Run performance test
     constexpr int fenceValueStart = 2;
     constexpr int numIterations = 100;
     for (int i = fenceValueStart; i < (numIterations + fenceValueStart); i++)
@@ -171,7 +172,7 @@ void main()
         }
     }
 
-    // Run
+    // Record end and calculate duration
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::micro> duration = end - start;
     printf("Evaluate Took: %fus\n", float(duration.count())/100);
