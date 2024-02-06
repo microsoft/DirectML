@@ -9,7 +9,7 @@ name: DirectMLNpuInference
 urlFragment: DirectMLNpuInference
 ---
 
-# HelloDirectML sample
+# DirectMLNpuInference sample
 
 A minimal but complete DirectML sample that demonstrates how to perform OnnxRuntime inference via D3D12 and DirectML on a NPU. Select a NPU device, create a OnnxRuntime session, execute the model on the NPU, and retrieve the results.
 

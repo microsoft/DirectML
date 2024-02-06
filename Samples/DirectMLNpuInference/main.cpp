@@ -15,7 +15,7 @@ using Microsoft::WRL::ComPtr;
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut) {
     // Whether to skip adapters which support Graphics in order to target NPU for testing
-    bool forceComputeOnlyDevice = true;
+    bool forceComputeOnlyDevice = false;
     ComPtr<IDXCoreAdapterFactory> factory;
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
     if (dxCoreModule)
@@ -100,7 +100,8 @@ void main()
     // Add the DML execution provider to ORT using the DML Device and D3D12 Command Queue created above.
     if (!dmlDevice)
     {
-        printf("No device found\n");
+        printf("No NPU device found\n");
+        return;
     }
 
     const OrtApi& ortApi = Ort::GetApi();
@@ -155,16 +156,20 @@ void main()
     // Run performance test
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < 100; i++)
+    constexpr int fenceValueStart = 2;
+    constexpr int numIterations = 100;
+    for (int i = fenceValueStart; i < (numIterations + fenceValueStart); i++)
     {
         session.Run(Ort::RunOptions{ nullptr }, &inputName, &inputTensor, 1, &outputName, &outputTensor, 1);
+
+        {
+            // Synchronize with CPU before queuing more inference runs
+            commandQueue->Signal(fence.Get(), i);
+            ResetEvent(fenceEvent.get());
+            fence->SetEventOnCompletion(i, fenceEvent.get());
+            WaitForSingleObject(fenceEvent.get(), INFINITE);
+        }
     }
-
-    commandQueue->Signal(fence.Get(), 2);
-
-    ResetEvent(fenceEvent.get());
-    fence->SetEventOnCompletion(2, fenceEvent.get());
-    WaitForSingleObject(fenceEvent.get(), INFINITE);
 
     // Run
     auto end = std::chrono::high_resolution_clock::now();
