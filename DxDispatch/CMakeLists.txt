@@ -92,7 +92,7 @@ target_link_libraries(
     directml
 )
 
-if(TARGET_WSL)  
+if(TARGET_WSL)
     set_target_properties(model PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
