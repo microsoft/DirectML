@@ -48,6 +48,7 @@ Device::Device(
     bool aliasingBarrierAfterDispatch,
     bool clearShaderCaches,
     bool disableGpuTimeout,
+    bool enableDred,
     bool disableBackgroundProcessing,
     bool setStablePowerState,
     uint32_t maxGpuTimeMeasurements,
@@ -102,6 +103,19 @@ Device::Device(
         adapter, 
         featureLevel, 
         IID_PPV_ARGS(&m_d3d)));
+
+    if(enableDred)
+    {
+        // Enables more debug info for TDRs, can be used with Debugger 
+        // extension see following link for more info:
+        // https://learn.microsoft.com/en-us/windows/win32/direct3d12/use-dred
+        ComPtr<ID3D12DeviceRemovedExtendedDataSettings> pDredSettings;
+        if(SUCCEEDED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&pDredSettings))))
+        {
+            pDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+            pDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        }
+    }
 
     if (debugLayersEnabled)
     {
