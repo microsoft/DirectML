@@ -1,5 +1,5 @@
 #define NOMINMAX
-
+#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 #ifndef WIN32
 #include <wsl/winadapter.h>
 #include "directml_guids.h"

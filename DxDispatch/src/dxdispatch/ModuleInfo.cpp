@@ -51,8 +51,9 @@ std::optional<ModuleInfo> GetModuleInfo(gsl::czstring<> moduleName)
                 }
 
                 // Query the product version string using the language & codepage.
-                auto query = fmt::format(L"\\StringFileInfo\\{0:04x}{1:04x}\\ProductVersion", languageCode, translationData->codePage);
-
+                auto temp = fmt::format("\\StringFileInfo\\{0:04x}{1:04x}\\ProductVersion", languageCode, translationData->codePage);
+                std::wstring query(temp.begin(), temp.end());
+                
                 LPVOID productVersionStringDataStart = nullptr;
                 UINT productVersionStringDataSizeInChars = 0;
                 if (VerQueryValueW(versionInfo.data(),

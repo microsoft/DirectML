@@ -1611,7 +1611,7 @@ std::string GetJsonParseErrorMessage(
         int(jsonDocument.GetErrorOffset()),
         line + 1,
         column + 1,
-        jsonDocument.GetParseError(),
+        int(jsonDocument.GetParseError()),
         rapidjson::GetParseError_En(jsonDocument.GetParseError()),
         newLineStrippedText.c_str()
     );
