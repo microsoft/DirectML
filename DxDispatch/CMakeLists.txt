@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 project(dxdispatch VERSION 0.16.5 LANGUAGES CXX)
 
 # ==============================================================================
@@ -59,6 +59,14 @@ include(cmake/onnxruntime_extensions.cmake)
 add_onnxruntime_extensions_target(onnxruntime_extensions CACHE_PREFIX DXD)
 
 # ==============================================================================
+# Global Defines for CMAKE
+# ==============================================================================
+if(MSVC)
+    add_compile_options(/guard:cf /Qspectre /GS /sdl )
+    add_link_options(/GUARD:CF /DYNAMICBASE )
+endif()
+
+# ==============================================================================
 # Model Library
 # ==============================================================================
 add_library(
@@ -84,7 +92,7 @@ target_link_libraries(
     directml
 )
 
-if(TARGET_WSL)
+if(TARGET_WSL)  
     set_target_properties(model PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
