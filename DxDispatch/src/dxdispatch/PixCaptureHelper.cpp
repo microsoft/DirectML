@@ -14,7 +14,7 @@ static std::wstring Utf8ToWideString(std::string_view utf8String)
     {
         return std::wstring();
     }
-    else if( uint64_t(utf8String.size()) > std::numeric_limits<int32_t>::max())
+    else if (uint64_t(utf8String.size()) > std::numeric_limits<int32_t>::max())
     {
         throw std::runtime_error("String too long to convert to wide string");
     }

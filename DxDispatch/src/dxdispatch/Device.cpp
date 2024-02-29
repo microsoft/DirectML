@@ -171,7 +171,7 @@ Device::Device(
     THROW_IF_FAILED(m_dmlModule->CreateDevice1(
         m_d3d.Get(), 
         dmlCreateDeviceFlags, 
-        DML_FEATURE_LEVEL_6_2, 
+        DML_FEATURE_LEVEL_5_0, 
         IID_PPV_ARGS(&m_dml)));
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(
