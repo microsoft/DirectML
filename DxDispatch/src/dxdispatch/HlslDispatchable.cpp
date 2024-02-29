@@ -369,7 +369,11 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
         auto FillViewDesc = [&](auto& viewDesc)
         {
             viewDesc.Buffer.StructureByteStride = bindPoint.structureByteStride;
-            viewDesc.Buffer.NumElements = source.elementCount;
+            if(source.elementCount > std::numeric_limits<uint32_t>::max())
+            {
+                throw std::invalid_argument(fmt::format("ElementCount '{}' is too large.", source.elementCount));
+            }
+            viewDesc.Buffer.NumElements = static_cast<uint32_t>(source.elementCount);
             viewDesc.Buffer.FirstElement = source.elementOffset;
 
             if (bindPoint.viewType == BufferViewType::Typed)
@@ -438,7 +442,8 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
         }
         else if (bindPoint.descriptorType == D3D12_DESCRIPTOR_RANGE_TYPE_CBV)
         {
-            if (sourceBufferDesc.sizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0)
+            if ((sourceBufferDesc.sizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0) ||
+                (sourceBufferDesc.sizeInBytes > std::numeric_limits<uint32_t>::max()))
             {
                 throw std::invalid_argument(fmt::format(
                     "Attempting to bind '{}' as a constant buffer, but its size ({} bytes) is not aligned to {} bytes", 
@@ -449,7 +454,7 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
             cbvDesc.BufferLocation = source.resource->GetGPUVirtualAddress();
-            cbvDesc.SizeInBytes = sourceBufferDesc.sizeInBytes;
+            cbvDesc.SizeInBytes = static_cast<uint32_t>(sourceBufferDesc.sizeInBytes);
             m_device->D3D()->CreateConstantBufferView(&cbvDesc, cpuHandle);
         }
         else

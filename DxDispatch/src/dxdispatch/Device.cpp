@@ -171,7 +171,7 @@ Device::Device(
     THROW_IF_FAILED(m_dmlModule->CreateDevice1(
         m_d3d.Get(), 
         dmlCreateDeviceFlags, 
-        DML_FEATURE_LEVEL_5_0, 
+        DML_FEATURE_LEVEL_6_2, 
         IID_PPV_ARGS(&m_dml)));
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(
@@ -333,7 +333,13 @@ void Device::RecordDispatch(IDMLDispatchable* dispatchable, IDMLBindingTable* bi
     {
         m_commandRecorder->RecordDispatch(m_commandList.Get(), dispatchable, bindingTable);
         if (!m_postDispatchBarriers.empty())
-            m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+        {
+            if(m_postDispatchBarriers.size() > std::numeric_limits<uint32_t>::max())
+            {
+                throw std::invalid_argument(fmt::format("ResourceBarrier '{}' is too large.", m_postDispatchBarriers.size()));
+            }
+            m_commandList->ResourceBarrier(static_cast<uint32_t>(m_postDispatchBarriers.size()), m_postDispatchBarriers.data());
+        }
     }
 
     RecordTimestamp();
@@ -348,7 +354,13 @@ void Device::RecordDispatch(const char* name, uint32_t threadGroupX, uint32_t th
     {
         m_commandList->Dispatch(threadGroupX, threadGroupY, threadGroupZ);
         if (!m_postDispatchBarriers.empty())
-            m_commandList->ResourceBarrier(m_postDispatchBarriers.size(), m_postDispatchBarriers.data());
+        {
+            if(m_postDispatchBarriers.size() > std::numeric_limits<uint32_t>::max())
+            {
+                throw std::invalid_argument(fmt::format("ResourceBarrier '{}' is too large.", m_postDispatchBarriers.size()));
+            }
+            m_commandList->ResourceBarrier(static_cast<uint32_t>(m_postDispatchBarriers.size()), m_postDispatchBarriers.data());
+        }
     }
 
     RecordTimestamp();
@@ -442,10 +454,13 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
     }
 
     ExecuteCommandListAndWait();
-
-    std::vector<std::byte> outputBuffer(defaultBuffer->GetDesc().Width);
+    if(defaultBuffer->GetDesc().Width > std::numeric_limits<size_t>::max())
     {
-        size_t dataSize = defaultBuffer->GetDesc().Width;
+        throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", defaultBuffer->GetDesc().Width));
+    }
+    std::vector<std::byte> outputBuffer(static_cast<size_t>(defaultBuffer->GetDesc().Width));
+    {
+        size_t dataSize = static_cast<size_t>(defaultBuffer->GetDesc().Width);
         CD3DX12_RANGE readRange(0, gsl::narrow<size_t>(dataSize));
         void* readbackBufferData = nullptr;
         THROW_IF_FAILED(readbackBuffer->Map(0, &readRange, &readbackBufferData));

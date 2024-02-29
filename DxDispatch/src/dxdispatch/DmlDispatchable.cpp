@@ -148,7 +148,11 @@ void DmlDispatchable::Initialize()
         FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, nullptr, inputBindingData, true);
 
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
-        bufferArrayBindings.BindingCount = inputBindingData.bufferBindings.size();
+        if(inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
+        {
+            throw std::invalid_argument(fmt::format("Init BindingCount '{}' is too large.", inputBindingData.bufferBindings.size()));
+        }
+        bufferArrayBindings.BindingCount = static_cast<uint32_t>(inputBindingData.bufferBindings.size());
         bufferArrayBindings.Bindings = inputBindingData.bufferBindings.data();
 
         DML_BINDING_DESC bindingDesc = {};
@@ -213,7 +217,11 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 
     THROW_IF_FAILED(m_device->DML()->CreateBindingTable(&bindingTableDesc, IID_PPV_ARGS(m_bindingTable.ReleaseAndGetAddressOf())));
 
-    m_bindingTable->BindInputs(inputBindingData.bindingDescs.size(), inputBindingData.bindingDescs.data());
+    if(inputBindingData.bindingDescs.size() > std::numeric_limits<uint32_t>::max())
+    {
+        throw std::invalid_argument(fmt::format("BindInputs count  '{}' is too large.", inputBindingData.bindingDescs.size()));
+    }
+    m_bindingTable->BindInputs(static_cast<uint32_t>(inputBindingData.bindingDescs.size()), inputBindingData.bindingDescs.data());
 
     ComPtr<ID3D12Resource> tempBuffer;
     auto tempBufferSize = bindingProps.TemporaryResourceSize;
@@ -234,8 +242,11 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
         DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
         m_bindingTable->BindPersistentResource(&bindingDesc);
     }
-
-    m_bindingTable->BindOutputs(outputBindingData.bindingDescs.size(), outputBindingData.bindingDescs.data());
+    if(outputBindingData.bindingDescs.size() > std::numeric_limits<uint32_t>::max())
+    {
+        throw std::invalid_argument(fmt::format("BindOutputs count  '{}' is too large.", outputBindingData.bindingDescs.size()));
+    }
+    m_bindingTable->BindOutputs(static_cast<uint32_t>(outputBindingData.bindingDescs.size()), outputBindingData.bindingDescs.data());
 
     // DML may remove the device if invalid bindings are specified.
     THROW_IF_FAILED(m_device->DML()->GetDeviceRemovedReason());

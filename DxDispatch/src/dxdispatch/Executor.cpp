@@ -339,7 +339,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     // overwritten, in which case the warmup samples are dropped.
     gpuTimings.rawSamples = m_device->ResolveTimingSamples();
     assert(cpuTimings.rawSamples.size() >= gpuTimings.rawSamples.size());
-    uint32_t gpuSamplesOverwritten = gpuTimings.rawSamples.empty() ? 0 : cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size();
+    auto gpuSamplesOverwritten =  static_cast<uint32_t>(gpuTimings.rawSamples.empty() ? 0 : cpuTimings.rawSamples.size() - gpuTimings.rawSamples.size());
     auto gpuStats = gpuTimings.ComputeStats(std::max(m_commandLineArgs.MaxWarmupSamples(), gpuSamplesOverwritten) - gpuSamplesOverwritten);
 
     if (iterationsCompleted > 0)
@@ -440,7 +440,11 @@ template <typename T>
 std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
     auto nBytes = std::max(view.desc.sizeInBytes, (uint64_t) view.desc.initialValues.size());
-    uint32_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
+    uint64_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
+    if(elementCount > std::numeric_limits<unsigned int>::max())
+    {
+        throw std::invalid_argument("Buffer size is too large");
+    }
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {

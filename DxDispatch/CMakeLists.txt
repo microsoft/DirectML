@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(dxdispatch VERSION 0.16.5 LANGUAGES CXX)
+project(dxdispatch VERSION 0.16.6 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
@@ -62,8 +62,13 @@ add_onnxruntime_extensions_target(onnxruntime_extensions CACHE_PREFIX DXD)
 # Global Defines for CMAKE
 # ==============================================================================
 if(MSVC)
-    add_compile_options(/guard:cf /Qspectre /GS /sdl )
-    add_link_options(/GUARD:CF /DYNAMICBASE )
+    add_compile_options(/guard:cf /Qspectre /GS /sdl  /W3 )    
+    if( TARGET_ARCH STREQUAL ARM64 OR
+        TARGET_ARCH STREQUAL ARM)
+        add_link_options(/GUARD:CF /DYNAMICBASE)
+    else()
+        add_link_options(/GUARD:CF /DYNAMICBASE /CETCOMPAT)
+    endif()
 endif()
 
 # ==============================================================================

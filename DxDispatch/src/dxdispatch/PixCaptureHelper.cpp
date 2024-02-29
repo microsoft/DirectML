@@ -14,10 +14,14 @@ static std::wstring Utf8ToWideString(std::string_view utf8String)
     {
         return std::wstring();
     }
+    else if( uint64_t(utf8String.size()) > std::numeric_limits<int32_t>::max())
+    {
+        throw std::runtime_error("String too long to convert to wide string");
+    }
 
-    int requiredSize = MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), nullptr, 0);
+    int requiredSize = MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), static_cast<int32_t>(utf8String.size()), nullptr, 0);
     std::wstring result(requiredSize, 0);
-    MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), utf8String.size(), result.data(), result.size());
+    MultiByteToWideChar(CP_UTF8, 0, utf8String.data(), static_cast<int32_t>(utf8String.size()), result.data(), static_cast<int32_t>(result.size()));
     return result;
 }
 #endif
