@@ -558,32 +558,8 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
 
 DML_FEATURE_LEVEL GetDmlFeatureLevelFromString(const std::string& featureLevel)
 {
-    if ("1.0" == featureLevel)
-        return DML_FEATURE_LEVEL_1_0;
-    else if ("2.0" == featureLevel)
-        return DML_FEATURE_LEVEL_2_0;
-    else if ("2.1" == featureLevel)
-        return DML_FEATURE_LEVEL_2_1;
-    else if ("3.0" == featureLevel)        
-        return DML_FEATURE_LEVEL_3_0;
-    else if ( "3.0" == featureLevel)
-        return DML_FEATURE_LEVEL_3_1;
-    else if ("4.0" == featureLevel)
-        return DML_FEATURE_LEVEL_4_0;
-    else if ("4.1" == featureLevel)
-        return DML_FEATURE_LEVEL_4_1;
-    else if ("5.0" == featureLevel)
-        return DML_FEATURE_LEVEL_5_0;
-    else if ("5.1" == featureLevel)
-        return DML_FEATURE_LEVEL_5_1;
-    else if ("5.2" == featureLevel)
-        return DML_FEATURE_LEVEL_5_2;
-    else if ("6.0" == featureLevel)
-        return DML_FEATURE_LEVEL_6_0;
-    else if ("6.1" == featureLevel)
-        return DML_FEATURE_LEVEL_6_1;
-    else if ("6.2" == featureLevel)
-        return DML_FEATURE_LEVEL_6_2;
-    else
-        throw std::invalid_argument("Unexpected value for dml_feature_level. Must be 1.0, 2.0, 2.1, 3.0, 4.0, 4.1, 5.0, 5.1, 5.2, 6.0, 6.1, or 6.2");
+    auto floatFeatureLevel = atof(featureLevel.c_str());
+    uint32_t majorFeatureLevel = static_cast<uint32_t>(floatFeatureLevel);
+    uint32_t minorFeatureLevel = static_cast<uint32_t>(round((floatFeatureLevel - majorFeatureLevel)*10));
+    return static_cast<DML_FEATURE_LEVEL>((majorFeatureLevel << 12) | (minorFeatureLevel << 8));
 }

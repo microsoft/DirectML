@@ -150,7 +150,7 @@ void DmlDispatchable::Initialize()
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
         if(inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
         {
-            throw std::invalid_argument(fmt::format("Init BindingCount '{}' is too large.", inputBindingData.bufferBindings.size()));
+            throw std::invalid_argument(fmt::format("Initialization Input BindingCount '{}' is too large.", inputBindingData.bufferBindings.size()));
         }
         bufferArrayBindings.BindingCount = static_cast<uint32_t>(inputBindingData.bufferBindings.size());
         bufferArrayBindings.Bindings = inputBindingData.bufferBindings.data();
