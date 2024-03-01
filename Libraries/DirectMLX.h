@@ -2407,7 +2407,6 @@ namespace dml
     {
         TensorDesc inputTensor = input.Impl()->GetOutputDesc();
         detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
-        uint32_t axisSizeSum = 0;
 
         std::vector<TensorDesc> outputTensors;
         outputTensors.reserve(outputAxisSizes.size());
@@ -2427,7 +2426,14 @@ namespace dml
             axisSizeSum += outputAxisSize;
         }
 
+#if defined(_DEBUG)
+	uint32_t axisSizeSum = 0;
+        for (uint32_t outputAxisSize : outputAxisSizes)
+        {
+            axisSizeSum += outputAxisSize;
+        }
         assert(axisSizeSum == inputTensor.sizes[axis]);
+#endif
 
         DML_SPLIT_OPERATOR_DESC desc = {};
         desc.Axis = axis;
