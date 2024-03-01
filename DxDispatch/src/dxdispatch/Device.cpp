@@ -41,6 +41,7 @@ static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MES
 Device::Device(
     IAdapter* adapter, 
     D3D_FEATURE_LEVEL featureLevel,
+    DML_FEATURE_LEVEL dmlFeatureLevel,
     bool debugLayersEnabled, 
     D3D12_COMMAND_LIST_TYPE commandListType, 
     uint32_t dispatchRepeat,
@@ -171,7 +172,7 @@ Device::Device(
     THROW_IF_FAILED(m_dmlModule->CreateDevice1(
         m_d3d.Get(), 
         dmlCreateDeviceFlags, 
-        DML_FEATURE_LEVEL_5_0, 
+        dmlFeatureLevel, 
         IID_PPV_ARGS(&m_dml)));
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(

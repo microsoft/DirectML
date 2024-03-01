@@ -441,7 +441,7 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
     auto nBytes = std::max(view.desc.sizeInBytes, (uint64_t) view.desc.initialValues.size());
     uint64_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
-    if(elementCount > std::numeric_limits<unsigned int>::max())
+    if(elementCount > std::numeric_limits<uint32_t>::max())
     {
         throw std::invalid_argument("Buffer size is too large");
     }

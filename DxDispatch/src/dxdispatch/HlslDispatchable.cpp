@@ -442,14 +442,20 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
         }
         else if (bindPoint.descriptorType == D3D12_DESCRIPTOR_RANGE_TYPE_CBV)
         {
-            if ((sourceBufferDesc.sizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0) ||
-                (sourceBufferDesc.sizeInBytes > std::numeric_limits<uint32_t>::max()))
+            if (sourceBufferDesc.sizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0)
             {
                 throw std::invalid_argument(fmt::format(
                     "Attempting to bind '{}' as a constant buffer, but its size ({} bytes) is not aligned to {} bytes", 
                     source.resourceDesc->name,
                     sourceBufferDesc.sizeInBytes,
                     D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+            }
+            else if (sourceBufferDesc.sizeInBytes > std::numeric_limits<uint32_t>::max())
+            {
+                throw std::invalid_argument(fmt::format(
+                    "Attempting to bind '{}' as a constant buffer, but its size ({} bytes) is too large.", 
+                    source.resourceDesc->name,
+                    sourceBufferDesc.sizeInBytes));
             }
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
