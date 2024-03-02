@@ -3084,6 +3084,9 @@ namespace dml
         Optional<Expression> bias,
         Span<const uint32_t> axes,
         bool normalizeVariance,
+#if DML_TARGET_VERSION >= 0x6300
+        bool normalizeMean,
+#endif
         float epsilon,
         FusedActivation fusedActivation = FusedActivation::None())
     {
@@ -3104,7 +3107,11 @@ namespace dml
 
         detail::FusedActivationStorage storage;
 
+#if DML_TARGET_VERSION >= 0x6300
+        DML_MEAN_VARIANCE_NORMALIZATION2_OPERATOR_DESC desc = {};
+#else
         DML_MEAN_VARIANCE_NORMALIZATION1_OPERATOR_DESC desc = {};
+#endif
         desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.ScaleTensor = scale ? scaleTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
         desc.BiasTensor = bias ? biasTensor.AsPtr<DML_TENSOR_DESC>() : nullptr;
@@ -3114,6 +3121,13 @@ namespace dml
         desc.NormalizeVariance = normalizeVariance;
         desc.Epsilon = epsilon;
         desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
+
+#if DML_TARGET_VERSION >= 0x6300
+        desc.UseMean = normalizeMean;
+        desc.UseVariance = normalizeVariance;
+#else
+        desc.NormalizeVariance = normalizeVariance;
+#endif
 
         detail::NodeOutput* const inputs[] =
         {
