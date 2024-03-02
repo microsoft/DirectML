@@ -3122,7 +3122,6 @@ namespace dml
         desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
         desc.AxisCount = static_cast<UINT>(axes.size());
         desc.Axes = axes.data();
-        desc.NormalizeVariance = normalizeVariance;
         desc.Epsilon = epsilon;
         desc.FusedActivation = detail::GetFusedActivationPtr(fusedActivation, &storage);
 
