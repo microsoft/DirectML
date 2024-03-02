@@ -3138,7 +3138,13 @@ namespace dml
             scale ? scale->Impl() : nullptr,
             bias ? bias->Impl() : nullptr
         };
+
+#if DML_TARGET_VERSION >= 0x6300
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION2, &desc, inputs);
+#else
         detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION1, &desc, inputs);
+#endif
+
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
 
         return output;
