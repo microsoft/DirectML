@@ -1769,6 +1769,13 @@ namespace dml
         DMLX_ACTIVATION_IMPL(ACTIVATION_SOFTMAX);
     }
 
+#if DML_TARGET_VERSION >= 0x5100
+    inline Expression ActivationSoftmax(Expression input, Span<const uint32_t> axes)
+    {
+        DMLX_ACTIVATION_IMPL(ACTIVATION_SOFTMAX1, axes);
+    }
+#endif
+
     inline Expression ActivationSoftplus(Expression input, float steepness = 1.0f)
     {
         DMLX_ACTIVATION_IMPL_1(ACTIVATION_SOFTPLUS, Steepness, steepness);
