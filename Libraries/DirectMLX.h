@@ -893,8 +893,9 @@ namespace dml
         {
             return FusedActivation(DML_OPERATOR_ACTIVATION_GELU);
         }
-    };
 #endif // DML_TARGET_VERSION >= 0x5100
+
+    };
 
     // Implementation detail helper for determining if a list of expressions share the same GraphBuilder.
     namespace detail
@@ -1780,6 +1781,11 @@ namespace dml
     inline Expression ActivationSoftmax(Expression input, Span<const uint32_t> axes)
     {
         DMLX_ACTIVATION_IMPL(ACTIVATION_SOFTMAX1, axes);
+    }
+
+    inline Expression ActivationGelu(Expression input)
+    {
+        DMLX_ACTIVATION_IMPL(ACTIVATION_GELU, axes);
     }
 #endif
 
