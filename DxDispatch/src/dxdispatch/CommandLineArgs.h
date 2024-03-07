@@ -86,7 +86,7 @@ private:
     bool m_disableAgilitySDK = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
-    DML_FEATURE_LEVEL m_dmlFeatureLevel = DML_FEATURE_LEVEL_6_2;
+    DML_FEATURE_LEVEL m_dmlFeatureLevel = DML_FEATURE_LEVEL_5_0;
     std::string m_adapterSubstring = "";
     std::optional<std::filesystem::path> m_modelPath;
     std::optional<std::filesystem::path> m_inputRelPath;
