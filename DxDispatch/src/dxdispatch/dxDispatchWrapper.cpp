@@ -161,6 +161,7 @@ HRESULT DxDispatch::RuntimeClassInitialize(
             m_device = std::make_shared<Device>(
                 dxDispatchAdapter->GetAdapter(),
                 D3D_FEATURE_LEVEL_1_0_CORE,
+                m_options->DmlFeatureLevel(),
                 m_options->DebugLayersEnabled(),
                 m_options->CommandListType(),
                 m_options->DispatchRepeat(),

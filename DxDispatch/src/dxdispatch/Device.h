@@ -11,6 +11,7 @@ public:
     Device(
         IAdapter* adapter, 
         D3D_FEATURE_LEVEL featureLevel,
+        DML_FEATURE_LEVEL dmlFeatureLevel,
         bool debugLayersEnabled, 
         D3D12_COMMAND_LIST_TYPE commandListType, 
         uint32_t dispatchRepeat,

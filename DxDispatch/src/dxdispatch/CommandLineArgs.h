@@ -35,6 +35,7 @@ public:
     const std::optional<std::filesystem::path>& InputPath() const { return m_inputRelPath;; }
     const std::optional<std::filesystem::path>& OutputPath() const { return m_outputRelPath; }
 
+    DML_FEATURE_LEVEL DmlFeatureLevel() const { return m_dmlFeatureLevel; }
     const std::string& HelpText() const { return m_helpText; }
     uint32_t DispatchIterations() const { return m_dispatchIterations; }
     uint32_t DispatchRepeat() const { return m_dispatchRepeat; }
@@ -85,6 +86,7 @@ private:
     bool m_disableAgilitySDK = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
+    DML_FEATURE_LEVEL m_dmlFeatureLevel = DML_FEATURE_LEVEL_5_0;
     std::string m_adapterSubstring = "";
     std::optional<std::filesystem::path> m_modelPath;
     std::optional<std::filesystem::path> m_inputRelPath;
@@ -125,3 +127,5 @@ private:
     bool m_onnxProfilingEnabled = false;
     bool m_commandPrinting = false;
 };
+
+DML_FEATURE_LEVEL GetDmlFeatureLevelFromString(const std::string& featureLevel);

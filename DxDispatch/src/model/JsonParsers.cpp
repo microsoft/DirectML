@@ -367,7 +367,8 @@ bool ParseBoolField(const rapidjson::Value& object, std::string_view fieldName, 
 
 half_float::half ParseFloat16(const rapidjson::Value& value)
 {
-    return ParseFloatingPointNumber<half_float::half>(value);
+    auto parsedValue = ParseFloatingPointNumber<float>(value);
+    return half_float::half(parsedValue);
 }
 
 half_float::half ParseFloat16Field(const rapidjson::Value& object, std::string_view fieldName, bool required, half_float::half defaultValue)
@@ -1085,7 +1086,7 @@ std::vector<std::byte> ReadFileContent(const std::string& fileName)
         throw std::ios::failure(fmt::format("Given filename '{}' could not be opened.", fileName));
     }
 
-    size_t fileSize = file.tellg();
+    size_t fileSize = static_cast<size_t>(file.tellg());
     file.seekg(0);
     std::vector<std::byte> allBytes(fileSize);
     file.read(reinterpret_cast<char*>(allBytes.data()), fileSize);

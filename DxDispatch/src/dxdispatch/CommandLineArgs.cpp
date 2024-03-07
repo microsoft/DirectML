@@ -161,6 +161,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Sets barrier types issued after every dispatch is recorded into a command list: none, uav, or uav+aliasing",
             cxxopts::value<std::string>()->default_value("uav")
         )
+        (
+            "dml_feature_level",
+            "1.1, 2.0, 2.1, 3.0, 3.1, 4.0, 4.1, 5.0, 5.1, 5.2, 6.0, 6.1, 6.2",
+            cxxopts::value<std::string>()->default_value("6.2f")
+        )
         // DxDispatch generates root signatures that are guaranteed to match HLSL source, which eliminates
         // having to write it inline in the HLSL file. DXC for Xbox precompiles shaders for Xbox (by default), 
         // but precompilation requires the root signature to be in the HLSL source itself; to allow use of the
@@ -373,6 +378,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     }
 
+    if(result.count("dml_feature_level"))
+    {
+        m_dmlFeatureLevel = GetDmlFeatureLevelFromString(result["dml_feature_level"].as<std::string>());
+    }
+
     if (result.count("queue_type"))
     {
         auto temp = result["queue_type"];
@@ -544,4 +554,12 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
             THROW_HR(E_NOTIMPL);
         }
     }
+}
+
+DML_FEATURE_LEVEL GetDmlFeatureLevelFromString(const std::string& featureLevel)
+{
+    auto floatFeatureLevel = atof(featureLevel.c_str());
+    uint32_t majorFeatureLevel = static_cast<uint32_t>(floatFeatureLevel);
+    uint32_t minorFeatureLevel = static_cast<uint32_t>(round((floatFeatureLevel - majorFeatureLevel)*10));
+    return static_cast<DML_FEATURE_LEVEL>((majorFeatureLevel << 12) | (minorFeatureLevel << 8));
 }
