@@ -23,14 +23,14 @@ int main(int argc, char** argv)
         nullptr,    // will log to console if not overwritten
         &dispatch
     );
-    if(hr == S_OK)
+    if (hr == S_OK)
     {
         RETURN_IF_FAILED(dispatch->RunAll());
     }
     else
     {
         // ignores S_FALSE
-        if(FAILED(hr))
+        if (FAILED(hr))
         {
             printf("%s failed with hr=0x%08x\n",argv[0], hr);
         }

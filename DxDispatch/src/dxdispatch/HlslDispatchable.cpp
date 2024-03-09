@@ -369,7 +369,7 @@ void HlslDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
         auto FillViewDesc = [&](auto& viewDesc)
         {
             viewDesc.Buffer.StructureByteStride = bindPoint.structureByteStride;
-            if(source.elementCount > std::numeric_limits<uint32_t>::max())
+            if (source.elementCount > std::numeric_limits<uint32_t>::max())
             {
                 throw std::invalid_argument(fmt::format("ElementCount '{}' is too large.", source.elementCount));
             }

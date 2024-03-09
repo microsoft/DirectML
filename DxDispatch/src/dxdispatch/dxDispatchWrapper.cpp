@@ -38,7 +38,7 @@ HRESULT DxDispatch::CreateDxDispatchFromJsonString(
     ComPtr<DxDispatch> dxDispatchImpl;
     ComPtr<IAdapter> adapter;
 
-    if(adapterUnk)
+    if (adapterUnk)
     {
         RETURN_IF_FAILED(adapterUnk->QueryInterface(IID_PPV_ARGS(&adapter)));
     }

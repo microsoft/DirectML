@@ -302,7 +302,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_inputRelPath = result["input_path"].as<std::filesystem::path>();
     }
 
-    if(result.count("output_path"))
+    if (result.count("output_path"))
     {
         m_outputRelPath = result["output_path"].as<std::filesystem::path>();
     }
@@ -378,7 +378,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         }
     }
 
-    if(result.count("dml_feature_level"))
+    if (result.count("dml_feature_level"))
     {
         m_dmlFeatureLevel = GetDmlFeatureLevelFromString(result["dml_feature_level"].as<std::string>());
     }
@@ -545,7 +545,7 @@ void CommandLineArgs::SetAdapter(IAdapter* adapter)
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
         }
-        else if(adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
+        else if (adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
         {
             m_commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
         }
