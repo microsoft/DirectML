@@ -1780,12 +1780,12 @@ namespace dml
 #if DML_TARGET_VERSION >= 0x5100
     inline Expression ActivationSoftmax(Expression input, Span<const uint32_t> axes)
     {
-        DMLX_ACTIVATION_IMPL_2(ACTIVATION_SOFTMAX1, AxisCount, axes.size(), Axes, axes.data());
+        DMLX_ACTIVATION_IMPL_2(ACTIVATION_SOFTMAX1, AxisCount, static_cast<uint32_t>(axes.size()), Axes, axes.data());
     }
 
     inline Expression ActivationGelu(Expression input)
     {
-        DMLX_ACTIVATION_IMPL(ACTIVATION_GELU, axes);
+        DMLX_ACTIVATION_IMPL(ACTIVATION_GELU);
     }
 #endif
 
