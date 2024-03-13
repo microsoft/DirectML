@@ -122,7 +122,7 @@ inline UINT64 DMLCalcBufferTensorSize(
 #if DML_TARGET_VERSION >= 0x6300
     if (dataType == DML_TENSOR_DATA_TYPE_INT4 || dataType == DML_TENSOR_DATA_TYPE_UINT4)
     {
-        minimumImpliedSizeInBytes /= 2;
+        minimumImpliedSizeInBytes = (minimumImpliedSizeInBytes + 1) / 2;
     }
 #endif
 
