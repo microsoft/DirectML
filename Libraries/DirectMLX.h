@@ -539,12 +539,21 @@ namespace dml
             NodeOutput* input;
         };
 
+        // A node in the graph that represents data available during graph compilation.
+        struct ConstantNode
+        {
+            // This node does not own the memory to avoid copying large amounts of data.
+            void* data;
+            size_t dataSize;
+        };
+
         enum class NodeType
         {
             Invalid,
             Input,
             Operator,
             Reinterpret,
+            Constant,
         };
 
         // Identifies a node in the graph.
@@ -634,6 +643,7 @@ namespace dml
             NodeID CreateOperatorNode(DML_OPERATOR_TYPE type, const void* desc, Span<NodeOutput* const> inputs);
             NodeID CreateInputNode(uint32_t inputIndex);
             NodeID CreateReinterpretNode(NodeOutput* input);
+            NodeID CreateConstantNode(void* data, size_t dataSize);
             NodeOutput* CreateNodeOutput(NodeID node, uint32_t outputIndex, TensorDesc tensorDesc);
             GraphDesc GetGraphDesc(Span<const Expression> outputs) const;
 
@@ -643,6 +653,7 @@ namespace dml
             std::vector<InputNode> m_inputNodes;
             std::vector<OperatorNode> m_operatorNodes;
             std::vector<ReinterpretNode> m_reinterpretNodes;
+            std::vector<ConstantNode> m_constantNodes;
             std::deque<NodeOutput> m_nodeOutputs; // deque doesn't invalidate references to elements when it resizes
 
             std::string m_name;
@@ -4253,6 +4264,13 @@ namespace dml
             return { NodeType::Reinterpret, index };
         }
 
+        inline NodeID GraphBuilder::CreateConstantNode(void* data, size_t dataSize)
+        {
+            uint32_t index = static_cast<uint32_t>(m_constantNodes.size());
+            m_constantNodes.push_back(ConstantNode{ data, dataSize });
+            return { NodeType::Constant, index };
+        }
+
         inline NodeOutput* GraphBuilder::CreateNodeOutput(NodeID node, uint32_t outputIndex, TensorDesc tensorDesc)
         {
             // Construct the object in the deque, which doesn't invalidate references to elements as it grows
@@ -4305,6 +4323,20 @@ namespace dml
                     {
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
                         intermediateEdge.FromNodeIndex = inputNode.index;
+                        intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
+                        intermediateEdge.ToNodeIndex = nodeIndex;
+                        intermediateEdge.ToNodeInputIndex = inputIndex;
+
+                        desc.intermediateEdges.push_back(intermediateEdge);
+                    }
+                    else if (inputNode.type == NodeType::Constant)
+                    {
+                        // Operator nodes and constant nodes are merged into a single node array
+                        // with all operator nodes appearing before all constant nodes. The node index 
+                        // of the constant node withing DML_GRAPH_DESC is the number of operator nodes plus 
+                        // the constant index.
+                        DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
+                        intermediateEdge.FromNodeIndex = m_operatorNodes.size() + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
