@@ -254,6 +254,12 @@ namespace dml
     using StringView = const std::string&;
 #endif
 
+#if __cpp_lib_byte
+    using Byte = std::byte;
+#else
+    using Byte = unsigned char;
+#endif
+
 #if __cpp_exceptions
     #if DMLX_USE_WIL
         #define DMLX_THROW_IF_FAILED(_hr) THROW_IF_FAILED(_hr)
@@ -543,8 +549,7 @@ namespace dml
         struct ConstantNode
         {
             // This node does not own the memory to avoid copying large amounts of data.
-            void* data;
-            size_t dataSize;
+            Span<const Byte> data;
         };
 
         enum class NodeType
@@ -596,7 +601,10 @@ namespace dml
         {
             uint32_t inputCount;
             uint32_t outputCount;
-            std::vector<DML_OPERATOR_GRAPH_NODE_DESC> nodes;
+            std::vector<DML_OPERATOR_GRAPH_NODE_DESC> operatorNodes;
+#if DML_TARGET_VERSION >= 0x6200
+            std::vector<DML_CONSTANT_DATA_GRAPH_NODE_DESC> constantNodes;
+#endif // DML_TARGET_VERSION >= 0x6200
             std::vector<DML_INPUT_GRAPH_EDGE_DESC> inputEdges;
             std::vector<DML_OUTPUT_GRAPH_EDGE_DESC> outputEdges;
             std::vector<DML_INTERMEDIATE_GRAPH_EDGE_DESC> intermediateEdges;
@@ -643,7 +651,7 @@ namespace dml
             NodeID CreateOperatorNode(DML_OPERATOR_TYPE type, const void* desc, Span<NodeOutput* const> inputs);
             NodeID CreateInputNode(uint32_t inputIndex);
             NodeID CreateReinterpretNode(NodeOutput* input);
-            NodeID CreateConstantNode(void* data, size_t dataSize);
+            NodeID CreateConstantNode(Span<const Byte> data);
             NodeOutput* CreateNodeOutput(NodeID node, uint32_t outputIndex, TensorDesc tensorDesc);
             GraphDesc GetGraphDesc(Span<const Expression> outputs) const;
 
@@ -733,10 +741,14 @@ namespace dml
             // number of input nodes on the graph (e.g. in the case of unused empty inputs), but never smaller.
             assert(inputCount == 0 || inputCount >= graph.inputCount);
 
-            std::vector<DML_GRAPH_NODE_DESC> graphNodes(graph.nodes.size());
-            for (size_t i = 0; i < graphNodes.size(); ++i)
+            std::vector<DML_GRAPH_NODE_DESC> graphNodes(graph.operatorNodes.size() + graph.constantNodes.size());
+            for (size_t i = 0; i < graph.operatorNodes.size(); ++i)
             {
-                graphNodes[i] = { DML_GRAPH_NODE_TYPE_OPERATOR, &graph.nodes[i] };
+                graphNodes[i] = { DML_GRAPH_NODE_TYPE_OPERATOR, &graph.operatorNodes[i] };
+            }
+            for (size_t i = 0; i < graph.constantNodes.size(); ++i)
+            {
+                graphNodes[i + graph.operatorNodes.size()] = {DML_GRAPH_NODE_TYPE_CONSTANT, &graph.constantNodes[i]};
             }
 
             std::vector<DML_GRAPH_EDGE_DESC> inputEdges(graph.inputEdges.size());
@@ -1075,6 +1087,15 @@ namespace dml
 
         detail::NodeID node = builder->CreateInputNode(inputIndex);
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(desc));
+        return output;
+    }
+
+    inline Expression ConstantData(Graph& graph, Span<const Byte> data)
+    {
+        detail::GraphBuilder* builder = graph.Impl();
+
+        detail::NodeID node = builder->CreateConstantNode(data);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, TensorDesc());
         return output;
     }
 
@@ -4264,10 +4285,10 @@ namespace dml
             return { NodeType::Reinterpret, index };
         }
 
-        inline NodeID GraphBuilder::CreateConstantNode(void* data, size_t dataSize)
+        inline NodeID GraphBuilder::CreateConstantNode(Span<const Byte> data)
         {
             uint32_t index = static_cast<uint32_t>(m_constantNodes.size());
-            m_constantNodes.push_back(ConstantNode{ data, dataSize });
+            m_constantNodes.push_back(ConstantNode{ data });
             return { NodeType::Constant, index };
         }
 
@@ -4287,9 +4308,9 @@ namespace dml
 
             for (const OperatorNode& node : m_operatorNodes)
             {
-                uint32_t nodeIndex = static_cast<uint32_t>(desc.nodes.size());
+                uint32_t nodeIndex = static_cast<uint32_t>(desc.operatorNodes.size());
 
-                desc.nodes.push_back(DML_OPERATOR_GRAPH_NODE_DESC{ node.op.Get(), (!node.name.empty() ? node.name.c_str() : nullptr) });
+                desc.operatorNodes.push_back(DML_OPERATOR_GRAPH_NODE_DESC{ node.op.Get(), (!node.name.empty() ? node.name.c_str() : nullptr) });
 
                 // Walk through each of this node's inputs and add it as an edge
                 const uint32_t inputCount = static_cast<uint32_t>(node.inputs.size());
@@ -4336,7 +4357,7 @@ namespace dml
                         // of the constant node withing DML_GRAPH_DESC is the number of operator nodes plus 
                         // the constant index.
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
-                        intermediateEdge.FromNodeIndex = m_operatorNodes.size() + inputNode.index;
+                        intermediateEdge.FromNodeIndex = static_cast<uint32_t>(m_operatorNodes.size()) + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
@@ -4388,7 +4409,7 @@ namespace dml
             }
 
             // Sanity
-            assert(desc.nodes.size() == m_operatorNodes.size());
+            assert(desc.operatorNodes.size() == m_operatorNodes.size());
             assert(desc.outputEdges.size() == desc.outputCount);
             assert(desc.outputCount == outputs.size());
 
