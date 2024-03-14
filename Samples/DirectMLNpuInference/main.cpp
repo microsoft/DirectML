@@ -146,12 +146,12 @@ void main()
 
     // Queue fence, and wait for completion
     ComPtr<ID3D12Fence> fence;
-    d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf()));
-    commandQueue->Signal(fence.Get(), 1);
+    THROW_IF_FAILED(d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf())));
+    THROW_IF_FAILED(commandQueue->Signal(fence.Get(), 1));
 
     wil::unique_handle fenceEvent(CreateEvent(nullptr, FALSE, FALSE, nullptr));
-    fence->SetEventOnCompletion(1, fenceEvent.get());
-    WaitForSingleObject(fenceEvent.get(), INFINITE);
+    THROW_IF_FAILED(fence->SetEventOnCompletion(1, fenceEvent.get()));
+    THROW_HR_IF(E_FAIL, WaitForSingleObject(fenceEvent.get(), INFINITE) != WAIT_OBJECT_0);
 
     // Record start
     auto start = std::chrono::high_resolution_clock::now();
@@ -165,10 +165,10 @@ void main()
 
         {
             // Synchronize with CPU before queuing more inference runs
-            commandQueue->Signal(fence.Get(), i);
-            ResetEvent(fenceEvent.get());
-            fence->SetEventOnCompletion(i, fenceEvent.get());
-            WaitForSingleObject(fenceEvent.get(), INFINITE);
+            THROW_IF_FAILED(commandQueue->Signal(fence.Get(), i));
+            THROW_HR_IF(E_FAIL, ResetEvent(fenceEvent.get()) == 0);
+            THROW_IF_FAILED(fence->SetEventOnCompletion(i, fenceEvent.get()));
+            THROW_HR_IF(E_FAIL, WaitForSingleObject(fenceEvent.get(), INFINITE) != WAIT_OBJECT_0);
         }
     }
 
