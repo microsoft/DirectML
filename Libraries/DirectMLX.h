@@ -1095,6 +1095,9 @@ namespace dml
     }
     
 #if DML_TARGET_VERSION >= 0x6200
+    // Creates a constant node in the graph that directly consumes memory accessible to the CPU.
+    // The graph node is a weak reference to the memory, so the backing memory must remain valid
+    // until the DMLX graph is compiled.
     inline Expression ConstantData(Graph& graph, Span<const Byte> data, TensorDesc desc)
     {
         detail::GraphBuilder* builder = graph.Impl();
