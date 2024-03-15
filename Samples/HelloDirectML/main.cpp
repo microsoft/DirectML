@@ -205,7 +205,7 @@ int main()
     dml::Expression input = dml::InputTensor(graph, 0, desc);
 
 #if MULTIPLY_WITH_SCALAR_CONSTANT
-    // The memory referenced by any constant nodes (e.g., data vector) needs to be kept alive until the graph is compiled.
+    // The memory referenced by any constant nodes (e.g, "scalar" below) needs to be kept alive until the graph is compiled.
     float scalar = 3.4f;
     auto constValue = dml::ConstantData(graph, 
         dml::Span<const dml::Byte>(reinterpret_cast<const dml::Byte*>(&scalar), sizeof(scalar)),
