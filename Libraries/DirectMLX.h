@@ -550,6 +550,8 @@ namespace dml
         {
             // This node does not own the memory to avoid copying large amounts of data.
             Span<const Byte> data;
+
+            std::string name;
         };
 
         enum class NodeType
@@ -651,7 +653,9 @@ namespace dml
             NodeID CreateOperatorNode(DML_OPERATOR_TYPE type, const void* desc, Span<NodeOutput* const> inputs);
             NodeID CreateInputNode(uint32_t inputIndex);
             NodeID CreateReinterpretNode(NodeOutput* input);
+#if DML_TARGET_VERSION >= 0x6200
             NodeID CreateConstantNode(Span<const Byte> data);
+#endif // DML_TARGET_VERSION >= 0x6200
             NodeOutput* CreateNodeOutput(NodeID node, uint32_t outputIndex, TensorDesc tensorDesc);
             GraphDesc GetGraphDesc(Span<const Expression> outputs) const;
 
@@ -1089,15 +1093,17 @@ namespace dml
         detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(desc));
         return output;
     }
-
-    inline Expression ConstantData(Graph& graph, Span<const Byte> data)
+    
+#if DML_TARGET_VERSION >= 0x6200
+    inline Expression ConstantData(Graph& graph, Span<const Byte> data, TensorDesc desc)
     {
         detail::GraphBuilder* builder = graph.Impl();
 
         detail::NodeID node = builder->CreateConstantNode(data);
-        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, TensorDesc());
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, desc);
         return output;
     }
+#endif
 
     inline Expression Identity(Expression input, const Optional<DML_SCALE_BIAS>& scaleBias = NullOpt)
     {
@@ -4289,6 +4295,12 @@ namespace dml
         {
             uint32_t index = static_cast<uint32_t>(m_constantNodes.size());
             m_constantNodes.push_back(ConstantNode{ data });
+
+            if (!m_name.empty())
+            {
+                m_constantNodes.back().name = m_name;
+            }
+
             return { NodeType::Constant, index };
         }
 
@@ -4371,6 +4383,13 @@ namespace dml
                     }
                 }
             }
+
+#if DML_TARGET_VERSION >= 0x6200
+            for (const ConstantNode& node : m_constantNodes)
+            {
+                desc.constantNodes.push_back(DML_CONSTANT_DATA_GRAPH_NODE_DESC{ node.data.data(), node.data.size(), (!node.name.empty() ? node.name.c_str() : nullptr)});
+            }
+#endif // DML_TARGET_VERSION >= 0x6200
 
             // Add output edges
             for (uint32_t outputIndex = 0; outputIndex < desc.outputCount; ++outputIndex)
