@@ -207,10 +207,10 @@ int main()
 #if MULTIPLY_WITH_SCALAR_CONSTANT
     // The memory referenced by any constant nodes (e.g, "scalar" below) needs to be kept alive until the graph is compiled.
     float scalar = 3.4f;
-    auto constValue = dml::ConstantData(graph, 
+    auto constValue = dml::ConstantData(
+        graph, 
         dml::Span<const dml::Byte>(reinterpret_cast<const dml::Byte*>(&scalar), sizeof(scalar)),
-        dml::TensorDesc{ DML_TENSOR_DATA_TYPE_FLOAT32, {1} }
-    );
+        dml::TensorDesc{ DML_TENSOR_DATA_TYPE_FLOAT32, {1} });
 
     // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
     dml::Expression output = dml::Identity(input) * dml::Reinterpret(constValue, dimensions, dml::TensorStrides{ 0,0,0,0 });

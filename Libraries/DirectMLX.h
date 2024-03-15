@@ -610,6 +610,76 @@ namespace dml
             std::vector<DML_INPUT_GRAPH_EDGE_DESC> inputEdges;
             std::vector<DML_OUTPUT_GRAPH_EDGE_DESC> outputEdges;
             std::vector<DML_INTERMEDIATE_GRAPH_EDGE_DESC> intermediateEdges;
+
+            // Offset of the first operator node in the merged node list.
+            constexpr uint32_t BaseOperatorNodeIndexInMergedNodes() const
+            {
+                return 0;
+            }
+
+            // Offset of the first constant node in the merged node list.
+            uint32_t BaseConstantNodeIndexInMergedNodes() const
+            {
+                return static_cast<uint32_t>(operatorNodes.size());
+            }
+
+            // Merges the operator and constant nodes into a single list of graph nodes, with all operator nodes
+            // inserted before the constant nodes. The returned array is only valid so long as this instance of
+            // GraphDesc is alive and not copied.
+            std::vector<DML_GRAPH_NODE_DESC> Nodes() const
+            {
+                const size_t operatorNodeCount = operatorNodes.size();
+#if DML_TARGET_VERSION >= 0x6200
+                const size_t constantNodeCount = constantNodes.size();
+#else
+                const uint32_t constantNodeCount = 0;
+#endif // DML_TARGET_VERSION >= 0x6200
+
+                std::vector<DML_GRAPH_NODE_DESC> nodes(operatorNodeCount + constantNodeCount);
+
+                auto nodesOperatorNodeSpan = dml::Span<DML_GRAPH_NODE_DESC>(nodes.data() + BaseOperatorNodeIndexInMergedNodes(), operatorNodeCount);
+                for (size_t i = 0; i < nodesOperatorNodeSpan.size(); ++i)
+                {
+                    nodesOperatorNodeSpan[i] = { DML_GRAPH_NODE_TYPE_OPERATOR, &operatorNodes[i] };
+                }
+
+#if DML_TARGET_VERSION >= 0x6200
+                auto nodesConstantNodeSpan = dml::Span<DML_GRAPH_NODE_DESC>(nodes.data() + BaseConstantNodeIndexInMergedNodes(), constantNodeCount);
+                for (size_t i = 0; i < nodesConstantNodeSpan.size(); ++i)
+                {
+                    nodesConstantNodeSpan[i] = { DML_GRAPH_NODE_TYPE_CONSTANT, &constantNodes[i] };
+                }
+#endif // DML_TARGET_VERSION >= 0x6200
+
+                return nodes;
+            }
+
+            template <typename T>
+            std::vector<DML_GRAPH_EDGE_DESC> Edges(DML_GRAPH_EDGE_TYPE type, Span<const T> edgesImpl) const
+            {
+                std::vector<DML_GRAPH_EDGE_DESC> edges(edgesImpl.size());
+                for (size_t i = 0; i < edges.size(); ++i)
+                {
+                    edges[i] = { type, &edgesImpl[i] };
+                }
+
+                return edges;
+            }
+
+            std::vector<DML_GRAPH_EDGE_DESC> InputEdges() const
+            {
+                return Edges(DML_GRAPH_EDGE_TYPE_INPUT, Span<const DML_INPUT_GRAPH_EDGE_DESC>(inputEdges));
+            }
+
+            std::vector<DML_GRAPH_EDGE_DESC> OutputEdges() const
+            {
+                return Edges(DML_GRAPH_EDGE_TYPE_OUTPUT, Span<const DML_OUTPUT_GRAPH_EDGE_DESC>(outputEdges));
+            }
+
+            std::vector<DML_GRAPH_EDGE_DESC> IntermediateEdges() const
+            {
+                return Edges(DML_GRAPH_EDGE_TYPE_INTERMEDIATE, Span<const DML_INTERMEDIATE_GRAPH_EDGE_DESC>(intermediateEdges));
+            }
         };
 
         class GraphBuilder
@@ -745,33 +815,10 @@ namespace dml
             // number of input nodes on the graph (e.g. in the case of unused empty inputs), but never smaller.
             assert(inputCount == 0 || inputCount >= graph.inputCount);
 
-            std::vector<DML_GRAPH_NODE_DESC> graphNodes(graph.operatorNodes.size() + graph.constantNodes.size());
-            for (size_t i = 0; i < graph.operatorNodes.size(); ++i)
-            {
-                graphNodes[i] = { DML_GRAPH_NODE_TYPE_OPERATOR, &graph.operatorNodes[i] };
-            }
-            for (size_t i = 0; i < graph.constantNodes.size(); ++i)
-            {
-                graphNodes[i + graph.operatorNodes.size()] = {DML_GRAPH_NODE_TYPE_CONSTANT, &graph.constantNodes[i]};
-            }
-
-            std::vector<DML_GRAPH_EDGE_DESC> inputEdges(graph.inputEdges.size());
-            for (size_t i = 0; i < inputEdges.size(); ++i)
-            {
-                inputEdges[i] = { DML_GRAPH_EDGE_TYPE_INPUT, &graph.inputEdges[i] };
-            }
-
-            std::vector<DML_GRAPH_EDGE_DESC> outputEdges(graph.outputEdges.size());
-            for (size_t i = 0; i < outputEdges.size(); ++i)
-            {
-                outputEdges[i] = { DML_GRAPH_EDGE_TYPE_OUTPUT, &graph.outputEdges[i] };
-            }
-
-            std::vector<DML_GRAPH_EDGE_DESC> intermediateEdges(graph.intermediateEdges.size());
-            for (size_t i = 0; i < intermediateEdges.size(); ++i)
-            {
-                intermediateEdges[i] = { DML_GRAPH_EDGE_TYPE_INTERMEDIATE, &graph.intermediateEdges[i] };
-            }
+            std::vector<DML_GRAPH_NODE_DESC> graphNodes = graph.Nodes();
+            std::vector<DML_GRAPH_EDGE_DESC> inputEdges = graph.InputEdges();
+            std::vector<DML_GRAPH_EDGE_DESC> outputEdges = graph.OutputEdges();
+            std::vector<DML_GRAPH_EDGE_DESC> intermediateEdges = graph.IntermediateEdges();
 
             DML_GRAPH_DESC graphDesc = {};
             graphDesc.InputCount = inputCount ? inputCount : graph.inputCount;
@@ -4294,6 +4341,7 @@ namespace dml
             return { NodeType::Reinterpret, index };
         }
 
+#if DML_TARGET_VERSION >= 0x6200
         inline NodeID GraphBuilder::CreateConstantNode(Span<const Byte> data)
         {
             uint32_t index = static_cast<uint32_t>(m_constantNodes.size());
@@ -4306,6 +4354,7 @@ namespace dml
 
             return { NodeType::Constant, index };
         }
+#endif // DML_TARGET_VERSION >= 0x6200
 
         inline NodeOutput* GraphBuilder::CreateNodeOutput(NodeID node, uint32_t outputIndex, TensorDesc tensorDesc)
         {
@@ -4358,7 +4407,7 @@ namespace dml
                     else if (inputNode.type == NodeType::Operator)
                     {
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
-                        intermediateEdge.FromNodeIndex = inputNode.index;
+                        intermediateEdge.FromNodeIndex = desc.BaseOperatorNodeIndexInMergedNodes() + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
@@ -4367,12 +4416,8 @@ namespace dml
                     }
                     else if (inputNode.type == NodeType::Constant)
                     {
-                        // Operator nodes and constant nodes are merged into a single node array
-                        // with all operator nodes appearing before all constant nodes. The node index 
-                        // of the constant node within DML_GRAPH_DESC is the number of operator nodes plus 
-                        // the constant index.
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
-                        intermediateEdge.FromNodeIndex = static_cast<uint32_t>(m_operatorNodes.size()) + inputNode.index;
+                        intermediateEdge.FromNodeIndex = desc.BaseConstantNodeIndexInMergedNodes() + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
