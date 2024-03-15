@@ -4432,6 +4432,9 @@ namespace dml
 
             // Sanity
             assert(desc.operatorNodes.size() == m_operatorNodes.size());
+#if DML_TARGET_VERSION >= 0x6200
+            assert(desc.constantNodes.size() == m_constantNodes.size());
+#endif // DML_TARGET_VERSION >= 0x6200
             assert(desc.outputEdges.size() == desc.outputCount);
             assert(desc.outputCount == outputs.size());
 
