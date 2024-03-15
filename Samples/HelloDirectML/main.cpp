@@ -5,6 +5,10 @@
 
 #pragma warning(disable : 4238) // References to temporary classes are okay because they are only used as function parameters.
 
+// Enable this to show element-wise identity multiplied by a scalar placed in a constant node.
+// This only applies to the DirectMLX API that builds a graph.
+#define MULTIPLY_WITH_SCALAR_CONSTANT 0
+
 using Microsoft::WRL::ComPtr;
 
 void InitializeDirect3D12(
@@ -200,8 +204,20 @@ int main()
     dml::TensorDesc desc = { DML_TENSOR_DATA_TYPE_FLOAT32, dimensions};
     dml::Expression input = dml::InputTensor(graph, 0, desc);
 
+#if MULTIPLY_WITH_SCALAR_CONSTANT
+    // The memory referenced by any constant nodes (e.g, "scalar" below) needs to be kept alive until the graph is compiled.
+    float scalar = 3.4f;
+    auto constValue = dml::ConstantData(
+        graph, 
+        dml::Span<const dml::Byte>(reinterpret_cast<const dml::Byte*>(&scalar), sizeof(scalar)),
+        dml::TensorDesc{ DML_TENSOR_DATA_TYPE_FLOAT32, {1} });
+
+    // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
+    dml::Expression output = dml::Identity(input) * dml::Reinterpret(constValue, dimensions, dml::TensorStrides{ 0,0,0,0 });
+#else
     // Creates the DirectMLX Graph then takes the compiled operator(s) and attaches it to the relative COM Interface.
     dml::Expression output = dml::Identity(input);
+#endif
 
     DML_EXECUTION_FLAGS executionFlags = DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION;
     dmlCompiledOperator.Attach(graph.Compile(executionFlags, { output }).Detach());
@@ -292,7 +308,7 @@ int main()
         THROW_IF_FAILED(d3D12Device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
             D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(persistentResourceSize),
+            &CD3DX12_RESOURCE_DESC::Buffer(persistentResourceSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
             D3D12_RESOURCE_STATE_COMMON,
             nullptr,
             IID_GRAPHICS_PPV_ARGS(persistentBuffer.GetAddressOf())));
