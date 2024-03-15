@@ -4370,6 +4370,10 @@ namespace dml
             desc.inputCount = static_cast<uint32_t>(m_inputNodes.size());
             desc.outputCount = static_cast<uint32_t>(outputs.size());
 
+            // GraphDesc merges nodes into a single list, with all operator nodes appearing before constant nodes.
+            constexpr uint32_t baseOperatorNodeIndex = 0;
+            const uint32_t baseConstantNodeIndex = static_cast<uint32_t>(m_operatorNodes.size());
+
             for (const OperatorNode& node : m_operatorNodes)
             {
                 uint32_t nodeIndex = static_cast<uint32_t>(desc.operatorNodes.size());
@@ -4407,7 +4411,7 @@ namespace dml
                     else if (inputNode.type == NodeType::Operator)
                     {
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
-                        intermediateEdge.FromNodeIndex = desc.BaseOperatorNodeIndexInMergedNodes() + inputNode.index;
+                        intermediateEdge.FromNodeIndex = baseOperatorNodeIndex + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
@@ -4417,7 +4421,7 @@ namespace dml
                     else if (inputNode.type == NodeType::Constant)
                     {
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
-                        intermediateEdge.FromNodeIndex = desc.BaseConstantNodeIndexInMergedNodes() + inputNode.index;
+                        intermediateEdge.FromNodeIndex = baseConstantNodeIndex + inputNode.index;
                         intermediateEdge.FromNodeOutputIndex = input->GetOutputIndex();
                         intermediateEdge.ToNodeIndex = nodeIndex;
                         intermediateEdge.ToNodeInputIndex = inputIndex;
@@ -4482,6 +4486,8 @@ namespace dml
 #endif // DML_TARGET_VERSION >= 0x6200
             assert(desc.outputEdges.size() == desc.outputCount);
             assert(desc.outputCount == outputs.size());
+            assert(baseOperatorNodeIndex == desc.BaseOperatorNodeIndexInMergedNodes());
+            assert(baseConstantNodeIndex == desc.BaseConstantNodeIndexInMergedNodes());
 
             return desc;
         }
