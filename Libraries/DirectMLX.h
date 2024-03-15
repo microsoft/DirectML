@@ -4366,7 +4366,7 @@ namespace dml
                     {
                         // Operator nodes and constant nodes are merged into a single node array
                         // with all operator nodes appearing before all constant nodes. The node index 
-                        // of the constant node withing DML_GRAPH_DESC is the number of operator nodes plus 
+                        // of the constant node within DML_GRAPH_DESC is the number of operator nodes plus 
                         // the constant index.
                         DML_INTERMEDIATE_GRAPH_EDGE_DESC intermediateEdge = {};
                         intermediateEdge.FromNodeIndex = static_cast<uint32_t>(m_operatorNodes.size()) + inputNode.index;
