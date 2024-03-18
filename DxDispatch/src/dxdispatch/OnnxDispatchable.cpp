@@ -415,7 +415,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                                 tensorShapeUint32.push_back(1);
                             }
 
-                            if(tensorShapeUint32.size() > std::numeric_limits<uint32_t>::max())
+                            if (tensorShapeUint32.size() > std::numeric_limits<uint32_t>::max())
                             {
                                 throw std::invalid_argument(fmt::format("TensorShapeUint32 '{}' is too large.", tensorShapeUint32.size()));
                             }

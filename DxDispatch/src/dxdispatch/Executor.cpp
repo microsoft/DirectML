@@ -441,7 +441,7 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 {
     auto nBytes = std::max(view.desc.sizeInBytes, (uint64_t) view.desc.initialValues.size());
     uint64_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
-    if(elementCount > std::numeric_limits<uint32_t>::max())
+    if (elementCount > std::numeric_limits<uint32_t>::max())
     {
         throw std::invalid_argument("Buffer size is too large");
     }
@@ -518,7 +518,7 @@ void Executor::operator()(const Model::PrintCommand& command)
             resource = m_resources[command.resourceName].Get();
             bufferDesc = bufferDescTemp;
         } 
-        if(resource)
+        if (resource)
         {
             outputValuesStorage = m_device->Download(resource);
             outputValues = outputValuesStorage;
@@ -573,7 +573,7 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             dimensions = std::vector<uint32_t>(command.dimensions);
             tensorType = bufferDesc.initialValuesDataType;
         } 
-        if(resource)
+        if (resource)
         {
             fileDataStorage = m_device->Download(resource);
             fileData = fileDataStorage;

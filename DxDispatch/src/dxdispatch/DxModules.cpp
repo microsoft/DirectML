@@ -72,10 +72,10 @@ D3d12Module::D3d12Module(bool disableAgilitySDK, const char* moduleName) : Modul
     if (m_module)
     {
 #if !defined(_GAMING_XBOX) && defined(WIN32)
-        if(!disableAgilitySDK)
+        if (!disableAgilitySDK)
         {
             InitSymbol(&m_d3d12SDKConfiguration, "D3D12GetInterface");
-            if(m_d3d12SDKConfiguration)
+            if (m_d3d12SDKConfiguration)
             {
                 ComPtr<ID3D12SDKConfiguration1> pD3D12SDKConfiguration;
                 THROW_IF_FAILED(m_d3d12SDKConfiguration(CLSID_D3D12SDKConfiguration, IID_PPV_ARGS(&pD3D12SDKConfiguration)));

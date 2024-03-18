@@ -105,13 +105,13 @@ Device::Device(
         featureLevel, 
         IID_PPV_ARGS(&m_d3d)));
 
-    if(enableDred)
+    if (enableDred)
     {
         // Enables more debug info for TDRs, can be used with Debugger 
         // extension see following link for more info:
         // https://learn.microsoft.com/en-us/windows/win32/direct3d12/use-dred
         ComPtr<ID3D12DeviceRemovedExtendedDataSettings> pDredSettings;
-        if(SUCCEEDED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&pDredSettings))))
+        if (SUCCEEDED(m_d3dModule->GetDebugInterface(IID_PPV_ARGS(&pDredSettings))))
         {
             pDredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
             pDredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
@@ -455,7 +455,7 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> d
     }
 
     ExecuteCommandListAndWait();
-    if(defaultBuffer->GetDesc().Width > std::numeric_limits<size_t>::max())
+    if (defaultBuffer->GetDesc().Width > std::numeric_limits<size_t>::max())
     {
         throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", defaultBuffer->GetDesc().Width));
     }
