@@ -35,6 +35,7 @@ Adapter::Adapter(IAdapter* adapter, std::shared_ptr<DxCoreModule> dxCoreModule)
     }
     m_isSupported_D3D12_GRAPHICS = m_adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS);
     m_isSupported_CORE_COMPUTE = m_adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
+    m_isSupported_GENERIC_ML = m_adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
 #endif
 }
 
@@ -57,7 +58,8 @@ std::string Adapter::GetDetailedDescription() const
 -Dedicated System Memory: {}
 -Shared System Memory: {}
 -D3D12_GRAPHICS: {}
--CORE_COMPUTE: {})",
+-CORE_COMPUTE: {}
+-GENERIC_ML: {})",
         m_description, 
         m_driverVersion,
         m_isHardware,
@@ -66,7 +68,7 @@ std::string Adapter::GetDetailedDescription() const
         FormatBytes(m_dedicatedSystemMemory),
         FormatBytes(m_sharedSystemMemory),
         m_isSupported_D3D12_GRAPHICS,
-        m_isSupported_CORE_COMPUTE
+        m_isSupported_GENERIC_ML
         );
 }
 
@@ -81,11 +83,16 @@ std::vector<Adapter> Adapter::GetAll(std::shared_ptr<DxCoreModule> module)
     THROW_IF_FAILED(module->CreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
 
     ComPtr<IDXCoreAdapterList> adapterList;
-    GUID attributes[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE };
+    GUID attributes[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML };
     THROW_IF_FAILED(adapterFactory->CreateAdapterList(
-        _countof(attributes),
-        attributes,
+        1,
+        &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML,
         adapterList.GetAddressOf()));
+
+    if (adapterList->GetAdapterCount() == 0)
+    {
+        THROW_IF_FAILED(adapterFactory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, adapterList.GetAddressOf()));
+    }
 
     DXCoreAdapterPreference preferences[] = {
         DXCoreAdapterPreference::Hardware,

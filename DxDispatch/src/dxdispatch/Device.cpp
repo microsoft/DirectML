@@ -100,10 +100,23 @@ Device::Device(
         d3dDebug->SetEnableGPUBasedValidation(true);
     }
 
-    THROW_IF_FAILED(m_d3dModule->CreateDevice(
-        adapter, 
-        featureLevel, 
-        IID_PPV_ARGS(&m_d3d)));
+    if (featureLevel == D3D_FEATURE_LEVEL_1_0_GENERIC)
+    {
+        // Attempt to create a D3D_FEATURE_LEVEL_1_0_CORE device first, in case the device supports this
+        // feature level and the D3D runtime does not support D3D_FEATURE_LEVEL_1_0_GENERIC
+        HRESULT hrUnused = m_d3dModule->CreateDevice(
+            adapter,
+            D3D_FEATURE_LEVEL_1_0_CORE,
+            IID_PPV_ARGS(&m_d3d));
+    }
+
+    if (!m_d3d)
+    {
+        THROW_IF_FAILED(m_d3dModule->CreateDevice(
+            adapter,
+            featureLevel,
+            IID_PPV_ARGS(&m_d3d)));
+    }
 
     if (enableDred)
     {
