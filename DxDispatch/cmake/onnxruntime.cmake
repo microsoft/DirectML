@@ -58,7 +58,7 @@ function(init_onnxruntime_cache_variables prefix)
 
     # <PREFIX>_ONNXRUNTIME_NUGET_HASH
     set(${prefix}_ONNXRUNTIME_NUGET_HASH 
-        834e9f02a348be0ae0fdf0e71df59661b64072e6f89fd6da19bcf74765f6574e
+        834E9F02A348BE0AE0FDF0E71DF59661B64072E6F89FD6DA19BCF74765F6574E
         CACHE STRING "SHA256 hash of the ONNX Runtime NuGet package (TYPE == nuget)."
     )
 
