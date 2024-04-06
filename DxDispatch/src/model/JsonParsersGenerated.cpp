@@ -122,7 +122,9 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_GEMM") || !strcmp(valueString, "GEMM")) { return DML_OPERATOR_GEMM; }
     if (!strcmp(valueString, "DML_OPERATOR_REDUCE") || !strcmp(valueString, "REDUCE")) { return DML_OPERATOR_REDUCE; }
     if (!strcmp(valueString, "DML_OPERATOR_AVERAGE_POOLING") || !strcmp(valueString, "AVERAGE_POOLING")) { return DML_OPERATOR_AVERAGE_POOLING; }
+    if (!strcmp(valueString, "DML_OPERATOR_AVERAGE_POOLING1") || !strcmp(valueString, "AVERAGE_POOLING1")) { return DML_OPERATOR_AVERAGE_POOLING1; }
     if (!strcmp(valueString, "DML_OPERATOR_LP_POOLING") || !strcmp(valueString, "LP_POOLING")) { return DML_OPERATOR_LP_POOLING; }
+    if (!strcmp(valueString, "DML_OPERATOR_LP_POOLING1") || !strcmp(valueString, "LP_POOLING1")) { return DML_OPERATOR_LP_POOLING1; }
     if (!strcmp(valueString, "DML_OPERATOR_MAX_POOLING") || !strcmp(valueString, "MAX_POOLING")) { return DML_OPERATOR_MAX_POOLING; }
     if (!strcmp(valueString, "DML_OPERATOR_ROI_POOLING") || !strcmp(valueString, "ROI_POOLING")) { return DML_OPERATOR_ROI_POOLING; }
     if (!strcmp(valueString, "DML_OPERATOR_SLICE") || !strcmp(valueString, "SLICE")) { return DML_OPERATOR_SLICE; }
@@ -130,6 +132,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_SPLIT") || !strcmp(valueString, "SPLIT")) { return DML_OPERATOR_SPLIT; }
     if (!strcmp(valueString, "DML_OPERATOR_JOIN") || !strcmp(valueString, "JOIN")) { return DML_OPERATOR_JOIN; }
     if (!strcmp(valueString, "DML_OPERATOR_PADDING") || !strcmp(valueString, "PADDING")) { return DML_OPERATOR_PADDING; }
+    if (!strcmp(valueString, "DML_OPERATOR_PADDING1") || !strcmp(valueString, "PADDING1")) { return DML_OPERATOR_PADDING1; }
     if (!strcmp(valueString, "DML_OPERATOR_VALUE_SCALE_2D") || !strcmp(valueString, "VALUE_SCALE_2D")) { return DML_OPERATOR_VALUE_SCALE_2D; }
     if (!strcmp(valueString, "DML_OPERATOR_UPSAMPLE_2D") || !strcmp(valueString, "UPSAMPLE_2D")) { return DML_OPERATOR_UPSAMPLE_2D; }
     if (!strcmp(valueString, "DML_OPERATOR_GATHER") || !strcmp(valueString, "GATHER")) { return DML_OPERATOR_GATHER; }
@@ -138,6 +141,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_TILE") || !strcmp(valueString, "TILE")) { return DML_OPERATOR_TILE; }
     if (!strcmp(valueString, "DML_OPERATOR_TOP_K") || !strcmp(valueString, "TOP_K")) { return DML_OPERATOR_TOP_K; }
     if (!strcmp(valueString, "DML_OPERATOR_BATCH_NORMALIZATION") || !strcmp(valueString, "BATCH_NORMALIZATION")) { return DML_OPERATOR_BATCH_NORMALIZATION; }
+    if (!strcmp(valueString, "DML_OPERATOR_BATCH_NORMALIZATION_TRAINING") || !strcmp(valueString, "BATCH_NORMALIZATION_TRAINING")) { return DML_OPERATOR_BATCH_NORMALIZATION_TRAINING; }
     if (!strcmp(valueString, "DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION") || !strcmp(valueString, "MEAN_VARIANCE_NORMALIZATION")) { return DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION; }
     if (!strcmp(valueString, "DML_OPERATOR_LOCAL_RESPONSE_NORMALIZATION") || !strcmp(valueString, "LOCAL_RESPONSE_NORMALIZATION")) { return DML_OPERATOR_LOCAL_RESPONSE_NORMALIZATION; }
     if (!strcmp(valueString, "DML_OPERATOR_LP_NORMALIZATION") || !strcmp(valueString, "LP_NORMALIZATION")) { return DML_OPERATOR_LP_NORMALIZATION; }
@@ -209,6 +213,7 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_LOCAL_RESPONSE_NORMALIZATION_GRAD") || !strcmp(valueString, "LOCAL_RESPONSE_NORMALIZATION_GRAD")) { return DML_OPERATOR_LOCAL_RESPONSE_NORMALIZATION_GRAD; }
     if (!strcmp(valueString, "DML_OPERATOR_CUMULATIVE_PRODUCT") || !strcmp(valueString, "CUMULATIVE_PRODUCT")) { return DML_OPERATOR_CUMULATIVE_PRODUCT; }
     if (!strcmp(valueString, "DML_OPERATOR_BATCH_NORMALIZATION_GRAD") || !strcmp(valueString, "BATCH_NORMALIZATION_GRAD")) { return DML_OPERATOR_BATCH_NORMALIZATION_GRAD; }
+    if (!strcmp(valueString, "DML_OPERATOR_BATCH_NORMALIZATION_TRAINING_GRAD") || !strcmp(valueString, "BATCH_NORMALIZATION_TRAINING_GRAD")) { return DML_OPERATOR_BATCH_NORMALIZATION_TRAINING_GRAD; }
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_QUANTIZED_LINEAR_ADD") || !strcmp(valueString, "ELEMENT_WISE_QUANTIZED_LINEAR_ADD")) { return DML_OPERATOR_ELEMENT_WISE_QUANTIZED_LINEAR_ADD; }
     if (!strcmp(valueString, "DML_OPERATOR_DYNAMIC_QUANTIZE_LINEAR") || !strcmp(valueString, "DYNAMIC_QUANTIZE_LINEAR")) { return DML_OPERATOR_DYNAMIC_QUANTIZE_LINEAR; }
     if (!strcmp(valueString, "DML_OPERATOR_ROI_ALIGN1") || !strcmp(valueString, "ROI_ALIGN1")) { return DML_OPERATOR_ROI_ALIGN1; }
@@ -216,10 +221,14 @@ DML_OPERATOR_TYPE ParseDmlOperatorType(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1") || !strcmp(valueString, "ELEMENT_WISE_CLIP_GRAD1")) { return DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1; }
     if (!strcmp(valueString, "DML_OPERATOR_ELEMENT_WISE_NEGATE") || !strcmp(valueString, "ELEMENT_WISE_NEGATE")) { return DML_OPERATOR_ELEMENT_WISE_NEGATE; }
     if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_GELU") || !strcmp(valueString, "ACTIVATION_GELU")) { return DML_OPERATOR_ACTIVATION_GELU; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_SWISH") || !strcmp(valueString, "ACTIVATION_SWISH")) { return DML_OPERATOR_ACTIVATION_SWISH; }
+    if (!strcmp(valueString, "DML_OPERATOR_ACTIVATION_HARD_SWISH") || !strcmp(valueString, "ACTIVATION_HARD_SWISH")) { return DML_OPERATOR_ACTIVATION_HARD_SWISH; }
     if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE2") || !strcmp(valueString, "RESAMPLE2")) { return DML_OPERATOR_RESAMPLE2; }
     if (!strcmp(valueString, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(valueString, "RESAMPLE_GRAD1")) { return DML_OPERATOR_RESAMPLE_GRAD1; }
     if (!strcmp(valueString, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(valueString, "DIAGONAL_MATRIX1")) { return DML_OPERATOR_DIAGONAL_MATRIX1; }
     if (!strcmp(valueString, "DML_OPERATOR_MULTIHEAD_ATTENTION") || !strcmp(valueString, "MULTIHEAD_ATTENTION")) { return DML_OPERATOR_MULTIHEAD_ATTENTION; }
+    if (!strcmp(valueString, "DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING") || !strcmp(valueString, "QUANTIZED_LINEAR_AVERAGE_POOLING")) { return DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING; }
+    if (!strcmp(valueString, "DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT") || !strcmp(valueString, "MATRIX_MULTIPLY_INTEGER_TO_FLOAT")) { return DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_OPERATOR_TYPE.", valueString));
 }
 
@@ -434,6 +443,7 @@ DML_FEATURE_LEVEL ParseDmlFeatureLevel(const rapidjson::Value& value)
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_5_2") || !strcmp(valueString, "5_2")) { return DML_FEATURE_LEVEL_5_2; }
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_6_0") || !strcmp(valueString, "6_0")) { return DML_FEATURE_LEVEL_6_0; }
     if (!strcmp(valueString, "DML_FEATURE_LEVEL_6_1") || !strcmp(valueString, "6_1")) { return DML_FEATURE_LEVEL_6_1; }
+    if (!strcmp(valueString, "DML_FEATURE_LEVEL_6_2") || !strcmp(valueString, "6_2")) { return DML_FEATURE_LEVEL_6_2; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DML_FEATURE_LEVEL.", valueString));
 }
 
@@ -1501,7 +1511,7 @@ DML_OPERATOR_DESC* ParseDmlElementWiseQuantizeLinearOperatorDesc(const rapidjson
     auto desc = allocator.Allocate<DML_ELEMENT_WISE_QUANTIZE_LINEAR_OPERATOR_DESC>();
     desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
     desc->ScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ScaleTensor", allocator, true);
-    desc->ZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ZeroPointTensor", allocator, true);
+    desc->ZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ZeroPointTensor", allocator, false);
     desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_ELEMENT_WISE_QUANTIZE_LINEAR;
@@ -1514,7 +1524,7 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ELEMENT_WISE_QUAN
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
     bindPoints.inputs.push_back({"ScaleTensor", 1, true});
-    bindPoints.inputs.push_back({"ZeroPointTensor", 1, true});
+    bindPoints.inputs.push_back({"ZeroPointTensor", 1, false});
     bindPoints.outputs.push_back({"OutputTensor", 1, true});
     return bindPoints;
 }
@@ -1525,7 +1535,7 @@ DML_OPERATOR_DESC* ParseDmlElementWiseDequantizeLinearOperatorDesc(const rapidjs
     auto desc = allocator.Allocate<DML_ELEMENT_WISE_DEQUANTIZE_LINEAR_OPERATOR_DESC>();
     desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
     desc->ScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ScaleTensor", allocator, true);
-    desc->ZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ZeroPointTensor", allocator, true);
+    desc->ZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "ZeroPointTensor", allocator, false);
     desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_ELEMENT_WISE_DEQUANTIZE_LINEAR;
@@ -1538,7 +1548,7 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ELEMENT_WISE_DEQU
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
     bindPoints.inputs.push_back({"ScaleTensor", 1, true});
-    bindPoints.inputs.push_back({"ZeroPointTensor", 1, true});
+    bindPoints.inputs.push_back({"ZeroPointTensor", 1, false});
     bindPoints.outputs.push_back({"OutputTensor", 1, true});
     return bindPoints;
 }
@@ -1701,6 +1711,33 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_AVERAGE_POOLING_O
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlAveragePooling1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_AVERAGE_POOLING1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
+    desc->Strides = AsPointer(ParseUInt32ArrayField(value, "Strides", allocator, true));
+    desc->WindowSize = AsPointer(ParseUInt32ArrayField(value, "WindowSize", allocator, true));
+    desc->StartPadding = AsPointer(ParseUInt32ArrayField(value, "StartPadding", allocator, true));
+    desc->EndPadding = AsPointer(ParseUInt32ArrayField(value, "EndPadding", allocator, true));
+    desc->Dilations = AsPointer(ParseUInt32ArrayField(value, "Dilations", allocator, true));
+    desc->IncludePadding = ParseBoolField(value, "IncludePadding", true) ? 1 : 0;
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_AVERAGE_POOLING1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_AVERAGE_POOLING1_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlLpPoolingOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
@@ -1720,6 +1757,33 @@ DML_OPERATOR_DESC* ParseDmlLpPoolingOperatorDesc(const rapidjson::Value& value, 
 }
  
 Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_LP_POOLING_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlLpPooling1OperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_LP_POOLING1_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
+    desc->Strides = AsPointer(ParseUInt32ArrayField(value, "Strides", allocator, true));
+    desc->WindowSize = AsPointer(ParseUInt32ArrayField(value, "WindowSize", allocator, true));
+    desc->StartPadding = AsPointer(ParseUInt32ArrayField(value, "StartPadding", allocator, true));
+    desc->EndPadding = AsPointer(ParseUInt32ArrayField(value, "EndPadding", allocator, true));
+    desc->Dilations = AsPointer(ParseUInt32ArrayField(value, "Dilations", allocator, true));
+    desc->P = ParseUInt32Field(value, "P", true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_LP_POOLING1;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_LP_POOLING1_OPERATOR_DESC& desc)
 {
     Model::DmlDispatchableDesc::BindPoints bindPoints = {};
     bindPoints.inputs.push_back({"InputTensor", 1, true});
@@ -4056,6 +4120,73 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_MULTIHEAD_ATTENTI
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlQuantizedLinearAveragePoolingOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_QUANTIZED_LINEAR_AVERAGE_POOLING_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->InputScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputScaleTensor", allocator, true);
+    desc->InputZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputZeroPointTensor", allocator, false);
+    desc->OutputScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputScaleTensor", allocator, true);
+    desc->OutputZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputZeroPointTensor", allocator, false);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
+    desc->Strides = AsPointer(ParseUInt32ArrayField(value, "Strides", allocator, true));
+    desc->WindowSize = AsPointer(ParseUInt32ArrayField(value, "WindowSize", allocator, true));
+    desc->StartPadding = AsPointer(ParseUInt32ArrayField(value, "StartPadding", allocator, true));
+    desc->EndPadding = AsPointer(ParseUInt32ArrayField(value, "EndPadding", allocator, true));
+    desc->Dilations = AsPointer(ParseUInt32ArrayField(value, "Dilations", allocator, true));
+    desc->IncludePadding = ParseBoolField(value, "IncludePadding", true) ? 1 : 0;
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_QUANTIZED_LINEAR_AVERAGE_POOLING_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.inputs.push_back({"InputScaleTensor", 1, true});
+    bindPoints.inputs.push_back({"InputZeroPointTensor", 1, false});
+    bindPoints.inputs.push_back({"OutputScaleTensor", 1, true});
+    bindPoints.inputs.push_back({"OutputZeroPointTensor", 1, false});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlMatrixMultiplyIntegerToFloatOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_MATRIX_MULTIPLY_INTEGER_TO_FLOAT_OPERATOR_DESC>();
+    desc->ATensor = fused ? nullptr : ParseDmlTensorDescField(value, "ATensor", allocator, true);
+    desc->AScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "AScaleTensor", allocator, true);
+    desc->AZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "AZeroPointTensor", allocator, false);
+    desc->BTensor = fused ? nullptr : ParseDmlTensorDescField(value, "BTensor", allocator, true);
+    desc->BScaleTensor = fused ? nullptr : ParseDmlTensorDescField(value, "BScaleTensor", allocator, true);
+    desc->BZeroPointTensor = fused ? nullptr : ParseDmlTensorDescField(value, "BZeroPointTensor", allocator, false);
+    desc->BiasTensor = fused ? nullptr : ParseDmlTensorDescField(value, "BiasTensor", allocator, false);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_MATRIX_MULTIPLY_INTEGER_TO_FLOAT_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"ATensor", 1, true});
+    bindPoints.inputs.push_back({"AScaleTensor", 1, true});
+    bindPoints.inputs.push_back({"AZeroPointTensor", 1, false});
+    bindPoints.inputs.push_back({"BTensor", 1, true});
+    bindPoints.inputs.push_back({"BScaleTensor", 1, true});
+    bindPoints.inputs.push_back({"BZeroPointTensor", 1, false});
+    bindPoints.inputs.push_back({"BiasTensor", 1, false});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlActivationEluOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
@@ -4561,6 +4692,49 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_GELU_O
     return bindPoints;
 }
  
+DML_OPERATOR_DESC* ParseDmlActivationSwishOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_SWISH_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->SigmoidInputScale = ParseFloat32Field(value, "SigmoidInputScale", true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_SWISH;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_SWISH_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
+DML_OPERATOR_DESC* ParseDmlActivationHardSwishOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
+{
+    if (!value.IsObject()) { throw std::invalid_argument("Expected a valid JSON object."); }
+    auto desc = allocator.Allocate<DML_ACTIVATION_HARD_SWISH_OPERATOR_DESC>();
+    desc->InputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputTensor", allocator, true);
+    desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
+    desc->Alpha = ParseFloat32Field(value, "Alpha", true);
+    desc->Beta = ParseFloat32Field(value, "Beta", true);
+    auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
+    opDesc->Type = DML_OPERATOR_ACTIVATION_HARD_SWISH;
+    opDesc->Desc = desc;
+    return opDesc;
+}
+ 
+Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_ACTIVATION_HARD_SWISH_OPERATOR_DESC& desc)
+{
+    Model::DmlDispatchableDesc::BindPoints bindPoints = {};
+    bindPoints.inputs.push_back({"InputTensor", 1, true});
+    bindPoints.outputs.push_back({"OutputTensor", 1, true});
+    return bindPoints;
+}
+ 
 DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fused, BucketAllocator& allocator)
 {
     if (!value.IsObject())
@@ -4634,7 +4808,9 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_ARGMIN") || !strcmp(type, "ARGMIN")) return ParseDmlArgminOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ARGMAX") || !strcmp(type, "ARGMAX")) return ParseDmlArgmaxOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_AVERAGE_POOLING") || !strcmp(type, "AVERAGE_POOLING")) return ParseDmlAveragePoolingOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_AVERAGE_POOLING1") || !strcmp(type, "AVERAGE_POOLING1")) return ParseDmlAveragePooling1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_LP_POOLING") || !strcmp(type, "LP_POOLING")) return ParseDmlLpPoolingOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_LP_POOLING1") || !strcmp(type, "LP_POOLING1")) return ParseDmlLpPooling1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_MAX_POOLING") || !strcmp(type, "MAX_POOLING")) return ParseDmlMaxPoolingOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_MAX_POOLING1") || !strcmp(type, "MAX_POOLING1")) return ParseDmlMaxPooling1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ROI_POOLING") || !strcmp(type, "ROI_POOLING")) return ParseDmlRoiPoolingOperatorDesc(descValue, fused, allocator);
@@ -4727,6 +4903,8 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_RESAMPLE_GRAD1") || !strcmp(type, "RESAMPLE_GRAD1")) return ParseDmlResampleGrad1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_DIAGONAL_MATRIX1") || !strcmp(type, "DIAGONAL_MATRIX1")) return ParseDmlDiagonalMatrix1OperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_MULTIHEAD_ATTENTION") || !strcmp(type, "MULTIHEAD_ATTENTION")) return ParseDmlMultiheadAttentionOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING") || !strcmp(type, "QUANTIZED_LINEAR_AVERAGE_POOLING")) return ParseDmlQuantizedLinearAveragePoolingOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT") || !strcmp(type, "MATRIX_MULTIPLY_INTEGER_TO_FLOAT")) return ParseDmlMatrixMultiplyIntegerToFloatOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_ELU") || !strcmp(type, "ACTIVATION_ELU")) return ParseDmlActivationEluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_CELU") || !strcmp(type, "ACTIVATION_CELU")) return ParseDmlActivationCeluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARDMAX") || !strcmp(type, "ACTIVATION_HARDMAX")) return ParseDmlActivationHardmaxOperatorDesc(descValue, fused, allocator);
@@ -4751,6 +4929,8 @@ DML_OPERATOR_DESC* ParseDmlOperatorDesc(const rapidjson::Value& value, bool fuse
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU") || !strcmp(type, "ACTIVATION_THRESHOLDED_RELU")) return ParseDmlActivationThresholdedReluOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SHRINK") || !strcmp(type, "ACTIVATION_SHRINK")) return ParseDmlActivationShrinkOperatorDesc(descValue, fused, allocator);
     if (!strcmp(type, "DML_OPERATOR_ACTIVATION_GELU") || !strcmp(type, "ACTIVATION_GELU")) return ParseDmlActivationGeluOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_SWISH") || !strcmp(type, "ACTIVATION_SWISH")) return ParseDmlActivationSwishOperatorDesc(descValue, fused, allocator);
+    if (!strcmp(type, "DML_OPERATOR_ACTIVATION_HARD_SWISH") || !strcmp(type, "ACTIVATION_HARD_SWISH")) return ParseDmlActivationHardSwishOperatorDesc(descValue, fused, allocator);
     throw std::invalid_argument("Unknown operator type.");
 }
 
@@ -4805,7 +4985,9 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_ARGMIN: return GetBindPoints(*reinterpret_cast<const DML_ARGMIN_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ARGMAX: return GetBindPoints(*reinterpret_cast<const DML_ARGMAX_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_AVERAGE_POOLING: return GetBindPoints(*reinterpret_cast<const DML_AVERAGE_POOLING_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_AVERAGE_POOLING1: return GetBindPoints(*reinterpret_cast<const DML_AVERAGE_POOLING1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_LP_POOLING: return GetBindPoints(*reinterpret_cast<const DML_LP_POOLING_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_LP_POOLING1: return GetBindPoints(*reinterpret_cast<const DML_LP_POOLING1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_MAX_POOLING: return GetBindPoints(*reinterpret_cast<const DML_MAX_POOLING_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_MAX_POOLING1: return GetBindPoints(*reinterpret_cast<const DML_MAX_POOLING1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ROI_POOLING: return GetBindPoints(*reinterpret_cast<const DML_ROI_POOLING_OPERATOR_DESC*>(desc.Desc));
@@ -4898,6 +5080,8 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_RESAMPLE_GRAD1: return GetBindPoints(*reinterpret_cast<const DML_RESAMPLE_GRAD1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_DIAGONAL_MATRIX1: return GetBindPoints(*reinterpret_cast<const DML_DIAGONAL_MATRIX1_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_MULTIHEAD_ATTENTION: return GetBindPoints(*reinterpret_cast<const DML_MULTIHEAD_ATTENTION_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_QUANTIZED_LINEAR_AVERAGE_POOLING: return GetBindPoints(*reinterpret_cast<const DML_QUANTIZED_LINEAR_AVERAGE_POOLING_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_MATRIX_MULTIPLY_INTEGER_TO_FLOAT: return GetBindPoints(*reinterpret_cast<const DML_MATRIX_MULTIPLY_INTEGER_TO_FLOAT_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_ELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_ELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_CELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_CELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_HARDMAX: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARDMAX_OPERATOR_DESC*>(desc.Desc));
@@ -4922,6 +5106,8 @@ Model::DmlDispatchableDesc::BindPoints GetBindPoints(const DML_OPERATOR_DESC& de
     case DML_OPERATOR_ACTIVATION_THRESHOLDED_RELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_THRESHOLDED_RELU_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_SHRINK: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SHRINK_OPERATOR_DESC*>(desc.Desc));
     case DML_OPERATOR_ACTIVATION_GELU: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_GELU_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_SWISH: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_SWISH_OPERATOR_DESC*>(desc.Desc));
+    case DML_OPERATOR_ACTIVATION_HARD_SWISH: return GetBindPoints(*reinterpret_cast<const DML_ACTIVATION_HARD_SWISH_OPERATOR_DESC*>(desc.Desc));
     default: throw std::invalid_argument("Unknown operator type.");
     }
 }
