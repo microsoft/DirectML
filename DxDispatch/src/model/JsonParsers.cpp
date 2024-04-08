@@ -1188,15 +1188,16 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
         else if (initialValuesField->value.HasMember("sourcePath"))
         {
-            auto [initialValues, initialValuesDataType, fileName] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
+            auto [initialValues, fileBufferDataType, fileName] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
 
             // Depending on the file type (.npy vs .dat), the file may have an explict data type.
             // Use the data type if present, else require initialValuesDataType if not.
             if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
             {
-                buffer.initialValuesDataType = initialValuesDataType;
+                buffer.initialValuesDataType = fileBufferDataType;
             }
-            else if (initialValuesDataType != buffer.initialValuesDataType)
+
+            if ((fileBufferDataType != DML_TENSOR_DATA_TYPE_UNKNOWN) && (fileBufferDataType != buffer.initialValuesDataType))
             {
                 throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName.string()));
             }
