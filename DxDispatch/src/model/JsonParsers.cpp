@@ -1094,7 +1094,7 @@ std::vector<std::byte> ReadFileContent(const std::string& fileName)
     return allBytes;
 }
 
-std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFromFile(
+std::tuple<std::vector<std::byte>, DML_TENSOR_DATA_TYPE, std::filesystem::path> GenerateInitialValuesFromFile(
     const std::filesystem::path& parentPath,
     const rapidjson::Value& object)
 {
@@ -1114,7 +1114,7 @@ std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFro
         allBytes = std::move(arrayByteData);
     }
 
-    return {std::move(allBytes), tensorDataType};
+    return {std::move(allBytes), tensorDataType, filePath};
 }
 
 Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
@@ -1188,7 +1188,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
         else if (initialValuesField->value.HasMember("sourcePath"))
         {
-            auto [initialValues, initialValuesDataType] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
+            auto [initialValues, initialValuesDataType, fileName] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
 
             // Depending on the file type (.npy vs .dat), the file may have an explict data type.
             // Use the data type if present, else require initialValuesDataType if not.
@@ -1196,10 +1196,9 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
             {
                 buffer.initialValuesDataType = initialValuesDataType;
             }
-            else if (initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+            else if (initialValuesDataType != buffer.initialValuesDataType)
             {
-                auto fileName = ParseStringField(object, "sourcePath");
-                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName));
+                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName.string()));
             }
 
             ensureInitialValuesDataType(); // Raw data requires 'initialValuesDataType'. Typed data (e.g. .npy) already had a type.
