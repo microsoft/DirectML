@@ -739,7 +739,12 @@ static void ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_T
     {
         switch (dataType)
         {
-        case DML_TENSOR_DATA_TYPE_FLOAT16: returnValue.UInt16 = *reinterpret_cast<const uint16_t*>(&ParseFloat16(value)); break;
+        case DML_TENSOR_DATA_TYPE_FLOAT16:
+        {
+            auto halfValue = ParseFloat16(value);
+            returnValue.UInt16 = *reinterpret_cast<const uint16_t*>(&halfValue);
+            break;
+        }
         case DML_TENSOR_DATA_TYPE_FLOAT32: returnValue.Float32 = ParseFloat32(value); break;
         case DML_TENSOR_DATA_TYPE_FLOAT64: returnValue.Float64 = ParseFloat64(value); break;
         case DML_TENSOR_DATA_TYPE_UINT8: returnValue.UInt8 = ParseUInt8(value); break;
