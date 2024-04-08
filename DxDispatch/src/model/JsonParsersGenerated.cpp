@@ -833,8 +833,8 @@ DML_OPERATOR_DESC* ParseDmlElementWiseClip1OperatorDesc(const rapidjson::Value& 
     desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
     desc->ScaleBias = ParseDmlScaleBiasField(value, "ScaleBias", allocator, false);
     desc->MinMaxDataType = ParseDmlTensorDataTypeField(value, "MinMaxDataType", true, {});
-    desc->Min = *ParseDmlScalarUnionField(value, "Min", "ValueDataType", allocator, true);
-    desc->Max = *ParseDmlScalarUnionField(value, "Max", "ValueDataType", allocator, true);
+    desc->Min = *ParseDmlScalarUnionField(value, "Min", "MinMaxDataType", allocator, true);
+    desc->Max = *ParseDmlScalarUnionField(value, "Max", "MinMaxDataType", allocator, true);
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_ELEMENT_WISE_CLIP1;
     opDesc->Desc = desc;
@@ -881,8 +881,8 @@ DML_OPERATOR_DESC* ParseDmlElementWiseClipGrad1OperatorDesc(const rapidjson::Val
     desc->InputGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "InputGradientTensor", allocator, true);
     desc->OutputGradientTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputGradientTensor", allocator, true);
     desc->MinMaxDataType = ParseDmlTensorDataTypeField(value, "MinMaxDataType", true, {});
-    desc->Min = *ParseDmlScalarUnionField(value, "Min", "ValueDataType", allocator, true);
-    desc->Max = *ParseDmlScalarUnionField(value, "Max", "ValueDataType", allocator, true);
+    desc->Min = *ParseDmlScalarUnionField(value, "Min", "MinMaxDataType", allocator, true);
+    desc->Max = *ParseDmlScalarUnionField(value, "Max", "MinMaxDataType", allocator, true);
     auto opDesc = allocator.Allocate<DML_OPERATOR_DESC>();
     opDesc->Type = DML_OPERATOR_ELEMENT_WISE_CLIP_GRAD1;
     opDesc->Desc = desc;
@@ -1988,7 +1988,7 @@ DML_OPERATOR_DESC* ParseDmlPadding1OperatorDesc(const rapidjson::Value& value, b
     desc->OutputTensor = fused ? nullptr : ParseDmlTensorDescField(value, "OutputTensor", allocator, true);
     desc->PaddingMode = ParseDmlPaddingModeField(value, "PaddingMode", true, {});
     desc->PaddingValueDataType = ParseDmlTensorDataTypeField(value, "PaddingValueDataType", true, {});
-    desc->PaddingValue = *ParseDmlScalarUnionField(value, "PaddingValue", "ValueDataType", allocator, true);
+    desc->PaddingValue = *ParseDmlScalarUnionField(value, "PaddingValue", "PaddingValueDataType", allocator, true);
     desc->DimensionCount = ParseUInt32Field(value, "DimensionCount", true);
     desc->StartPadding = AsPointer(ParseUInt32ArrayField(value, "StartPadding", allocator, true));
     desc->EndPadding = AsPointer(ParseUInt32ArrayField(value, "EndPadding", allocator, true));

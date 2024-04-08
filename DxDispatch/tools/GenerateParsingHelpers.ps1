@@ -105,6 +105,9 @@ function WriteOperatorFunction($Operator)
     $Cpp += "    if (!value.IsObject()) { throw std::invalid_argument(`"Expected a valid JSON object.`"); }"
     $Cpp += "    auto desc = allocator.Allocate<DML_$($Operator.Name)_OPERATOR_DESC>();"
 
+    # Scalar unions hold the type based on previously defined a UINT field with the enum of DML_TENSOR_DATA_TYPE.
+    $LastDataTypeAttribute = ""
+
     foreach ($Field in $Operator.Fields)
     {
         $Required = if ($Field.Optional) { 'false' } else { 'true' }
@@ -144,6 +147,10 @@ function WriteOperatorFunction($Operator)
             {
                 $EnumNameCamelCase = ConvertSnakeToCamelCase $Field.Enum
                 $Cpp += "    desc->$($Field.Name) = Parse${EnumNameCamelCase}Field(value, `"$($Field.Name)`", $Required, {});"
+                if ($Field.Enum -eq "DML_TENSOR_DATA_TYPE")
+                {
+                    $LastDataTypeAttribute = $Field.Name
+                }
             }
             else
             {
@@ -164,7 +171,7 @@ function WriteOperatorFunction($Operator)
         }
         elseif ($Field.Type -eq "scalarUnion")
         {
-            $Cpp += "    desc->$($Field.Name) = ${Deref}ParseDmlScalarUnionField(value, `"$($Field.Name)`", `"ValueDataType`", allocator, $Required);"
+            $Cpp += "    desc->$($Field.Name) = ${Deref}ParseDmlScalarUnionField(value, `"$($Field.Name)`", `"$LastDataTypeAttribute`", allocator, $Required);"
         }
         elseif ($Field.Type -eq "scaleBias")
         {
