@@ -69,7 +69,7 @@ function(init_d3d12_cache_variables prefix)
 
     # <PREFIX>_D3D12_HEADERS_TAG
     set(${prefix}_D3D12_HEADERS_TAG
-        v1.613.1
+        de28d93dfa9ebf3e473127c1c657e1920a5345ee # v1.613.1
         CACHE STRING "Git commit/tag for headers in the DirectX-Headers repo."
     )
 endfunction()
