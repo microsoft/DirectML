@@ -1,0 +1,47 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input":
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 5, "valueStart": 1, "valueDelta": 1 }
+        },
+        "output":
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 5, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "clip":
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_CLIP1",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT16", "Sizes": [5] },
+                "OutputTensor": { "DataType": "FLOAT16", "Sizes": [5] },
+                "MinMaxDataType": "FLOAT16",
+                "Min": 2,
+                "Max": 4
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "clip",
+            "bindings": 
+            {
+                "InputTensor": "input",
+                "OutputTensor": "output"
+            }
+        },
+        { "type": "print", "resource": "output" }
+    ]
+}
