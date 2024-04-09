@@ -83,7 +83,6 @@ std::vector<Adapter> Adapter::GetAll(std::shared_ptr<DxCoreModule> module)
     THROW_IF_FAILED(module->CreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
 
     ComPtr<IDXCoreAdapterList> adapterList;
-    GUID attributes[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML };
     THROW_IF_FAILED(adapterFactory->CreateAdapterList(
         1,
         &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML,
