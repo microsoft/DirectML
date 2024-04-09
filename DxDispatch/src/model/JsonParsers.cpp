@@ -721,6 +721,7 @@ static void ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_T
     {
         switch (dataType)
         {
+        case DML_TENSOR_DATA_TYPE_FLOAT16: returnValue.UInt16 = ParseUInt16Field(value, "UInt16"); break;
         case DML_TENSOR_DATA_TYPE_FLOAT32: returnValue.Float32 = ParseFloat32Field(value, "Float32"); break;
         case DML_TENSOR_DATA_TYPE_FLOAT64: returnValue.Float64 = ParseFloat64Field(value, "Float64"); break;
         case DML_TENSOR_DATA_TYPE_UINT8: returnValue.UInt8 = ParseUInt8Field(value, "UInt8"); break;
@@ -738,6 +739,12 @@ static void ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_T
     {
         switch (dataType)
         {
+        case DML_TENSOR_DATA_TYPE_FLOAT16:
+        {
+            auto halfValue = ParseFloat16(value);
+            returnValue.UInt16 = *reinterpret_cast<const uint16_t*>(&halfValue);
+            break;
+        }
         case DML_TENSOR_DATA_TYPE_FLOAT32: returnValue.Float32 = ParseFloat32(value); break;
         case DML_TENSOR_DATA_TYPE_FLOAT64: returnValue.Float64 = ParseFloat64(value); break;
         case DML_TENSOR_DATA_TYPE_UINT8: returnValue.UInt8 = ParseUInt8(value); break;
@@ -1094,7 +1101,7 @@ std::vector<std::byte> ReadFileContent(const std::string& fileName)
     return allBytes;
 }
 
-std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFromFile(
+std::tuple<std::vector<std::byte>, DML_TENSOR_DATA_TYPE, std::filesystem::path> GenerateInitialValuesFromFile(
     const std::filesystem::path& parentPath,
     const rapidjson::Value& object)
 {
@@ -1114,7 +1121,7 @@ std::pair<std::vector<std::byte>, DML_TENSOR_DATA_TYPE> GenerateInitialValuesFro
         allBytes = std::move(arrayByteData);
     }
 
-    return {std::move(allBytes), tensorDataType};
+    return {std::move(allBytes), tensorDataType, filePath};
 }
 
 Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
@@ -1188,18 +1195,18 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
         else if (initialValuesField->value.HasMember("sourcePath"))
         {
-            auto [initialValues, initialValuesDataType] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
+            auto [initialValues, fileBufferDataType, fileName] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
 
             // Depending on the file type (.npy vs .dat), the file may have an explict data type.
             // Use the data type if present, else require initialValuesDataType if not.
             if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
             {
-                buffer.initialValuesDataType = initialValuesDataType;
+                buffer.initialValuesDataType = fileBufferDataType;
             }
-            else if (initialValuesDataType != DML_TENSOR_DATA_TYPE_UNKNOWN)
+
+            if ((fileBufferDataType != DML_TENSOR_DATA_TYPE_UNKNOWN) && (fileBufferDataType != buffer.initialValuesDataType))
             {
-                auto fileName = ParseStringField(object, "sourcePath");
-                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName));
+                throw std::invalid_argument(fmt::format("Data type from file '{}' does not match field 'initialValuesDataType'.", fileName.string()));
             }
 
             ensureInitialValuesDataType(); // Raw data requires 'initialValuesDataType'. Typed data (e.g. .npy) already had a type.

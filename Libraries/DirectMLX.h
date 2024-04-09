@@ -64,45 +64,52 @@ inline UINT64 DMLCalcBufferTensorSize(
     _In_reads_(dimensionCount) const UINT* sizes,
     _In_reads_opt_(dimensionCount) const UINT* strides)
 {
-    UINT elementSizeInBytes = 0;
+    UINT elementSizeInBits = 0;
     switch (dataType)
     {
     case DML_TENSOR_DATA_TYPE_FLOAT32:
     case DML_TENSOR_DATA_TYPE_UINT32:
     case DML_TENSOR_DATA_TYPE_INT32:
-        elementSizeInBytes = 4;
+        elementSizeInBits = 32;
         break;
 
     case DML_TENSOR_DATA_TYPE_FLOAT16:
     case DML_TENSOR_DATA_TYPE_UINT16:
     case DML_TENSOR_DATA_TYPE_INT16:
-        elementSizeInBytes = 2;
+        elementSizeInBits = 16;
         break;
 
     case DML_TENSOR_DATA_TYPE_UINT8:
     case DML_TENSOR_DATA_TYPE_INT8:
-        elementSizeInBytes = 1;
+        elementSizeInBits = 8;
         break;
+
+#if DML_TARGET_VERSION >= 0x6300
+    case DML_TENSOR_DATA_TYPE_UINT4:
+    case DML_TENSOR_DATA_TYPE_INT4:
+        elementSizeInBits = 4;
+        break;
+#endif
 
     case DML_TENSOR_DATA_TYPE_FLOAT64:
     case DML_TENSOR_DATA_TYPE_UINT64:
     case DML_TENSOR_DATA_TYPE_INT64:
-        elementSizeInBytes = 8;
+        elementSizeInBits = 64;
         break;
 
     default:
         return 0; // Invalid data type
     }
 
-    UINT64 minimumImpliedSizeInBytes = 0;
+    UINT64 minimumImpliedSizeInBits = 0;
     if (!strides)
     {
-        minimumImpliedSizeInBytes = sizes[0];
+        minimumImpliedSizeInBits = sizes[0];
         for (UINT i = 1; i < dimensionCount; ++i)
         {
-            minimumImpliedSizeInBytes *= sizes[i];
+            minimumImpliedSizeInBits *= sizes[i];
         }
-        minimumImpliedSizeInBytes *= elementSizeInBytes;
+        minimumImpliedSizeInBits *= elementSizeInBits;
     }
     else
     {
@@ -112,8 +119,10 @@ inline UINT64 DMLCalcBufferTensorSize(
             indexOfLastElement += (sizes[i] - 1) * strides[i];
         }
 
-        minimumImpliedSizeInBytes = (static_cast<UINT64>(indexOfLastElement) + 1) * elementSizeInBytes;
+        minimumImpliedSizeInBits = (static_cast<UINT64>(indexOfLastElement) + 1) * elementSizeInBits;
     }
+
+    UINT64 minimumImpliedSizeInBytes = (minimumImpliedSizeInBits + 7) / 8;
 
     // Round up to the nearest 4 bytes.
     minimumImpliedSizeInBytes = (minimumImpliedSizeInBytes + 3) & ~3ull;

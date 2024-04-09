@@ -1,7 +1,7 @@
 param
 (
     [string]$SchemaFilePath = "$PSScriptRoot\DmlSchema.json",
-    [string]$MaxFeatureLevel = "6.1"
+    [string]$MaxFeatureLevel = "6.2"
 )
 
 function ConvertSnakeToCamelCase($SnakeCaseName)
@@ -105,6 +105,9 @@ function WriteOperatorFunction($Operator)
     $Cpp += "    if (!value.IsObject()) { throw std::invalid_argument(`"Expected a valid JSON object.`"); }"
     $Cpp += "    auto desc = allocator.Allocate<DML_$($Operator.Name)_OPERATOR_DESC>();"
 
+    # Scalar unions are associated with a data type specified in a previously listed DML_TENSOR_DATA_TYPE field.
+    $LastDataTypeFieldName = ""
+
     foreach ($Field in $Operator.Fields)
     {
         $Required = if ($Field.Optional) { 'false' } else { 'true' }
@@ -144,6 +147,10 @@ function WriteOperatorFunction($Operator)
             {
                 $EnumNameCamelCase = ConvertSnakeToCamelCase $Field.Enum
                 $Cpp += "    desc->$($Field.Name) = Parse${EnumNameCamelCase}Field(value, `"$($Field.Name)`", $Required, {});"
+                if ($Field.Enum -eq "DML_TENSOR_DATA_TYPE")
+                {
+                    $LastDataTypeFieldName = $Field.Name
+                }
             }
             else
             {
@@ -164,7 +171,7 @@ function WriteOperatorFunction($Operator)
         }
         elseif ($Field.Type -eq "scalarUnion")
         {
-            $Cpp += "    desc->$($Field.Name) = ${Deref}ParseDmlScalarUnionField(value, `"$($Field.Name)`", `"ValueDataType`", allocator, $Required);"
+            $Cpp += "    desc->$($Field.Name) = ${Deref}ParseDmlScalarUnionField(value, `"$($Field.Name)`", `"$LastDataTypeFieldName`", allocator, $Required);"
         }
         elseif ($Field.Type -eq "scaleBias")
         {
