@@ -46,6 +46,14 @@ public:
     IDxcCompiler3* GetDxcCompiler();
 #endif
 
+    // Creates either a default buffer or custom buffer based on support for custom heaps
+    // and whether or not they are allowed.
+    Microsoft::WRL::ComPtr<ID3D12Resource> CreatePreferredDeviceMemoryBuffer(
+        uint64_t sizeInBytes, 
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+        uint64_t alignment = 0,
+        D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE);
+
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateCustomBuffer(
         uint64_t sizeInBytes, 
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,

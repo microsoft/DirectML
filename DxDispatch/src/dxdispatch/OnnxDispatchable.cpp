@@ -419,7 +419,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                             {
                                 throw std::invalid_argument(fmt::format("TensorShapeUint32 '{}' is too large.", tensorShapeUint32.size()));
                             }
-                            binding.resource = m_device->CreateDefaultBuffer(DMLCalcBufferTensorSize(
+                            binding.resource = m_device->CreatePreferredDeviceMemoryBuffer(DMLCalcBufferTensorSize(
                                 dataTypeInfo.dmlDataType,
                                 static_cast<uint32_t>(tensorShapeUint32.size()),
                                 tensorShapeUint32.data(),

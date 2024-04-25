@@ -166,7 +166,7 @@ void DmlDispatchable::Initialize()
     auto tempBufferSize = initializer->GetBindingProperties().TemporaryResourceSize;
     if (tempBufferSize > 0)
     {
-        ComPtr<ID3D12Resource> tempBuffer = m_device->CreateDefaultBuffer(tempBufferSize);
+        ComPtr<ID3D12Resource> tempBuffer = m_device->CreatePreferredDeviceMemoryBuffer(tempBufferSize);
         DML_BUFFER_BINDING bufferBinding = { tempBuffer.Get(), 0, tempBufferSize };
         DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
         bindingTable->BindTemporaryResource(&bindingDesc);
@@ -177,7 +177,7 @@ void DmlDispatchable::Initialize()
     auto persistentBufferSize = m_operatorCompiled->GetBindingProperties().PersistentResourceSize;
     if (persistentBufferSize > 0)
     {
-        m_persistentBuffer = m_device->CreateDefaultBuffer(persistentBufferSize);
+        m_persistentBuffer = m_device->CreatePreferredDeviceMemoryBuffer(persistentBufferSize);
         DML_BUFFER_BINDING bufferBinding = { m_persistentBuffer.Get(), 0, persistentBufferSize };
         DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
         bindingTable->BindOutputs(1, &bindingDesc);
@@ -227,7 +227,7 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
     auto tempBufferSize = bindingProps.TemporaryResourceSize;
     if (tempBufferSize > 0)
     {
-        tempBuffer = m_device->CreateDefaultBuffer(tempBufferSize);
+        tempBuffer = m_device->CreatePreferredDeviceMemoryBuffer(tempBufferSize);
 
         DML_BUFFER_BINDING bufferBinding = { tempBuffer.Get(), 0, tempBufferSize };
         DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
