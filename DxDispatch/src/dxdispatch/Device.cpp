@@ -270,6 +270,27 @@ Device::~Device()
     }
 }
 
+Microsoft::WRL::ComPtr<ID3D12Resource> Device::CreateCustomBuffer(
+    uint64_t sizeInBytes, 
+    D3D12_RESOURCE_FLAGS resourceFlags,
+    uint64_t alignment,
+    D3D12_HEAP_FLAGS heapFlags)
+{
+    auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeInBytes, resourceFlags, alignment);
+    auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE, D3D12_MEMORY_POOL_L0, 0, 0);
+
+    ComPtr<ID3D12Resource> resource;
+    THROW_IF_FAILED(m_d3d->CreateCommittedResource(
+        &heapProps, 
+        heapFlags, 
+        &resourceDesc, 
+        D3D12_RESOURCE_STATE_COMMON, 
+        nullptr, 
+        IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
+
+    return resource;
+}
+
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
     uint64_t sizeInBytes, 
     D3D12_RESOURCE_FLAGS resourceFlags, 
@@ -394,63 +415,55 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         throw std::invalid_argument("Attempting to upload more data than the size of the buffer");
     }
 
-    auto defaultBuffer = CreateDefaultBuffer(totalSize);
-    if (!name.empty())
-    {
-        defaultBuffer->SetName(name.data());
-    }
-
-    if (data.empty())
-    {
-        // No need to create an upload resource if the source data is empty.
-        return defaultBuffer;
-    }
+    ComPtr<ID3D12Resource> buffer;
+    ComPtr<ID3D12Resource> uploadBuffer;
+    ComPtr<ID3D12Resource> resourceToMap;
 
     if (m_architectureSupport && m_architectureSupport->CacheCoherentUMA)
     {
-        void* defaultBufferData = nullptr;
-        THROW_IF_FAILED(defaultBuffer->Map(0, nullptr, &defaultBufferData));
-        memcpy(defaultBufferData, data.data(), data.size());
-        defaultBuffer->Unmap(0, nullptr);
-        return defaultBuffer;
+        buffer = CreateCustomBuffer(totalSize);
+        resourceToMap = data.empty() ? nullptr : buffer;
+    }
+    else
+    {
+        buffer = CreateDefaultBuffer(totalSize);
+        uploadBuffer = data.empty() ? nullptr : CreateUploadBuffer(totalSize);
+        uploadBuffer->SetName(L"Device::Upload");
+        resourceToMap = uploadBuffer;
     }
 
-    auto uploadBuffer = CreateUploadBuffer(totalSize);
-    uploadBuffer->SetName(L"Device::Upload");
+    if (!name.empty())
     {
-        void* uploadBufferData = nullptr;
-        THROW_IF_FAILED(uploadBuffer->Map(0, nullptr, &uploadBufferData));
-        memcpy(uploadBufferData, data.data(), data.size());
-        uploadBuffer->Unmap(0, nullptr);
+        buffer->SetName(name.data());
     }
 
+    if (resourceToMap)
     {
-        D3D12_RESOURCE_BARRIER barriers[] =
+        void* mappedBufferData = nullptr;
+        THROW_IF_FAILED(resourceToMap->Map(0, nullptr, &mappedBufferData));
+        memcpy(mappedBufferData, data.data(), data.size());
+        resourceToMap->Unmap(0, nullptr);
+
+        if (resourceToMap == uploadBuffer)
         {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                D3D12_RESOURCE_STATE_COPY_DEST)
-        };
-        m_commandList->ResourceBarrier(_countof(barriers), barriers);
+            m_temporaryResources.push_back(std::move(uploadBuffer));
+
+            D3D12_RESOURCE_BARRIER barriers[] =
+            {
+                CD3DX12_RESOURCE_BARRIER::Transition(
+                    buffer.Get(),
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    D3D12_RESOURCE_STATE_COPY_DEST)
+            };
+
+            m_commandList->ResourceBarrier(_countof(barriers), barriers);
+            m_commandList->CopyResource(buffer.Get(), uploadBuffer.Get());
+            std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
+            m_commandList->ResourceBarrier(_countof(barriers), barriers);
+        }
     }
 
-    m_commandList->CopyResource(defaultBuffer.Get(), uploadBuffer.Get());
-
-    {
-        D3D12_RESOURCE_BARRIER barriers[] =
-        {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_DEST,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-        };
-        m_commandList->ResourceBarrier(_countof(barriers), barriers);
-    }
-
-    m_temporaryResources.push_back(std::move(uploadBuffer));
-
-    return defaultBuffer;
+    return buffer;
 }
 
 std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> defaultBuffer)

@@ -45,7 +45,11 @@ public:
     IDxcCompiler3* GetDxcCompiler();
 #endif
 
-    // TODO: test custom heap buffer with write combine for igpu?
+    Microsoft::WRL::ComPtr<ID3D12Resource> CreateCustomBuffer(
+        uint64_t sizeInBytes, 
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+        uint64_t alignment = 0,
+        D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE);
 
     Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
         uint64_t sizeInBytes, 
