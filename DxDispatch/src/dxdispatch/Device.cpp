@@ -446,8 +446,6 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
 
         if (resourceToMap == uploadBuffer)
         {
-            m_temporaryResources.push_back(std::move(uploadBuffer));
-
             D3D12_RESOURCE_BARRIER barriers[] =
             {
                 CD3DX12_RESOURCE_BARRIER::Transition(
@@ -460,57 +458,55 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
             m_commandList->CopyResource(buffer.Get(), uploadBuffer.Get());
             std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
             m_commandList->ResourceBarrier(_countof(barriers), barriers);
+
+            m_temporaryResources.push_back(std::move(uploadBuffer));
         }
     }
 
     return buffer;
 }
 
-std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> defaultBuffer)
+std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> buffer)
 {
-    auto readbackBuffer = CreateReadbackBuffer(defaultBuffer->GetDesc().Width);
-    readbackBuffer->SetName(L"Device::Download");
-
+    if (buffer->GetDesc().Width > std::numeric_limits<size_t>::max())
     {
+        throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", buffer->GetDesc().Width));
+    }
+
+    ComPtr<ID3D12Resource> resourceToMap;
+
+    if (m_architectureSupport && m_architectureSupport->CacheCoherentUMA)
+    {
+        resourceToMap = buffer;
+    }
+    else
+    {
+        resourceToMap = CreateReadbackBuffer(buffer->GetDesc().Width);
+        resourceToMap->SetName(L"Device::Download");
+
         D3D12_RESOURCE_BARRIER barriers[] =
         {
             CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
+                buffer.Get(),
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_COPY_SOURCE)
         };
+
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
-    }
-
-    m_commandList->CopyResource(readbackBuffer.Get(), defaultBuffer.Get());
-
-    {
-        D3D12_RESOURCE_BARRIER barriers[] =
-        {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_SOURCE,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-        };
+        m_commandList->CopyResource(resourceToMap.Get(), buffer.Get());
+        std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
+        ExecuteCommandListAndWait();
     }
 
-    ExecuteCommandListAndWait();
-    if (defaultBuffer->GetDesc().Width > std::numeric_limits<size_t>::max())
-    {
-        throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", defaultBuffer->GetDesc().Width));
-    }
-    std::vector<std::byte> outputBuffer(static_cast<size_t>(defaultBuffer->GetDesc().Width));
-    {
-        size_t dataSize = gsl::narrow<size_t>(defaultBuffer->GetDesc().Width);
-        CD3DX12_RANGE readRange(0, dataSize);
-        void* readbackBufferData = nullptr;
-        THROW_IF_FAILED(readbackBuffer->Map(0, &readRange, &readbackBufferData));
-        memcpy(outputBuffer.data(), readbackBufferData, dataSize);
-        readbackBuffer->Unmap(0, nullptr);
-    }
-
-    m_temporaryResources.push_back(std::move(readbackBuffer));
+    std::vector<std::byte> outputBuffer(static_cast<size_t>(buffer->GetDesc().Width));
+    
+    size_t dataSize = gsl::narrow<size_t>(buffer->GetDesc().Width);
+    CD3DX12_RANGE readRange(0, dataSize);
+    void* mappedBufferData = nullptr;
+    THROW_IF_FAILED(resourceToMap->Map(0, &readRange, &mappedBufferData));
+    memcpy(outputBuffer.data(), mappedBufferData, dataSize);
+    resourceToMap->Unmap(0, nullptr);
 
     return outputBuffer;
 }
