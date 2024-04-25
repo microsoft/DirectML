@@ -104,10 +104,10 @@ Device::Device(
     {
         // Attempt to create a D3D_FEATURE_LEVEL_1_0_CORE device first, in case the device supports this
         // feature level and the D3D runtime does not support D3D_FEATURE_LEVEL_1_0_GENERIC
-        HRESULT hrUnused = m_d3dModule->CreateDevice(
-            adapter,
-            D3D_FEATURE_LEVEL_1_0_CORE,
-            IID_PPV_ARGS(&m_d3d));
+        // HRESULT hrUnused = m_d3dModule->CreateDevice(
+        //     adapter,
+        //     D3D_FEATURE_LEVEL_1_0_CORE,
+        //     IID_PPV_ARGS(&m_d3d));
     }
 
     if (!m_d3d)
@@ -398,6 +398,17 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
     {
         // No need to create an upload resource if the source data is empty.
         return defaultBuffer;
+    }
+
+    D3D12_HEAP_PROPERTIES heapProperties = {};
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+    if (SUCCEEDED(defaultBuffer->GetHeapProperties(&heapProperties, &heapFlags)))
+    {
+        if (heapProperties.MemoryPoolPreference == D3D12_MEMORY_POOL_L0)
+        {
+            // L0 resources are not backed by memory, so we can't map them.
+            return defaultBuffer;
+        }
     }
 
     auto uploadBuffer = CreateUploadBuffer(totalSize);
