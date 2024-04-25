@@ -22,6 +22,7 @@ public:
         bool enableDred,
         bool disableBackgroundProcessing,
         bool setStablePowerState,
+        bool preferCustomHeaps,
         uint32_t maxGpuTimeMeasurements,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
@@ -142,6 +143,7 @@ private:
     bool m_restoreBackgroundProcessing = false;
     bool m_restoreStablePowerState = false;
     std::optional<D3D12_FEATURE_DATA_ARCHITECTURE1> m_architectureSupport;
+    bool m_useCustomHeaps = false;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

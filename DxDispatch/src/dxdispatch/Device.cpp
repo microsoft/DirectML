@@ -52,6 +52,7 @@ Device::Device(
     bool enableDred,
     bool disableBackgroundProcessing,
     bool setStablePowerState,
+    bool preferCustomHeaps,
     uint32_t maxGpuTimeMeasurements,
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
@@ -63,7 +64,8 @@ Device::Device(
         m_dispatchRepeat(dispatchRepeat),
         m_logger(logger),
         m_restoreBackgroundProcessing(disableBackgroundProcessing),
-        m_restoreStablePowerState(setStablePowerState)
+        m_restoreStablePowerState(setStablePowerState),
+        m_useCustomHeaps(preferCustomHeaps)
 {
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -171,6 +173,38 @@ Device::Device(
     if (SUCCEEDED(m_d3d->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &archData, sizeof(archData))))
     {
         m_architectureSupport = archData;
+    }
+
+    // Custom heaps should only be used on UMA systems with cache-coherent memory.
+    m_useCustomHeaps = m_useCustomHeaps && m_architectureSupport->UMA && m_architectureSupport->CacheCoherentUMA;
+
+    D3D_FEATURE_LEVEL featureLevelsList[] = {
+        D3D_FEATURE_LEVEL_1_0_GENERIC,
+        D3D_FEATURE_LEVEL_1_0_CORE,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_12_1
+    };
+
+    D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevels = {};
+    featureLevels.NumFeatureLevels = ARRAYSIZE(featureLevelsList);
+    featureLevels.pFeatureLevelsRequested = featureLevelsList;
+    THROW_IF_FAILED(m_d3d->CheckFeatureSupport(
+        D3D12_FEATURE_FEATURE_LEVELS,
+        &featureLevels,
+        sizeof(featureLevels)
+    ));
+
+    // Custom heaps are optional for MCDM devices, so we also need to check for support.
+    if (featureLevels.MaxSupportedFeatureLevel == D3D_FEATURE_LEVEL_1_0_CORE || 
+        featureLevels.MaxSupportedFeatureLevel == D3D_FEATURE_LEVEL_1_0_GENERIC)
+    {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS19 options = {};
+        if (SUCCEEDED(m_d3d->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options, sizeof(options))))
+        {
+            m_useCustomHeaps = m_useCustomHeaps && options.ComputeOnlyCustomHeapSupported;
+        }
     }
 
 #endif // !_GAMING_XBOX
@@ -419,7 +453,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
     ComPtr<ID3D12Resource> uploadBuffer;
     ComPtr<ID3D12Resource> resourceToMap;
 
-    if (m_architectureSupport && m_architectureSupport->CacheCoherentUMA)
+    if (m_useCustomHeaps)
     {
         buffer = CreateCustomBuffer(totalSize);
         resourceToMap = data.empty() ? nullptr : buffer;
@@ -480,7 +514,9 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> b
     D3D12_HEAP_PROPERTIES heapProps = {};
     D3D12_HEAP_FLAGS heapFlags = {};
 
-    if (SUCCEEDED(buffer->GetHeapProperties(&heapProps, &heapFlags)) && heapProps.MemoryPoolPreference == D3D12_MEMORY_POOL_L0)
+    if (SUCCEEDED(buffer->GetHeapProperties(&heapProps, &heapFlags)) && 
+        heapProps.MemoryPoolPreference == D3D12_MEMORY_POOL_L0 && 
+        heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE)
     {
         resourceToMap = buffer;
     }

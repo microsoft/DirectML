@@ -28,6 +28,7 @@ public:
     bool EnableDred() const { return m_enableDred; }
     bool DisableBackgroundProcessing() const { return m_disableBackgroundProcessing; }
     bool SetStablePowerState() const { return m_setStablePowerState; }
+    bool PreferCustomHeaps() const { return m_preferCustomHeaps; }
     bool DisableAgilitySDK() const { return m_disableAgilitySDK; }
     const std::string& AdapterSubstring() const { return m_adapterSubstring; }
 
@@ -83,6 +84,7 @@ private:
     bool m_enableDred = false;
     bool m_disableBackgroundProcessing = false;
     bool m_setStablePowerState = false;
+    bool m_preferCustomHeaps = true;
     bool m_disableAgilitySDK = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;

@@ -172,6 +172,7 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_options->EnableDred(),
                 m_options->DisableBackgroundProcessing(),
                 m_options->SetStablePowerState(),
+                m_options->PreferCustomHeaps(),
                 m_options->MaxGpuTimeMeasurements(),
                 m_pixCaptureHelper,
                 m_d3dModule,
