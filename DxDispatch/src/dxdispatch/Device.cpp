@@ -475,7 +475,12 @@ std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> b
 
     ComPtr<ID3D12Resource> resourceToMap;
 
-    if (m_architectureSupport && m_architectureSupport->CacheCoherentUMA)
+    // Can't assume the input buffer was created as a custom heap (e.g., ONNX dispatchable with a deferred
+    // resource allocated by the DML EP), so check the heap properties.
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    D3D12_HEAP_FLAGS heapFlags = {};
+
+    if (SUCCEEDED(buffer->GetHeapProperties(&heapProps, &heapFlags)) && heapProps.MemoryPoolPreference == D3D12_MEMORY_POOL_L0)
     {
         resourceToMap = buffer;
     }
