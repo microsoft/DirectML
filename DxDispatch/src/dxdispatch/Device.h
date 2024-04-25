@@ -137,6 +137,7 @@ private:
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
     bool m_restoreBackgroundProcessing = false;
     bool m_restoreStablePowerState = false;
+    std::optional<D3D12_FEATURE_DATA_ARCHITECTURE1> m_architectureSupport;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

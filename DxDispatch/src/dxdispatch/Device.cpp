@@ -167,6 +167,12 @@ Device::Device(
         }
     }
 
+    D3D12_FEATURE_DATA_ARCHITECTURE1 archData = {};
+    if (SUCCEEDED(m_d3d->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &archData, sizeof(archData))))
+    {
+        m_architectureSupport = archData;
+    }
+
 #endif // !_GAMING_XBOX
 
     THROW_IF_FAILED(m_d3d->CreateFence(
@@ -400,15 +406,13 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         return defaultBuffer;
     }
 
-    D3D12_HEAP_PROPERTIES heapProperties = {};
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
-    if (SUCCEEDED(defaultBuffer->GetHeapProperties(&heapProperties, &heapFlags)))
+    if (m_architectureSupport && m_architectureSupport->CacheCoherentUMA)
     {
-        if (heapProperties.MemoryPoolPreference == D3D12_MEMORY_POOL_L0)
-        {
-            // L0 resources are not backed by memory, so we can't map them.
-            return defaultBuffer;
-        }
+        void* defaultBufferData = nullptr;
+        THROW_IF_FAILED(defaultBuffer->Map(0, nullptr, &defaultBufferData));
+        memcpy(defaultBufferData, data.data(), data.size());
+        defaultBuffer->Unmap(0, nullptr);
+        return defaultBuffer;
     }
 
     auto uploadBuffer = CreateUploadBuffer(totalSize);
