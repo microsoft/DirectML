@@ -68,6 +68,7 @@ std::string Adapter::GetDetailedDescription() const
         FormatBytes(m_dedicatedSystemMemory),
         FormatBytes(m_sharedSystemMemory),
         m_isSupported_D3D12_GRAPHICS,
+        m_isSupported_CORE_COMPUTE,
         m_isSupported_GENERIC_ML
         );
 }
