@@ -20,7 +20,7 @@ static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MES
     if (context)
     {
         auto logger = (IDxDispatchLogger*)context;
-        auto fmtMessage = fmt::format("{} {} {} {}", int(cat), int(id), context, message);
+        auto fmtMessage = fmt::format("{} {} {}", int(cat), int(id), message);
         if ((D3D12_MESSAGE_SEVERITY_INFO == sev) ||
             (D3D12_MESSAGE_SEVERITY_MESSAGE == sev))
         {
