@@ -19,6 +19,12 @@ static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MES
 {
     if (context)
     {
+        if (id == D3D12_MESSAGE_ID_META_COMMAND_UNSUPPORTED_PARAMS)
+        {
+            // Ignore this message, since DML internally may try to create metacommands that are not supported.
+            return;
+        }
+
         auto logger = (IDxDispatchLogger*)context;
         auto fmtMessage = fmt::format("{} {} {}", int(cat), int(id), message);
         if ((D3D12_MESSAGE_SEVERITY_INFO == sev) ||
