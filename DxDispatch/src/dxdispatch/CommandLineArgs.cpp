@@ -122,6 +122,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             cxxopts::value<std::string>()
         )
         (
+            "disable_custom_heaps", 
+            "Always use default heaps for resources",
+            cxxopts::value<bool>()
+        )
+        (
             "clear_shader_caches", 
             "Clears D3D shader caches before running commands", 
             cxxopts::value<bool>()
@@ -320,6 +325,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("show_dependencies"))
     {
         m_showDependencies = result["show_dependencies"].as<bool>();
+    }
+
+    if (result.count("disable_custom_heaps"))
+    {
+        m_preferCustomHeaps = !result["disable_custom_heaps"].as<bool>();
     }
 
     if (result.count("clear_shader_caches"))

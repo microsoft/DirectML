@@ -52,6 +52,7 @@ Device::Device(
     bool enableDred,
     bool disableBackgroundProcessing,
     bool setStablePowerState,
+    bool preferCustomHeaps,
     uint32_t maxGpuTimeMeasurements,
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
@@ -63,7 +64,8 @@ Device::Device(
         m_dispatchRepeat(dispatchRepeat),
         m_logger(logger),
         m_restoreBackgroundProcessing(disableBackgroundProcessing),
-        m_restoreStablePowerState(setStablePowerState)
+        m_restoreStablePowerState(setStablePowerState),
+        m_useCustomHeaps(preferCustomHeaps)
 {
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -167,6 +169,44 @@ Device::Device(
         }
     }
 
+    D3D12_FEATURE_DATA_ARCHITECTURE1 archData = {};
+    if (SUCCEEDED(m_d3d->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &archData, sizeof(archData))))
+    {
+        m_architectureSupport = archData;
+    }
+
+    // Custom heaps should only be used on UMA systems with cache-coherent memory.
+    m_useCustomHeaps = m_useCustomHeaps && m_architectureSupport->UMA && m_architectureSupport->CacheCoherentUMA;
+
+    D3D_FEATURE_LEVEL featureLevelsList[] = {
+        D3D_FEATURE_LEVEL_1_0_GENERIC,
+        D3D_FEATURE_LEVEL_1_0_CORE,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_12_1
+    };
+
+    D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevels = {};
+    featureLevels.NumFeatureLevels = _countof(featureLevelsList);
+    featureLevels.pFeatureLevelsRequested = featureLevelsList;
+    THROW_IF_FAILED(m_d3d->CheckFeatureSupport(
+        D3D12_FEATURE_FEATURE_LEVELS,
+        &featureLevels,
+        sizeof(featureLevels)
+    ));
+
+    // Custom heaps are optional for MCDM devices, so we also need to check for support.
+    if (featureLevels.MaxSupportedFeatureLevel == D3D_FEATURE_LEVEL_1_0_CORE || 
+        featureLevels.MaxSupportedFeatureLevel == D3D_FEATURE_LEVEL_1_0_GENERIC)
+    {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS19 options = {};
+        if (SUCCEEDED(m_d3d->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &options, sizeof(options))))
+        {
+            m_useCustomHeaps = m_useCustomHeaps && options.ComputeOnlyCustomHeapSupported;
+        }
+    }
+
 #endif // !_GAMING_XBOX
 
     THROW_IF_FAILED(m_d3d->CreateFence(
@@ -262,6 +302,37 @@ Device::~Device()
             (void)m_d3d->SetStablePowerState(FALSE);
         }
     }
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> Device::CreatePreferredDeviceMemoryBuffer(
+    uint64_t sizeInBytes, 
+    D3D12_RESOURCE_FLAGS resourceFlags,
+    uint64_t alignment,
+    D3D12_HEAP_FLAGS heapFlags)
+{
+    return m_useCustomHeaps ? CreateCustomBuffer(sizeInBytes, resourceFlags, alignment, heapFlags) :
+                              CreateDefaultBuffer(sizeInBytes, resourceFlags, alignment, heapFlags);
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> Device::CreateCustomBuffer(
+    uint64_t sizeInBytes, 
+    D3D12_RESOURCE_FLAGS resourceFlags,
+    uint64_t alignment,
+    D3D12_HEAP_FLAGS heapFlags)
+{
+    auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeInBytes, resourceFlags, alignment);
+    auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE, D3D12_MEMORY_POOL_L0, 0, 0);
+
+    ComPtr<ID3D12Resource> resource;
+    THROW_IF_FAILED(m_d3d->CreateCommittedResource(
+        &heapProps, 
+        heapFlags, 
+        &resourceDesc, 
+        D3D12_RESOURCE_STATE_COMMON, 
+        nullptr, 
+        IID_GRAPHICS_PPV_ARGS(resource.ReleaseAndGetAddressOf())));
+
+    return resource;
 }
 
 ComPtr<ID3D12Resource> Device::CreateDefaultBuffer(
@@ -388,101 +459,105 @@ Microsoft::WRL::ComPtr<ID3D12Resource> Device::Upload(uint64_t totalSize, gsl::s
         throw std::invalid_argument("Attempting to upload more data than the size of the buffer");
     }
 
-    auto defaultBuffer = CreateDefaultBuffer(totalSize);
+    ComPtr<ID3D12Resource> buffer;
+    ComPtr<ID3D12Resource> uploadBuffer;
+    ComPtr<ID3D12Resource> resourceToMap;
+
+    if (m_useCustomHeaps)
+    {
+        buffer = CreateCustomBuffer(totalSize);
+        resourceToMap = data.empty() ? nullptr : buffer;
+    }
+    else
+    {
+        buffer = CreateDefaultBuffer(totalSize);
+        uploadBuffer = data.empty() ? nullptr : CreateUploadBuffer(totalSize);
+        uploadBuffer->SetName(L"Device::Upload");
+        resourceToMap = uploadBuffer;
+    }
+
     if (!name.empty())
     {
-        defaultBuffer->SetName(name.data());
+        buffer->SetName(name.data());
     }
 
-    if (data.empty())
+    if (resourceToMap)
     {
-        // No need to create an upload resource if the source data is empty.
-        return defaultBuffer;
-    }
+        void* mappedBufferData = nullptr;
+        THROW_IF_FAILED(resourceToMap->Map(0, nullptr, &mappedBufferData));
+        memcpy(mappedBufferData, data.data(), data.size());
+        resourceToMap->Unmap(0, nullptr);
 
-    auto uploadBuffer = CreateUploadBuffer(totalSize);
-    uploadBuffer->SetName(L"Device::Upload");
-    {
-        void* uploadBufferData = nullptr;
-        THROW_IF_FAILED(uploadBuffer->Map(0, nullptr, &uploadBufferData));
-        memcpy(uploadBufferData, data.data(), data.size());
-        uploadBuffer->Unmap(0, nullptr);
-    }
-
-    {
-        D3D12_RESOURCE_BARRIER barriers[] =
+        if (resourceToMap == uploadBuffer)
         {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                D3D12_RESOURCE_STATE_COPY_DEST)
-        };
-        m_commandList->ResourceBarrier(_countof(barriers), barriers);
+            D3D12_RESOURCE_BARRIER barriers[] =
+            {
+                CD3DX12_RESOURCE_BARRIER::Transition(
+                    buffer.Get(),
+                    D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                    D3D12_RESOURCE_STATE_COPY_DEST)
+            };
+
+            m_commandList->ResourceBarrier(_countof(barriers), barriers);
+            m_commandList->CopyResource(buffer.Get(), uploadBuffer.Get());
+            std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
+            m_commandList->ResourceBarrier(_countof(barriers), barriers);
+
+            m_temporaryResources.push_back(std::move(uploadBuffer));
+        }
     }
 
-    m_commandList->CopyResource(defaultBuffer.Get(), uploadBuffer.Get());
-
-    {
-        D3D12_RESOURCE_BARRIER barriers[] =
-        {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_DEST,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-        };
-        m_commandList->ResourceBarrier(_countof(barriers), barriers);
-    }
-
-    m_temporaryResources.push_back(std::move(uploadBuffer));
-
-    return defaultBuffer;
+    return buffer;
 }
 
-std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> defaultBuffer)
+std::vector<std::byte> Device::Download(Microsoft::WRL::ComPtr<ID3D12Resource> buffer)
 {
-    auto readbackBuffer = CreateReadbackBuffer(defaultBuffer->GetDesc().Width);
-    readbackBuffer->SetName(L"Device::Download");
-
+    if (buffer->GetDesc().Width > std::numeric_limits<size_t>::max())
     {
+        throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", buffer->GetDesc().Width));
+    }
+
+    ComPtr<ID3D12Resource> resourceToMap;
+
+    // Can't assume the input buffer was created as a custom heap (e.g., ONNX dispatchable with a deferred
+    // resource allocated by the DML EP), so check the heap properties.
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    D3D12_HEAP_FLAGS heapFlags = {};
+
+    if (SUCCEEDED(buffer->GetHeapProperties(&heapProps, &heapFlags)) && 
+        heapProps.MemoryPoolPreference == D3D12_MEMORY_POOL_L0 && 
+        heapProps.CPUPageProperty == D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE)
+    {
+        resourceToMap = buffer;
+    }
+    else
+    {
+        resourceToMap = CreateReadbackBuffer(buffer->GetDesc().Width);
+        resourceToMap->SetName(L"Device::Download");
+
         D3D12_RESOURCE_BARRIER barriers[] =
         {
             CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
+                buffer.Get(),
                 D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                 D3D12_RESOURCE_STATE_COPY_SOURCE)
         };
+
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
-    }
-
-    m_commandList->CopyResource(readbackBuffer.Get(), defaultBuffer.Get());
-
-    {
-        D3D12_RESOURCE_BARRIER barriers[] =
-        {
-            CD3DX12_RESOURCE_BARRIER::Transition(
-                defaultBuffer.Get(),
-                D3D12_RESOURCE_STATE_COPY_SOURCE,
-                D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-        };
+        m_commandList->CopyResource(resourceToMap.Get(), buffer.Get());
+        std::swap(barriers[0].Transition.StateBefore, barriers[0].Transition.StateAfter);
         m_commandList->ResourceBarrier(_countof(barriers), barriers);
+        ExecuteCommandListAndWait();
     }
 
-    ExecuteCommandListAndWait();
-    if (defaultBuffer->GetDesc().Width > std::numeric_limits<size_t>::max())
-    {
-        throw std::invalid_argument(fmt::format("Buffer width '{}' is too large.", defaultBuffer->GetDesc().Width));
-    }
-    std::vector<std::byte> outputBuffer(static_cast<size_t>(defaultBuffer->GetDesc().Width));
-    {
-        size_t dataSize = gsl::narrow<size_t>(defaultBuffer->GetDesc().Width);
-        CD3DX12_RANGE readRange(0, dataSize);
-        void* readbackBufferData = nullptr;
-        THROW_IF_FAILED(readbackBuffer->Map(0, &readRange, &readbackBufferData));
-        memcpy(outputBuffer.data(), readbackBufferData, dataSize);
-        readbackBuffer->Unmap(0, nullptr);
-    }
-
-    m_temporaryResources.push_back(std::move(readbackBuffer));
+    std::vector<std::byte> outputBuffer(static_cast<size_t>(buffer->GetDesc().Width));
+    
+    size_t dataSize = gsl::narrow<size_t>(buffer->GetDesc().Width);
+    CD3DX12_RANGE readRange(0, dataSize);
+    void* mappedBufferData = nullptr;
+    THROW_IF_FAILED(resourceToMap->Map(0, &readRange, &mappedBufferData));
+    memcpy(outputBuffer.data(), mappedBufferData, dataSize);
+    resourceToMap->Unmap(0, nullptr);
 
     return outputBuffer;
 }
