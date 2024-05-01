@@ -188,7 +188,7 @@ Device::Device(
     };
 
     D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevels = {};
-    featureLevels.NumFeatureLevels = ARRAYSIZE(featureLevelsList);
+    featureLevels.NumFeatureLevels = _countof(featureLevelsList);
     featureLevels.pFeatureLevelsRequested = featureLevelsList;
     THROW_IF_FAILED(m_d3d->CheckFeatureSupport(
         D3D12_FEATURE_FEATURE_LEVELS,
