@@ -91,7 +91,7 @@ Device::Device(
 
     if (debugLayersEnabled)
     {
-        m_d3d->SetDebugCallbackX(DebugMessageCallback, /*context*/nullptr);
+        m_d3d->SetDebugCallbackX(DebugMessageCallback, /*context*/logger);
     }
 #else // !_GAMING_XBOX
     if (debugLayersEnabled)
@@ -139,7 +139,7 @@ Device::Device(
         m_infoQueue->RegisterMessageCallback(
             DebugMessageCallback, 
             D3D12_MESSAGE_CALLBACK_FLAG_NONE, 
-            nullptr, 
+            logger, 
             &m_callbackCookie);
     }
 
