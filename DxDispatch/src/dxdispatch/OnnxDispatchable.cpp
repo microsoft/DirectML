@@ -559,6 +559,8 @@ void OnnxDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t ite
         m_ioBindings->SynchronizeOutputs();
     }
 
+    // TODO: if cpu only, need to upload cpu results to original binding
+
     if (deferredBindings.size() == 0)
     {
         return;
