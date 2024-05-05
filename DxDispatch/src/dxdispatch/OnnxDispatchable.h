@@ -33,6 +33,7 @@ private:
         ONNXTensorElementDataType dataType;
         bool isInput;
         Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+        std::vector<std::byte> cpuProviderBuffer;
         Microsoft::WRL::ComPtr<IUnknown> wrapper;
         std::optional<Ort::Value> ortValue;
     };

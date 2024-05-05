@@ -344,7 +344,16 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                     }
 
                     // The JSON binding may also include the name of a JSON resource.
-                    binding.resource = jsonBinding->second[0].resource;
+                    if (m_args.OnnxCpuProviderOnly())
+                    {
+                        auto& initialValues = std::get<Model::BufferDesc>(jsonBinding->second[0].resourceDesc->value).initialValues;
+                        binding.cpuProviderBuffer.resize(initialValues.size());
+                        std::copy(initialValues.begin(), initialValues.end(), binding.cpuProviderBuffer.begin());
+                    }
+                    else
+                    {
+                        binding.resource = jsonBinding->second[0].resource;
+                    }
                 }
 
                 // Override tensorShape with the one specified on the command line, if any.
@@ -360,7 +369,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                 }
 
                 // Attempt to preallocate/wrap resources where possible.
-                if (binding.resource && !m_args.OnnxCpuProviderOnly())
+                if (binding.resource)
                 {
                     // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
                     // Simply wrap the existing DX resource as an OrtValue.
@@ -394,6 +403,18 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                             tensorName
                         ));
                     }
+                }
+                else if (!binding.cpuProviderBuffer.empty())
+                {
+                    binding.ortValue = Ort::Value::CreateTensor(
+                        cpuMemoryInformation,
+                        binding.cpuProviderBuffer.data(),
+                        binding.cpuProviderBuffer.size(),
+                        binding.shape.data(),
+                        binding.shape.size(),
+                        dataTypeInfo.onnxDataType
+                    );
+                    binding.resourceType = "explicit (CPU)";
                 }
                 else
                 {
