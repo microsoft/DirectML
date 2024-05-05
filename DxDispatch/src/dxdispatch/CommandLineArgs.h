@@ -68,6 +68,7 @@ public:
     bool PrintVerboseOnnxBindingInfo() const { return m_onnxPrintVerboseBindingInfo; } 
     bool OrtExtensionsEnabled() const { return m_ortExtensionsEnabled; }
     bool OnnxProfilingEnabled() const { return m_onnxProfilingEnabled; }
+    bool OnnxCpuProviderOnly() const { return m_onnxCpuProviderOnly; }
 
     void SetAdapter(IAdapter* adapter);
 private:
@@ -128,6 +129,7 @@ private:
     bool m_ortExtensionsEnabled = false;
     bool m_onnxProfilingEnabled = false;
     bool m_commandPrinting = false;
+    bool m_onnxCpuProviderOnly = false;
 };
 
 DML_FEATURE_LEVEL GetDmlFeatureLevelFromString(const std::string& featureLevel);

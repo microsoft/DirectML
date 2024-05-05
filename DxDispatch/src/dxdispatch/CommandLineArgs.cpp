@@ -242,6 +242,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Captures a json file of the CPU and GPU execution that can be viewed in a chromium-based browser.",
             cxxopts::value<bool>()
         )
+        (
+            "onnx_cpu_only",
+            "Execute ONNX models using CPU EP only (disables DML EP).",
+            cxxopts::value<bool>()
+        )
         ;
 
     options.positional_help("<PATH_TO_MODEL>");
@@ -542,6 +547,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("enable_onnx_profiling"))
     {
         m_onnxProfilingEnabled = result["enable_onnx_profiling"].as<bool>();
+    }
+
+    if (result.count("onnx_cpu_only"))
+    {
+        m_onnxCpuProviderOnly = result["onnx_cpu_only"].as<bool>();
     }
 
     m_helpText = options.help();

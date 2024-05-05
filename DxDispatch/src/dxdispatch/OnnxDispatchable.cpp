@@ -192,7 +192,6 @@ OnnxDispatchable::OnnxDispatchable(
 void OnnxDispatchable::Initialize()
 {
     const OrtApi& ortApi = Ort::GetApi();
-    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
     OrtLoggingLevel loggingLevel = m_args.GetOnnxLoggingLevel() ? 
         static_cast<OrtLoggingLevel>(*m_args.GetOnnxLoggingLevel()) : 
@@ -254,9 +253,11 @@ void OnnxDispatchable::Initialize()
         }
     }
 
-    const OrtDmlApi* ortDmlApi;
-    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
-    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
+    if (!m_args.OnnxCpuProviderOnly())
+    {
+        Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
+        Ort::ThrowOnError(m_ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, m_device->DML(), m_device->GetCommandQueue()));
+    }
 
     m_session = Ort::Session(*m_environment, m_desc.sourcePath.wstring().c_str(), sessionOptions);
     m_ioBindings = Ort::IoBinding::IoBinding(*m_session);
@@ -359,7 +360,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                 }
 
                 // Attempt to preallocate/wrap resources where possible.
-                if (binding.resource)
+                if (binding.resource && !m_args.OnnxCpuProviderOnly())
                 {
                     // If a DX resource was explicitly bound in the JSON model, then it has already been allocated.
                     // Simply wrap the existing DX resource as an OrtValue.
@@ -400,7 +401,7 @@ void OnnxDispatchable::Bind(const Bindings& jsonBindings, uint32_t iteration)
                     // Only tensors with static shapes can be preallocated.
                     if (!tensorShapeHasFreeDimensions)
                     {
-                        if (isDmlSupportedType)
+                        if (isDmlSupportedType && !m_args.OnnxCpuProviderOnly())
                         {
                             // Convert int64_t tensorShape to uint32_t for DML
                             std::vector<uint32_t> tensorShapeUint32;
