@@ -327,7 +327,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
 
             if (m_commandLineArgs.GetPresentSeparator())
             {
-                m_device->DummyPreset();
+                m_device->DummyPresent();
             }
         }
     }

@@ -59,6 +59,7 @@ Device::Device(
     bool disableBackgroundProcessing,
     bool setStablePowerState,
     bool preferCustomHeaps,
+    bool usePresentSeparator,
     uint32_t maxGpuTimeMeasurements,
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
@@ -230,6 +231,7 @@ Device::Device(
 
 #if defined(INCLUDE_DXGI)
     // Create dummy swapchain for frame indication
+    if (usePresentSeparator)
     {
         ComPtr<IDXGIFactory2> factory;
         THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&factory)));
@@ -246,8 +248,11 @@ Device::Device(
         desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
         desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
         desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-        const auto HR = factory->CreateSwapChainForComposition(m_queue.Get(), &desc, nullptr, m_dummySwapChain.GetAddressOf());
-        THROW_IF_FAILED(HR);
+        const auto hr = factory->CreateSwapChainForComposition(m_queue.Get(), &desc, nullptr, m_dummySwapChain.GetAddressOf());
+        if (FAILED(hr))
+        {
+            m_logger->LogWarning("Creating dummy swap chain for present seperator failed");
+        }
     }
 #endif
 
@@ -787,7 +792,7 @@ void Device::ClearShaderCaches()
     }
 }
 
-void Device::DummyPreset()
+void Device::DummyPresent()
 {
 #if defined(INCLUDE_DXGI)
     if (m_dummySwapChain)
