@@ -1,10 +1,6 @@
 #include "pch.h"
 #include "Device.h"
 
-#if defined(DX_PRESENT_SEPARATOR)
-#include <dxgi1_6.h>
-#endif
-
 using Microsoft::WRL::ComPtr;
 
 // {0059DA69-B561-43D9-A39B-3355074B1082}
@@ -232,7 +228,7 @@ Device::Device(
         IID_GRAPHICS_PPV_ARGS(m_queue.ReleaseAndGetAddressOf())));
     m_commandListType = queueDesc.Type;
 
-#if defined(DX_PRESENT_SEPARATOR)
+#if defined(INCLUDE_DXGI)
     // Create dummy swapchain for frame indication
     {
         ComPtr<IDXGIFactory2> factory;
@@ -791,12 +787,12 @@ void Device::ClearShaderCaches()
     }
 }
 
-#if defined(DX_PRESENT_SEPARATOR)
 void Device::DummyPreset()
 {
+#if defined(INCLUDE_DXGI)
     if (m_dummySwapChain)
     {
         m_dummySwapChain->Present(0, 0);
     }
-}
 #endif
+}

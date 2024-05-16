@@ -192,13 +192,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Name used for PIX capture files.",
             cxxopts::value<std::string>()->default_value("dxdispatch")
         )
-#if defined(DX_PRESENT_SEPARATOR)
         (
             "present_separator",
             "Injects present after each full inference pass, giving debugging tools a notion of frames.",
             cxxopts::value<bool>()
         )
-#endif
         ;
 
     // ONNX OPTIONS
@@ -369,12 +367,10 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         m_disableAgilitySDK = result["disable_agility_sdk"].as<bool>();
     }
 
-#if defined(DX_PRESENT_SEPARATOR)
     if (result.count("present_separator"))
     {
         m_presentSeparator = result["present_separator"].as<bool>();
     }
-#endif
 
     if (result.count("print_hlsl_disassembly"))
     {
