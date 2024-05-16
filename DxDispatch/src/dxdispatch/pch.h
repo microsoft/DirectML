@@ -74,6 +74,9 @@ using IAdapter = IDXGIAdapter;
 #endif
 #include <dxcapi.h>
 #include <WinPixEventRuntime/pix3.h>
+#ifdef INCLUDE_DXGI
+#include  <dxgi1_6.h>
+#endif
 
 #define IGraphicsUnknown IUnknown
 #define IID_GRAPHICS_PPV_ARGS IID_PPV_ARGS

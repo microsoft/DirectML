@@ -23,6 +23,7 @@ public:
         bool disableBackgroundProcessing,
         bool setStablePowerState,
         bool preferCustomHeaps,
+        bool usePresentSeparator,
         uint32_t maxGpuTimeMeasurements,
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
@@ -121,9 +122,7 @@ public:
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
-#if defined(DX_PRESENT_SEPARATOR)
-    void DummyPreset();
-#endif
+    void DummyPresent();
 
 private:
     void EnsureDxcInterfaces();
@@ -163,7 +162,7 @@ private:
     Microsoft::WRL::ComPtr<IDxcCompiler3> m_dxcCompiler;
 #endif
 
-#if defined(DX_PRESENT_SEPARATOR)
-    Microsoft::WRL::ComPtr<struct IDXGISwapChain1> m_dummySwapChain;
+#if defined(INCLUDE_DXGI)
+    Microsoft::WRL::ComPtr<IDXGISwapChain1> m_dummySwapChain;
 #endif
 };

@@ -325,12 +325,10 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(timeToSleep)));
             }
 
-#if defined(DX_PRESENT_SEPARATOR)
             if (m_commandLineArgs.GetPresentSeparator())
             {
-                m_device->DummyPreset();
+                m_device->DummyPresent();
             }
-#endif
         }
     }
     catch (const std::exception& e)
