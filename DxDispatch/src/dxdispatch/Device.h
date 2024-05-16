@@ -121,6 +121,10 @@ public:
     static uint32_t GetSizeInBytes(DML_TENSOR_DATA_TYPE dataType);
     static DXGI_FORMAT GetDxgiFormatFromDmlTensorDataType(DML_TENSOR_DATA_TYPE dataType);
 
+#if defined(DX_PRESENT_SEPARATOR)
+    void DummyPreset();
+#endif
+
 private:
     void EnsureDxcInterfaces();
 
@@ -157,5 +161,9 @@ private:
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;
     Microsoft::WRL::ComPtr<IDxcIncludeHandler> m_dxcIncludeHandler;
     Microsoft::WRL::ComPtr<IDxcCompiler3> m_dxcCompiler;
+#endif
+
+#if defined(DX_PRESENT_SEPARATOR)
+    Microsoft::WRL::ComPtr<struct IDXGISwapChain1> m_dummySwapChain;
 #endif
 };

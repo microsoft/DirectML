@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "Device.h"
 
+#if defined(DX_PRESENT_SEPARATOR)
+#include <dxgi1_6.h>
+#endif
+
 using Microsoft::WRL::ComPtr;
 
 // {0059DA69-B561-43D9-A39B-3355074B1082}
@@ -227,6 +231,29 @@ Device::Device(
         &queueDesc, 
         IID_GRAPHICS_PPV_ARGS(m_queue.ReleaseAndGetAddressOf())));
     m_commandListType = queueDesc.Type;
+
+#if defined(DX_PRESENT_SEPARATOR)
+    // Create dummy swapchain for frame indication
+    {
+        ComPtr<IDXGIFactory2> factory;
+        THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&factory)));
+        DXGI_SWAP_CHAIN_DESC1 desc = {0};
+        desc.Width = 2;
+        desc.Height = 2;
+        desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        desc.Stereo = FALSE;
+        desc.SampleDesc.Count = 1;
+        desc.SampleDesc.Quality = 0;
+        desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_BACK_BUFFER;
+        desc.BufferCount = 3;
+        desc.Scaling = DXGI_SCALING_STRETCH;
+        desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+        desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+        const auto HR = factory->CreateSwapChainForComposition(m_queue.Get(), &desc, nullptr, m_dummySwapChain.GetAddressOf());
+        THROW_IF_FAILED(HR);
+    }
+#endif
 
     THROW_IF_FAILED(m_dmlModule->CreateDevice1(
         m_d3d.Get(), 
@@ -763,3 +790,13 @@ void Device::ClearShaderCaches()
     default: throw std::invalid_argument(fmt::format("No DXGI_FORMAT exists for given data type."));
     }
 }
+
+#if defined(DX_PRESENT_SEPARATOR)
+void Device::DummyPreset()
+{
+    if (m_dummySwapChain)
+    {
+        m_dummySwapChain->Present(0, 0);
+    }
+}
+#endif
