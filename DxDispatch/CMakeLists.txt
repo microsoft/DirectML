@@ -95,7 +95,6 @@ target_link_libraries(
     wil
     d3d12
     directml
-	dxgi
 )
 
 if(TARGET_WSL)
@@ -157,7 +156,8 @@ set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
     if(TARGET_WINDOWS)
-        target_compile_definitions(dxdispatchImpl PRIVATE DX_PRESENT_SEPARATOR=1)
+        target_compile_definitions(dxdispatchImpl PRIVATE INCLUDE_DXGI=1)
+        target_link_libraries(dxdispatchImpl PRIVATE dxgi)
     endif()
     target_sources(dxdispatchImpl PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/dxdispatchImpl.rc)
     target_link_libraries(dxdispatchImpl PRIVATE version.lib)
