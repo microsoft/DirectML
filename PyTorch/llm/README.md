@@ -1,42 +1,27 @@
-# Simple and Efficient Language Models with PyTorch and DirectML
+# Simple and Efficient Language Models for PyTorch with DirectML
 
 This sample provides a simple way to download a PyTorch model, optimize it for DirectML, and run it through a Gradio app UI.
 
-This sample is extracted from [pytorch-labs/gpt-fast](https://github.com/pytorch-labs/gpt-fast), and has been slightly changed to use torch-directml. The original code is Copyright (c) 2023 Meta, and is used here under the terms of the BSD 3-Clause License. See [LICENSE](./LICENSE) for more information.
+This sample is extracted from [pytorch-labs/gpt-fast](https://github.com/pytorch-labs/gpt-fast), and has been slightly changed to use `torch-directml`. The original code is Copyright (c) 2023 Meta, and is used here under the terms of the BSD 3-Clause License. See [LICENSE](./LICENSE) for more information.
 
+- [Supported Models](#supported-models)
 - [Setup](#setup)
-- [Running the App](#running-the-app)
-- [Basic settings](#basic-settings)
+- [Run the App](#run-the-app)
+- [App Settings](#app-settings)
 - [External Links](#external-links)
-
-## Setup
-With latest version of `torch-directml` setup from our [PyTorch-DirectML guide](), install the following prerequisites to run the app:
-
-```
-pip install -r requirements.txt
-```
-
-To use Mistral and the Llama models, you will need to go through an extra step of getting access to their Hugging Face repository. To do so:
-1. Go to
-    - [https://huggingface.co/meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)
-    - [https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)
-    - [https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)
-
-2. Go through the steps on page to obtain access
-3. Run `huggingface-cli login`
-4. Paste your [Hugging Face User Access Token](https://huggingface.co/docs/hub/en/security-tokens) to login
+- [Model Licenses](#model-licenses)
 
 ## Supported Models
 
-The following models are currently supported in this sample:
+The following models are currently supported by this sample:
 
 - [Phi-2](https://huggingface.co/microsoft/phi-2): Small Language Model with 2.7 billion parameters. Best suited for prompts using QA format, chat format, and code format.
-- [Phi-3 Mini 4K](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct): Small Language Model with 3.8 billion paramaeters using 4k context window. The Instruct version has been fine-tuned to follow instructions and adhere to safety measures.
-- [LLaMA 2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf): Small Language Model with 7 billion parameters optimized specifically for dialogue use cases.
-- [LLaMA 3](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct): Small Language Model with 8 billion parameters. The Llama 3 instruction tuned models are optimized for dialogue use cases.
-- [Mistral 7B](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1): Small Language Model with 7 billion parameters. The Mistral-7B-Instruct-v0.1 Large Language Model is a instruct fine-tuned version of the Mistral-7B-v0.1 generative text model using a variety of publicly available conversation datasets.
+- [Phi-3 Mini 4K](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct): Small Language Model with 3.8 billion parameters using a 4k context window. The Instruct version has been fine-tuned to follow instructions and adhere to safety measures.
+- [LLaMA 2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf): Large Language Model with 7 billion parameters optimized specifically for dialogue use cases.
+- [LLaMA 3](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct): Large Language Model with 8 billion parameters. The Llama 3 instruction tuned models are optimized for dialogue use cases.
+- [Mistral 7B](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1): Large Language Model with 7 billion parameters. The Mistral-7B-Instruct-v0.1 Large Language Model is a instruct fine-tuned version of the Mistral-7B-v0.1 generative text model using a variety of publicly available conversation datasets.
 
-**NOTE**: Finetunes of the above models might work however they were not tested.
+>⚠️ **NOTE**: Other variants of these models may work but they were not tested.
 
 The various models have different VRAM requirements, the following table lists the memory requirements for the tested models.
 
@@ -48,19 +33,35 @@ The various models have different VRAM requirements, the following table lists t
 | Meta-Llama-3-8B | >16GB | 32GB  |
 | Mistral-7B      | 15GB  | 30GB  |
 
-## Running the App
+## Setup
+Once you've setup `torch-directml` following our [Windows](https://learn.microsoft.com/windows/ai/directml/pytorch-windows) or [WSL 2](https://learn.microsoft.com/windows/ai/directml/pytorch-wsl) guidance, install the following requirements for running app:
 
-To run the chatbot application (app) with a simple web UI:
+```
+pip install -r requirements.txt
+```
+
+To use the Llama and Mistral models, you will need to go through an extra step to access their Hugging Face repository. To do so:
+1. Visit
+    - LLaMA 2: [https://huggingface.co/meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)
+    - LLaMA 3: [https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)
+    - Mistral: [https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)    
+2. Follow the steps on the Hugging Face page to obtain access
+3. Run `huggingface-cli login`
+4. Paste your [Hugging Face User Access Token](https://huggingface.co/docs/hub/en/security-tokens) to login
+
+## Run the App
+
+Run the chatbot app using the following command:
 
 ```
 > python app.py
 ```
 
-The chatbot application will start with the default settings, which uses `DirectML` as the backend to run the `Phi-3` model for inference using `float16`. `Phi-3-4k-instruct` will be downloaded automatically on the first run from the default `model_repo` which is set to `microsoft/Phi-3-4k-instruct`.
+The chatbot app will start with the default settings, which uses `DirectML` as the backend to run the `Phi-3` model for inference using `float16`. The app will automatically download `Phi-3-4k-instruct` on the first run from the default `model_repo` which is set to `microsoft/Phi-3-4k-instruct`. 
 
-Apart from taking advantage of DirectML operators, the models were also optimized to use custom DirectML graph implementations for Rotary Positional Embedding (RoPE), Multi-Head Attention (MHA), and the Feedforward layers (MLP).
+This model is optimized to take advantage of DirectML operators and to use the custom DirectML graph implementations for Rotary Positional Embedding (RoPE), Multi-Head Attention (MHA), and the Feedforward layers (MLP).
 
-When you run this code, the local URL will be displayed on the console once generated in a matter of seconds. Look for the local URL here:
+When you run this code, a local URL will be displayed on the console along the following lines:
 
 ```
 Using device=privateuseone:0, is_llama_3=False, is_phi_2=False
@@ -69,7 +70,7 @@ Running on local URL:  http://127.0.0.1:7860
 --------
 ```
 
-Your complete console output should look like this, ran for the first time and downloading the model:
+You should see results such as this, when running for the first time and downloading the model:
 
 ```
 checkpoints\microsoft\Phi-3-mini-4k-instruct\model.pth doesnt exist. Downloading and converting from huggingface hub
@@ -91,15 +92,21 @@ Running on local URL:  http://127.0.0.1:7860
 To create a public link, set `share=True` in `launch()`.
 ```
 
-Open [http://localhost:7860](http://localhost:7860) in a browser to interact with the chatbot.
+Open [http://localhost:7860](http://localhost:7860) (or the local URL you see) in a browser to interact with the chatbot.
 
-To run with `float32`, just pass `--precision float32` to `app.py`.
+### Change model precision
+
+To run the model using `float32` precision, pass `--precision float32` to `app.py`.
 
 ```
 > python app.py --precision float32
 ```
 
-You can also select another model to run (`microsoft/Phi-3-mini-4k-instruct`, `microsoft/phi-2`, `meta-llama/Meta-Llama-3-8B-Instruct`, `meta-llama/Llama-2-7b-chat-hf`, `mistralai/Mistral-7B-Instruct-v0.1`). For example to run `Mistral-7B-Instruct-v0.1`:
+### Change the model
+
+You can also select another model to run (`microsoft/Phi-3-mini-4k-instruct`, `microsoft/phi-2`, `meta-llama/Meta-Llama-3-8B-Instruct`, `meta-llama/Llama-2-7b-chat-hf`, `mistralai/Mistral-7B-Instruct-v0.1`).
+
+For example to run `Mistral-7B-Instruct-v0.1` use the following command:
 
 ```
 > python app.py --precision float16 --model_repo "mistralai/Mistral-7B-Instruct-v0.1"
@@ -132,20 +139,20 @@ Running on local URL:  http://127.0.0.1:7860
 To create a public link, set `share=True` in `launch()`.
 ```
 
-## Basic Settings
+## App Settings
 
-This is a list of the basic settings supported by `app.py`:
+Following is a list of the basic settings supported by `app.py`:
 
-| Flag             | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| `--help`   | Show this help message.                                      |
-| `--model_repo`   | Huggingface Repository ID to download from. Default `microsoft/Phi-3-mini-4k-instruct`                                      |
-| `--checkpoint_path` | Converted pytorch model checkpoint path. Defaults to `checkpoints/{model_repo}/model.pth`. |
-| `--max_context_length`   | Max prompt length including the history. If exceeded, history is clipped starting from the first (user, assistant) pair.  Default: `1500`   |
-| `--disable_history` | Whether to disable history of the chat for generation. History is enabled by default.   |
-| `--precision`   | Precision to run the generation with. [`float16`, `float32`], default: `float16`                                        |
+| Flag                   | Description                                                  | Default |
+| ---------------------- | ------------------------------------------------------------ | ------- |
+| `--help`               | Show this help message. | N/A |
+| `--model_repo`         | Specify the model to downloading using the Hugging Face Repository ID. | `microsoft/Phi-3-mini-4k-instruct` |
+| `--precision`          | Model precision to use during generation. Options: [`float16`, `float32`] | `float16` |
+| `--checkpoint_path`    | Path to converted PyTorch model checkpoint. | `checkpoints/{model_repo}/model.pth` |
+| `--max_context_length` | Max prompt length including the history. If exceeded, history is clipped starting from the first (user, assistant) pair. | `1500` |
+| `--disable_history`    | Disable the chat history during generation. | Enabled |
 
-**NOTE**: Currently, the app uses the checkpoint path to determine the correct transformer model to load. The model path must have the huggingface model id included in the path name. For example:
+>⚠️ **NOTE**: The app uses the checkpoint path to determine the correct transformer model to load. The model path must specify the Hugging Face model ID included in the path name. For example:
 
 - `checkpoints/microsoft/phi-2/model.pth`
 - `checkpoints/microsoft/Phi-3-mini-4k-instruct/model.pth`
@@ -155,35 +162,44 @@ This is a list of the basic settings supported by `app.py`:
 - `checkpoints/meta-llama/Meta-Llama-3-8B/model.pth`
 - `checkpoints/meta-llama/Meta-Llama-3-8B-Instruct/model.pth`
 
-## [Optional] Prepare the Supported models
-This is an optional step as the `app.py` script in [Running the App](#running-the-app) section handles both downloading and optimizing a PyTorch model with DirectML.
+## _[Optional]_ Prepare the Supported Models
+This step is optional as `app.py` script in [Run the App](#run-the-app) section handles both downloading and optimizing a PyTorch model with DirectML.
 
-We offer two methods for preparing PyTorch models
+We offer two methods for preparing PyTorch models:
 
-### 1. Use `download_and_convert.py` to download an LLM:
+### Use `download_and_convert.py` to download a language model:
 
 ```
 > python .\scripts\download_and_convert.py --model_repo "microsoft/Phi-3-mini-4k-instruct"
 ```
 
-After the model is downloaded and converted, you can pass the same parameter to the chat bot application (`app.py`) to run your `Phi`, `Llama` or `Mistral` based model:
+After the model is downloaded and converted, you can pass the following parameter to `app.py` to run the language model:
 
 ```
 > python app.py --model_repo "microsoft/Phi-3-mini-4k-instruct"
 ```
 
-### 2. Download a DirectML-optimized PyTorch model from the [Microsoft Hugging Face repo](https://huggingface.co/microsoft):
+### Download a DirectML optimized PyTorch model from the [Microsoft Hugging Face repo](https://huggingface.co/microsoft):
+
     1. cd checkpoints
     2. git clone https://huggingface.co/{model_repo} {model_repo}
     3. cd ../
 
-After the model is downloaded, you can pass the checkpoint path to the chat bot application (`app.py`) to run your `Phi`, `Llama` or `Mistral` based model:
+After the model is downloaded, you can pass the following parameter to `app.py` to run the language model:
 
 ```
 > python app.py --checkpoint_path "checkpoints/{model_repo}/model.pth"
 ```
 
-## External Links & License
+## External Links
+- [Phi-2 Hugging Face Repository](https://huggingface.co/microsoft/phi-2)
+- [Phi-3 Hugging Face Repository](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct)
+- [LLaMA 2 Hugging Face Repository](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)
+- [LLaMA 3 Hugging Face Repository](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)
+- [Mistral 7B Hugging Face Repository](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)
+- [PyTorch gpt-fast Source Code](https://github.com/pytorch-labs/gpt-fast/)
+
+## Model Licenses
 
 - [DirectML-Optimized Phi-2 Hugging Face Repository](https://huggingface.co/microsoft/phi-2-pytdml)
 This sample uses the phi-2 model, which has been optimized to work with PyTorch-DirectML. This model is licensed under the [MIT license](https://huggingface.co/microsoft/phi-2/resolve/main/LICENSE).  If you comply with the license, you have the rights described therein. By using the Sample, you accept the terms.
@@ -196,10 +212,3 @@ This sample uses the Llama-2 model, which has been optimized to work with PyTorc
 
 - [DirectML-Optimized Mistral 7B Hugging Face Repository](https://huggingface.co/microsoft/Mistral-7B-Instruct-v0.1-pytdml)
 This sample uses the Mistral model, which has been optimized to work with PyTorch-DirectML. This model is licensed under the [Apache-2.0 license](https://huggingface.co/datasets/choosealicense/licenses/blob/main/markdown/apache-2.0.md). If you comply with the license, you have the rights described therein. By using the Sample, you accept the terms.
-
-- [Phi-2 Hugging Face Repository](https://huggingface.co/microsoft/phi-2)
-- [Phi-3 Hugging Face Repository](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct)
-- [LLaMA 2 Hugging Face Repository](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)
-- [LLaMA 3 Hugging Face Repository](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)
-- [Mistral 7B Hugging Face Repository](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)
-- [PyTorch gpt-fast Source Code](https://github.com/pytorch-labs/gpt-fast/)
