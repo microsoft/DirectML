@@ -1,12 +1,12 @@
-*/squeezenet/data
+/squeezenet/data
 .vscode
 __pycache__
 traces/
 !/op_report/data/traces
 *.xlsx
-data/cifar-10-python
 checkpoints
 coco128
+objectDetection/PennFudanPed
 data/PennFudanPed
 data/PennFudanPed.zip
-objectDetection/PennFudanPed
+data/cifar-10-python

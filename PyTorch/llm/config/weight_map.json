@@ -1,0 +1,51 @@
+{
+    "phi-2" : {
+        "model.embed_tokens.weight": "tok_embeddings.weight",
+        "model.layers.{}.self_attn.q_proj.weight": "layers.{}.attention.wq.weight",
+        "model.layers.{}.self_attn.q_proj.bias": "layers.{}.attention.wq.bias",
+        "model.layers.{}.self_attn.k_proj.weight": "layers.{}.attention.wk.weight",
+        "model.layers.{}.self_attn.k_proj.bias": "layers.{}.attention.wk.bias",
+        "model.layers.{}.self_attn.v_proj.weight": "layers.{}.attention.wv.weight",
+        "model.layers.{}.self_attn.v_proj.bias": "layers.{}.attention.wv.bias",
+        "model.layers.{}.self_attn.dense.weight": "layers.{}.attention.wo.weight",
+        "model.layers.{}.self_attn.dense.bias": "layers.{}.attention.wo.bias",
+        "model.layers.{}.self_attn.rotary_emb.inv_freq": "",
+        "model.layers.{}.mlp.fc1.weight": "layers.{}.feed_forward.w1.weight",
+        "model.layers.{}.mlp.fc1.bias": "layers.{}.feed_forward.w1.bias",
+        "model.layers.{}.mlp.fc2.weight": "layers.{}.feed_forward.w2.weight",
+        "model.layers.{}.mlp.fc2.bias": "layers.{}.feed_forward.w2.bias",
+        "model.layers.{}.input_layernorm.weight": "layers.{}.attention_norm.weight",
+        "model.layers.{}.input_layernorm.bias": "layers.{}.attention_norm.bias",
+        "model.final_layernorm.weight": "norm.weight",
+        "model.final_layernorm.bias": "norm.bias",
+        "lm_head.weight": "output.weight",
+        "lm_head.bias": "output.bias"
+    },
+    "Phi-3-mini-4k-instruct": {
+        "model.embed_tokens.weight": "tok_embeddings.weight",
+        "model.layers.{}.self_attn.qkv_proj.weight": "layers.{}.attention.wqkv.weight",
+        "model.layers.{}.self_attn.o_proj.weight": "layers.{}.attention.wo.weight",
+        "model.layers.{}.self_attn.rotary_emb.inv_freq": "",
+        "model.layers.{}.mlp.gate_up_proj.weight": "layers.{}.feed_forward.w1.weight",
+        "model.layers.{}.mlp.down_proj.weight": "layers.{}.feed_forward.w2.weight",
+        "model.layers.{}.input_layernorm.weight": "layers.{}.attention_norm.weight",
+        "model.layers.{}.post_attention_layernorm.weight": "layers.{}.ffn_norm.weight",
+        "model.norm.weight": "norm.weight",
+        "lm_head.weight": "output.weight"
+    },
+    "llama": {
+        "model.embed_tokens.weight": "tok_embeddings.weight",
+        "model.layers.{}.self_attn.q_proj.weight": "layers.{}.attention.wq.weight",
+        "model.layers.{}.self_attn.k_proj.weight": "layers.{}.attention.wk.weight",
+        "model.layers.{}.self_attn.v_proj.weight": "layers.{}.attention.wv.weight",
+        "model.layers.{}.self_attn.o_proj.weight": "layers.{}.attention.wo.weight",
+        "model.layers.{}.self_attn.rotary_emb.inv_freq": "",
+        "model.layers.{}.mlp.gate_proj.weight": "layers.{}.feed_forward.w1.weight",
+        "model.layers.{}.mlp.up_proj.weight": "layers.{}.feed_forward.w3.weight",
+        "model.layers.{}.mlp.down_proj.weight": "layers.{}.feed_forward.w2.weight",
+        "model.layers.{}.input_layernorm.weight": "layers.{}.attention_norm.weight",
+        "model.layers.{}.post_attention_layernorm.weight": "layers.{}.ffn_norm.weight",
+        "model.norm.weight": "norm.weight",
+        "lm_head.weight": "output.weight"
+    }
+}

@@ -1,7 +1,0 @@
-pandas
-tensorboard
-matplotlib
-tqdm
-pyyaml
-opencv-python
-wget

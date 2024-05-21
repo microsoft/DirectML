@@ -14,8 +14,8 @@ More information about DirectML can be found in [Introduction to DirectML](https
 - [DxDispatch Tool](#dxdispatch-tool)
 - [Windows ML on DirectML](#windows-ml-on-directml)
 - [ONNX Runtime on DirectML](#onnx-runtime-on-directml)
-- [TensorFlow with DirectML](#tensorflow-with-directml)
 - [PyTorch with DirectML](#pytorch-with-directml)
+- [TensorFlow with DirectML](#tensorflow-with-directml)
 - [Feedback](#feedback)
 - [External Links](#external-links)
   - [Documentation](#documentation)
@@ -102,6 +102,16 @@ For more information about getting started, see [Using the DirectML execution pr
 * [ONNX Runtime GitHub](https://github.com/microsoft/onnxruntime)
 * [DirectML Execution Provider readme](https://github.com/microsoft/onnxruntime/blob/master/docs/execution_providers/DirectML-ExecutionProvider.md)
 
+## PyTorch with DirectML
+
+PyTorch with DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware. This is done through [`torch-directml`](https://pypi.org/project/torch-directml/), a plugin for PyTorch.
+
+PyTorch with DirectML is supported on both the latest versions of Windows and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started with `torch-directml`, see our [Windows](https://learn.microsoft.com/windows/ai/directml/pytorch-windows) or [WSL 2](https://learn.microsoft.com/windows/ai/directml/pytorch-wsl) guidance on Microsoft Learn.
+
+* [torch-directml PyPI project](https://pypi.org/project/torch-directml/)
+* [PyTorch with DirectML samples](./PyTorch/)
+* [PyTorch homepage](https://pytorch.org/)
+
 ## TensorFlow with DirectML
 
 TensorFlow is a popular open source platform for machine learning and is a leading framework for training of machine learning models.
@@ -115,17 +125,6 @@ TensorFlow on DirectML is supported on both the latest versions of Windows 10 an
 * [tensorflow-directml PyPI project](https://pypi.org/project/tensorflow-directml/)
 * [TensorFlow GitHub | RFC: TensorFlow on DirectML](https://github.com/tensorflow/community/pull/243)
 * [TensorFlow homepage](https://www.tensorflow.org/)
-
-## PyTorch with DirectML
-
-DirectML acceleration for PyTorch 1.13.0 is currently available for Public Preview. PyTorch with DirectML enables training and inference of complex machine learning models on a wide range of DirectX 12-compatible hardware. New in PyTorch version 1.13.0, pytorch-directml is now built as a separate plugin to the PyTorch library. DirectML acceleration for PyTorch 1.8.0 is still available but is now deprecated. 
-
-PyTorch on DirectML is supported on both the latest versions of Windows 10 and the [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/about), and is available for download as a PyPI package. For more information about getting started, see [GPU accelerated ML training (docs.microsoft.com)](http://aka.ms/gpuinwsldocs)
-
-* [PyTorch-1.13 on DirectML samples](./PyTorch/1.13/)
-* [(Deprecated) PyTorch-1.8 on DirectML samples ](./PyTorch/1.8/)
-* [torch-directml PyPI project](https://pypi.org/project/torch-directml/)
-* [PyTorch homepage](https://pytorch.org/)
 
 ## Feedback
 
