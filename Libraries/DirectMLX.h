@@ -4237,6 +4237,62 @@ namespace dml
 
 #endif // DML_TARGET_VERSION >= 0x5000
 
+#if DML_TARGET_VERSION >= 0x6300
+    inline Expression Dequantize(
+        Expression input,
+        Span<const Expression> quantizationParameters,
+        DML_QUANTIZATION_TYPE quantizationType)
+    {
+        for (const auto& quantizationParameter : quantizationParameters)
+        {
+            assert(detail::HasSameOwner({ quantizationParameter, input }));
+        }
+
+        assert(quantizationType != DML_QUANTIZATION_TYPE_NONE);
+        assert(!quantizationParameters.empty());
+
+        detail::GraphBuilder* builder = input.Impl()->GetGraphBuilder();
+
+        TensorDesc inputTensor = input.Impl()->GetOutputDesc();
+
+        std::vector<detail::NodeOutput*> inputs;
+        inputs.reserve(quantizationParameters.size() + 1);
+        inputs.push_back(input.Impl());
+
+        std::vector<TensorDesc> quantizationParametersTensors;
+        quantizationParametersTensors.reserve(quantizationParameters.size());
+
+        std::vector<DML_TENSOR_DESC> quantizationParametersDescs;
+        quantizationParametersDescs.reserve(quantizationParameters.size());
+
+        // The output data type is always the same as the data type of the scale
+        assert(quantizationType == DML_QUANTIZATION_TYPE_SCALE || quantizationType == DML_QUANTIZATION_TYPE_SCALE_ZERO_POINT);
+        DML_TENSOR_DATA_TYPE outputDataType = quantizationParameters[0].GetOutputDesc().dataType;
+
+        for (const auto& quantizationParameter : quantizationParameters)
+        {
+            quantizationParametersTensors.push_back(quantizationParameter.Impl()->GetOutputDesc());
+            TensorDesc& quantizationParameterDesc = quantizationParametersTensors.back();
+            quantizationParametersDescs.push_back(*quantizationParameterDesc.AsPtr<DML_TENSOR_DESC>());
+            inputs.push_back(quantizationParameter.Impl());
+        }
+
+        TensorDesc outputTensor(outputDataType, inputTensor.sizes, builder->GetTensorPolicy());
+
+        DML_DEQUANTIZE_OPERATOR_DESC desc = {};
+        desc.InputTensor = inputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.QuantizationTensors = quantizationParametersDescs.data();
+        desc.QuantizationTensorCount = static_cast<uint32_t>(quantizationParametersDescs.size());
+        desc.OutputTensor = outputTensor.AsPtr<DML_TENSOR_DESC>();
+        desc.QuantizationType = quantizationType;
+
+        detail::NodeID node = builder->CreateOperatorNode(DML_OPERATOR_DEQUANTIZE, &desc, inputs);
+        detail::NodeOutput* output = builder->CreateNodeOutput(node, 0, std::move(outputTensor));
+
+        return output;
+    }
+#endif
+
     // Reinterprets the memory of a tensor with a different type and dimensions (analogously to using
     // reinterpret_cast to access raw bits). Note that this is different to the DML Cast operator, which performs
     // a type cast on the contents of a tensor (analogously to static_cast). The total tensor size of the output
