@@ -73,6 +73,9 @@ inline UINT64 DMLCalcBufferTensorSize(
         elementSizeInBits = 32;
         break;
 
+#if DML_TARGET_VERSION >= 0x6500
+    case DML_TENSOR_DATA_TYPE_BFLOAT16:
+#endif
     case DML_TENSOR_DATA_TYPE_FLOAT16:
     case DML_TENSOR_DATA_TYPE_UINT16:
     case DML_TENSOR_DATA_TYPE_INT16:
