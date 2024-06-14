@@ -152,6 +152,8 @@ if(NOT onnxruntime_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
 
+target_sources(dxdispatchImpl PRIVATE src/dxdispatch/FbDispatchable.cpp)
+
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)

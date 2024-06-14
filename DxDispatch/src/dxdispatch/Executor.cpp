@@ -155,7 +155,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                     desc.name, 
                     device, 
                     fbDispatchableDesc, 
-                    fbDispatchableDesc.initBindings 
+                    fbDispatchableDesc.initBindings
                 );
             }
             else
