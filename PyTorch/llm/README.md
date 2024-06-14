@@ -44,7 +44,7 @@ To use the Llama and Mistral models, you will need to go through an extra step t
 1. Visit
     - LLaMA 2: [https://huggingface.co/meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)
     - LLaMA 3: [https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)
-    - Mistral: [https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)    
+    - Mistral: [https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1)
 2. Follow the steps on the Hugging Face page to obtain access
 3. Run `huggingface-cli login`
 4. Paste your [Hugging Face User Access Token](https://huggingface.co/docs/hub/en/security-tokens) to login
@@ -57,7 +57,7 @@ Run the chatbot app using the following command:
 > python app.py
 ```
 
-The chatbot app will start with the default settings, which uses `DirectML` as the backend to run the `Phi-3` model for inference using `float16`. The app will automatically download `Phi-3-4k-instruct` on the first run from the default `model_repo` which is set to `microsoft/Phi-3-4k-instruct`. 
+The chatbot app will start with the default settings, which uses `DirectML` as the backend to run the `Phi-3` model for inference using `float16`. The app will automatically download `Phi-3-4k-instruct` on the first run from the default `hf_model` which is set to `microsoft/Phi-3-4k-instruct`.
 
 This model is optimized to take advantage of DirectML operators and to use the custom DirectML graph implementations for Rotary Positional Embedding (RoPE), Multi-Head Attention (MHA), and the Feedforward layers (MLP).
 
@@ -109,13 +109,13 @@ You can also select another model to run (`microsoft/Phi-3-mini-4k-instruct`, `m
 For example to run `Mistral-7B-Instruct-v0.1` use the following command:
 
 ```
-> python app.py --precision float16 --model_repo "mistralai/Mistral-7B-Instruct-v0.1"
+> python app.py --precision float16 --hf_model "mistralai/Mistral-7B-Instruct-v0.1"
 ```
 
 You should see the result such as this:
 
 ```
-> python app.py --precision float16 --model_repo "mistralai/Mistral-7B-Instruct-v0.1"
+> python app.py --precision float16 --hf_model "mistralai/Mistral-7B-Instruct-v0.1"
 checkpoints\mistralai\Mistral-7B-Instruct-v0.1\model.pth doesnt exist. Downloading and converting from huggingface hub
 README.md: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3.90k/3.90k [00:00<?, ?B/s] 
 model.safetensors.index.json: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 25.1k/25.1k [00:00<?, ?B/s] 
@@ -146,9 +146,9 @@ Following is a list of the basic settings supported by `app.py`:
 | Flag                   | Description                                                  | Default |
 | ---------------------- | ------------------------------------------------------------ | ------- |
 | `--help`               | Show this help message. | N/A |
-| `--model_repo`         | Specify the model to downloading using the Hugging Face Repository ID. | `microsoft/Phi-3-mini-4k-instruct` |
+| `--hf_model`           | Specify the model to downloading using the Hugging Face Repository ID. | `microsoft/Phi-3-mini-4k-instruct` |
 | `--precision`          | Model precision to use during generation. Options: [`float16`, `float32`] | `float16` |
-| `--checkpoint_path`    | Path to converted PyTorch model checkpoint. | `checkpoints/{model_repo}/model.pth` |
+| `--checkpoint_path`    | Path to converted PyTorch model checkpoint. | `checkpoints/{hf_model}/model.pth` |
 | `--max_context_length` | Max prompt length including the history. If exceeded, history is clipped starting from the first (user, assistant) pair. | `1500` |
 | `--disable_history`    | Disable the chat history during generation. | Enabled |
 
@@ -170,25 +170,25 @@ We offer two methods for preparing PyTorch models:
 ### Use `download_and_convert.py` to download a language model:
 
 ```
-> python .\scripts\download_and_convert.py --model_repo "microsoft/Phi-3-mini-4k-instruct"
+> python .\scripts\download_and_convert.py --hf_model "microsoft/Phi-3-mini-4k-instruct"
 ```
 
 After the model is downloaded and converted, you can pass the following parameter to `app.py` to run the language model:
 
 ```
-> python app.py --model_repo "microsoft/Phi-3-mini-4k-instruct"
+> python app.py --hf_model "microsoft/Phi-3-mini-4k-instruct"
 ```
 
 ### Download a DirectML optimized PyTorch model from the [Microsoft Hugging Face repo](https://huggingface.co/microsoft):
 
     1. cd checkpoints
-    2. git clone https://huggingface.co/{model_repo} {model_repo}
+    2. git clone https://huggingface.co/{hf_model} {hf_model}
     3. cd ../
 
 After the model is downloaded, you can pass the following parameter to `app.py` to run the language model:
 
 ```
-> python app.py --checkpoint_path "checkpoints/{model_repo}/model.pth"
+> python app.py --checkpoint_path "checkpoints/{hf_model}/model.pth"
 ```
 
 ## External Links
