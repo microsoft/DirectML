@@ -100,11 +100,20 @@ public:
         uint32_t graphOptimizationLevel = 99;
         uint32_t loggingLevel = 2;
     };
+    
+    struct FbDispatchableDesc
+    {
+        std::filesystem::path sourcePath;
+        Bindings initBindings;
+        DML_EXECUTION_FLAGS executionFlags;
+        //TODO: maybe add a method to load a Fb model
+    };
+
 
     struct DispatchableDesc
     {
         std::string name;
-        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc> value;
+        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc, FbDispatchableDesc> value;
     };
 
     // COMMANDS

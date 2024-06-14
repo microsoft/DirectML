@@ -1421,6 +1421,26 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     return desc;
 }
 
+
+Model::FbDispatchableDesc ParseModelFbDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
+{
+    Model::FbDispatchableDesc desc = {};
+
+    desc.sourcePath = ResolveInputFilePath(parentPath, ParseStringField(object, "sourcePath"));
+    desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+
+    auto bindingsField = object.FindMember("initBindings");
+    if (bindingsField != object.MemberEnd()) 
+    {
+        for (auto bindingMember = bindingsField->value.MemberBegin(); bindingMember != bindingsField->value.MemberEnd(); bindingMember++)//++bindingMember)
+        {
+            desc.initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
+        }
+    }
+
+    return desc;
+}
+
 Model::DispatchableDesc ParseModelDispatchableDesc(
     std::string_view name,
     const std::filesystem::path& parentPath,
@@ -1435,6 +1455,7 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     Model::DispatchableDesc desc;
     desc.name = name;
     auto type = ParseStringField(object, "type");
+    std::cout << "type.data(): " << type.data() << std::endl;
     if (!_stricmp(type.data(), "hlsl")) 
     { 
         desc.value = ParseModelHlslDispatchableDesc(parentPath, object);
@@ -1442,6 +1463,10 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     else if (!_stricmp(type.data(), "onnx"))
     {
         desc.value = ParseModelOnnxDispatchableDesc(parentPath, object);
+    }
+    else if (!_stricmp(type.data(), "fb"))
+    {
+        desc.value = ParseModelFbDispatchableDesc(parentPath, object);
     }
     else
     {

@@ -5,6 +5,7 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "DmlDispatchable.h"
+#include "FbDispatchable.h"
 #ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
 #endif
@@ -146,6 +147,16 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
 #else
                 m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args, m_logger.Get());
 #endif
+            }
+            else if (std::holds_alternative<Model::FbDispatchableDesc>(desc.value)) 
+            {
+                auto& fbDispatchableDesc = std::get<Model::FbDispatchableDesc>(desc.value);
+                m_dispatchables[desc.name] = std::make_unique<FbDispatchable>(
+                    desc.name, 
+                    device, 
+                    fbDispatchableDesc, 
+                    fbDispatchableDesc.initBindings 
+                );
             }
             else
             {

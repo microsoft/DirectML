@@ -323,7 +323,7 @@ if(DXD_TESTS)
         model
     )
     target_include_directories(jsontests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
-    gtest_discover_tests(jsontests)
+    gtest_discover_tests(jsontests DISCOVERY_MODE PRE_TEST)
 
     # Hacky. Needed for silly reasons related to defining GUIDs in winadapter. This should
     # ideally be cleaned up at some point.
