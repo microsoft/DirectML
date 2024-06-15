@@ -19,7 +19,7 @@ Whisper supports five model sizes, four with English-only versions and all five 
 |  base     |    74 M    |     `base.en`      |       `base`       |     ~1 GB     |
 | small     |   244 M    |     `small.en`     |      `small`       |     ~2 GB     |
 | medium    |   769 M    |    `medium.en`     |      `medium`      |     ~5 GB     |
-| large v3  |   1550 M   |        N/A         |      `large-v3`       |    ~10 GB     |
+| large v3  |   1550 M   |        N/A         |      `large-v3`    |    ~10 GB     |
 
 For more information on the model, please refer to the [OpenAI Whisper GitHub repo](https://github.com/openai/whisper/).
 
@@ -80,9 +80,9 @@ Following is a list of the basic settings supported by `run.py`:
 
 
 ## External Links
-- [Whisper Base Hugging Face Repository](https://huggingface.co/openai/whisper-base.en )   
+- [Whisper Base Hugging Face Repository](https://huggingface.co/openai/whisper-base.en)   
 - [Whisper Tiny Hugging Face Repository](https://huggingface.co/openai/whisper-tiny.en)  
-- [Whisper Small Hugging Face Repository](https://huggingface.co/openai/whisper-small.en  )  
+- [Whisper Small Hugging Face Repository](https://huggingface.co/openai/whisper-small.en)  
 - [Whisper Medium Hugging Face Repository](https://huggingface.co/openai/whisper-medium.en)  
 - [Whisper Large v3 Hugging Face Repository](https://huggingface.co/openai/whisper-large-v3)  
 - [Whisper GitHub Repo](https://github.com/openai/whisper)
