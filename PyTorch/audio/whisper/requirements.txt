@@ -1,0 +1,6 @@
+numba
+numpy
+tqdm
+more-itertools
+tiktoken
+ffmpeg-python

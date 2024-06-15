@@ -22,6 +22,7 @@ For `torch-directml` samples find brief summaries below or explore the [cv](./cv
 * [resnet50 - an image classification model](./cv/resnet50)
 * [maskrcnn - an object detection model](./cv/objectDetection/maskrcnn/)
 * [llm - a text generation and chatbot app supporting various language models](./llm/)
+* [whisper - a general-purpose speech recognition model](./audio/whisper/)
 
 ## External Links
 

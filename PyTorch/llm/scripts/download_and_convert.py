@@ -1,8 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-
+# Copyright (c) Microsoft Corporation.
+# 
+#
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
+
 import os
 import json
 import re
@@ -13,61 +15,73 @@ from typing import Optional
 import torch
 from safetensors.torch import load_file
 from requests.exceptions import HTTPError
+from huggingface_hub.utils._errors import RepositoryNotFoundError
 
 # support running without installing as a package
 wd = Path(__file__).parent.parent.resolve()
 sys.path.append(str(wd))
 
-from models.phi2 import ModelArgs as Phi2ModelArgs
-from models.phi3 import ModelArgs as Phi3ModelArgs
-from models.llama import ModelArgs as LlamaModelArgs
+from models.configs import ModelArgs, default_models
 
-def hf_download(model_repo: Optional[str] = None, hf_token: Optional[str] = None) -> None:
+
+def is_dir_empty(directory: str) -> bool:
+    return not any(os.scandir(directory))
+
+def download_model_from_hf(hf_model: str, checkpoint_dir: str, hf_token: Optional[str]) -> str:
     from huggingface_hub import snapshot_download
-    checkpoint_dir = f"checkpoints/{model_repo}"
+    checkpoint_dir = f"{checkpoint_dir}/{hf_model}"
     os.makedirs(checkpoint_dir, exist_ok=True)
-    if os.listdir(checkpoint_dir):
+    if not is_dir_empty(checkpoint_dir):
         print(f"The directory {checkpoint_dir} is not empty. Skipping download.")
     else:
         try:
-            snapshot_download(model_repo, local_dir=checkpoint_dir, local_dir_use_symlinks=False, token=hf_token)
+            snapshot_download(hf_model, local_dir=checkpoint_dir, local_dir_use_symlinks=False, token=hf_token)
+            print(f"Downloaded {hf_model} successfully.")
         except HTTPError as e:
             if e.response.status_code == 401:
-                print("You need to pass a valid `--hf_token=...` to download private checkpoints.")
-            else:
-                raise e
+                print("You need to pass a valid Hugging Face token to download private models.")
+            raise e
     return checkpoint_dir
+
+def hf_download(hf_model: Optional[str] = None, hf_token: Optional[str] = None, checkpoint_dir: str = "checkpoints") -> None:
+    try:
+        checkpoint_dir_download = download_model_from_hf(hf_model, checkpoint_dir, hf_token)
+    except RepositoryNotFoundError as e:
+        # invalid repo passed, try to search for a default repo from the given hf_model
+        os.rmdir(f"{checkpoint_dir}/{hf_model}")
+        print(f"Couldn't find {hf_model} on HuggingFace. Searching for the closest supported match ...")
+        if hf_model in default_models:
+            hf_model = default_models[hf_model]
+        else:
+            raise ValueError(f"Please provide a valid hf_model to download from Huggingface. {hf_model} doesnt exist on Huggingface.")
+
+        print(f"Found closest match on Huggingface: {hf_model}")
+        checkpoint_dir_download = download_model_from_hf(hf_model, checkpoint_dir, hf_token)
+    return checkpoint_dir_download
 
 @torch.inference_mode()
 def convert_hf_checkpoint(
     *,
-    checkpoint_dir: Path = Path("microsoft/Phi-3-mini-4k-instruct"),
+    checkpoint_dir: Path = Path("checkpoints/microsoft/Phi-3-mini-4k-instruct"),
     weight_map_path: str = "config/weight_map.json",
-    model_name: Optional[str] = None,
 ) -> None:
+    if not os.path.exists(checkpoint_dir):
+        raise ValueError("Please download you model first with the hf_download function.")
+
     if os.path.exists(checkpoint_dir / "model.pth"):
         print(f"Converted checkpoint already exists here {checkpoint_dir / 'model.pth'}. Skipping Conversion.")
         return
 
+    model_name = checkpoint_dir.name
+    config = ModelArgs.from_name(model_name)
+
     with open(weight_map_path, 'r') as file:
         weight_maps = json.load(file)
-        
-    if model_name is None:
-        model_name = checkpoint_dir.name
 
-    is_llama3 = "Llama-3" in model_name
-    is_phi3 = "Phi-3" in model_name
+    model_name = checkpoint_dir.name
+    model_name = "llama" if "phi" not in model_name.lower() else model_name
+    weight_map = weight_maps[model_name]
 
-    if "phi" not in model_name.lower():
-        weight_map = weight_maps["llama"]
-        config = LlamaModelArgs.from_name(model_name)
-    else:
-        weight_map = weight_maps[model_name]
-        if is_phi3:
-            config = Phi3ModelArgs.from_name(model_name)
-        else:
-            config = Phi2ModelArgs.from_name(model_name)
-    
     # Load the json file containing weight mapping
     model_map_json = checkpoint_dir / "model.safetensors.index.json"
 
@@ -77,12 +91,12 @@ def convert_hf_checkpoint(
         bin_index = json.load(json_map)
 
     bin_files = {checkpoint_dir / bin for bin in bin_index["weight_map"].values()}
-    
+
     merged_result = {}
     for file in sorted(bin_files):
         state_dict = load_file(str(file))
         merged_result.update(state_dict)
-    
+
     final_result = {}
     for key, value in merged_result.items():
         if "layers" in key:
@@ -125,13 +139,15 @@ def convert_hf_checkpoint(
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Download and convert HuggingFace checkpoint.')
-    parser.add_argument('--model_repo', type=str, default="microsoft/Phi-3-mini-4k-instruct", help='Huggingface Repository ID to download from.')
+    parser.add_argument('--hf_model', type=str, default="microsoft/Phi-3-mini-4k-instruct", help='Huggingface Repository ID to download from.')
     parser.add_argument('--hf_token', type=str, default=None, help='HuggingFace API token.')
-    parser.add_argument('--model_name', type=str, default=None)
+    parser.add_argument(
+        '--checkpoint_dir', type=str, default="checkpoints",
+        help="Directory to downloads the Huggingface repo to. The model will be downloaded and converted to '{checkpoint_dir}/{hf_model}/"
+    )
 
     args = parser.parse_args()
-    checkpoint_dir = hf_download(args.model_repo, args.hf_token)
+    checkpoint_dir = hf_download(args.hf_model, args.hf_token, args.checkpoint_dir)
     convert_hf_checkpoint(
         checkpoint_dir=Path(checkpoint_dir),
-        model_name=args.model_name,
     )
