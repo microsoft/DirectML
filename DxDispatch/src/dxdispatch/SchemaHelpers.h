@@ -1,4 +1,5 @@
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma once
 
@@ -10,7 +11,7 @@ namespace SchemaHelpers
     {
         return value ? OperatorFieldTypes::TensorDesc(*value) : std::nullopt;
     }
-    
+
     inline OperatorFieldTypes::TensorDescArray ToOperatorFieldType(const DML_TENSOR_DESC* values, uint32_t count)
     {
         OperatorFieldTypes::TensorDescArray field;
@@ -194,10 +195,10 @@ namespace SchemaHelpers
     }
 
     template <size_t N>
-    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, BasicApiConverter<N>* converter);
+    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, StackAllocator<N>* allocator);
 
     template <size_t N>
-    void WriteOperatorDescField(const OperatorField& field, StructFieldWriter* dst, BasicApiConverter<N>* converter)
+    void WriteOperatorDescField(const OperatorField& field, StructFieldWriter* dst, StackAllocator<N>* allocator)
     {
         const DML_SCHEMA_FIELD& schema = *field.GetSchema();
 
@@ -210,8 +211,8 @@ namespace SchemaHelpers
             const auto& value = field.AsTensorDesc();
             if (value)
             {
-                desc = converter->template Allocate<DML_TENSOR_DESC>();
-                *desc = converter->ToTensorDesc(*value);
+                desc = allocator->template Allocate<DML_TENSOR_DESC>();
+                *desc = MakeTensorDesc(*value, allocator);
             }
 
             dst->Write(desc);
@@ -224,10 +225,10 @@ namespace SchemaHelpers
             const auto& values = field.AsTensorDescArray();
             if (values)
             {
-                descs = converter->template Allocate<DML_TENSOR_DESC>(values->size());
+                descs = allocator->template Allocate<DML_TENSOR_DESC>(values->size());
                 for (size_t i = 0; i < values->size(); ++i)
                 {
-                    descs[i] = converter->ToTensorDesc((*values)[i]);
+                    descs[i] = MakeTensorDesc((*values)[i], allocator);
                 }
             }
 
@@ -241,8 +242,8 @@ namespace SchemaHelpers
             const auto& value = field.AsFusedActivationOperatorDesc();
             if (value)
             {
-                desc = converter->template Allocate<DML_OPERATOR_DESC>();
-                *desc = ConvertOperatorDesc(*value, converter);
+                desc = allocator->template Allocate<DML_OPERATOR_DESC>();
+                *desc = ConvertOperatorDesc(*value, allocator);
             }
 
             dst->Write(desc);
@@ -255,10 +256,10 @@ namespace SchemaHelpers
             const auto& values = field.AsFusedActivationOperatorDescArray();
             if (values)
             {
-                descs = converter->template Allocate<DML_OPERATOR_DESC>(values->size());
+                descs = allocator->template Allocate<DML_OPERATOR_DESC>(values->size());
                 for (size_t i = 0; i < values->size(); ++i)
                 {
-                    descs[i] = ConvertOperatorDesc((*values)[i], converter);
+                    descs[i] = ConvertOperatorDesc((*values)[i], allocator);
                 }
             }
 
@@ -301,7 +302,7 @@ namespace SchemaHelpers
             uint32_t* arrayPtr = nullptr;
 
             const auto& values = field.AsUIntArray();
-            arrayPtr = converter->template Allocate<uint32_t>(values.size());
+            arrayPtr = allocator->template Allocate<uint32_t>(values.size());
             std::copy(values.begin(), values.end(), arrayPtr);
 
             dst->Write(arrayPtr);
@@ -312,7 +313,7 @@ namespace SchemaHelpers
             int32_t* arrayPtr = nullptr;
 
             const auto& values = field.AsIntArray();
-            arrayPtr = converter->template Allocate<int32_t>(values.size());
+            arrayPtr = allocator->template Allocate<int32_t>(values.size());
             std::copy(values.begin(), values.end(), arrayPtr);
 
             dst->Write(arrayPtr);
@@ -323,7 +324,7 @@ namespace SchemaHelpers
             float* arrayPtr = nullptr;
 
             const auto& values = field.AsFloatArray();
-            arrayPtr = converter->template Allocate<float>(values.size());
+            arrayPtr = allocator->template Allocate<float>(values.size());
             std::copy(values.begin(), values.end(), arrayPtr);
 
             dst->Write(arrayPtr);
@@ -336,7 +337,7 @@ namespace SchemaHelpers
             const auto& value = field.AsScaleBias();
             if (value)
             {
-                scaleBias = converter->template Allocate<DML_SCALE_BIAS>();
+                scaleBias = allocator->template Allocate<DML_SCALE_BIAS>();
                 *scaleBias = *value;
             }
 
@@ -357,12 +358,12 @@ namespace SchemaHelpers
 
         default:
             assert(false);
-            THROW_HR(E_UNEXPECTED);
+            ORT_THROW_HR(E_UNEXPECTED);
         }
     }
 
     template <size_t N>
-    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, BasicApiConverter<N>* converter)
+    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, StackAllocator<N>* allocator)
     {
         const DML_OPERATOR_SCHEMA& schema = *abstractDesc.schema;
 
@@ -373,7 +374,7 @@ namespace SchemaHelpers
         });
 
         // Allocate a blob of bytes to hold the struct
-        byte* abiDesc = converter->template Allocate<byte>(abiDescSizeInBytes);
+        byte* abiDesc = allocator->template Allocate<byte>(abiDescSizeInBytes);
 
         // Use the schema to write data into the blob
 
@@ -381,7 +382,7 @@ namespace SchemaHelpers
 
         for (const OperatorField& field : abstractDesc.fields)
         {
-            WriteOperatorDescField(field, &writer, converter);
+            WriteOperatorDescField(field, &writer, allocator);
         }
 
         return DML_OPERATOR_DESC{ schema.OperatorType, abiDesc };
