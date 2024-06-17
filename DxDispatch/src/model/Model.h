@@ -104,21 +104,22 @@ public:
     
     struct DmlSerializedGraphDispatchableDesc
     {
-        struct BindPoint
-        {
-            std::string name;
-            uint32_t resourceCount;
-            bool required;
-        };
+        // struct BindPoint
+        // {
+        //     std::string name;
+        //     uint32_t resourceCount;
+        //     bool required;
+        // };
 
-        struct BindPoints
-        {
-            std::vector<BindPoint> inputs;
-            std::vector<BindPoint> outputs;
-        };
+        // struct BindPoints
+        // {
+        //     std::vector<BindPoint> inputs;
+        //     std::vector<BindPoint> outputs;
+        // };
 
-        DmlSerializedGraphDesc desc;
-        BindPoints bindPoints;
+        // DmlSerializedGraphDesc desc;
+        // BindPoints bindPoints;
+        std::filesystem::path sourcePath;
         DML_EXECUTION_FLAGS executionFlags;
         Bindings initBindings;
     };

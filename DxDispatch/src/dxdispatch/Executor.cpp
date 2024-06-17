@@ -153,21 +153,20 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 auto& dmlSerializedGraphDispatchableDesc = std::get<Model::DmlSerializedGraphDispatchableDesc>(desc.value);
                 // bindings for model weights
                 Dispatchable::Bindings initBindings;
-                try
-                {
-                    initBindings = ResolveBindings(dmlSerializedGraphDispatchableDesc.initBindings);
-                }
-                catch (const std::exception& e)
-                {
-                    m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
-                    return;
-                }
+                // try
+                // {
+                //     initBindings = ResolveBindings(dmlSerializedGraphDispatchableDesc.initBindings);
+                // }
+                //catch (const std::exception& e)
+                // {
+                //     m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
+                //     return;
+                // }
 
                 m_dispatchables[desc.name] = std::make_unique<DmlSerializedGraphDispatchable>(
                     desc.name, 
                     device, 
-                    dmlSerializedGraphDispatchableDesc, 
-                    initBindings);
+                    dmlSerializedGraphDispatchableDesc);
             }
             else
             {

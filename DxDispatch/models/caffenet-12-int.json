@@ -1,0 +1,43 @@
+{
+    "$schema": "./_schema.json",
+
+
+    "resources": 
+    {
+      "data_0": 
+      {
+        "initialValuesDataType": "INT8",
+        "initialValues": { "valueCount": 150528, "value": 0 }
+      },
+      "output": 
+      {
+        "initialValuesDataType": "INT8",
+        "initialValues": { "valueCount": 1000, "value": 0 }
+      }
+    },
+
+    "dispatchables": 
+    {
+      "caffenet":
+       {
+        "type": "dmlSerializedGraph",
+        "sourcePath": "B:/Model Files/caffenet-12-int/Partition_0.bin"
+      }
+    },
+
+    "commands": 
+    [
+      {
+        "type": "dispatch",
+        "dispatchable": "caffenet",
+        "bindings": {
+          "data_0": "data_0",
+          "output": "output"
+        }
+      },
+      {
+        "type": "print",
+        "resource": "output"
+      }
+    ]
+  }

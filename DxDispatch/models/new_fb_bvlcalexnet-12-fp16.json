@@ -1,0 +1,44 @@
+{
+  "$schema": "./_schema.json",
+
+
+  "resources": 
+  {
+      "data_0": 
+      {
+          "initialValuesDataType": "FLOAT16",
+          "initialValues": { "valueCount": 150528, "value": 0 }
+      },
+      "output": {
+          "initialValuesDataType": "FLOAT16",
+          "initialValues": { "valueCount": 9216, "value": 0 }
+      }
+  },
+
+  "dispatchables": 
+  {
+      "bvlcalexnet": 
+      {
+        "type": "dmlSerializedGraph",
+        "sourcePath": "B:/Model Files/bvlcalexnet-12-fp16.fb/Partition_0.bin",
+      }
+  },
+
+  "commands": 
+  [
+      {
+          "type": "dispatch",
+          "dispatchable": "bvlcalexnet",
+          "bindings": {
+          "data_0": "data_0",
+          "output": "output"
+          }
+      }
+      ,
+      {
+          "type": "print",
+          "resource": "output"
+      }
+  ]
+}
+
