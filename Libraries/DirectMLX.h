@@ -4322,7 +4322,7 @@ namespace dml
     {
         assert(query || stackedQueryKey || stackedQueryKeyValue);
 
-        detail::GraphBuilder* = nullptr;
+        detail::GraphBuilder* builder = nullptr;
 
         if (query)
         {
