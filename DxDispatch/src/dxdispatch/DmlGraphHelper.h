@@ -4,7 +4,6 @@
 #include "AbstractOperatorDesc.h"
 #include "SchemaHelpers.h"
 #include "DmlSerializedGraphDesc.h"
-#include "Test/Common/Common.h"
 
 struct GraphEdgeIndexInfo
 {
@@ -40,7 +39,7 @@ void ConvertGraphDesc(
     const DmlSerializedGraphDesc& graphDesc,
     _Out_ DML_GRAPH_DESC& dmlGraphDesc,
     IDMLDevice* device,
-    BasicApiConverter<ALLOCATOR_SIZE>& allocator,
+    StackAllocator<ALLOCATOR_SIZE>& allocator,
     std::vector<DML_GRAPH_NODE_DESC>& dmlGraphNodes,
     std::vector<DML_GRAPH_EDGE_DESC>& dmlInputEdges,
     std::vector<DML_GRAPH_EDGE_DESC>& dmlOutputEdges,

@@ -5,8 +5,8 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "FbDispatchable.h"
-//#include "DmlGraphDeserialization.h"
-//#include "DmlGraphHelper.h"
+#include "DmlGraphDeserialization.h"
+#include "DmlGraphHelper.h"
 //#include "DmlGraphSerialization.h"//check
 //#include "DmlSerializedGraphDesc.h"
 //#include "Test/Common/Common.h"//basic api converter
@@ -17,57 +17,57 @@
 
 using Microsoft::WRL::ComPtr;
 
-//void DeserializeDmlGraph(
-//    std::filesystem::path sourcePath,
-//    std::shared_ptr<Device> device, 
-//    Microsoft::WRL::ComPtr<IDMLCompiledOperator>& compiledOp)
-//
-//{
-//
-//    // Read file content
-//    std::ifstream inFile(sourcePath, std::ios::binary | std::ios::ate);
-//    std::streampos fileSize = inFile.tellg();
-//    std::vector<uint8_t> temp(gsl::narrow_cast<size_t>(fileSize));
-//    inFile.seekg(0, std::ios::beg);
-//    inFile.read(reinterpret_cast<char*>(temp.data()), fileSize);
-//
-//
-//    // Deserialize Fb
-//    std::vector<std::unique_ptr<std::byte[]>> rawData;
-//    DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(temp.data(), rawData);
-//
-//
-//    // Convert to Public Graph Description
-//    BasicApiConverter<1024> allocator;
-//    DML_GRAPH_DESC dmlGraphDesc = {};
-//    std::vector<ComPtr<IDMLOperator>> dmlOperators;
-//    std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
-//    std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
-//    std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
-//    std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
-//
-//    // Convert the graph description
-//    ConvertGraphDesc<1024>(
-//        serializedDesc,
-//        dmlGraphDesc,
-//        device->DML(),
-//        allocator,
-//        dmlGraphNodes,
-//        dmlInputEdges,
-//        dmlOutputEdges,
-//        dmlIntermediateEdges,
-//        dmlOperators,
-//        nullptr,
-//        nullptr,
-//        true,
-//        constDataVectors);
-//
-//    // Compile the graph
-//    THROW_IF_FAILED(device->DML()->CompileGraph(
-//        &dmlGraphDesc,
-//        IID_PPV_ARGS(&compiledOp)
-//    ));
-//}
+void DeserializeDmlGraph(
+    std::filesystem::path sourcePath,
+    std::shared_ptr<Device> device, 
+    Microsoft::WRL::ComPtr<IDMLCompiledOperator>& compiledOp)
+
+{
+
+    // Read file content
+    std::ifstream inFile(sourcePath, std::ios::binary | std::ios::ate);
+    std::streampos fileSize = inFile.tellg();
+    std::vector<uint8_t> temp(gsl::narrow_cast<size_t>(fileSize));
+    inFile.seekg(0, std::ios::beg);
+    inFile.read(reinterpret_cast<char*>(temp.data()), fileSize);
+
+
+    // Deserialize Fb
+    std::vector<std::unique_ptr<std::byte[]>> rawData;
+    DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(temp.data(), rawData);
+
+
+    //// Convert to Public Graph Description
+    //StackAllocator<1024> allocator;
+    //DML_GRAPH_DESC dmlGraphDesc = {};
+    //std::vector<ComPtr<IDMLOperator>> dmlOperators;
+    //std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
+    //std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
+    //std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
+    //std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
+
+    //// Convert the graph description
+    //ConvertGraphDesc<1024>(
+    //    serializedDesc,
+    //    dmlGraphDesc,
+    //    device->DML(),
+    //    allocator,
+    //    dmlGraphNodes,
+    //    dmlInputEdges,
+    //    dmlOutputEdges,
+    //    dmlIntermediateEdges,
+    //    dmlOperators,
+    //    nullptr,
+    //    nullptr,
+    //    true,
+    //    constDataVectors);
+
+    //// Compile the graph
+    //THROW_IF_FAILED(device->DML()->CompileGraph(
+    //    &dmlGraphDesc,
+    //    IID_PPV_ARGS(&compiledOp)
+    //));
+}
    
 
 FbDispatchable::FbDispatchable(
