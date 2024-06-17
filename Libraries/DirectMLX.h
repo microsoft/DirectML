@@ -4381,7 +4381,7 @@ namespace dml
             if (value)
             {
                 assert(valueTensor.sizes.size() >= 3);
-                valueHeadSize = valueTensor.sizes[valueTensor.sizes.size() - 1];
+                valueHeadSize = valueTensor.sizes[valueTensor.sizes.size() - 1] / keyValueHeadCount;
             }
             else if (stackedKeyValue)
             {
