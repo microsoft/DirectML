@@ -85,6 +85,13 @@ using IAdapter = IDXCoreAdapter;
 
 #include <DirectML.h>
 #include "DirectMLX.h"
+#include "ApiTraits.h"
+#include "ApiHelpers.h"
+#include "DirectMLSchema.h"
+#include "AbstractOperatorDesc.h"
+#include "GeneratedSchemaTypes.h"
+#include "SchemaHelpers.h"
+#include "GeneratedSchemaHelpers.h"
 
 #include "DxDispatchInterface.h"
 #include "Logging.h"

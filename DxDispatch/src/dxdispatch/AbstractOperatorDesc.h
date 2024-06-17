@@ -1,7 +1,7 @@
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma once
-#include <map>
 
 class OperatorField;
 
@@ -36,51 +36,36 @@ struct AbstractOperatorDesc
         return GetTensors<const DmlBufferTensorDesc, DML_SCHEMA_FIELD_KIND_OUTPUT_TENSOR>();
     }
 
-    const char* GetInputTensorName(uint32_t tensorIndex) const;
-    const char* GetOutputTensorName(uint32_t tensorIndex) const;
-
-    std::vector<std::optional<DmlBufferTensorDesc>> CopyInputTensors() const
-    {
-        std::vector<std::optional<DmlBufferTensorDesc>> copiedTensors;
-        std::vector<const DmlBufferTensorDesc*> inputTensors = GetInputTensors();
-
-        copiedTensors.resize(inputTensors.size());
-
-        for (uint32_t i = 0; i < inputTensors.size(); ++i)
-        {
-            if (inputTensors[i])
-            {
-                copiedTensors[i] = *inputTensors[i];
-            }
-        }
-
-        return copiedTensors;
-    }
-
-    std::vector<std::optional<DmlBufferTensorDesc>> CopyOutputTensors() const
-    {
-        std::vector<std::optional<DmlBufferTensorDesc>> copiedTensors;
-        std::vector<const DmlBufferTensorDesc*> outputTensors = GetOutputTensors();
-
-        copiedTensors.resize(outputTensors.size());
-
-        for (uint32_t i = 0; i < outputTensors.size(); ++i)
-        {
-            if (outputTensors[i])
-            {
-                copiedTensors[i] = *outputTensors[i];
-            }
-        }
-
-        return copiedTensors;
-    }
-
-    static AbstractOperatorDesc GetAbstractDescFromWrapper(IDMLOperatorDescWrapperPrivate * wrapper);
-
 private:
-    const char* GetTensorFieldName(DML_SCHEMA_FIELD_KIND fieldKind, uint32_t instanceOfFieldKind) const;
-
-    // Implemented in AbstractOperatorDescImpl.h.
     template <typename TensorType, DML_SCHEMA_FIELD_KIND Kind>
-    std::vector<TensorType*> GetTensors() const;
+    std::vector<TensorType*> GetTensors() const
+    {
+        std::vector<TensorType*> tensors;
+        for (auto& field : fields)
+        {
+            const DML_SCHEMA_FIELD* fieldSchema = field.GetSchema();
+            if (fieldSchema->Kind != Kind)
+            {
+                continue;
+            }
+
+            if (fieldSchema->Type == DML_SCHEMA_FIELD_TYPE_TENSOR_DESC)
+            {
+                auto& tensor = field.AsTensorDesc();
+                tensors.push_back(tensor ? const_cast<TensorType*>(&*tensor) : nullptr);
+            }
+            else if (fieldSchema->Type == DML_SCHEMA_FIELD_TYPE_TENSOR_DESC_ARRAY)
+            {
+                auto& tensorArray = field.AsTensorDescArray();
+                if (tensorArray)
+                {
+                    for (auto& tensor : *tensorArray)
+                    {
+                        tensors.push_back(const_cast<TensorType*>(&tensor));
+                    }
+                }
+            }
+        }
+        return tensors;
+    }
 };
