@@ -4408,8 +4408,6 @@ namespace dml
             dataType = stackedQueryKeyValueTensor.dataType;
         }
 
-        assert(inputGradientTensor.sizes.size() > 1);
-
         uint32_t outputHiddenSize = valueHeadSize * queryHeadCount;
 
         TensorDesc::Dimensions outputSizes({batchSize, sequenceLength, outputHiddenSize});
