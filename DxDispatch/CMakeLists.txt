@@ -22,6 +22,7 @@ endif()
 
 include(cmake/gsl.cmake)
 include(cmake/rapidjson.cmake)
+include(cmake/flatbuffer.cmake)
 include(cmake/fmt.cmake)
 include(cmake/wil.cmake)
 include(cmake/half.cmake)
@@ -187,6 +188,7 @@ target_link_libraries(
     wil
     onnxruntime
     onnxruntime_extensions
+    flatbuffer
 )
 
 target_compile_features(dxdispatchImpl PRIVATE cxx_std_17)
