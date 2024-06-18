@@ -5,9 +5,9 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "FbDispatchable.h"
-#include "DmlGraphDeserialization.h"
-#include "DmlGraphHelper.h"
-//#include "DmlGraphSerialization.h"//check
+#include "DirectMLHelpers/DmlGraphDeserialization.h"
+#include "DirectMLHelpers/DmlGraphHelper.h"
+//#include "flatbuffers/flatbuffers.h"
 //#include "DmlSerializedGraphDesc.h"
 //#include "Test/Common/Common.h"//basic api converter
 //#include "Test/Common/Common.h"

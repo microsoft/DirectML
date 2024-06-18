@@ -24,6 +24,7 @@
 #include <numeric>
 #include <thread>
 #include <mutex>
+#include <map>
 
 #ifndef _WIN32
 #include <wsl/winadapter.h>
@@ -85,13 +86,13 @@ using IAdapter = IDXCoreAdapter;
 
 #include <DirectML.h>
 #include "DirectMLX.h"
-#include "ApiTraits.h"
-#include "ApiHelpers.h"
-#include "DirectMLSchema.h"
-#include "AbstractOperatorDesc.h"
-#include "GeneratedSchemaTypes.h"
-#include "SchemaHelpers.h"
-#include "GeneratedSchemaHelpers.h"
+#include "DirectMLHelpers/ApiTraits.h"
+#include "DirectMLHelpers/ApiHelpers.h"
+#include "DirectMLHelpers/DirectMLSchema.h"
+#include "DirectMLHelpers/AbstractOperatorDesc.h"
+#include "DirectMLHelpers/GeneratedSchemaTypes.h"
+#include "DirectMLHelpers/SchemaHelpers.h"
+#include "DirectMLHelpers/GeneratedSchemaHelpers.h"
 
 #include "DxDispatchInterface.h"
 #include "Logging.h"

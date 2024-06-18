@@ -1,6 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 
 #pragma once
+#pragma warning(push)
+#pragma warning(disable:4244)
+// FlatBuffers does not downcast explicitly in few places like vector_downward.h, verifier.h
+// which causes possible loss of data warning.
+#include <unordered_set>
 #include "DmlGraphDesc_generated.h"
 #include "AbstractOperatorDesc.h"
 #include "DmlGraphDeserialization.h"
@@ -8,98 +13,6 @@
 OperatorFieldVariant CreateAttribute(
     const DML_SCHEMA_FIELD* schemaField,
     const dml::ir::operatorFieldTypes::AttributeDesc* attributeDesc);
-
-void ConvertToUnorderedMap(
-    const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* list,
-    /*out*/ std::unordered_map<std::string_view, uint32_t>& nameToIndexMap)
-{
-    for (uint32_t index = 0; index < list->size(); index++)
-    {
-        const flatbuffers::String* name = list->GetAsString(index);
-        if (name->size() == 0)
-        {
-            continue;
-        }
-        nameToIndexMap[name->string_view()] = index;
-    }
-}
-
-template <typename EdgeType> void PopulateEdges(
-    const uint32_t nodeIndex,
-    const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* edgeNames,
-    const std::unordered_map<std::string_view, uint32_t>& edgeNameToIndexMap,
-    /*out*/ std::vector<EdgeType>& edges,
-    /*out*/ std::vector<DmlIntermediateSerializedGraphEdge>& intermediateEdges,
-    /*out*/ std::unordered_map<std::string_view, NodeIndex>& intermediateEdgeToNodeIndexMap)
-{
-    for (flatbuffers::uoffset_t edgeIndex = 0; edgeIndex < edgeNames->size(); edgeIndex++)
-    {
-        const flatbuffers::String* edgeName = edgeNames->Get(edgeIndex);
-        if (edgeName->size() == 0)
-        {
-            continue;
-        }
-        // edge can be graphInput or graphOutput
-        if (edgeNameToIndexMap.find(edgeName->string_view()) != edgeNameToIndexMap.end())
-        {
-            EdgeType edge = {};
-            edge.Name = edgeName->str();
-
-            if constexpr (std::is_same_v<EdgeType, DmlInputSerializedGraphEdge>)
-            {
-                edge.GraphInputIndex = edgeNameToIndexMap.at(edgeName->string_view());
-                edge.ToNodeIndex = nodeIndex;
-                edge.ToNodeInputIndex = edgeIndex;
-            }
-            else if constexpr (std::is_same_v<EdgeType, DmlOutputSerializedGraphEdge>)
-            {
-                edge.GraphOutputIndex = edgeNameToIndexMap.at(edgeName->string_view());
-                edge.FromNodeIndex = nodeIndex;
-                edge.FromNodeOutputIndex = edgeIndex;
-            }
-
-            edges.push_back(edge);
-        }
-        // edge is intermediate edge
-        else 
-        {
-            if constexpr (std::is_same_v<EdgeType, DmlInputSerializedGraphEdge>)
-            {
-                auto& intermediateEdgeNodeIndex = intermediateEdgeToNodeIndexMap[edgeName->string_view()];
-                DmlIntermediateSerializedGraphEdge intermediateEdge = {};
-                intermediateEdge.Name = edgeName->str();
-                intermediateEdge.FromNodeIndex = intermediateEdgeNodeIndex.nodeIndex;
-                intermediateEdge.FromNodeOutputIndex = intermediateEdgeNodeIndex.nodeOutputIndex;
-                intermediateEdge.ToNodeIndex = nodeIndex;
-                intermediateEdge.ToNodeInputIndex = edgeIndex;
-                intermediateEdges.push_back(intermediateEdge);
-            }
-            else if constexpr (std::is_same_v<EdgeType, DmlOutputSerializedGraphEdge>)
-            {
-                intermediateEdgeToNodeIndexMap[edgeName->string_view()] = {nodeIndex, edgeIndex};
-            }
-        }
-    }
-}
-
-OperatorFieldTypes::TensorDesc CreateBufferTensorDesc(
-    const dml::ir::DmlBufferTensorDesc* tensorDesc,
-    const bool isConstantTensor = false)
-{
-    DmlBufferTensorDesc bufferTensorDesc = {};
-    bufferTensorDesc.dataType = ApiTraits::StringifyHelpers::FromString<DML_TENSOR_DATA_TYPE>(tensorDesc->dataType()->c_str());
-    if (isConstantTensor)
-    {
-        bufferTensorDesc.flags = DML_TENSOR_FLAG_OWNED_BY_DML;
-    }
-    bufferTensorDesc.sizes = std::vector<uint32_t>(tensorDesc->sizes()->begin(), tensorDesc->sizes()->end());
-    if (flatbuffers::IsFieldPresent(tensorDesc, dml::ir::DmlBufferTensorDesc::VT_STRIDES))
-    {
-        bufferTensorDesc.strides = std::vector<uint32_t>(tensorDesc->strides()->begin(), tensorDesc->strides()->end());
-    }
-    bufferTensorDesc.totalTensorSizeInBytes = tensorDesc->totalTensorSizeInBytes();
-    return bufferTensorDesc;
-}
 
 OperatorFieldVariant CreateActivation(
     const dml::ir::operatorFieldTypes::Activation* activationDesc)
@@ -216,7 +129,7 @@ OperatorFieldVariant CreateAttribute(
             OperatorFieldTypes::UIntArray data;
             if (attributeDesc != nullptr)
             {
-                data = std::vector<uint32_t>(attributeDesc->val_as_UIntArray()->data()->begin(), attributeDesc->val_as_UIntArray()->data()->end());
+                data.assign(attributeDesc->val_as_UIntArray()->data()->begin(), attributeDesc->val_as_UIntArray()->data()->end());
             }
             return data;
         }
@@ -225,7 +138,7 @@ OperatorFieldVariant CreateAttribute(
             OperatorFieldTypes::IntArray data;
             if (attributeDesc != nullptr)
             {
-                data = std::vector<int32_t>(attributeDesc->val_as_IntArray()->data()->begin(), attributeDesc->val_as_IntArray()->data()->end());
+                data.assign(attributeDesc->val_as_IntArray()->data()->begin(), attributeDesc->val_as_IntArray()->data()->end());
             }
             return data;
         }
@@ -234,7 +147,7 @@ OperatorFieldVariant CreateAttribute(
             OperatorFieldTypes::FloatArray data;
             if (attributeDesc != nullptr)
             {
-                data = std::vector<float>(attributeDesc->val_as_FloatArray()->data()->begin(), attributeDesc->val_as_FloatArray()->data()->end());
+                data.assign(attributeDesc->val_as_FloatArray()->data()->begin(), attributeDesc->val_as_FloatArray()->data()->end());
             }
             return data;
         }	
@@ -279,18 +192,43 @@ OperatorFieldVariant CreateAttribute(
         }
         default:
         {
-            THROW_HR(E_INVALIDARG);
+            throw std::invalid_argument("Invalid attribute type.");
         }
     }
 }
 
+OperatorFieldTypes::TensorDesc CreateBufferTensorDesc(
+    const dml::ir::DmlBufferTensorDesc* tensorDesc,
+    const bool isConstantTensor = false)
+{
+    DmlBufferTensorDesc bufferTensorDesc = {};
+    bufferTensorDesc.dataType = ApiTraits::StringifyHelpers::FromString<DML_TENSOR_DATA_TYPE>(tensorDesc->dataType()->c_str());
+    if (isConstantTensor)
+    {
+        bufferTensorDesc.flags = DML_TENSOR_FLAG_OWNED_BY_DML;
+    }
+    bufferTensorDesc.sizes.assign(tensorDesc->sizes()->begin(), tensorDesc->sizes()->end());
+    if (flatbuffers::IsFieldPresent(tensorDesc, dml::ir::DmlBufferTensorDesc::VT_STRIDES))
+    {
+        bufferTensorDesc.strides.emplace(tensorDesc->strides()->begin(), tensorDesc->strides()->end());
+    }
+    bufferTensorDesc.totalTensorSizeInBytes = tensorDesc->totalTensorSizeInBytes();
+    return bufferTensorDesc;
+}
+
 AbstractOperatorDesc CreateAbstractOperatorDesc(
+    uint32_t nodeIndex,
     const dml::ir::OperatorNodeDesc* flatbufferOperatorNodeDesc,
     const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* nodeInputNames,
     const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* nodeOutputNames,
     const std::unordered_set<std::string_view>& constantInputs)
 {
     DML_OPERATOR_TYPE type = ApiTraits::StringifyHelpers::FromString<DML_OPERATOR_TYPE>(flatbufferOperatorNodeDesc->type()->c_str());
+    if (type == DML_OPERATOR_INVALID)
+    {
+        throw std::invalid_argument("Graph operator node at index:" + std::to_string(nodeIndex) +
+                                    " either has empty or invalid operator type.");
+    }
     const DML_OPERATOR_SCHEMA& schema = SchemaHelpers::GetSchema(type);
     std::vector<OperatorField> operatorFields(schema.FieldCount);
     
@@ -312,6 +250,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
         {
             case DML_SCHEMA_FIELD_KIND_INPUT_TENSOR:
             {
+                if (inputNameItr == nodeInputNames->end())
+                {
+                    throw std::invalid_argument("Missing input names for node at index:" + std::to_string(nodeIndex));
+                }
+
                 if (schemaField->Type == DML_SCHEMA_FIELD_TYPE_TENSOR_DESC)
                 {
                     const flatbuffers::String* inputName = *inputNameItr;
@@ -323,6 +266,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
                     }
                     bool isConstantTensor = !constantInputs.empty() && constantInputs.find(inputName->c_str()) != constantInputs.end();
 
+                    if (flatbufferOperatorNodeDesc->inputs()->size() <= inputTensorDescIndex)
+                    {
+                        throw std::invalid_argument("Expecting at least " + std::to_string(inputTensorDescIndex + 1) + 
+                                                    "input tensor desc for graph operator node at index:" + std::to_string(nodeIndex));
+                    }
                     const dml::ir::DmlBufferTensorDesc* tensorDesc = flatbufferOperatorNodeDesc->inputs()->Get(inputTensorDescIndex++);
                     field = CreateBufferTensorDesc(tensorDesc, isConstantTensor);
                 }
@@ -335,6 +283,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
                         inputNameItr++;
                         bool isConstantTensor = !constantInputs.empty() && constantInputs.find(inputName->c_str()) != constantInputs.end();
                         
+                        if (flatbufferOperatorNodeDesc->inputs()->size() <= inputTensorDescIndex)
+                        {
+                            throw std::invalid_argument("Expecting at least " + std::to_string(inputTensorDescIndex + 1) + 
+                                                        "input tensor desc for graph operator node at index:" + std::to_string(nodeIndex));
+                        }
                         const dml::ir::DmlBufferTensorDesc* tensorDesc = flatbufferOperatorNodeDesc->inputs()->Get(inputTensorDescIndex++);
                         tensors.push_back(CreateBufferTensorDesc(tensorDesc, isConstantTensor).value());
                     }
@@ -344,6 +297,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
             }
             case DML_SCHEMA_FIELD_KIND_OUTPUT_TENSOR:
             {
+                if (outputNameItr == nodeOutputNames->end())
+                {
+                    throw std::invalid_argument("Missing output names for node at index:" + std::to_string(nodeIndex));
+                }
+
                 if (schemaField->Type == DML_SCHEMA_FIELD_TYPE_TENSOR_DESC)
                 {
                     const flatbuffers::String* outputName = *outputNameItr;
@@ -355,6 +313,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
                         break;
                     }
 
+                    if (flatbufferOperatorNodeDesc->outputs()->size() <= outputTensorDescIndex)
+                    {
+                        throw std::invalid_argument("Expecting at least " + std::to_string(outputTensorDescIndex + 1) + 
+                                                    "output tensor desc for graph operator node at index:" + std::to_string(nodeIndex));
+                    }
                     const dml::ir::DmlBufferTensorDesc* tensorDesc = flatbufferOperatorNodeDesc->outputs()->Get(outputTensorDescIndex++);
                     field = CreateBufferTensorDesc(tensorDesc);
                 }
@@ -363,6 +326,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
                     std::vector<DmlBufferTensorDesc> tensors;
                     while (outputTensorDescIndex < static_cast<uint32_t>(flatbufferOperatorNodeDesc->outputs()->size()))
                     {
+                        if (flatbufferOperatorNodeDesc->outputs()->size() <= outputTensorDescIndex)
+                        {
+                            throw std::invalid_argument("Expecting at least " + std::to_string(outputTensorDescIndex + 1) + 
+                                                        "output tensor desc for graph operator node at index:" + std::to_string(nodeIndex));
+                        }
                         const dml::ir::DmlBufferTensorDesc* tensorDesc = flatbufferOperatorNodeDesc->outputs()->Get(outputTensorDescIndex++);
                         tensors.push_back(CreateBufferTensorDesc(tensorDesc).value());
                     }
@@ -372,6 +340,11 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
             }
             case DML_SCHEMA_FIELD_KIND_ATTRIBUTE:
             {
+                if (flatbufferOperatorNodeDesc->attributes()->size() <= attributeIndex)
+                {
+                    throw std::invalid_argument("Expecting at least " + std::to_string(attributeIndex + 1) + 
+                                                "attributes for graph operator node at index:" + std::to_string(nodeIndex));
+                }
                 const dml::ir::operatorFieldTypes::AttributeDesc* attributeDesc = 
                     attributeIndex >= flatbufferOperatorNodeDesc->attributes()->size() ?
                     nullptr : 
@@ -387,18 +360,110 @@ AbstractOperatorDesc CreateAbstractOperatorDesc(
     return AbstractOperatorDesc(&schema, std::move(operatorFields));
 }
 
+std::unordered_map<std::string_view, uint32_t> ConvertToEdgeNameToIndexMap(
+    const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* list)
+{
+    std::unordered_map<std::string_view, uint32_t> nameToIndexMap;
+    for (uint32_t index = 0; index < list->size(); index++)
+    {
+        const flatbuffers::String* name = list->GetAsString(index);
+        if (name->size() == 0)
+        {
+            continue;
+        }
+        nameToIndexMap[name->string_view()] = index;
+    }
+    return nameToIndexMap; // NRVO will automatically move it. no need to use std::move
+}
+
+template <typename EdgeType> void PopulateEdges(
+    const uint32_t nodeIndex,
+    const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>* edgeNames,
+    const std::unordered_map<std::string_view, uint32_t>& edgeNameToIndexMap,
+    /*out*/ std::vector<EdgeType>& edges,
+    /*out*/ std::vector<DmlIntermediateSerializedGraphEdge>& intermediateEdges,
+    /*out*/ std::unordered_map<std::string_view, NodeIndex>& edgeToOutgoingNodeIndexMap)
+{
+    for (flatbuffers::uoffset_t edgeIndex = 0; edgeIndex < edgeNames->size(); edgeIndex++)
+    {
+        const flatbuffers::String* edgeName = edgeNames->Get(edgeIndex);
+        if (edgeName->size() == 0)
+        {
+            // This must be optional input/output
+            continue;
+        }
+        // edge can be graphInput or graphOutput
+        if (edgeNameToIndexMap.find(edgeName->string_view()) != edgeNameToIndexMap.end())
+        {
+            EdgeType edge = {};
+            edge.Name = edgeName->str();
+            
+            if constexpr (std::is_same_v<EdgeType, DmlInputSerializedGraphEdge>)
+            {
+                edge.GraphInputIndex = edgeNameToIndexMap.at(edgeName->string_view());
+                edge.ToNodeIndex = nodeIndex;
+                edge.ToNodeInputIndex = edgeIndex;
+            }
+            else if constexpr (std::is_same_v<EdgeType, DmlOutputSerializedGraphEdge>)
+            {
+                edge.GraphOutputIndex = edgeNameToIndexMap.at(edgeName->string_view());
+                edge.FromNodeIndex = nodeIndex;
+                edge.FromNodeOutputIndex = edgeIndex;
+                edgeToOutgoingNodeIndexMap[edgeName->string_view()] = {nodeIndex, edgeIndex};
+            }
+
+            edges.push_back(edge);
+        }
+        // edge is intermediate edge
+        else 
+        {
+            if constexpr (std::is_same_v<EdgeType, DmlInputSerializedGraphEdge>)
+            {
+                if (edgeToOutgoingNodeIndexMap.find(edgeName->string_view()) == edgeToOutgoingNodeIndexMap.end())
+                {
+                    throw std::range_error("Neither there is any graph input with name " + edgeName->str() + 
+                                           " nor there is any node which has " + edgeName->str() + " as one of the output.");
+                }
+                auto& intermediateEdgeNodeIndex = edgeToOutgoingNodeIndexMap[edgeName->string_view()];
+                DmlIntermediateSerializedGraphEdge intermediateEdge = {};
+                intermediateEdge.Name = edgeName->str();
+                intermediateEdge.FromNodeIndex = intermediateEdgeNodeIndex.nodeIndex;
+                intermediateEdge.FromNodeOutputIndex = intermediateEdgeNodeIndex.nodeOutputIndex;
+                intermediateEdge.ToNodeIndex = nodeIndex;
+                intermediateEdge.ToNodeInputIndex = edgeIndex;
+                intermediateEdges.push_back(std::move(intermediateEdge));
+            }
+            else if constexpr (std::is_same_v<EdgeType, DmlOutputSerializedGraphEdge>)
+            {
+                edgeToOutgoingNodeIndexMap[edgeName->string_view()] = {nodeIndex, edgeIndex};
+            }
+        }
+    }
+}
+
+/*
+* - Handling of empty optional input/output/attibute for non-constant node:
+*   input/output
+*   - <DmlGraphNode.inputNames> and <DmlGraphNode.outputNames> will have an null entry
+*      but the actual OperatorNodeDesc variant's <OperatorNodeDesc.inputs> 
+*      and <OperatorNodeDesc.outputs> will not have any entry.
+*   attribute
+*   - <OperatorNodeDesc.attributes> will have null entry
+*/
 DmlSerializedGraphDesc DeserializeDmlGraph(
     const uint8_t* flatbufferGraphDescBlob,
     /*out*/ std::vector<std::unique_ptr<std::byte[]>>& rawData)
 {
+    if (flatbufferGraphDescBlob == nullptr)
+    {
+        throw std::invalid_argument("Given pointer to flatbuffer blob is null");
+    }
     const dml::ir::DmlGraphDesc* flatbufferGraphDesc = dml::ir::GetDmlGraphDesc(flatbufferGraphDescBlob);
     
-    std::unordered_map<std::string_view, uint32_t> graphInputEdgeToIndexMap;
-    std::unordered_map<std::string_view, uint32_t> graphOutputEdgeToIndexMap;
-    ConvertToUnorderedMap(flatbufferGraphDesc->graphInputNames(), graphInputEdgeToIndexMap);
-    ConvertToUnorderedMap(flatbufferGraphDesc->graphOutputNames(), graphOutputEdgeToIndexMap);
+    std::unordered_map<std::string_view, uint32_t> graphInputEdgeToIndexMap = ConvertToEdgeNameToIndexMap(flatbufferGraphDesc->graphInputNames());
+    std::unordered_map<std::string_view, uint32_t> graphOutputEdgeToIndexMap = ConvertToEdgeNameToIndexMap(flatbufferGraphDesc->graphOutputNames());
     
-    std::unordered_map<std::string_view, NodeIndex> intermediateEdgeToNodeIndexMap;
+    std::unordered_map<std::string_view, NodeIndex> edgeToOutgoingNodeIndexMap;
     std::unordered_set<std::string_view> constantInputs;
 
     std::vector<DmlSerializedGraphNode> nodes(flatbufferGraphDesc->nodes()->size());
@@ -416,24 +481,41 @@ DmlSerializedGraphDesc DeserializeDmlGraph(
             graphInputEdgeToIndexMap,
             inputEdges,
             intermediateEdges,
-            intermediateEdgeToNodeIndexMap);
+            edgeToOutgoingNodeIndexMap);
+
         PopulateEdges<DmlOutputSerializedGraphEdge>(
             nodeIndex,
             flatbufferNode->outputNames(),
             graphOutputEdgeToIndexMap,
             outputEdges,
             intermediateEdges,
-            intermediateEdgeToNodeIndexMap);
-
+            edgeToOutgoingNodeIndexMap);
+        
         DmlSerializedGraphNode node = {};
+        if (flatbufferNode->name()->size() == 0)
+        {
+            throw std::invalid_argument("Graph node at index:" + std::to_string(nodeIndex) + " doesn't have any name");
+        }
         node.Name = flatbufferNode->name()->c_str();
+
         if (flatbufferNode->desc_type() == dml::ir::NodeDesc_ConstantNodeDesc)
         {
             const dml::ir::ConstantNodeDesc* flatbufferConstantNode = flatbufferNode->desc_as_ConstantNodeDesc();
             if (flatbufferConstantNode->data_type() == dml::ir::ConstantNodeDescDetail_ConstantName)
             {
+                if (flatbufferConstantNode->data_as_ConstantName()->name()->size() == 0)
+                {
+                    throw std::invalid_argument("Constant node at index:" + std::to_string(nodeIndex) + 
+                                                " doesn't have constant data name.");
+                }
+
                 ConstantName constantNode = {flatbufferConstantNode->data_as_ConstantName()->name()->c_str()};
                 node.Desc = constantNode;
+                // Output of this node will be part of constantInputs list.
+                for (uint32_t outputIndex = 0; outputIndex < flatbufferNode->outputNames()->size(); outputIndex++)
+                {
+                    constantInputs.insert(flatbufferNode->outputNames()->Get(outputIndex)->c_str());
+                }
             }
             else if (flatbufferConstantNode->data_type() == dml::ir::ConstantNodeDescDetail_ConstantRawData)
             {
@@ -452,11 +534,6 @@ DmlSerializedGraphDesc DeserializeDmlGraph(
                 node.Desc = constantData;
             }
 
-            // output of this node will part of constantInputs list
-            for (uint32_t outputIndex = 0; outputIndex < flatbufferNode->outputNames()->size(); outputIndex++)
-            {
-                constantInputs.insert(flatbufferNode->outputNames()->Get(outputIndex)->c_str());
-            }
 
         }
         else if (flatbufferNode->desc_type() == dml::ir::NodeDesc::NodeDesc_OperatorNodeDesc)
@@ -464,6 +541,7 @@ DmlSerializedGraphDesc DeserializeDmlGraph(
             // convert dml::ir::OperatorNodeDesc to AbstractOperatorDesc
             const dml::ir::OperatorNodeDesc* flatbufferOperatorNodeDesc = flatbufferNode->desc_as_OperatorNodeDesc();
             node.Desc = CreateAbstractOperatorDesc(
+                nodeIndex,
                 flatbufferOperatorNodeDesc,
                 flatbufferNode->inputNames(),
                 flatbufferNode->outputNames(),
@@ -482,3 +560,5 @@ DmlSerializedGraphDesc DeserializeDmlGraph(
     graphDesc.Nodes = std::move(nodes);
     return graphDesc;	
 }
+
+#pragma warning(pop)

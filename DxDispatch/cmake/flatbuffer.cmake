@@ -12,4 +12,4 @@ if(NOT flatbuffer_POPULATED)
 endif()
 
 add_library(flatbuffer INTERFACE)
-target_include_directories(rapidjson INTERFACE "${flatbuffer_SOURCE_DIR}/include")
+target_include_directories(flatbuffer INTERFACE "${flatbuffer_SOURCE_DIR}/include")

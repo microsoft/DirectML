@@ -144,6 +144,7 @@ add_library(
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
+target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DirectMLHelpers)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
@@ -153,9 +154,12 @@ if(NOT onnxruntime_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
 
-target_sources(dxdispatchImpl PRIVATE src/dxdispatch/FbDispatchable.cpp)
-
-target_sources(dxdispatchImpl PRIVATE src/dxdispatch/DmlGraphDeserialization.cpp)
+target_sources(
+    dxdispatchImpl PRIVATE
+    src/dxdispatch/FbDispatchable.cpp
+    src/dxdispatch/DirectMLHelpers/DmlGraphDeserialization.cpp
+    src/dxdispatch/DirectMLHelpers/ApiTraits.cpp
+)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
