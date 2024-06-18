@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 
 #pragma once
-#include "SharedToolingLib/External/DmlIR/Operator/Helper/AbstractOperatorDesc.h"
-#include "SharedToolingLib/External/Include/DmlSerializedGraphDesc.h"
+#include "AbstractOperatorDesc.h"
+#include "DmlSerializedGraphDesc.h"
 #include "DmlGraphSerialization.h"
 
 void SerializeAttributeDescs(
@@ -27,7 +27,7 @@ flatbuffers::Offset<dml::ir::operatorFieldTypes::Activation> serializeActivation
 void SerializeAttributeDescs(
     flatbuffers::FlatBufferBuilder& builder,
     const AbstractOperatorDesc& operatorDesc,
-    /*out*/ std::vector<flatbuffers::Offset<dml::ir::operatorFieldTypes::AttributeDesc>>& attributeDescs)
+    /*out*/ std::vector<flatbuffers::Offset<dml::ir::operatorFieldgTypes::AttributeDesc>>& attributeDescs)
 {
     for (const OperatorField& field : operatorDesc.fields)
     {

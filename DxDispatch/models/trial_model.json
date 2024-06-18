@@ -1,0 +1,21 @@
+{
+    "$schema": "./_schema.json",
+    "resources": {},
+    "dispatchables": 
+    {
+      "bvlcalexnet": 
+      {
+        "type": "fb",
+        "sourcePath": "B:/Fb_model/",
+        "executionFlags": [],
+        "inputTensorNames": [] 
+      }
+    },
+    "commands": [
+      {
+        "type": "dispatch",
+        "dispatchable": "bvlcalexnet",
+        "bindings": {}
+      }
+    ]
+  }

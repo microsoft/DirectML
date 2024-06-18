@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 
 #pragma once
-#include "SharedToolingLib/External/Include/DmlGraphDesc_generated.h"
-#include "SharedToolingLib/External/DmlIR/Operator/Helper/AbstractOperatorDesc.h"
+#include "DmlGraphDesc_generated.h"
+#include "AbstractOperatorDesc.h"
 #include "DmlGraphDeserialization.h"
 
 OperatorFieldVariant CreateAttribute(

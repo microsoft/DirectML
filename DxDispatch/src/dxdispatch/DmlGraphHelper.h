@@ -44,7 +44,7 @@ void ConvertGraphDesc(
     std::vector<DML_GRAPH_EDGE_DESC>& dmlInputEdges,
     std::vector<DML_GRAPH_EDGE_DESC>& dmlOutputEdges,
     std::vector<DML_GRAPH_EDGE_DESC>& dmlIntermediateEdges,
-    std::vector<ComPtr<IDMLOperator>>& dmlOperators,
+    std::vector<Microsoft::WRL::ComPtr<IDMLOperator>>& dmlOperators,
     const std::unordered_map<uint32_t, uint32_t>* serializedGraphInputIndexToMainGraphInputIndex,
     const std::unordered_map<std::string_view, uint32_t>* serializedGraphConstantNameToMainGraphInputIndex,
     bool forceScaleZeroPointToConstScalars,

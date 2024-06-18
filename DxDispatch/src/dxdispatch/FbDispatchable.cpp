@@ -15,9 +15,9 @@
 //#include "tools\DirectMLPlanParser\inc\ReadOperator.h"
 //#include "SharedToolingLib/External/DmlIR/Operator/PrivateOperators.h"
 
-using Microsoft::WRL::ComPtr;
+//using Microsoft::WRL::ComPtr;
 
-void DeserializeDmlGraph(
+void BuildGraph(
     std::filesystem::path sourcePath,
     std::shared_ptr<Device> device, 
     Microsoft::WRL::ComPtr<IDMLCompiledOperator>& compiledOp)
@@ -82,7 +82,7 @@ void FbDispatchable::Initialize()
 {
 //
 //    // Compile the graph
-//    DeserializeDmlGraph(m_desc.sourcePath, m_device, m_operatorCompiled);
+//    BuildGraph(m_desc.sourcePath, m_device, m_operatorCompiled);
 //
 //    // Set the name of the compiled operator
 //    m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());

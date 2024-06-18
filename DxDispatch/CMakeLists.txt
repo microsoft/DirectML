@@ -155,6 +155,8 @@ endif()
 
 target_sources(dxdispatchImpl PRIVATE src/dxdispatch/FbDispatchable.cpp)
 
+target_sources(dxdispatchImpl PRIVATE src/dxdispatch/DmlGraphDeserialization.cpp)
+
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
 if(WIN32)
