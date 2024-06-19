@@ -358,7 +358,6 @@ namespace SchemaHelpers
 
         default:
             assert(false);
-            ORT_THROW_HR(E_UNEXPECTED);
         }
     }
 

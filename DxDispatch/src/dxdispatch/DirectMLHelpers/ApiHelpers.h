@@ -214,7 +214,7 @@ private:
             this->capacity = this->template RoundUpToMultiple<size_t>(minimumSize, 4096); // Round up to nearest page granularity
 
             this->data = VirtualAlloc(nullptr, this->capacity, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-            ORT_THROW_LAST_ERROR_IF_NULL(this->data);
+            
         }
 
         ~DynamicBucket()

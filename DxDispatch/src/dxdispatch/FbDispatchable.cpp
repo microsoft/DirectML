@@ -51,41 +51,45 @@ void BuildGraph(std::string graphFile, std::shared_ptr<Device> device, Microsoft
     
     std::vector<std::unique_ptr<std::byte[]>> rawData;
     DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(blob.data(), rawData);
-    //check if serilized desc compares with gemm.onnx in number of input,output edges
+    //checkED if serilized desc compares with gemm.onnx in number of input,output edges
 
-//}    
 
 
     //// Convert to Public Graph Description
     StackAllocator<1024> allocator;
-    //DML_GRAPH_DESC dmlGraphDesc = {};
-    //std::vector<ComPtr<IDMLOperator>> dmlOperators;
-    //std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
-    //std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
-    //std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
-    //std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
+    DML_GRAPH_DESC dmlGraphDesc = {};
+    std::vector<Microsoft::WRL::ComPtr<IDMLOperator>> dmlOperators;
+    std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
+    std::vector<std::vector<std::uint8_t>> constDataVectors;
 
-    //// Convert the graph description
-    //ConvertGraphDesc<1024>(
-    //    serializedDesc,
-    //    dmlGraphDesc,
-    //    device->DML(),
-    //    allocator,
-    //    dmlGraphNodes,
-    //    dmlInputEdges,
-    //    dmlOutputEdges,
-    //    dmlIntermediateEdges,
-    //    dmlOperators,
-    //    nullptr,
-    //    nullptr,
-    //    true,
-    //    constDataVectors);
 
-    //// Compile the graph
-    //THROW_IF_FAILED(device->DML()->CompileGraph(
+    // Convert the graph description
+    ConvertGraphDesc<1024>(
+        serializedDesc,
+        serializedDesc.InputCount,
+        serializedDesc.OutputCount,
+        device->DML(),
+        allocator,
+        nullptr, // check serializedGraphInputIndexToSubgraphInputIndex
+        nullptr, // check serializedGraphLargeConstantNameToSubgraphInputIndex
+        dmlGraphDesc,
+        dmlOperators,
+        dmlGraphNodes,
+        dmlInputEdges,
+        dmlOutputEdges,
+        dmlIntermediateEdges);
+    
+    std::cout<<dmlGraphDesc.InputCount<<std::endl;
+
+
+    // Compile the graph
+    // THROW_IF_FAILED(device->DML()->CompileGraph(
     //    &dmlGraphDesc,
     //    IID_PPV_ARGS(&compiledOp)
-    //));
+    // ));
 }
    
 

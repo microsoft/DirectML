@@ -16,22 +16,20 @@ struct GraphEdgeIndexInfo
 inline uint32_t GetConstantNodeGraphInputIndex(
     const std::string& constantName,
     const std::unordered_map<std::string_view, uint32_t>* serializedGraphConstantNameToMainGraphInputIndex,
-    GraphEdgeIndexInfo& graphInputIndexInfo,
+    uint32_t& graphMaxInputIndex,
     std::unordered_map<std::string_view, uint32_t>& localConstantNameToIndexMap)
 {
     if (serializedGraphConstantNameToMainGraphInputIndex == nullptr)
     {
         if (localConstantNameToIndexMap.find(constantName) == localConstantNameToIndexMap.end())
         {
-            localConstantNameToIndexMap[constantName] = graphInputIndexInfo.hasEdge ? (++graphInputIndexInfo.maxIndex) : graphInputIndexInfo.maxIndex;
-            graphInputIndexInfo.hasEdge = true;
+            localConstantNameToIndexMap[constantName] = ++graphMaxInputIndex;
         }
         return localConstantNameToIndexMap[constantName];
     }
     else
     {
-        graphInputIndexInfo.maxIndex = std::max(graphInputIndexInfo.maxIndex, serializedGraphConstantNameToMainGraphInputIndex->at(constantName));
-        graphInputIndexInfo.hasEdge = true;
+        graphMaxInputIndex = std::max(graphMaxInputIndex, serializedGraphConstantNameToMainGraphInputIndex->at(constantName));
         return serializedGraphConstantNameToMainGraphInputIndex->at(constantName);
     }
 }
@@ -133,8 +131,8 @@ void ConvertGraphDesc(
         {
             oldNodeIndexToNewNodeIndexMap[index] = static_cast<uint32_t>(dmlGraphNodes.size());
             DML_OPERATOR_DESC dmlDesc = SchemaHelpers::ConvertOperatorDesc<AllocatorSize>(std::get<AbstractOperatorDesc>(node.Desc), &allocator);
-            ComPtr<IDMLOperator> op;
-            ORT_THROW_IF_FAILED(device->CreateOperator(&dmlDesc, IID_PPV_ARGS(&op)));
+            Microsoft::WRL::ComPtr<IDMLOperator> op;
+            THROW_HR(device->CreateOperator(&dmlDesc, IID_PPV_ARGS(&op)));
             dmlOperators.push_back(op);
             DML_OPERATOR_GRAPH_NODE_DESC* dmlOperatorGraphNode = allocator.template Allocate<DML_OPERATOR_GRAPH_NODE_DESC>();
             dmlOperatorGraphNode->Name = node.Name.data();
