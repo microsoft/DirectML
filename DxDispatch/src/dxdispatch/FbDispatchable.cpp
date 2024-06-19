@@ -17,28 +17,47 @@
 
 //using Microsoft::WRL::ComPtr;
 
-void BuildGraph(
-    std::filesystem::path sourcePath,
-    std::shared_ptr<Device> device, 
-    Microsoft::WRL::ComPtr<IDMLCompiledOperator>& compiledOp)
 
+void BuildFolder(std::filesystem::path folderPath, std::vector<std::string> &graphFiles)
 {
+    std::filesystem::path parentPath = std::filesystem::current_path(); // Get the current working directory
+    assert(std::filesystem::is_directory(folderPath)); // Assert that the provided path is a directory
+    for (auto const& entry : std::filesystem::recursive_directory_iterator{folderPath}) // Iterate over all files in the directory recursively
+    {
+        auto entryPath = entry.path(); // Get the path of the current file
+        {
+            auto pathStr = entryPath.string(); // Convert the path to a string
+            {
+                //LogInfo("Adding: " + pathStr); // Log the file path
+                graphFiles.emplace_back(pathStr); // Add the file path to the graphFiles vector
+            }
+        }
+    }
+}
 
-    // Read file content
-    std::ifstream inFile(sourcePath, std::ios::binary | std::ios::ate);
+void BuildGraph(std::string graphFile, std::shared_ptr<Device> device, Microsoft::WRL::ComPtr<IDMLCompiledOperator> &compiledOp) 
+{
+    
+    std::ifstream inFile(graphFile, std::ios::binary | std::ios::ate);
+    if (!inFile)
+    {
+        //LogError("Failed to open file: " + graphFile);
+        return;
+    }
     std::streampos fileSize = inFile.tellg();
-    std::vector<uint8_t> temp(gsl::narrow_cast<size_t>(fileSize));
+    std::vector<uint8_t> blob(gsl::narrow_cast<size_t>(fileSize));
     inFile.seekg(0, std::ios::beg);
-    inFile.read(reinterpret_cast<char*>(temp.data()), fileSize);
-
-
-    // Deserialize Fb
+    inFile.read(reinterpret_cast<char*>(blob.data()), fileSize);
+    
     std::vector<std::unique_ptr<std::byte[]>> rawData;
-    DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(temp.data(), rawData);
+    DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(blob.data(), rawData);
+    //check if serilized desc compares with gemm.onnx in number of input,output edges
+
+//}    
 
 
     //// Convert to Public Graph Description
-    //StackAllocator<1024> allocator;
+    StackAllocator<1024> allocator;
     //DML_GRAPH_DESC dmlGraphDesc = {};
     //std::vector<ComPtr<IDMLOperator>> dmlOperators;
     //std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
@@ -80,10 +99,11 @@ FbDispatchable::FbDispatchable(
     
 void FbDispatchable::Initialize()
 {
-//
-//    // Compile the graph
-//    BuildGraph(m_desc.sourcePath, m_device, m_operatorCompiled);
-//
+    std::vector<std::string> graphFiles;
+   // Compile the graph
+   BuildFolder(m_desc.sourcePath, graphFiles);
+   BuildGraph(graphFiles.front(), m_device, m_operatorCompiled);
+
 //    // Set the name of the compiled operator
 //    m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
 //

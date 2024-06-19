@@ -1,9 +1,12 @@
 {
     "$schema": "./_schema.json",
-    "resources": {},
+
+    "resources": {
+      
+    },
     "dispatchables": 
     {
-      "bvlcalexnet": 
+      "gemm": 
       {
         "type": "fb",
         "sourcePath": "B:/Fb_model/",
@@ -14,7 +17,7 @@
     "commands": [
       {
         "type": "dispatch",
-        "dispatchable": "bvlcalexnet",
+        "dispatchable": "gemm",
         "bindings": {}
       }
     ]

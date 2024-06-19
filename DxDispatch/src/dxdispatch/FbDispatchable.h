@@ -27,8 +27,8 @@ private:
     //std::unique_ptr<BindingManager> m_bindingManager;
     const Model::Bindings& m_initBindings;
     /*Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
-    Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;
-    Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
+    */Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;
+    /*Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
     Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;*/
 };
