@@ -132,7 +132,7 @@ void ConvertGraphDesc(
             oldNodeIndexToNewNodeIndexMap[index] = static_cast<uint32_t>(dmlGraphNodes.size());
             DML_OPERATOR_DESC dmlDesc = SchemaHelpers::ConvertOperatorDesc<AllocatorSize>(std::get<AbstractOperatorDesc>(node.Desc), &allocator);
             Microsoft::WRL::ComPtr<IDMLOperator> op;
-            THROW_HR(device->CreateOperator(&dmlDesc, IID_PPV_ARGS(&op)));
+            THROW_IF_FAILED(device->CreateOperator(&dmlDesc, IID_PPV_ARGS(&op)));
             dmlOperators.push_back(op);
             DML_OPERATOR_GRAPH_NODE_DESC* dmlOperatorGraphNode = allocator.template Allocate<DML_OPERATOR_GRAPH_NODE_DESC>();
             dmlOperatorGraphNode->Name = node.Name.data();

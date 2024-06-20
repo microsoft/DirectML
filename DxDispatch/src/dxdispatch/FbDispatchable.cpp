@@ -24,12 +24,12 @@ void BuildFolder(std::filesystem::path folderPath, std::vector<std::string> &gra
     assert(std::filesystem::is_directory(folderPath)); // Assert that the provided path is a directory
     for (auto const& entry : std::filesystem::recursive_directory_iterator{folderPath}) // Iterate over all files in the directory recursively
     {
-        auto entryPath = entry.path(); // Get the path of the current file
+        auto entryPath = entry.path();
         {
-            auto pathStr = entryPath.string(); // Convert the path to a string
+            auto pathStr = entryPath.string(); 
             {
-                //LogInfo("Adding: " + pathStr); // Log the file path
-                graphFiles.emplace_back(pathStr); // Add the file path to the graphFiles vector
+                //LogInfo("Adding: " + pathStr); 
+                graphFiles.emplace_back(pathStr); 
             }
         }
     }
@@ -82,14 +82,16 @@ void BuildGraph(std::string graphFile, std::shared_ptr<Device> device, Microsoft
         dmlOutputEdges,
         dmlIntermediateEdges);
     
-    std::cout<<dmlGraphDesc.InputCount<<std::endl;
+    // std::cout<<dmlGraphDesc.InputCount<<std::endl;
+    // std::cout<<dmlGraphDesc.OutputCount<<std::endl;
+    // std::cout<<dmlGraphDesc.NodeCount<<std::endl;
 
-
-    // Compile the graph
-    // THROW_IF_FAILED(device->DML()->CompileGraph(
-    //    &dmlGraphDesc,
-    //    IID_PPV_ARGS(&compiledOp)
-    // ));
+    //Compile the graph
+    THROW_IF_FAILED(device->DML()->CompileGraph(
+       &dmlGraphDesc,
+       DML_EXECUTION_FLAG_NONE,
+       IID_PPV_ARGS(&compiledOp)
+    ));
 }
    
 
