@@ -16,6 +16,8 @@ using Microsoft::WRL::ComPtr;
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut) {
     // Whether to skip adapters which support Graphics in order to target NPU for testing
     bool forceComputeOnlyDevice = true;
+    bool forceGenericMLDevice = false;
+    
     ComPtr<IDXCoreAdapterFactory> factory;
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
     if (dxCoreModule)
@@ -39,9 +41,21 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         {
             ComPtr<IDXCoreAdapter> nextGpuAdapter;
             THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&nextGpuAdapter)));
-            if (!forceComputeOnlyDevice || !nextGpuAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
+
+            if (!forceComputeOnlyDevice && !forceGenericMLDevice)
             {
-                adapter = std::move(nextGpuAdapter);
+                // No device restrictions
+                adapter = std::move(currentGpuAdapter);
+                break;
+            }
+            else if (forceComputeOnlyDevice && currentGpuAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
+            {
+                adapter = std::move(currentGpuAdapter);
+                break;
+            }
+            else if (forceGenericMLDevice && currentGpuAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML))
+            {
+                adapter = std::move(currentGpuAdapter);
                 break;
             }
         }
