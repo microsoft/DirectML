@@ -79,7 +79,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
                     if (currentGpuAdapter->IsAttributeSupported(disallowedGuid)) { isAdapterValid = false; }
                 }
 
-                // filter out adapters that doesn match all required attributes
+                // filter out adapters that doesn't match all required attributes
                 for (auto& requiredGuid : dxGuidRequiredAttributes)
                 {
                     if (!currentGpuAdapter->IsAttributeSupported(requiredGuid)) { isAdapterValid = false; }
