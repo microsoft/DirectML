@@ -59,7 +59,10 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     ComPtr<IDXCoreAdapter> adapter;
     if (factory)
     {
-        for (auto& allowedGuid : dxGuidAllowedAttributes)
+        // If there's any required attributes, save time by only passing in required attributes instead.
+        std::vector<GUID> iteratingAdapterList = dxGuidRequiredAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequiredAttributes;
+        
+        for (auto& allowedGuid : iteratingAdapterList)
         {
             if (adapter != nullptr) continue;
             
@@ -114,7 +117,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
                 );
             if (d3d12CreateDevice)
             {
-                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_1_0_CORE, IID_PPV_ARGS(&d3dDevice)));
+                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_1_0_GENERIC, IID_PPV_ARGS(&d3dDevice)));
             }
         }
     }
