@@ -16,9 +16,13 @@ using Microsoft::WRL::ComPtr;
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
 {
     // Useful Flags to chage to allow, require, and disallow certain attributes of devices for testing.
-    const bool allowGraphicsCapabilities = false;
-    const bool requireComputeDevice = true;
-    const bool requireGenericMLDevice = false;
+    // Modify to require for generic ML devices on a needed basis.
+    const bool allowGraphicsAttributes = false;
+    const bool allowComputeAttributes = true;
+    const bool requireComputeAttributes = false;
+    const bool requireGenericMLAttributes = false;
+
+    assert(!(!allowComputeAttributes && requireComputeAttributes));
 
     // Populate helper structures based on above flags
     std::vector<GUID> dxGuidAllowedAttributes = {};
@@ -26,12 +30,15 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     std::vector<GUID> dxGuidDisallowedAttributes = {};
 
     // By default allow for these compute attributes
-    dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
     dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
 
-    allowGraphicsCapabilities ? 
+    allowGraphicsAttributes ?
         dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS) :
         dxGuidDisallowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS);
+
+    allowComputeAttributes ?
+        dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE) :
+        dxGuidDisallowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
 
     if (requireComputeDevice)
     {
