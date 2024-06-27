@@ -1,7 +1,7 @@
 
 #pragma once
 
-//class BindingManager;
+class BindingManager;
 
 class FbDispatchable : public Dispatchable
 {
@@ -24,11 +24,11 @@ private:
     std::string m_name;
     std::shared_ptr<Device> m_device;
     const Model::FbDispatchableDesc& m_desc;
-    //std::unique_ptr<BindingManager> m_bindingManager;
+    std::unique_ptr<BindingManager> m_bindingManager;
     const Model::Bindings& m_initBindings;
-    /*Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
-    */Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;
-    /*Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
+    Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
+    Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
     Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;*/
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
 };
