@@ -1424,13 +1424,7 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
 
 DmlSerializedGraphDesc ParseDmlSerializedGraphDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
-    auto descMember = object.FindMember("Desc");
-    if (descMember == object.MemberEnd())
-    {
-        descMember = object.FindMember("desc");
-    }
-    const rapidjson::Value& descValue = descMember != object.MemberEnd() ? descMember->value : object;
-    auto sourcePath = ParseStringField(descValue, "sourcePath");
+    auto sourcePath = ParseStringField(object, "sourcePath");
     std::filesystem::path graphFilePath = ResolveInputFilePath(parentPath, sourcePath);
     std::ifstream inFile(graphFilePath, std::ios::binary | std::ios::ate);
     if (!inFile)
