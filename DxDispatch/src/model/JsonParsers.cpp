@@ -1424,7 +1424,13 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
 
 DmlSerializedGraphDesc ParseDmlSerializedGraphDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
-    auto sourcePath = ParseStringField(object, "sourcePath");
+    auto descMember = object.FindMember("Desc");
+    if (descMember == object.MemberEnd())
+    {
+        descMember = object.FindMember("desc");
+    }
+    const rapidjson::Value& descValue = descMember != object.MemberEnd() ? descMember->value : object;
+    auto sourcePath = ParseStringField(descValue, "sourcePath");
     std::filesystem::path graphFilePath = ResolveInputFilePath(parentPath, sourcePath);
     std::ifstream inFile(graphFilePath, std::ios::binary | std::ios::ate);
     if (!inFile)
@@ -1454,10 +1460,10 @@ Model::DmlSerializedGraphDispatchableDesc ParseModelDmlSerializedGraphDispatchab
     desc.bindPoints = GetBindPoints(desc.desc);
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
 
-    auto bindingsField = object.FindMember("initBindings");
-    if (bindingsField != object.MemberEnd()) 
+    auto bindingsField = object.FindMember("bindings");
+    if (bindingsField != object.MemberEnd() && bindingsField->value.IsObject())
     {
-        for (auto bindingMember = bindingsField->value.MemberBegin(); bindingMember != bindingsField->value.MemberEnd(); bindingMember++)//++bindingMember)
+        for (auto bindingMember = bindingsField->value.MemberBegin(); bindingMember != bindingsField->value.MemberEnd(); bindingMember++)
         {
             desc.initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
         }

@@ -8,10 +8,11 @@
     {
       "gemm": 
       {
-        "type": "fb",
-        "sourcePath": "B:/Fb_model/",
-        "executionFlags": [],
-        "inputTensorNames": [] 
+        "type": "dmlSerializedGraph",
+        "desc": 
+        {
+            "sourcePath": "onnx_gemm\\Partition_0.bin"
+        }
       }
     },
     "commands": [
