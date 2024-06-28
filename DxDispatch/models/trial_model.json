@@ -35,7 +35,7 @@
       "gemm": 
       {
         "type": "dmlSerializedGraph",
-        "sourcePath": "onnx_gemm\\Partition_0.bin"
+        "sourcePath": "B:/Fb_model/Partition_0.bin"
       }
     },
 

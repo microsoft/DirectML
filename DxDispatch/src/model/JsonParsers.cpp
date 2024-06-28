@@ -1443,7 +1443,22 @@ DmlSerializedGraphDesc ParseDmlSerializedGraphDesc(const std::filesystem::path& 
 Model::DmlSerializedGraphDispatchableDesc::BindPoints GetBindPoints(const DmlSerializedGraphDesc& dmlSerializedGraphDesc)
 {
     Model::DmlSerializedGraphDispatchableDesc::BindPoints bindPoints;
-    // TODO: Populate BindPoints.
+    for (const auto& inputEdge : dmlSerializedGraphDesc.InputEdges) 
+    {
+        bindPoints.inputs.push_back({
+            inputEdge.Name,  
+            1,               
+            true             
+        });
+    }
+    for (const auto& outputEdge : dmlSerializedGraphDesc.OutputEdges)
+    {
+        bindPoints.outputs.push_back({
+            outputEdge.Name, 
+            1,               
+            true             
+        });
+    }
     return bindPoints;
 }
 
@@ -1462,7 +1477,6 @@ Model::DmlSerializedGraphDispatchableDesc ParseModelDmlSerializedGraphDispatchab
             desc.initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
         }
     }
-
     return desc;
 }
 
