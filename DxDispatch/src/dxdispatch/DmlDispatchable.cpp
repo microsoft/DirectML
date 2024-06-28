@@ -144,17 +144,12 @@ void DmlDispatchable::Initialize()
     {
         // Initializers can initialize multiple inputs simultaneously, so each compiled op's inputs must
         // be bound using a separate buffer array binding.
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
         BindingData inputBindingData = {};
         FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, nullptr, inputBindingData, true);
 
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
         if (inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
         {
-
-
             throw std::invalid_argument(fmt::format("Initialization Input BindingCount '{}' is too large.", inputBindingData.bufferBindings.size()));
         }
         bufferArrayBindings.BindingCount = static_cast<uint32_t>(inputBindingData.bufferBindings.size());
@@ -165,8 +160,6 @@ void DmlDispatchable::Initialize()
         bindingDesc.Type = DML_BINDING_TYPE_BUFFER_ARRAY;
 
         bindingTable->BindInputs(1, &bindingDesc);
-        
-//////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
     // A temporary resource may be required to initialize the operators.
@@ -198,15 +191,12 @@ void DmlDispatchable::Initialize()
 void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 {
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
-//////////////////////////////////////////////////////////////////////////////////////////////////
 
     BindingData inputBindingData = {};
     FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, &bindings, inputBindingData);
 
     BindingData outputBindingData = {};
     FillBindingData(m_desc.bindPoints.outputs, &m_initBindings, &bindings, outputBindingData);
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
