@@ -32,5 +32,14 @@
 #include <fmt/format.h>
 #include <half.hpp>
 
+#include "../DirectMLHelpers/ApiTraits.h"
+#include "../DirectMLHelpers/ApiHelpers.h"
+#include "../DirectMLHelpers/DirectMLSchema.h"
+#include "../DirectMLHelpers/AbstractOperatorDesc.h"
+#include "../DirectMLHelpers/GeneratedSchemaTypes.h"
+#include "../DirectMLHelpers/SchemaHelpers.h"
+#include "../DirectMLHelpers/GeneratedSchemaHelpers.h"
+#include "../DirectMLHelpers/DmlSerializedGraphDesc.h"
+
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;

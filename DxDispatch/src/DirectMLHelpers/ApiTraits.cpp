@@ -9,8 +9,6 @@
 //---------------------------------------------------------------------------
 
 #pragma once
-
-#include "pch.h"
 #include "Utility.h"
 
 template <typename T>

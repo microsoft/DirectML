@@ -83,6 +83,9 @@ add_library(
     src/model/Model.h
     src/model/NpyReaderWriter.cpp
     src/model/NpyReaderWriter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
+    src/DirectMLHelpers/DmlGraphDeserialization.cpp
+    src/DirectMLHelpers/ApiTraits.cpp
 )
 
 target_link_libraries(
@@ -96,6 +99,7 @@ target_link_libraries(
     wil
     d3d12
     directml
+    flatbuffer
 )
 
 if(TARGET_WSL)
@@ -130,6 +134,8 @@ add_library(
     src/dxdispatch/Device.h
     src/dxdispatch/DmlDispatchable.cpp
     src/dxdispatch/DmlDispatchable.h
+    src/dxdispatch/DmlSerializedGraphDispatchable.cpp
+    src/dxdispatch/DmlSerializedGraphDispatchable.h
     src/dxdispatch/Executor.cpp
     src/dxdispatch/Executor.h
     src/dxdispatch/CommandLineArgs.cpp
@@ -143,8 +149,11 @@ add_library(
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
-target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
-target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DirectMLHelpers)
+target_include_directories(
+    dxdispatchImpl INTERFACE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
+)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
@@ -153,13 +162,6 @@ endif()
 if(NOT onnxruntime_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/OnnxDispatchable.cpp)
 endif()
-
-target_sources(
-    dxdispatchImpl PRIVATE
-    src/dxdispatch/FbDispatchable.cpp
-    src/dxdispatch/DirectMLHelpers/DmlGraphDeserialization.cpp
-    src/dxdispatch/DirectMLHelpers/ApiTraits.cpp
-)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT dxdispatch)
 
@@ -194,7 +196,6 @@ target_link_libraries(
     wil
     onnxruntime
     onnxruntime_extensions
-    flatbuffer
 )
 
 target_compile_features(dxdispatchImpl PRIVATE cxx_std_17)

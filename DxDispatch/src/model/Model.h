@@ -8,6 +8,7 @@
 #include <vector>
 #include <gsl/gsl>
 #include <DirectML.h>
+#include "pch.h"
 #include "BucketAllocator.h"
 
 class Model
@@ -101,19 +102,36 @@ public:
         uint32_t loggingLevel = 2;
     };
     
-    struct FbDispatchableDesc
+    struct DmlSerializedGraphDispatchableDesc
     {
-        std::filesystem::path sourcePath;
-        Bindings initBindings;
+        struct BindPoint
+        {
+            std::string name;
+            uint32_t resourceCount;
+            bool required;
+        };
+
+        struct BindPoints
+        {
+            std::vector<BindPoint> inputs;
+            std::vector<BindPoint> outputs;
+        };
+
+        DmlSerializedGraphDesc desc;
+        BindPoints bindPoints;
         DML_EXECUTION_FLAGS executionFlags;
-        //TODO: maybe add a method to load a Fb model
+        Bindings initBindings;
     };
 
 
     struct DispatchableDesc
     {
         std::string name;
-        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc, FbDispatchableDesc> value;
+        std::variant<
+            DmlDispatchableDesc,
+            HlslDispatchableDesc,
+            OnnxDispatchableDesc,
+            DmlSerializedGraphDispatchableDesc> value;
     };
 
     // COMMANDS

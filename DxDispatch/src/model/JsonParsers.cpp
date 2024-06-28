@@ -4,6 +4,7 @@
 #include "NpyReaderWriter.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "../DirectMLHelpers/DmlGraphDeserialization.h"
 
 #ifndef WIN32
 #define _stricmp strcasecmp
@@ -1421,12 +1422,36 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     return desc;
 }
 
-
-Model::FbDispatchableDesc ParseModelFbDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
+DmlSerializedGraphDesc ParseDmlSerializedGraphDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
-    Model::FbDispatchableDesc desc = {};
+    auto sourcePath = ParseStringField(object, "sourcePath");
+    std::filesystem::path graphFilePath = ResolveInputFilePath(parentPath, sourcePath);
+    std::ifstream inFile(graphFilePath, std::ios::binary | std::ios::ate);
+    if (!inFile)
+    {
+        throw std::invalid_argument("Could not open the graph file for DmlSerializedGraph dispatchable");
+    }
+    std::streampos fileSize = inFile.tellg();
+    std::vector<uint8_t> blob(gsl::narrow_cast<size_t>(fileSize));
+    inFile.seekg(0, std::ios::beg);
+    inFile.read(reinterpret_cast<char*>(blob.data()), fileSize);
 
-    desc.sourcePath = ResolveInputFilePath(parentPath, ParseStringField(object, "sourcePath"));
+    std::vector<std::unique_ptr<std::byte[]>> rawData;
+    return DeserializeDmlGraph(blob.data(), rawData);
+}
+
+Model::DmlSerializedGraphDispatchableDesc::BindPoints GetBindPoints(const DmlSerializedGraphDesc& dmlSerializedGraphDesc)
+{
+    Model::DmlSerializedGraphDispatchableDesc::BindPoints bindPoints;
+    // TODO: Populate BindPoints.
+    return bindPoints;
+}
+
+Model::DmlSerializedGraphDispatchableDesc ParseModelDmlSerializedGraphDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
+{
+    Model::DmlSerializedGraphDispatchableDesc desc = {};
+    desc.desc = ParseDmlSerializedGraphDesc(parentPath, object);
+    desc.bindPoints = GetBindPoints(desc.desc);
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
 
     auto bindingsField = object.FindMember("initBindings");
@@ -1464,9 +1489,9 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     {
         desc.value = ParseModelOnnxDispatchableDesc(parentPath, object);
     }
-    else if (!_stricmp(type.data(), "fb"))
+    else if (!_stricmp(type.data(), "dmlSerializedGraph"))
     {
-        desc.value = ParseModelFbDispatchableDesc(parentPath, object);
+        desc.value = ParseModelDmlSerializedGraphDispatchableDesc(parentPath, object);
     }
     else
     {
@@ -1536,6 +1561,7 @@ Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object, co
 
     return command;
 }
+
 Model::Command ParseModelCommand(const rapidjson::Value& object, const std::filesystem::path& outputPath)
 {
     return ParseModelCommandDesc(object, outputPath).command;

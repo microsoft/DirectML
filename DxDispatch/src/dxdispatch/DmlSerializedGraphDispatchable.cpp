@@ -3,18 +3,10 @@
 #include "Device.h"
 #include "Model.h"
 #include "Dispatchable.h"
-#include "FbDispatchable.h"
-#include "DirectMLHelpers/DmlGraphDeserialization.h"
-#include "DirectMLHelpers/DmlGraphHelper.h"
-//#include "DirectMLHelpers/ApiHelpers.h"
-//#include "flatbuffers/flatbuffers.h"
-//#include "DmlSerializedGraphDesc.h"
-//#include "Test/Common/Common.h"//basic api converter
-//#include "Test/Common/Common.h"
-//#include "Product/InternalInterfaces.h"
-//#include "tools\DirectMLPlanParser\inc\ReadOperator.h"
-//#include "SharedToolingLib/External/DmlIR/Operator/PrivateOperators.h"
+#include "DmlSerializedGraphDispatchable.h"
+#include "../DirectMLHelpers/DmlGraphHelper.h"
 
+/*
 // SerializedBindingStorage class
 class SerializedBindingStorage {
 public:
@@ -203,115 +195,161 @@ Microsoft::WRL::ComPtr<IDMLCompiledOperator> &compiledOp)//, BindingManager &bin
     //bindingManager.PopulateBinding(dmlInputEdges);
     //bindingManager.PopulateBinding(serializedDesc);
 }
-   
-FbDispatchable::FbDispatchable(
+*/
+
+DmlSerializedGraphDispatchable::DmlSerializedGraphDispatchable(
     std::string_view name, 
     std::shared_ptr<Device> device, 
-    const Model::FbDispatchableDesc& desc,//TODO: Define Model::FbDispatchableDesc 
-    const Model::Bindings& initBindings) :
+    const Model::DmlSerializedGraphDispatchableDesc& desc,
+    const Dispatchable::Bindings& initBindings) :
           m_name(name), m_device(device), m_desc(desc), m_initBindings(initBindings)
-{}
-    
-void FbDispatchable::Initialize()
 {
-    std::vector<std::string> graphFiles;
-
-   // Compile the graph
-   BuildFolder(m_desc.sourcePath, graphFiles);
-   BuildGraph(graphFiles.front(), m_device, m_operatorCompiled);//, *m_bindingManager);
-
-//   m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
-//   GetInitBindings
-
-   // Create an initializer for the compiled  operator
-   Microsoft::WRL::ComPtr<IDMLOperatorInitializer> initializer;
-   IDMLCompiledOperator* ops[] = { m_operatorCompiled.Get() };
-   THROW_IF_FAILED(m_device->DML()->CreateOperatorInitializer(
-       _countof(ops),
-       ops,
-       IID_PPV_ARGS(&initializer)));
-
-    for (const auto& binding : m_bindingManager->GetInputBindings()) 
-    {
-        auto it = m_initBindings.find(binding.GetName());
-        if (it != m_initBindings.end()) 
-            {
-            DML_BUFFER_BINDING bufferBinding = { it->second.resource, it->second.offset, it->second.size };
-            DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
-            m_bindingTable->BindInputs(1, &bindingDesc);
-            }
-    }
-
-//    // Get the number of descriptors for the binding table
-//    auto min = initializer->GetBindingProperties().RequiredDescriptorCount;
-
-
-// Create a descriptor heap with at least one descriptor. Even if the op doesn't
-// require any descriptors the binding table expects valid descriptor handles.
-   
-   DML_BINDING_PROPERTIES bindingProperties = m_operatorCompiled->GetBindingProperties();
-   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-   D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-   descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-   descriptorHeapDesc.NumDescriptors = std::max(1u, initializer->GetBindingProperties().RequiredDescriptorCount);
-   descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-   THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(&descriptorHeapDesc, IID_GRAPHICS_PPV_ARGS(descriptorHeap.ReleaseAndGetAddressOf())));
-
-   // Set the descriptor heap on the command list
-   ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap.Get() };
-   m_device->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-    
-
-   // Create the binding table description
-   DML_BINDING_TABLE_DESC bindingTableDesc = {};
-   bindingTableDesc.Dispatchable = initializer.Get();
-   bindingTableDesc.CPUDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-   bindingTableDesc.GPUDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-   bindingTableDesc.SizeInDescriptors = initializer->GetBindingProperties().RequiredDescriptorCount;
-
-   // Create the binding table
-   Microsoft::WRL::ComPtr<IDMLBindingTable> bindingTable;
-   THROW_IF_FAILED(m_device->DML()->CreateBindingTable(&bindingTableDesc, IID_PPV_ARGS(&bindingTable)));
-
-// Inputs flagged OWNED_BY_DML must be bound during initialization (and only initialization).
-//  /if (!initBindings.bindingDescs.empty())
-//  {   
-//////////////////////////////////////////////////////////////////////////////////////////////////
-       // TODO: 
-       // Initializers can initialize multiple inputs simultaneously, so each compiled op's inputs must
-       // be bound using a separate buffer array binding.
-//////////////////////////////////////////////////////////////////////////////////////////////////
-//   }
-
-    // A temporary resource may be required to initialize the operators.
-   auto tempBufferSize = initializer->GetBindingProperties().TemporaryResourceSize;
-   if (tempBufferSize > 0)
-   {
-       Microsoft::WRL::ComPtr<ID3D12Resource> tempBuffer = m_device->CreatePreferredDeviceMemoryBuffer(tempBufferSize);
-       DML_BUFFER_BINDING bufferBinding = { tempBuffer.Get(), 0, tempBufferSize };
-       DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
-       bindingTable->BindTemporaryResource(&bindingDesc);
-       m_device->KeepAliveUntilNextCommandListDispatch(std::move(tempBuffer));
-   }
-   
-   // Each compiled op's persistent resource is bound as an output of the initializer.
-//    auto persistentBufferSize = m_operatorCompiled->GetBindingProperties().PersistentResourceSize;
-//    if (persistentBufferSize > 0)
-//    {
-//        m_persistentBuffer = m_device->CreatePreferredDeviceMemoryBuffer(persistentBufferSize);
-//        DML_BUFFER_BINDING bufferBinding = { m_persistentBuffer.Get(), 0, persistentBufferSize };
-//        DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
-//        bindingTable->BindOutputs(1, &bindingDesc);
-//    }
-   // Keeps descriptor heap alive, records an initialization operation, and executes the command list, waiting for completion
-   m_device->KeepAliveUntilNextCommandListDispatch(std::move(descriptorHeap));
-   m_device->RecordInitialize(initializer.Get(), bindingTable.Get());
-   m_device->ExecuteCommandListAndWait();
 }
 
-void FbDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
+void DmlSerializedGraphDispatchable::BuildGraph() 
 {
+    // Convert to Public Graph Description
+    StackAllocator<1024> allocator;
+    DML_GRAPH_DESC dmlGraphDesc = {};
+    std::vector<Microsoft::WRL::ComPtr<IDMLOperator>> dmlOperators;
+    std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
+    std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
+    std::vector<std::vector<std::uint8_t>> constDataVectors;
 
+
+    // Convert the graph description
+    ConvertGraphDesc<1024>(
+        m_desc.desc,
+        m_desc.desc.InputCount,
+        m_desc.desc.OutputCount,
+        m_device->DML(),
+        allocator,
+        nullptr, // check serializedGraphInputIndexToSubgraphInputIndex
+        nullptr, // check serializedGraphLargeConstantNameToSubgraphInputIndex
+        dmlGraphDesc,
+        dmlOperators,
+        dmlGraphNodes,
+        dmlInputEdges,
+        dmlOutputEdges,
+        dmlIntermediateEdges);
+
+    // std::cout<<dmlGraphDesc.InputCount<<std::endl;
+    // std::cout<<dmlGraphDesc.OutputCount<<std::endl;
+    // std::cout<<dmlGraphDesc.NodeCount<<std::endl;
+
+    //Compile the graph
+    THROW_IF_FAILED(m_device->DML()->CompileGraph(
+        &dmlGraphDesc,
+        DML_EXECUTION_FLAG_NONE,
+        IID_PPV_ARGS(&m_graphCompiled)));
+
+    //bindingManager.CreateOpNodes(dmlGraphNodes);
+    //bindingManager.PopulateBinding(dmlInputEdges);
+    //bindingManager.PopulateBinding(serializedDesc);
+}
+
+void DmlSerializedGraphDispatchable::Initialize()
+{
+    BuildGraph();
+//    std::vector<std::string> graphFiles;
+//
+//   // Compile the graph
+//   BuildFolder(m_desc.sourcePath, graphFiles);
+//
+////   m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
+////   GetInitBindings
+//
+//   // Create an initializer for the compiled  operator
+//   Microsoft::WRL::ComPtr<IDMLOperatorInitializer> initializer;
+//   IDMLCompiledOperator* ops[] = { m_operatorCompiled.Get() };
+//   THROW_IF_FAILED(m_device->DML()->CreateOperatorInitializer(
+//       _countof(ops),
+//       ops,
+//       IID_PPV_ARGS(&initializer)));
+//
+//    for (const auto& binding : m_bindingManager->GetInputBindings()) 
+//    {
+//        auto it = m_initBindings.find(binding.GetName());
+//        if (it != m_initBindings.end()) 
+//            {
+//            DML_BUFFER_BINDING bufferBinding = { it->second.resource, it->second.offset, it->second.size };
+//            DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
+//            m_bindingTable->BindInputs(1, &bindingDesc);
+//            }
+//    }
+//
+////    // Get the number of descriptors for the binding table
+////    auto min = initializer->GetBindingProperties().RequiredDescriptorCount;
+//
+//
+//// Create a descriptor heap with at least one descriptor. Even if the op doesn't
+//// require any descriptors the binding table expects valid descriptor handles.
+//   
+//   DML_BINDING_PROPERTIES bindingProperties = m_operatorCompiled->GetBindingProperties();
+//   Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+//   D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
+//   descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+//   descriptorHeapDesc.NumDescriptors = std::max(1u, initializer->GetBindingProperties().RequiredDescriptorCount);
+//   descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+//   THROW_IF_FAILED(m_device->D3D()->CreateDescriptorHeap(&descriptorHeapDesc, IID_GRAPHICS_PPV_ARGS(descriptorHeap.ReleaseAndGetAddressOf())));
+//
+//   // Set the descriptor heap on the command list
+//   ID3D12DescriptorHeap* descriptorHeaps[] = { descriptorHeap.Get() };
+//   m_device->GetCommandList()->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+//    
+//
+//   // Create the binding table description
+//   DML_BINDING_TABLE_DESC bindingTableDesc = {};
+//   bindingTableDesc.Dispatchable = initializer.Get();
+//   bindingTableDesc.CPUDescriptorHandle = descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+//   bindingTableDesc.GPUDescriptorHandle = descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+//   bindingTableDesc.SizeInDescriptors = initializer->GetBindingProperties().RequiredDescriptorCount;
+//
+//   // Create the binding table
+//   Microsoft::WRL::ComPtr<IDMLBindingTable> bindingTable;
+//   THROW_IF_FAILED(m_device->DML()->CreateBindingTable(&bindingTableDesc, IID_PPV_ARGS(&bindingTable)));
+//
+//// Inputs flagged OWNED_BY_DML must be bound during initialization (and only initialization).
+////  /if (!initBindings.bindingDescs.empty())
+////  {   
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//       // TODO: 
+//       // Initializers can initialize multiple inputs simultaneously, so each compiled op's inputs must
+//       // be bound using a separate buffer array binding.
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////   }
+//
+//    // A temporary resource may be required to initialize the operators.
+//   auto tempBufferSize = initializer->GetBindingProperties().TemporaryResourceSize;
+//   if (tempBufferSize > 0)
+//   {
+//       Microsoft::WRL::ComPtr<ID3D12Resource> tempBuffer = m_device->CreatePreferredDeviceMemoryBuffer(tempBufferSize);
+//       DML_BUFFER_BINDING bufferBinding = { tempBuffer.Get(), 0, tempBufferSize };
+//       DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
+//       bindingTable->BindTemporaryResource(&bindingDesc);
+//       m_device->KeepAliveUntilNextCommandListDispatch(std::move(tempBuffer));
+//   }
+//   
+//   // Each compiled op's persistent resource is bound as an output of the initializer.
+////    auto persistentBufferSize = m_operatorCompiled->GetBindingProperties().PersistentResourceSize;
+////    if (persistentBufferSize > 0)
+////    {
+////        m_persistentBuffer = m_device->CreatePreferredDeviceMemoryBuffer(persistentBufferSize);
+////        DML_BUFFER_BINDING bufferBinding = { m_persistentBuffer.Get(), 0, persistentBufferSize };
+////        DML_BINDING_DESC bindingDesc = { DML_BINDING_TYPE_BUFFER, &bufferBinding };
+////        bindingTable->BindOutputs(1, &bindingDesc);
+////    }
+//   // Keeps descriptor heap alive, records an initialization operation, and executes the command list, waiting for completion
+//   m_device->KeepAliveUntilNextCommandListDispatch(std::move(descriptorHeap));
+//   m_device->RecordInitialize(initializer.Get(), bindingTable.Get());
+//   m_device->ExecuteCommandListAndWait();
+}
+
+void DmlSerializedGraphDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
+{
+/*
    auto bindingProps = m_operatorCompiled->GetBindingProperties();
 ////////////////////////////////////////////////////////////////////
 //    //TODO: Prepare and manage bindings  
@@ -371,9 +409,10 @@ void FbDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
    THROW_IF_FAILED(m_device->DML()->GetDeviceRemovedReason());
 
    //return;//?
+   */
 }
 
-void FbDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBindings)
+void DmlSerializedGraphDispatchable::Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBindings)
 {
 //    m_device->RecordDispatch(m_operatorCompiled.Get(), m_bindingTable.Get());
 //    m_device->ExecuteCommandListAndWait();

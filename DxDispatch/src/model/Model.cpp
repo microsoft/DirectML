@@ -36,16 +36,15 @@ Model::Model(
                 }
             }
         }
-        else if (std::holds_alternative<FbDispatchableDesc>(dispatchableDesc.value))
+        else if (std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
         {
- 
-            auto& fbDispatchableDesc = std::get<FbDispatchableDesc>(dispatchableDesc.value);
-            for (auto& sourceResource : fbDispatchableDesc.initBindings)
+            auto& dmlSerializedGraphDispatchableDesc = std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value);
+            for (auto& sourceResource : dmlSerializedGraphDispatchableDesc.initBindings)
             {
                 if (m_resourceDescsByName.find(sourceResource.first) == m_resourceDescsByName.end())
                 {
                     throw std::invalid_argument(fmt::format(
-                        "Flatbuffer dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model",
+                        "DmlSerializedGraph dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model",
                         sourceResource.first));
                 }
             }
