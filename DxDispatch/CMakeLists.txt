@@ -22,6 +22,7 @@ endif()
 
 include(cmake/gsl.cmake)
 include(cmake/rapidjson.cmake)
+include(cmake/flatbuffer.cmake)
 include(cmake/fmt.cmake)
 include(cmake/wil.cmake)
 include(cmake/half.cmake)
@@ -82,6 +83,9 @@ add_library(
     src/model/Model.h
     src/model/NpyReaderWriter.cpp
     src/model/NpyReaderWriter.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
+    src/DirectMLHelpers/DmlGraphDeserialization.cpp
+    src/DirectMLHelpers/ApiTraits.cpp
 )
 
 target_link_libraries(
@@ -95,6 +99,7 @@ target_link_libraries(
     wil
     d3d12
     directml
+    flatbuffer
 )
 
 if(TARGET_WSL)
@@ -129,6 +134,8 @@ add_library(
     src/dxdispatch/Device.h
     src/dxdispatch/DmlDispatchable.cpp
     src/dxdispatch/DmlDispatchable.h
+    src/dxdispatch/DmlSerializedGraphDispatchable.cpp
+    src/dxdispatch/DmlSerializedGraphDispatchable.h
     src/dxdispatch/Executor.cpp
     src/dxdispatch/Executor.h
     src/dxdispatch/CommandLineArgs.cpp
@@ -142,7 +149,11 @@ add_library(
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
-target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
+target_include_directories(
+    dxdispatchImpl INTERFACE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
+)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
@@ -323,7 +334,7 @@ if(DXD_TESTS)
         model
     )
     target_include_directories(jsontests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
-    gtest_discover_tests(jsontests)
+    gtest_discover_tests(jsontests DISCOVERY_MODE PRE_TEST)
 
     # Hacky. Needed for silly reasons related to defining GUIDs in winadapter. This should
     # ideally be cleaned up at some point.

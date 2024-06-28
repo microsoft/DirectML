@@ -36,7 +36,21 @@ Model::Model(
                 }
             }
         }
+        else if (std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
+        {
+            auto& dmlSerializedGraphDispatchableDesc = std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value);
+            for (auto& sourceResource : dmlSerializedGraphDispatchableDesc.initBindings)
+            {
+                if (m_resourceDescsByName.find(sourceResource.first) == m_resourceDescsByName.end())
+                {
+                    throw std::invalid_argument(fmt::format(
+                        "DmlSerializedGraph dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model",
+                        sourceResource.first));
+                }
+            }
+        }
     }
+
 
     // Validate references to ops/resources in the model.
     for (auto& commandDesc : m_commands)
