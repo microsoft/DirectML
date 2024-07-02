@@ -15,8 +15,8 @@ using Microsoft::WRL::ComPtr;
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
 {
-    // Useful Flags to chage to allow, require, and disallow certain attributes of devices for testing.
-    // Modify to require for generic ML devices on a needed basis.
+    // Following flags toggle common scenarios for testing Compute and/or Generic ML devices.
+    // The allow, required, and disallowed attributes list will be modified by code to follow these flags.
     const bool allowGraphicsAttributes = false;
     const bool allowComputeAttributes = true;
     const bool requireComputeAttributes = false;
@@ -25,9 +25,9 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     assert(!(!allowComputeAttributes && requireComputeAttributes));
 
     // Populate helper structures based on above flags
-    std::vector<GUID> dxGuidAllowedAttributes = {};
-    std::vector<GUID> dxGuidRequiredAttributes = {};
-    std::vector<GUID> dxGuidDisallowedAttributes = {};
+    std::vector<GUID> dxGuidAllowedAttributes = {}; // Attributes here are ok, having them does not disquality a device
+    std::vector<GUID> dxGuidRequireAllAttributes = {}; // All attributes here must be present for a device to be use  
+    std::vector<GUID> dxGuidDisallowedAttributes = {}; // Any attribute here disqualifies a device from being used
 
     // By default allow for these compute attributes
     dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
@@ -42,12 +42,12 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
 
     if (requireComputeDevice)
     {
-        dxGuidRequiredAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
+        dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
     }
 
     if (requireGenericMLDevice)
     {
-        dxGuidRequiredAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
+        dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
     }
 
     ComPtr<IDXCoreAdapterFactory> factory;
@@ -67,7 +67,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     if (factory)
     {
         // If there's any required attributes, save time by only passing in required attributes instead.
-        std::vector<GUID> iteratingAdapterList = dxGuidRequiredAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequiredAttributes;
+        std::vector<GUID> iteratingAdapterList = dxGuidRequireAllAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequireAllAttributes;
         
         for (auto& allowedGuid : iteratingAdapterList)
         {
@@ -90,7 +90,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
                 }
 
                 // filter out adapters that doesn't match all required attributes
-                for (auto& requiredGuid : dxGuidRequiredAttributes)
+                for (auto& requiredGuid : dxGuidRequireAllAttributes)
                 {
                     if (!currentGpuAdapter->IsAttributeSupported(requiredGuid)) { isAdapterValid = false; }
                 }
@@ -124,6 +124,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
                 );
             if (d3d12CreateDevice)
             {
+                // The GENERIC feature level minimum allows for the creation of both compute only and generic ML devices.
                 THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_1_0_GENERIC, IID_PPV_ARGS(&d3dDevice)));
             }
         }
