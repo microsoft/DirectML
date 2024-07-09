@@ -48,7 +48,7 @@ function(init_directml_cache_variables prefix)
 
     # <PREFIX>_DIRECTML_NUGET_VERSION
     set(${prefix}_DIRECTML_NUGET_VERSION
-        1.14.2
+        1.15.0
         CACHE STRING "Version of the DirectML NuGet package (TYPE == nuget)."
     )
 
