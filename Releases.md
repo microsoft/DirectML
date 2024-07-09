@@ -30,7 +30,7 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 # DirectML 1.15.0
 
-- Add support for WebNN dev preview models
+- Improved support for WebNN dev preview models
  
 - Introduced DML_FEATURE_LEVEL 6.4:
   - Added 3 new operators:
@@ -40,16 +40,16 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
   - Updated 3 operators:
     - DML_OPERATOR_PADDING (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
     - DML_OPERATOR_PADDING1 (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
-    - DML_OPERATOR_ACTIVATION_SOFTPLUS (updated to allow Steepness<1)
+    - DML_OPERATOR_ACTIVATION_SOFTPLUS (updated to allow Steepness < 1)
 
 - Introduced DML_FEATURE_LEVEL 6.3:
-  - DataType Support:
-    - Added DML_TENSOR_DATA_TYPE_UINT4
-    - Added DML_TENSOR_DATA_TYPE_INT4
+  - Added data type Support:
+    - DML_TENSOR_DATA_TYPE_UINT4
+    - DML_TENSOR_DATA_TYPE_INT4
   - Added 4 new operators:
     - DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION2
     - DML_OPERATOR_MULTIHEAD_ATTENTION1
-    - DML_OPERATOR_QUANTIZE (added with INT4 support)
+    - DML_OPERATOR_QUANTIZE (added with INT4/UINT4 support)
     - DML_OPERATOR_DEQUANTIZE (added with INT4 support)
 
 - Optimizations:
@@ -57,10 +57,9 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
   - (LLM) Added MHA fusion
   - Added FusedMatMulAdd fusion with 1D C Tensor
   - Added Gemm fusion for GEMM(MatMul)-->Add/Add1-->Mul and GEMM(Matmul)-->Mul-->Add/Add1 => FusedMatMulAdd
-  - Intel ARC GPU
-    - Fix pooling metacommand calls by driver version
+  - (Intel ARC GPU) Fix pooling metacommand calls by driver version
  
-BugFix:
+Bug fixes:
   - Swish now produces correct output when invoked with strided input tensors
   - Intel
     - (Precision) FP16 GemmWave emulated on FP32
