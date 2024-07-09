@@ -52,7 +52,6 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 - Optimizations:
   - (LLM) Added INT4 Dequantize + GEMM fusion metacommand and DXIL lowerings.
   - (LLM) Added Multihead Attention fusion
-  - Added FusedMatMulAdd fusion with 1D C Tensor
   - Added Gemm fusion optimizations
   - (Intel ARC GPU) Fix pooling metacommand calls by driver version
  
