@@ -47,13 +47,13 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
     - DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION2
     - DML_OPERATOR_MULTIHEAD_ATTENTION1
     - DML_OPERATOR_QUANTIZE (added with INT4/UINT4 support)
-    - DML_OPERATOR_DEQUANTIZE (added with INT4 support)
+    - DML_OPERATOR_DEQUANTIZE (added with INT4/UINT4 support)
 
 - Optimizations:
   - (LLM) Added INT4 Dequantize + GEMM fusion metacommand and DXIL lowerings.
-  - (LLM) Added MHA fusion
+  - (LLM) Added Multihead Attention fusion
   - Added FusedMatMulAdd fusion with 1D C Tensor
-  - Added Gemm fusion for GEMM(MatMul)-->Add/Add1-->Mul and GEMM(Matmul)-->Mul-->Add/Add1 => FusedMatMulAdd
+  - Added Gemm fusion optimizations
   - (Intel ARC GPU) Fix pooling metacommand calls by driver version
  
 Bug fixes:
