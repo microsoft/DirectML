@@ -29,9 +29,6 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
 
 # DirectML 1.15.0
-
-- Improved support for WebNN dev preview models
- 
 - Introduced DML_FEATURE_LEVEL 6.4:
   - Added 3 new operators:
     - DML_OPERATOR_RESAMPLE3
