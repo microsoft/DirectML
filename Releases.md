@@ -28,6 +28,43 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
 
+# DirectML 1.15.0
+
+- Add support for WebNN dev preview models
+ 
+- Introduced DML_FEATURE_LEVEL 6.4:
+  - Added 3 new operators:
+    - DML_OPERATOR_RESAMPLE3
+    - DML_OPERATOR_FOLD
+    - DML_OPERATOR_UNFOLD
+  - Updated 3 operators:
+    - DML_OPERATOR_PADDING (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
+    - DML_OPERATOR_PADDING1 (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
+    - DML_OPERATOR_ACTIVATION_SOFTPLUS (updated to allow Steepness<1)
+
+- Introduced DML_FEATURE_LEVEL 6.3:
+  - DataType Support:
+    - Added DML_TENSOR_DATA_TYPE_UINT4
+    - Added DML_TENSOR_DATA_TYPE_INT4
+  - Added 4 new operators:
+    - DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION2
+    - DML_OPERATOR_MULTIHEAD_ATTENTION1
+    - DML_OPERATOR_QUANTIZE (added with INT4 support)
+    - DML_OPERATOR_DEQUANTIZE (added with INT4 support)
+
+- Optimizations:
+  - (LLM) Added INT4 Dequantize + GEMM fusion metacommand and DXIL lowerings.
+  - (LLM) Added MHA fusion
+  - Added FusedMatMulAdd fusion with 1D C Tensor
+  - Added Gemm fusion for GEMM(MatMul)-->Add/Add1-->Mul and GEMM(Matmul)-->Mul-->Add/Add1 => FusedMatMulAdd
+  - Intel ARC GPU
+    - Fix pooling metacommand calls by driver version
+ 
+BugFix:
+  - Swish now produces correct output when invoked with strided input tensors
+  - Intel
+    - (Precision) FP16 GemmWave emulated on FP32
+ 
 # DirectML 1.13.1
 
 - Fixed performance issues and bugs introduced in the 1.13 release for models that use the Join operator.
