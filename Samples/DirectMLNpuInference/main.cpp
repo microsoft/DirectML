@@ -26,10 +26,10 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
 
     // Populate helper structures based on above flags
     std::vector<GUID> dxGuidAllowedAttributes = {}; // Attributes here are ok, having them does not disquality a device
-    std::vector<GUID> dxGuidRequireAllAttributes = {}; // All attributes here must be present for a device to be use  
+    std::vector<GUID> dxGuidRequireAllAttributes = {}; // All attributes here must be present for a device to be used
     std::vector<GUID> dxGuidDisallowedAttributes = {}; // Any attribute here disqualifies a device from being used
 
-    // By default allow for these compute attributes
+    // By default allow for these generic attribute
     dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
 
     allowGraphicsAttributes ?
@@ -71,7 +71,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         
         for (auto& allowedGuid : iteratingAdapterList)
         {
-            if (adapter != nullptr) continue;
+            if (adapter != nullptr) break;
             
             ComPtr<IDXCoreAdapterList> adapterList;
             THROW_IF_FAILED(factory->CreateAdapterList(1, &allowedGuid, IID_PPV_ARGS(&adapterList)));
