@@ -1402,6 +1402,25 @@ std::vector<Model::BufferBindingSource> ParseBindingSource(const rapidjson::Valu
     return sourceResources;
 }
 
+DmlCompileType ParseDmlCompileType(const rapidjson::Value& value)
+{
+    if (value.GetType() != rapidjson::Type::kStringType)
+    {
+        throw std::invalid_argument("Expected a string.");
+    }
+    auto valueString = value.GetString();
+    if (!strcmp(valueString, "DmlCompileOp")) { return DmlCompileType::DmlCompileOp; }
+    if (!strcmp(valueString, "DmlCompileGraph")) { return DmlCompileType::DmlCompileGraph; }
+    throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DmlCompileType.", valueString));
+}
+
+DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, DmlCompileType defaultValue)
+{
+    return ParseFieldHelper<DmlCompileType>(object, fieldName, required, defaultValue, [](auto& value) {
+        return ParseDmlCompileType(value);
+        });
+}
+
 Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value& object, BucketAllocator& allocator)
 {
     Model::DmlDispatchableDesc desc;

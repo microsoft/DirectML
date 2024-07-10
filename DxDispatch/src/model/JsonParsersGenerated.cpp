@@ -653,25 +653,6 @@ DML_EXECUTION_FLAGS ParseDmlExecutionFlagsField(const rapidjson::Value& object, 
     });
 }
 
-DmlCompileType ParseDmlCompileType(const rapidjson::Value& value)
-{
-    if (value.GetType() != rapidjson::Type::kStringType)
-    {
-        throw std::invalid_argument("Expected a string.");
-    }
-    auto valueString = value.GetString();
-    if (!strcmp(valueString, "DmlCompileOp")) { return DmlCompileType::DmlCompileOp; }
-    if (!strcmp(valueString, "DmlCompileGraph")) { return DmlCompileType::DmlCompileGraph; }
-    throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DmlCompileType.", valueString));
-}
-
-DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, DmlCompileType defaultValue)
-{
-    return ParseFieldHelper<DmlCompileType>(object, fieldName, required, defaultValue, [](auto& value) {
-        return ParseDmlCompileType(value);
-        });
-}
-
 DML_CREATE_DEVICE_FLAGS ParseSingleFlagFromDmlCreateDeviceFlags(const rapidjson::Value& value)
 {
     if (value.GetType() != rapidjson::Type::kStringType)
