@@ -1408,6 +1408,7 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     desc.desc = ParseDmlOperatorDesc(object, false, allocator);
     desc.bindPoints = GetBindPoints(*desc.desc);
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+    desc.compileType = ParseDmlCompileTypeField(object, "DmlCompileType", false);
 
     auto bindingsField = object.FindMember("bindings");
     if (bindingsField != object.MemberEnd() && bindingsField->value.IsObject())

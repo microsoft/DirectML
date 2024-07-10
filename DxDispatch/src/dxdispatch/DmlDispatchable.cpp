@@ -11,8 +11,9 @@ DmlDispatchable::DmlDispatchable(
     std::string_view name, 
     std::shared_ptr<Device> device, 
     const Model::DmlDispatchableDesc& desc,
-    const Dispatchable::Bindings& initBindings
-    ) : m_name(name), m_device(device), m_desc(desc), m_initBindings(std::move(initBindings))
+    const Dispatchable::Bindings& initBindings,
+    IDxDispatchLogger* logger
+    ) : m_name(name), m_device(device), m_desc(desc), m_initBindings(std::move(initBindings)), m_logger(logger)
 {
     THROW_IF_FAILED(device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
 }
@@ -28,7 +29,8 @@ void FillBindingData(
     const Dispatchable::Bindings* initializeBindings,
     const Dispatchable::Bindings* executeBindings,
     BindingData& bindingData,
-    bool bindingForInitialization = false)
+    bool bindingForInitialization, 
+    DmlCompileType compileType)
 {
     const Dispatchable::Bindings& bindings = bindingForInitialization ? *initializeBindings : *executeBindings;
 
@@ -47,22 +49,23 @@ void FillBindingData(
         
         if (bindingIterator == bindings.end())
         {
-            if (bindPoints[i].required && !bindingForInitialization)
-            {
-                if (!initializeBindings || initializeBindings->find(bindPointName) == initializeBindings->end())
-                {
-                    throw std::invalid_argument(fmt::format("Nothing bound for required tensor '{}'.", bindPointName));
-                }
-            }
-
             for (size_t j = 0; j < bindPoints[i].resourceCount; j++)
             {
-                bindingData.bufferBindings[bufferIndex].Buffer = nullptr;
-                bindingData.bufferBindings[bufferIndex].Offset = 0;
-                bindingData.bufferBindings[bufferIndex].SizeInBytes = 0;
-                bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_NONE;
-                bindingData.bindingDescs[bufferIndex].Desc = nullptr;
-                bufferIndex++;
+                if (compileType == DmlCompileType::DmlCompileGraph && !bindPoints[i].required)
+                {
+                    // Dml Graph will fail if given DML_BINDING_TYPE_NONE for optional bindings not described in the graph.
+                    bindingData.bindingDescs.pop_back();
+                    bindingData.bufferBindings.pop_back();
+                }
+                else
+                {
+                    bindingData.bufferBindings[bufferIndex].Buffer = nullptr;
+                    bindingData.bufferBindings[bufferIndex].Offset = 0;
+                    bindingData.bufferBindings[bufferIndex].SizeInBytes = 0;
+                    bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_NONE;
+                    bindingData.bindingDescs[bufferIndex].Desc = nullptr;
+                    bufferIndex++;
+                }
             }
         }
         else
@@ -103,11 +106,85 @@ void FillBindingData(
 
 void DmlDispatchable::Initialize()
 {
-    THROW_IF_FAILED(m_device->DML()->CompileOperator(
-        m_operator.Get(), 
-        m_desc.executionFlags, 
-        IID_PPV_ARGS(m_operatorCompiled.ReleaseAndGetAddressOf())));
-    m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
+    if(m_desc.compileType == DmlCompileType::DmlCompileOp)
+    {
+        m_logger->LogInfo("DmlCompileOp");
+        THROW_IF_FAILED(m_device->DML()->CompileOperator(
+            m_operator.Get(), 
+            m_desc.executionFlags, 
+            IID_PPV_ARGS(m_operatorCompiled.ReleaseAndGetAddressOf())));
+        m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
+    }
+    else
+    {
+        m_logger->LogInfo("DmlCompileGraph");
+        DML_GRAPH_DESC dmlGraphDesc = {};
+        std::vector<DML_INPUT_GRAPH_EDGE_DESC> dmlInputGraphEdges;
+        std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
+        
+        std::vector<DML_OUTPUT_GRAPH_EDGE_DESC> dmlOutputGraphEdges;
+        std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
+        std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
+        DML_OPERATOR_GRAPH_NODE_DESC nodeDesc{};
+
+        nodeDesc.Operator = m_operator.Get();
+        nodeDesc.Name = m_name.c_str();
+
+        {
+            DML_GRAPH_NODE_DESC dmlGraphNodeDesc = {};
+            dmlGraphNodeDesc.Type = DML_GRAPH_NODE_TYPE_OPERATOR;
+            dmlGraphNodeDesc.Desc =  static_cast<void*>(&nodeDesc);
+            dmlGraphNodes.push_back(dmlGraphNodeDesc);
+        }
+
+        dmlInputGraphEdges.resize(m_desc.bindPoints.inputs.size());
+        for( size_t i = 0; i < m_desc.bindPoints.inputs.size(); i++)
+        {
+            if (m_desc.bindPoints.inputs[i].required)
+            {
+                DML_INPUT_GRAPH_EDGE_DESC desc = {};
+                desc.GraphInputIndex = gsl::narrow_cast<UINT>(i);
+                desc.ToNodeIndex = 0;
+                desc.ToNodeInputIndex = gsl::narrow_cast<UINT>(i);
+                desc.Name = m_desc.bindPoints.inputs[i].name.c_str();
+                dmlInputGraphEdges[i] = desc;
+                dmlInputEdges.push_back({ DML_GRAPH_EDGE_TYPE_INPUT, &dmlInputGraphEdges[i] });
+            }
+        }
+
+        dmlOutputGraphEdges.resize(m_desc.bindPoints.outputs.size());
+        for( size_t i = 0; i < m_desc.bindPoints.outputs.size(); i++)
+        {
+            if (m_desc.bindPoints.outputs[i].required)
+            {
+                DML_OUTPUT_GRAPH_EDGE_DESC desc = {};
+                desc.GraphOutputIndex = gsl::narrow_cast<UINT>(i);
+                desc.FromNodeIndex = 0;
+                desc.FromNodeOutputIndex = gsl::narrow_cast<UINT>(i);
+                desc.Name = m_desc.bindPoints.outputs[i].name.c_str();
+                dmlOutputGraphEdges[i] = desc;
+                dmlOutputEdges.push_back({ DML_GRAPH_EDGE_TYPE_OUTPUT, &dmlOutputGraphEdges[i] });
+            }
+        }
+
+        dmlGraphDesc.InputCount = static_cast<uint32_t>(dmlInputEdges.size());
+        dmlGraphDesc.InputEdges = dmlInputEdges.data();
+        dmlGraphDesc.InputEdgeCount = dmlGraphDesc.InputCount;
+
+        dmlGraphDesc.OutputCount = static_cast<uint32_t>(dmlOutputEdges.size());
+        dmlGraphDesc.OutputEdges = dmlOutputEdges.data();
+        dmlGraphDesc.OutputEdgeCount = dmlGraphDesc.OutputCount;
+
+        dmlGraphDesc.IntermediateEdgeCount = 0;
+        dmlGraphDesc.IntermediateEdges = nullptr;
+
+        dmlGraphDesc.NodeCount = 1;
+        dmlGraphDesc.Nodes = dmlGraphNodes.data();
+
+        auto graphName = fmt::format("Graph_{}", m_name);
+
+        THROW_IF_FAILED(m_device->DML()->CompileGraph(&dmlGraphDesc, m_desc.executionFlags, IID_PPV_ARGS(&m_operatorCompiled)));
+    }
 
     ComPtr<IDMLOperatorInitializer> initializer;
     IDMLCompiledOperator* ops[] = { m_operatorCompiled.Get() };
@@ -145,7 +222,7 @@ void DmlDispatchable::Initialize()
         // Initializers can initialize multiple inputs simultaneously, so each compiled op's inputs must
         // be bound using a separate buffer array binding.
         BindingData inputBindingData = {};
-        FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, nullptr, inputBindingData, true);
+        FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, nullptr, inputBindingData, true, m_desc.compileType);
 
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
         if (inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
@@ -193,10 +270,10 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
 
     BindingData inputBindingData = {};
-    FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, &bindings, inputBindingData);
+    FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, &bindings, inputBindingData, false, m_desc.compileType);
 
     BindingData outputBindingData = {};
-    FillBindingData(m_desc.bindPoints.outputs, &m_initBindings, &bindings, outputBindingData);
+    FillBindingData(m_desc.bindPoints.outputs, &m_initBindings, &bindings, outputBindingData, false, m_desc.compileType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;

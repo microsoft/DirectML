@@ -10,6 +10,12 @@
 #include <DirectML.h>
 #include "BucketAllocator.h"
 
+enum class DmlCompileType 
+{
+    DmlCompileOp,
+    DmlCompileGraph
+};
+
 class Model
 {
 public:
@@ -74,6 +80,7 @@ public:
         DML_OPERATOR_DESC* desc;
         BindPoints bindPoints;
         DML_EXECUTION_FLAGS executionFlags;
+        DmlCompileType compileType;
         Bindings initBindings;
     };
 
