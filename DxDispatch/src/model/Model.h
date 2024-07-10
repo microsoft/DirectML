@@ -69,6 +69,7 @@ public:
             std::string name;
             uint32_t resourceCount;
             bool required;
+            bool requiredBinding;
         };
 
         struct BindPoints

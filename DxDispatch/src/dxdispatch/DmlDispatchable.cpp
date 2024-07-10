@@ -51,7 +51,7 @@ void FillBindingData(
         {
             for (size_t j = 0; j < bindPoints[i].resourceCount; j++)
             {
-                if (compileType == DmlCompileType::DmlCompileGraph && !bindPoints[i].required)
+                if (compileType == DmlCompileType::DmlCompileGraph && !bindPoints[i].requiredBinding)
                 {
                     // Dml Graph will fail if given DML_BINDING_TYPE_NONE for optional bindings not described in the graph.
                     bindingData.bindingDescs.pop_back();
@@ -140,7 +140,7 @@ void DmlDispatchable::Initialize()
         dmlInputGraphEdges.resize(m_desc.bindPoints.inputs.size());
         for( size_t i = 0; i < m_desc.bindPoints.inputs.size(); i++)
         {
-            if (m_desc.bindPoints.inputs[i].required)
+            if (m_desc.bindPoints.inputs[i].requiredBinding)
             {
                 DML_INPUT_GRAPH_EDGE_DESC desc = {};
                 desc.GraphInputIndex = gsl::narrow_cast<UINT>(i);
@@ -155,7 +155,7 @@ void DmlDispatchable::Initialize()
         dmlOutputGraphEdges.resize(m_desc.bindPoints.outputs.size());
         for( size_t i = 0; i < m_desc.bindPoints.outputs.size(); i++)
         {
-            if (m_desc.bindPoints.outputs[i].required)
+            if (m_desc.bindPoints.outputs[i].requiredBinding)
             {
                 DML_OUTPUT_GRAPH_EDGE_DESC desc = {};
                 desc.GraphOutputIndex = gsl::narrow_cast<UINT>(i);

@@ -1407,6 +1407,31 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     Model::DmlDispatchableDesc desc;
     desc.desc = ParseDmlOperatorDesc(object, false, allocator);
     desc.bindPoints = GetBindPoints(*desc.desc);
+
+    auto UpdateBindingPoints = [](const rapidjson::Value& object, std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints) {
+        for (auto& bindPoint : bindPoints)
+        {
+            if (bindPoint.required || object.HasMember(bindPoint.name.c_str()))
+            {
+                bindPoint.requiredBinding = true;
+            }
+            else
+            {
+                bindPoint.requiredBinding = false;
+            }
+        }};
+
+    auto descMember = object.FindMember("Desc");
+    if (descMember == object.MemberEnd())
+    {
+        descMember = object.FindMember("desc");
+    }
+    if (descMember != object.MemberEnd())
+    {
+        UpdateBindingPoints(descMember->value, desc.bindPoints.inputs);
+        UpdateBindingPoints(descMember->value, desc.bindPoints.outputs);
+    }
+
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
     desc.compileType = ParseDmlCompileTypeField(object, "DmlCompileType", false);
 
