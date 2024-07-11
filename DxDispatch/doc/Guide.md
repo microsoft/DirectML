@@ -468,6 +468,28 @@ Take note of the few odd cases that don't follow the usual rule exactly:
 - Enum values of type `DML_OPERATOR_TYPE` omit `_TYPE` from their prefix. It's `DML_OPERATOR_GEMM`, not `DML_OPERATOR_TYPE_GEMM`.
 - Flag values are singular and omit the "S". It's `DML_EXECUTION_FLAG_NONE`, not `DML_EXECUTION_FLAGS_NONE`. 
 
+### DirectML Compile Op vs Graph (dmlCompileType)
+Enum dmlCompileType configures whether a defined DirectML operator uses IDMLDevice::CompileOperator or the operator is inserted into DML_GRAPH_DESC and compiled using IDMLDevice1::CompileGraph.
+
+| Enums for dmlCompileType                         | Description                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| <b><i>DmlCompileGraph</b></i> (Default behavior) | Uses IDMLDevice::CompileOperator for defined operator                     |
+| <b><i>DmlCompileGraph</b></i> (Default behavior) | Inserts Operator into a DML_GRAPH_DESC and uses IDMLDevice1::CompileGraph |
+
+Syntax:
+
+```json
+        "dmlOperator":
+        {
+            "type": "DML_OPERATOR_*",
+            "dmlCompileType": "DmlCompileGraph",
+            "Desc": { ... }
+        }
+```
+
+See full example in [dml_gemm_graph.json](../models/dml_gemm_graph.json).
+
+
 ### DML_TENSOR_DESC
 
 Since tensor descs are so common, the JSON parser provides default values for most fields.

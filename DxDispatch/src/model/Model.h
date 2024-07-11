@@ -10,11 +10,6 @@
 #include <DirectML.h>
 #include "BucketAllocator.h"
 
-enum class DmlCompileType 
-{
-    DmlCompileOp,
-    DmlCompileGraph
-};
 
 class Model
 {
@@ -64,6 +59,11 @@ public:
 
     struct DmlDispatchableDesc
     {
+        enum class DmlCompileType 
+        {
+            DmlCompileOp,
+            DmlCompileGraph
+        };
         struct BindPoint
         {
             std::string name;

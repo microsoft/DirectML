@@ -88,9 +88,6 @@ namespace JsonParsers
     DML_EXECUTION_FLAGS ParseDmlExecutionFlags(const rapidjson::Value& value);
     DML_EXECUTION_FLAGS ParseDmlExecutionFlagsField(const rapidjson::Value& object, std::string_view fieldName, bool required = true, DML_EXECUTION_FLAGS defaultValue = DML_EXECUTION_FLAG_NONE);
 
-    // DmlCompileType
-    DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required = true, DmlCompileType defaultValue = DmlCompileType::DmlCompileOp);
-
     // DML_TENSOR_TYPE
     DML_TENSOR_TYPE ParseDmlTensorType(const rapidjson::Value& value);
     DML_TENSOR_TYPE ParseDmlTensorTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required = true, DML_TENSOR_TYPE defaultValue = DML_TENSOR_TYPE_INVALID);

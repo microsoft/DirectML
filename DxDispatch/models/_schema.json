@@ -76,7 +76,7 @@
             ]
         },
 
-        "DmlCompileType":
+        "dmlCompileType":
         {
             "enum":
             [

@@ -1402,21 +1402,21 @@ std::vector<Model::BufferBindingSource> ParseBindingSource(const rapidjson::Valu
     return sourceResources;
 }
 
-DmlCompileType ParseDmlCompileType(const rapidjson::Value& value)
+Model::DmlDispatchableDesc::DmlCompileType ParseDmlCompileType(const rapidjson::Value& value)
 {
     if (value.GetType() != rapidjson::Type::kStringType)
     {
         throw std::invalid_argument("Expected a string.");
     }
     auto valueString = value.GetString();
-    if (!strcmp(valueString, "DmlCompileOp")) { return DmlCompileType::DmlCompileOp; }
-    if (!strcmp(valueString, "DmlCompileGraph")) { return DmlCompileType::DmlCompileGraph; }
+    if (!strcmp(valueString, "DmlCompileOp")) { return Model::DmlDispatchableDesc::DmlCompileType::DmlCompileOp; }
+    if (!strcmp(valueString, "DmlCompileGraph")) { return Model::DmlDispatchableDesc::DmlCompileType::DmlCompileGraph; }
     throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DmlCompileType.", valueString));
 }
 
-DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, DmlCompileType defaultValue)
+Model::DmlDispatchableDesc::DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, Model::DmlDispatchableDesc::DmlCompileType defaultValue)
 {
-    return ParseFieldHelper<DmlCompileType>(object, fieldName, required, defaultValue, [](auto& value) {
+    return ParseFieldHelper<Model::DmlDispatchableDesc::DmlCompileType>(object, fieldName, required, defaultValue, [](auto& value) {
         return ParseDmlCompileType(value);
         });
 }
@@ -1427,6 +1427,8 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     desc.desc = ParseDmlOperatorDesc(object, false, allocator);
     desc.bindPoints = GetBindPoints(*desc.desc);
 
+    // DirectML requires optional bindings if DML_OPERATOR_DESC declares that binding for optional operator tensors.
+    // Logic is based on the Model directml Operator the tensors declared in "desc".
     auto UpdateBindingPoints = [](const rapidjson::Value& object, std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints) {
         for (auto& bindPoint : bindPoints)
         {
@@ -1450,9 +1452,9 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
         UpdateBindingPoints(descMember->value, desc.bindPoints.inputs);
         UpdateBindingPoints(descMember->value, desc.bindPoints.outputs);
     }
+    desc.compileType = ParseDmlCompileTypeField(object, "dmlCompileType", false, Model::DmlDispatchableDesc::DmlCompileType::DmlCompileOp);
 
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
-    desc.compileType = ParseDmlCompileTypeField(object, "DmlCompileType", false);
 
     auto bindingsField = object.FindMember("bindings");
     if (bindingsField != object.MemberEnd() && bindingsField->value.IsObject())

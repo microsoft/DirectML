@@ -32,7 +32,7 @@
                 "Alpha": 1.0,
                 "Beta": 1.0
             },
-            "DmlCompileType": "DmlCompileGraph",
+            "dmlCompileType": "DmlCompileGraph",
             "executionFlags": "DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION",
             "bindings": 
             {

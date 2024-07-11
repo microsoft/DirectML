@@ -30,7 +30,7 @@ void FillBindingData(
     const Dispatchable::Bindings* executeBindings,
     BindingData& bindingData,
     bool bindingForInitialization, 
-    DmlCompileType compileType)
+    Model::DmlDispatchableDesc::DmlCompileType compileType)
 {
     const Dispatchable::Bindings& bindings = bindingForInitialization ? *initializeBindings : *executeBindings;
 
@@ -51,7 +51,7 @@ void FillBindingData(
         {
             for (size_t j = 0; j < bindPoints[i].resourceCount; j++)
             {
-                if (compileType == DmlCompileType::DmlCompileGraph && !bindPoints[i].requiredBinding)
+                if (compileType == Model::DmlDispatchableDesc::DmlCompileType::DmlCompileGraph && !bindPoints[i].requiredBinding)
                 {
                     // Dml Graph will fail if given DML_BINDING_TYPE_NONE for optional bindings not described in the graph.
                     bindingData.bindingDescs.pop_back();
@@ -106,9 +106,9 @@ void FillBindingData(
 
 void DmlDispatchable::Initialize()
 {
-    if(m_desc.compileType == DmlCompileType::DmlCompileOp)
+    if(m_desc.compileType == Model::DmlDispatchableDesc::DmlCompileType::DmlCompileOp)
     {
-        m_logger->LogInfo("DmlCompileOp");
+        m_logger->LogInfo("Compile Op");
         THROW_IF_FAILED(m_device->DML()->CompileOperator(
             m_operator.Get(), 
             m_desc.executionFlags, 
@@ -117,24 +117,22 @@ void DmlDispatchable::Initialize()
     }
     else
     {
-        m_logger->LogInfo("DmlCompileGraph");
+        m_logger->LogInfo("Compiling op using IDMLDevice1::CompileGraph");
         DML_GRAPH_DESC dmlGraphDesc = {};
         std::vector<DML_INPUT_GRAPH_EDGE_DESC> dmlInputGraphEdges;
         std::vector<DML_GRAPH_EDGE_DESC> dmlInputEdges;
         
         std::vector<DML_OUTPUT_GRAPH_EDGE_DESC> dmlOutputGraphEdges;
         std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
-        std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
+        DML_GRAPH_NODE_DESC dmlGraphNodeDesc = {};
         DML_OPERATOR_GRAPH_NODE_DESC nodeDesc{};
 
         nodeDesc.Operator = m_operator.Get();
         nodeDesc.Name = m_name.c_str();
 
         {
-            DML_GRAPH_NODE_DESC dmlGraphNodeDesc = {};
             dmlGraphNodeDesc.Type = DML_GRAPH_NODE_TYPE_OPERATOR;
-            dmlGraphNodeDesc.Desc =  static_cast<void*>(&nodeDesc);
-            dmlGraphNodes.push_back(dmlGraphNodeDesc);
+            dmlGraphNodeDesc.Desc =  &nodeDesc;
         }
 
         dmlInputGraphEdges.resize(m_desc.bindPoints.inputs.size());
@@ -179,11 +177,10 @@ void DmlDispatchable::Initialize()
         dmlGraphDesc.IntermediateEdges = nullptr;
 
         dmlGraphDesc.NodeCount = 1;
-        dmlGraphDesc.Nodes = dmlGraphNodes.data();
-
-        auto graphName = fmt::format("Graph_{}", m_name);
+        dmlGraphDesc.Nodes = &dmlGraphNodeDesc;
 
         THROW_IF_FAILED(m_device->DML()->CompileGraph(&dmlGraphDesc, m_desc.executionFlags, IID_PPV_ARGS(&m_operatorCompiled)));
+        m_operatorCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(fmt::format("Graph_{}", m_name)).data());
     }
 
     ComPtr<IDMLOperatorInitializer> initializer;
