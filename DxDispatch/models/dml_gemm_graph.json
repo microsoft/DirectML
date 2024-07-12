@@ -6,15 +6,15 @@
         "A": { 
             "initialValuesDataType": "FLOAT32",
             "initialValues": { "valueCount": 1024, "value": 1 }
-    },
-        "B": {
-            "initialValuesDataType": "FLOAT32",
-            "initialValues": { "valueCount": 1024, "value": 1 }
-    },
-        "output": {
-            "initialValuesDataType": "FLOAT32",
-            "initialValues": { "valueCount": 1024, "value": 1 }
-    }
+        },
+            "B": {
+                "initialValuesDataType": "FLOAT32",
+                "initialValues": { "valueCount": 1024, "value": 1 }
+        },
+            "output": {
+                "initialValuesDataType": "FLOAT32",
+                "initialValues": { "valueCount": 1024, "value": 1 }
+        }
     },
 
     "dispatchables": 
