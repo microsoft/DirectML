@@ -7,7 +7,8 @@ public:
         std::string_view name, 
         std::shared_ptr<Device> device, 
         const Model::DmlDispatchableDesc& desc, 
-        const Dispatchable::Bindings& initBindings);
+        const Dispatchable::Bindings& initBindings,
+        IDxDispatchLogger* logger);
 
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
@@ -23,4 +24,5 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
     Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
+    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
 };

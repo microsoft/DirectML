@@ -1,0 +1,57 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "A": { 
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 1024, "value": 1 }
+        },
+            "B": {
+                "initialValuesDataType": "FLOAT32",
+                "initialValues": { "valueCount": 1024, "value": 1 }
+        },
+            "output": {
+                "initialValuesDataType": "FLOAT32",
+                "initialValues": { "valueCount": 1024, "value": 1 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "gemm": 
+        {
+            "type": "DML_OPERATOR_GEMM",
+            "desc": 
+            {
+                "ATensor": { "DataType": "FLOAT32", "Sizes": [1,1,32,32] },
+                "BTensor": { "DataType": "FLOAT32", "Sizes": [1,1,32,32], "Flags": "DML_TENSOR_FLAG_OWNED_BY_DML" },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,32,32] },
+                "TransA": "DML_MATRIX_TRANSFORM_NONE",
+                "TransB": "DML_MATRIX_TRANSFORM_NONE",
+                "Alpha": 1.0,
+                "Beta": 1.0
+            },
+            "dmlCompileType": "DmlCompileGraph",
+            "executionFlags": "DML_EXECUTION_FLAG_ALLOW_HALF_PRECISION_COMPUTATION",
+            "bindings": 
+            {
+                "BTensor": "B"
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "gemm",
+            "bindings": 
+            {
+                "ATensor": "A",
+                "OutputTensor": "output"
+            }
+        },
+        { "type": "print", "resource": "output" }
+    ]
+}
