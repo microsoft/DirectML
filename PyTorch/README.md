@@ -15,7 +15,7 @@ pip install torch-directml
 ```
 
 ## Samples
-Try the `torch-directml` samples below or explore the [cv](./cv/), [transformer](./transformer/), [llm](./llm/) and [diffusion](./diffusion/) folders:
+Try the `torch-directml` samples below, or explore the [cv](./cv/), [transformer](./transformer/), [llm](./llm/) and [diffusion](./diffusion/) folders:
 * [attention is all you need - the original transformer model](./transformer/attention_is_all_you_need/)
 * [yolov3 - a real-time object detection model](./cv/yolov3/)
 * [squeezenet - a small image classification model](./cv/squeezenet)
