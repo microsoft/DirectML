@@ -1,0 +1,6 @@
+diffusers==0.29.2
+gradio==3.13.2
+numpy==1.26.4
+Pillow==10.4.0
+scipy==1.14.0
+transformers==4.42.3
