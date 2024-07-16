@@ -32,7 +32,7 @@ To use Stable Diffusion with the text-to-image interface, run:
 
 When you run this code, a local URL will be displayed on the console. Open http://localhost:7860 (or the local URL you see) in a browser to interact with the text-to-image interface.
 
-Within the interface, use the dropdown to switch between SD Turbo and SDXL Turbo. You can also use the slider to set the number of iteration steps, 1 to 4, for image generation.
+Within the interface, use the dropdown to switch between SD Turbo and SDXL Turbo. You can also use the slider to set the number of iteration steps (1 to 4) for image generation.
 
 ![slider_dropdown](assets/slider_dropdown.png)
 
