@@ -30,7 +30,7 @@ def load_model(model_name):
         model_name,
         torch_dtype=torch.float16,
         variant="fp16"
-        ).to(device)
+    ).to(device)
  
 model_name = "stabilityai/sd-turbo"
 pipe = load_model("stabilityai/sd-turbo")
