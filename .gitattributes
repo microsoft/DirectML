@@ -1,11 +1,9 @@
 # Normalize line endings in the repository
 * text=auto
-
 # These file types should always be considered binary
 *.png  binary
 *.jpg  binary
 *.rtf  binary
 *.pdf  binary
-*.onnx binary
 *.pb   binary
 *.sh text eol=lf

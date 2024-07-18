@@ -4,8 +4,6 @@
 #include "NpyReaderWriter.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-#include "../DirectMLHelpers/DmlGraphDeserialization.h"
-
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
@@ -1422,51 +1420,9 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     return desc;
 }
 
-// DmlSerializedGraphDesc ParseDmlSerializedGraphDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
-// {
-//     auto sourcePath = ParseStringField(object, "sourcePath");
-//     std::filesystem::path graphFilePath = ResolveInputFilePath(parentPath, sourcePath);
-//     std::ifstream inFile(graphFilePath, std::ios::binary | std::ios::ate);
-//     if (!inFile)
-//     {
-//         throw std::invalid_argument("Could not open the graph file for DmlSerializedGraph dispatchable");
-//     }
-//     std::streampos fileSize = inFile.tellg();
-//     std::vector<uint8_t> blob(gsl::narrow_cast<size_t>(fileSize));
-//     inFile.seekg(0, std::ios::beg);
-//     inFile.read(reinterpret_cast<char*>(blob.data()), fileSize);
-
-//     std::vector<std::unique_ptr<std::byte[]>> rawData;
-//     return DeserializeDmlGraph(blob.data(), rawData);
-// }
-
-// Model::DmlSerializedGraphDispatchableDesc::BindPoints GetBindPoints(const DmlSerializedGraphDesc& dmlSerializedGraphDesc)
-// {
-//     Model::DmlSerializedGraphDispatchableDesc::BindPoints bindPoints;
-//     for (const auto& inputEdge : dmlSerializedGraphDesc.InputEdges) 
-//     {
-//         bindPoints.inputs.push_back({
-//             inputEdge.Name,  
-//             1,               
-//             true             
-//         });
-//     }
-//     for (const auto& outputEdge : dmlSerializedGraphDesc.OutputEdges)
-//     {
-//         bindPoints.outputs.push_back({
-//             outputEdge.Name, 
-//             1,               
-//             true             
-//         });
-//     }
-//     return bindPoints;
-// }
-
 Model::DmlSerializedGraphDispatchableDesc ParseModelDmlSerializedGraphDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
 {
     Model::DmlSerializedGraphDispatchableDesc desc = {};
-    //desc.desc = ParseDmlSerializedGraphDesc(parentPath, object);
-    //desc.bindPoints = GetBindPoints(desc.desc);
     desc.sourcePath = ResolveInputFilePath(parentPath, ParseStringField(object, "sourcePath"));
     desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
 
@@ -1495,7 +1451,6 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     Model::DispatchableDesc desc;
     desc.name = name;
     auto type = ParseStringField(object, "type");
-    std::cout << "type.data(): " << type.data() << std::endl;
     if (!_stricmp(type.data(), "hlsl")) 
     { 
         desc.value = ParseModelHlslDispatchableDesc(parentPath, object);

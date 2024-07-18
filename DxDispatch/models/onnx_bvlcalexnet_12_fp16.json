@@ -1,0 +1,44 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "data_0": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 150528, "value": 0 }
+        },
+        "prob_1": 
+        {
+            "initialValuesDataType": "FLOAT16",
+            "initialValues": { "valueCount": 9216, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "bvlcalexnet": 
+        {
+         "type": "onnx",
+         "sourcePath": "onnx_bvlcalexnet_12_fp16.onnx"
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "bvlcalexnet",
+            "bindings": 
+            {
+                "data_0": "data_0",
+                "prob_1": "prob_1"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "prob_1"
+        }
+    ]
+}

@@ -51,7 +51,6 @@ Model::Model(
         }
     }
 
-
     // Validate references to ops/resources in the model.
     for (auto& commandDesc : m_commands)
     {

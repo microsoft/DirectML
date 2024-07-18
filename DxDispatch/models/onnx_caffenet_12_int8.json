@@ -1,0 +1,44 @@
+{
+    "$schema": "./_schema.json",
+  
+    "resources": 
+    {
+      "data_0": 
+      {
+        "initialValuesDataType": "FLOAT32",
+        "initialValues": { "valueCount": 150528, "value": 0 }
+      },
+      "prob_1": 
+      {
+        "initialValuesDataType": "FLOAT32",
+        "initialValues": { "valueCount": 1000, "value": 0 }
+      }
+    },
+  
+    "dispatchables": 
+    {
+      "caffenet":
+        {
+            "type": "onnx",
+            "sourcePath": "onnx_caffenet_12_int8.onnx"
+      }
+    },
+  
+    "commands": 
+    [
+      {
+        "type": "dispatch",
+        "dispatchable": "caffenet",
+        "bindings": 
+        {
+          "data_0": "data_0",
+          "prob_1": "prob_1"
+        }
+      }
+      ,
+      {
+        "type": "print",
+        "resource": "prob_1"
+      }
+    ]
+  }

@@ -4,8 +4,8 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "DmlSerializedGraphDispatchable.h"
-#include "../DirectMLHelpers/DmlGraphHelper.h"
-#include "../DirectMLHelpers/DmlGraphDeserialization.h"
+#include "DirectMLHelpers/DmlGraphHelper.h"
+#include "DirectMLHelpers/DmlGraphDeserialization.h"
 
 
 using Microsoft::WRL::ComPtr;
@@ -41,6 +41,21 @@ DmlSerializedGraphDispatchable::BindPoints DmlSerializedGraphDispatchable::GetBi
             true             
         });
     }
+    for (const auto& node : serializedDesc.Nodes)
+    {
+        if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc))
+        {
+            const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
+            if (std::holds_alternative<ConstantName>(constantVariant))
+            {
+                bindPoints.inputs.push_back({
+                    node.Name,
+                    1,
+                    true
+                });
+            }
+        }
+    }
     for (const auto& outputEdge : serializedDesc.OutputEdges)
     {
         bindPoints.outputs.push_back({
@@ -66,7 +81,8 @@ std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> DmlSerializedGraphDispatch
     for (uint32_t nodeIndex = 0; nodeIndex < serializedDesc.Nodes.size(); nodeIndex++) {
         const auto& node = serializedDesc.Nodes[nodeIndex];
         if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc)) {
-            if (constantNodeEdges.find(nodeIndex) != constantNodeEdges.end()) {
+            const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
+            if (std::holds_alternative<ConstantName>(constantVariant) && constantNodeEdges.find(nodeIndex) != constantNodeEdges.end()) {
                 const auto& edge = constantNodeEdges[nodeIndex];
                 const auto& operatorNode = serializedDesc.Nodes[edge.ToNodeIndex];
                 if (std::holds_alternative<AbstractOperatorDesc>(operatorNode.Desc)) {
@@ -92,14 +108,17 @@ Dispatchable::Bindings DmlSerializedGraphDispatchable::GenerateInitialBindingsFr
     {
         if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc))
         {
+            const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
+            if (std::holds_alternative<ConstantName>(constantVariant))
+            {
             Dispatchable::BindingSource bindingSource;
-            bindingSource.resource = nullptr;  // will set later in CreateResourceFromConstantNode
+            bindingSource.resource = nullptr;  
             bindingSource.resourceDesc = nullptr;
             bindingSource.elementOffset = 0;
-            bindingSource.elementCount = 0;  // will set in CreateResourceFromConstantNode
+            bindingSource.elementCount = 0;  
             bindingSource.elementSizeInBytes = GetElementSize(m_constantDataTypes[node.Name]);
-            // ,aybe add other fields
             local_bindings[node.Name] = {bindingSource};
+            }
         }
     }
 
@@ -126,31 +145,27 @@ std::vector<std::byte> DmlSerializedGraphDispatchable::LoadFileContents(const st
 void DmlSerializedGraphDispatchable::CreateResourceFromConstantNode(const DmlSerializedGraphNode& node)
 {
     const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
-    
+   
     std::vector<std::byte> data;
     if (std::holds_alternative<ConstantName>(constantVariant))
     {
         const auto& constantName = std::get<ConstantName>(constantVariant);
-        std::string fileName = constantName.name + /*/"/*_0*/".bin";
-        data = LoadFileContents(m_desc.sourcePath.parent_path() / fileName);
-    }
-    else if (std::holds_alternative<ConstantData>(constantVariant))
-    {
-        const auto& constantData = std::get<ConstantData>(constantVariant);
-        data.assign(constantData.data, constantData.data + constantData.dataSize);
-    }
-    
-    auto wName = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(node.Name);
-    auto d3d12Resource = m_device->Upload(data.size(), data, wName);
-    m_resources[node.Name] = std::move(d3d12Resource);
 
-    //Update the binding from generate bindings  function with the created resource
-    if (m_bindings.find(node.Name) != m_bindings.end() && !m_bindings[node.Name].empty())
-    {
-        auto& bindingSource = m_bindings[node.Name][0];
-        bindingSource.resource = m_resources[node.Name].Get();
-        bindingSource.elementCount = data.size() / GetElementSize(m_constantDataTypes[node.Name]);
-        //Other fields update here 
+        std::filesystem::path filePath = m_desc.sourcePath.parent_path() / (constantName.name + ".bin");
+        data = LoadFileContents(filePath);
+    
+        auto wName = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(node.Name);
+        auto d3d12Resource = m_device->Upload(data.size(), data, wName);
+        if (!d3d12Resource) throw std::runtime_error("Failed to create resource for constant node: " + node.Name);
+
+        m_resources[node.Name] = std::move(d3d12Resource);
+
+        if (m_bindings.find(node.Name) != m_bindings.end() && !m_bindings[node.Name].empty())
+        {
+            auto& bindingSource = m_bindings[node.Name][0];
+            bindingSource.resource = m_resources[node.Name].Get();
+            bindingSource.elementCount = data.size() / GetElementSize(m_constantDataTypes[node.Name]);
+        }
     }
 }
 
@@ -189,15 +204,23 @@ void DmlSerializedGraphDispatchable::BuildGraph()
     m_constantDataTypes = ExtractConstantDataTypes(serializedDesc);
     m_bindings = GenerateInitialBindingsFromGraph(serializedDesc);
 
-    // Create the D3D12 resources for constant nodes
+    // for (const auto& node : serializedDesc.Nodes)
+    // {
+    //     const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
+    //     if (std::holds_alternative<ConstantName>(constantVariant))
+    //     {
+    //         CreateResourceFromConstantNode(node);
+    //     }
+    // }
+
     for (const auto& node : serializedDesc.Nodes)
     {
-        if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc))
+        const auto* constantVariantPtr = std::get_if<DmlSerializedGraphNodeConstantVariant>(&node.Desc);
+        if (constantVariantPtr && std::holds_alternative<ConstantName>(*constantVariantPtr))
         {
             CreateResourceFromConstantNode(node);
         }
     }
-    //
 
     // Convert to Public Graph Description
     StackAllocator<1024> allocator;
@@ -238,14 +261,13 @@ struct BindingData
     std::vector<DML_BINDING_DESC> bindingDescs;
 };
 
-
 void FillBindingData(
     const std::vector<DmlSerializedGraphDispatchable::BindPoint>& bindPoints,
     const Dispatchable::Bindings* initializeBindings,
     const Dispatchable::Bindings* executeBindings,
     BindingData& bindingData,
     bool bindingForInitialization = false)
-{
+{    
     const Dispatchable::Bindings& bindings = bindingForInitialization ? *initializeBindings : *executeBindings;
 
     uint32_t totalResourceCount = 0;
@@ -255,23 +277,22 @@ void FillBindingData(
     bindingData.bindingDescs.resize(totalResourceCount);
 
     size_t bufferIndex = 0;
-
-    for (size_t i = 0; i < bindPoints.size(); i++)
+    
+    for (const auto& bindPoint : bindPoints)
     {
-        auto bindPointName = bindPoints[i].name;
-        auto bindingIterator = bindings.find(bindPointName);
+        auto bindingIterator = bindings.find(bindPoint.name);
 
         if (bindingIterator == bindings.end())
         {
-            if (bindPoints[i].required && !bindingForInitialization)
+            if (bindPoint.required && !bindingForInitialization)
             {
-                if (!initializeBindings || initializeBindings->find(bindPointName) == initializeBindings->end())
+                if (!initializeBindings || initializeBindings->find(bindPoint.name) == initializeBindings->end())
                 {
-                    throw std::invalid_argument(fmt::format("Nothing bound for required tensor '{}'.", bindPointName));
+                    throw std::invalid_argument(fmt::format("Nothing bound for required tensor '{}'.", bindPoint.name));
                 }
             }
 
-            for (size_t j = 0; j < bindPoints[i].resourceCount; j++)
+            for (size_t j = 0; j < bindPoint.resourceCount; j++)
             {
                 bindingData.bufferBindings[bufferIndex].Buffer = nullptr;
                 bindingData.bufferBindings[bufferIndex].Offset = 0;
@@ -285,30 +306,21 @@ void FillBindingData(
         {
             auto& sources = bindingIterator->second;
 
-            if (bindPoints[i].resourceCount != sources.size())
+            if (bindPoint.resourceCount != sources.size())
             {
                 throw std::invalid_argument(fmt::format(
                     "Bind point '{}' requires {} resources, but {} were bound.",
-                    bindPointName,
-                    bindPoints[i].resourceCount,
+                    bindPoint.name,
+                    bindPoint.resourceCount,
                     sources.size()));
             }
 
             for (auto& source : sources)
             {
                 assert(source.resource != nullptr);
-                assert(source.resourceDesc != nullptr);
-
-                if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
-                {
-                    throw std::invalid_argument("DML operators only support buffer bindings");
-                }
-
-                auto& bufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
-
                 bindingData.bufferBindings[bufferIndex].Buffer = source.resource;
                 bindingData.bufferBindings[bufferIndex].Offset = source.elementOffset * source.elementSizeInBytes;
-                bindingData.bufferBindings[bufferIndex].SizeInBytes = bufferDesc.sizeInBytes - bindingData.bufferBindings[bufferIndex].Offset;
+                bindingData.bufferBindings[bufferIndex].SizeInBytes = source.elementCount * source.elementSizeInBytes;
                 bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_BUFFER;
                 bindingData.bindingDescs[bufferIndex].Desc = &bindingData.bufferBindings[bufferIndex];
                 bufferIndex++;
@@ -319,7 +331,6 @@ void FillBindingData(
 
 void DmlSerializedGraphDispatchable::Initialize()
 {
-
     BuildGraph();
     m_graphCompiled->SetName(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(m_name).data());
 
@@ -360,7 +371,7 @@ void DmlSerializedGraphDispatchable::Initialize()
         // be bound using a separate buffer array binding.
         BindingData inputBindingData = {};
         FillBindingData(bindPoints.inputs, &m_bindings, nullptr, inputBindingData, true);
-
+        
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
         if (inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
         {
@@ -407,10 +418,10 @@ void DmlSerializedGraphDispatchable::Bind(const Bindings& bindings, uint32_t ite
     auto bindingProps = m_graphCompiled->GetBindingProperties();
 
     BindingData inputBindingData = {};
-    FillBindingData(bindPoints.inputs, &bindings, &bindings, inputBindingData);
+    FillBindingData(bindPoints.inputs, &m_bindings, &bindings, inputBindingData);
 
     BindingData outputBindingData = {};
-    FillBindingData(bindPoints.outputs, &bindings, &bindings, outputBindingData);
+    FillBindingData(bindPoints.outputs, nullptr, &bindings, outputBindingData);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;

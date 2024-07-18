@@ -1,4 +1,5 @@
 #pragma once
+#include "DirectMLHelpers\DmlSerializedGraphDesc.h"
 
 class DmlSerializedGraphDispatchable : public Dispatchable
 {
@@ -18,9 +19,7 @@ public:
     DmlSerializedGraphDispatchable(
         std::string_view name, 
         std::shared_ptr<Device> device, 
-        const Model::DmlSerializedGraphDispatchableDesc& desc 
-        //const Dispatchable::Bindings& initBindings
-        /*,BindPoint bindPoints*/);
+        const Model::DmlSerializedGraphDispatchableDesc& desc);
 
     void Initialize() final ;
     void Bind(const Bindings& bindings, uint32_t iteration) final ;
@@ -47,7 +46,6 @@ private:
 
 
     const Model::DmlSerializedGraphDispatchableDesc& m_desc;
-    //const Dispatchable::Bindings& m_initBindings;
     Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_graphCompiled;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_persistentBuffer;
     Microsoft::WRL::ComPtr<IDMLBindingTable> m_bindingTable;

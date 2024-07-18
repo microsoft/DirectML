@@ -1,0 +1,46 @@
+{
+    "$schema": "./_schema.json",
+  
+    "resources": 
+    {
+        "input": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 150528, "value": 0 }
+        },
+        "output": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 9216, "value": 0 }
+        }
+    },
+  
+    "dispatchables": 
+    {
+        "mobilenetv2": 
+        {
+          "type": "onnx",
+          "sourcePath": "onnx_mobilenetv2_7_int8_optimized.onnx"
+        }
+    },
+  
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "mobilenetv2",
+            "bindings": 
+            {
+              "input": "input",
+              "output": "output"
+            }
+        }
+        ,
+        {
+            "type": "print",
+            "resource": "output"
+        }
+    ]
+  }
+  
+  
