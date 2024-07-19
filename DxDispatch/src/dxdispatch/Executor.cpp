@@ -5,7 +5,6 @@
 #include "Model.h"
 #include "Dispatchable.h"
 #include "DmlDispatchable.h"
-#include "DmlSerializedGraphDispatchable.h"
 #ifndef DXCOMPILER_NONE
 #include "HlslDispatchable.h"
 #endif
@@ -151,19 +150,8 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             else if (std::holds_alternative<Model::DmlSerializedGraphDispatchableDesc>(desc.value)) 
             {
                 auto& dmlSerializedGraphDispatchableDesc = std::get<Model::DmlSerializedGraphDispatchableDesc>(desc.value);
-                // bindings for model weights
-                Dispatchable::Bindings initBindings;
-                // try
-                // {
-                //     initBindings = ResolveBindings(dmlSerializedGraphDispatchableDesc.initBindings);
-                // }
-                //catch (const std::exception& e)
-                // {
-                //     m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
-                //     return;
-                // }
 
-                m_dispatchables[desc.name] = std::make_unique<DmlSerializedGraphDispatchable>(
+                m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(
                     desc.name, 
                     device, 
                     dmlSerializedGraphDispatchableDesc);

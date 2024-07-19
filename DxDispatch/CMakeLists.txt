@@ -83,9 +83,6 @@ add_library(
     src/model/Model.h
     src/model/NpyReaderWriter.cpp
     src/model/NpyReaderWriter.h
-    # # ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
-    # # src/DirectMLHelpers/DmlGraphDeserialization.cpp
-    # src/DirectMLHelpers/ApiTraits.cpp
 )
 
 target_link_libraries(
@@ -134,8 +131,6 @@ add_library(
     src/dxdispatch/Device.h
     src/dxdispatch/DmlDispatchable.cpp
     src/dxdispatch/DmlDispatchable.h
-    src/dxdispatch/DmlSerializedGraphDispatchable.cpp
-    src/dxdispatch/DmlSerializedGraphDispatchable.h
     src/dxdispatch/DirectMLHelpers/DmlGraphDeserialization.cpp
     src/dxdispatch/DirectMLHelpers/ApiTraits.cpp
     src/dxdispatch/Executor.cpp
