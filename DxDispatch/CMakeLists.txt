@@ -149,14 +149,8 @@ add_library(
 target_include_directories(
     
     dxdispatchImpl  
-    # PRIVATE 
-    # ${CMAKE_CURRENT_SOURCE_DIR}/src
-    # ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch
-    # ${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
-    # ${CMAKE_CURRENT_BINARY_DIR}
     INTERFACE 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch
-    #${CMAKE_CURRENT_SOURCE_DIR}/src/DirectMLHelpers
 )
 
 if(NOT dxcompiler_type STREQUAL None)
