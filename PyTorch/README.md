@@ -15,15 +15,16 @@ pip install torch-directml
 ```
 
 ## Samples
-For `torch-directml` samples find brief summaries below or explore the [cv](./cv/), [transformer](./transformer/) or [llm](./llm/) folders:
+Try the `torch-directml` samples below, or explore the [cv](./cv/), [transformer](./transformer/), [llm](./llm/) and [diffusion](./diffusion/) folders:
 * [attention is all you need - the original transformer model](./transformer/attention_is_all_you_need/)
 * [yolov3 - a real-time object detection model](./cv/yolov3/)
 * [squeezenet - a small image classification model](./cv/squeezenet)
 * [resnet50 - an image classification model](./cv/resnet50)
 * [maskrcnn - an object detection model](./cv/objectDetection/maskrcnn/)
 * [llm - a text generation and chatbot app supporting various language models](./llm/)
+* [whisper - a general-purpose speech recognition model](./audio/whisper/)
+* [Stable Diffusion Turbo & XL Turbo - a text-to-image generation model](./diffusion/sd/)
 
 ## External Links
-
 * [torch-directml PyPI project](https://pypi.org/project/torch-directml/)
 * [PyTorch homepage](https://pytorch.org/)

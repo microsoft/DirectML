@@ -20,7 +20,8 @@ public:
         std::string_view name, 
         std::shared_ptr<Device> device, 
         const Model::DmlDispatchableDesc& desc, 
-        const Dispatchable::Bindings& dmlInitBindings);
+        const Dispatchable::Bindings& dmlInitBindings,
+        IDxDispatchLogger* logger);
 
     DmlDispatchable(
         std::string_view name, 
@@ -62,4 +63,5 @@ private:
 
 
 
+    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
 };

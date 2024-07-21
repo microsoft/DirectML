@@ -76,6 +76,15 @@
             ]
         },
 
+        "dmlCompileType":
+        {
+            "enum":
+            [
+                "DmlCompileOp",
+                "DmlCompileGraph"
+            ]
+        },
+
         "arrayInitializer":
         {
             "type": "array",

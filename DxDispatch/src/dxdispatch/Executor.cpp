@@ -171,7 +171,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                     return;
                 }
 
-                m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(desc.name, device, dmlDispatchableDesc, initBindings);
+                m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(desc.name, device, dmlDispatchableDesc, initBindings, m_logger.Get());
             }
         }
         catch(const std::exception& e)

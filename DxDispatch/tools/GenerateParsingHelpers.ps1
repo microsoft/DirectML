@@ -1,7 +1,7 @@
 param
 (
     [string]$SchemaFilePath = "$PSScriptRoot\DmlSchema.json",
-    [string]$MaxFeatureLevel = "6.2"
+    [string]$MaxFeatureLevel = "6.3"
 )
 
 function ConvertSnakeToCamelCase($SnakeCaseName)

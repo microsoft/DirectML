@@ -11,6 +11,7 @@
 #include "pch.h"
 #include "BucketAllocator.h"
 
+
 class Model
 {
 public:
@@ -59,11 +60,17 @@ public:
 
     struct DmlDispatchableDesc
     {
+        enum class DmlCompileType 
+        {
+            DmlCompileOp,
+            DmlCompileGraph
+        };
         struct BindPoint
         {
             std::string name;
             uint32_t resourceCount;
             bool required;
+            bool requiredBinding;
         };
 
         struct BindPoints
@@ -75,6 +82,7 @@ public:
         DML_OPERATOR_DESC* desc;
         BindPoints bindPoints;
         DML_EXECUTION_FLAGS executionFlags;
+        DmlCompileType compileType;
         Bindings initBindings;
     };
 

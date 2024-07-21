@@ -1,13 +1,19 @@
+# Copyright (c) Microsoft Corporation.
+# 
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Union, List, Tuple, Iterator
 
 import torch_directml
 import torch
 
 import gradio as gr
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerFast
 
 wd = Path(__file__).parent.parent.resolve()
 sys.path.append(str(wd))
@@ -18,18 +24,19 @@ from models.phi3 import Transformer as Phi3Transformer
 from models.phi2 import Transformer as Phi2Transformer
 from models.llama import Transformer as LlamaTransformer
 
+
 device = torch_directml.device(torch_directml.default_device())
 
 def decode_n_tokens(
-    model: Union[Phi2Transformer, Phi3Transformer, LlamaTransformer], 
+    model: Union[Phi2Transformer, Phi3Transformer, LlamaTransformer],
     cur_token: torch.Tensor,
     input_pos: torch.Tensor,
     num_new_tokens: int,
-    tokenizer,
+    tokenizer: PreTrainedTokenizerFast,
     stream_every_n: int,
     is_llama_3: bool = False,
     **sampling_kwargs
-):
+) -> Iterator[str]:
     res = tokenizer.decode(cur_token[0][0].item(), skip_special_tokens=True).strip() + " "
     yield res
 
@@ -48,7 +55,7 @@ def decode_n_tokens(
         new_tokens.append(next_token.clone())
         cur_token = next_token.view(1, -1)
 
-        # Handle output and overlap at the specified intervals or at the last token for adding 
+        # Handle output and overlap at the specified intervals or at the last token for adding
         # the space correctly between stream batches
         if ((i + 1) % stream_every_n == 0 or i == num_new_tokens - 1):
             # Determine the range of tokens to decode, including the overlap
@@ -68,8 +75,6 @@ def decode_n_tokens(
                 from_index = max(0, start_pos - overlap_size)
                 yield decode_with_overlap(tokenizer, new_tokens, from_index, overlap_text)
             break
-    return new_tokens
-
 
 @torch.no_grad()
 def generate(
@@ -77,11 +82,11 @@ def generate(
     prompt: torch.Tensor,
     max_new_tokens: int,
     *,
-    tokenizer = None,
+    tokenizer: PreTrainedTokenizerFast,
     stream_every_n: int = 10,
     is_llama_3: bool = False,
     **sampling_kwargs
-) -> torch.Tensor:
+) -> Iterator[str]:
     """
     Takes a conditioning sequence (prompt) as input and continues to generate as many tokens as requested.
     """
@@ -98,36 +103,38 @@ def generate(
     # create an empty tensor of the expected final shape and fill in the current tokens
     input_pos = torch.arange(0, T, device=device)
     next_token = prefill(model, prompt.view(1, -1), input_pos, **sampling_kwargs)
-   
+
     input_pos = torch.tensor([T], device=device, dtype=torch.int)
 
     # generated_tokens = decode_n_tokens(
-    return decode_n_tokens(
+    yield from decode_n_tokens(
         model, next_token.view(1, -1), input_pos, max_new_tokens - 1, tokenizer, stream_every_n, is_llama_3=is_llama_3, **sampling_kwargs)
 
 
 class LLM_Model:
-    def __init__(self,
-                 prompt: str = "Hello, my name is",
-                 interactive: bool = False,
-                 num_samples: int = 5,
-                 max_new_tokens: int = 100,
-                 top_k: int = 200,
-                 temperature: float = 0.01,
-                 model_repo: str = "microsoft/Phi-3-mini-4k-instruct",
-                 checkpoint_path: str = None,
-                 precision: str = 'float32',
-                 stream_every_n: int = 7,
-                 max_context_length: int = 3500,
-                 use_history: bool = False):
+    def __init__(
+        self,
+        prompt: str = "Hello, my name is",
+        interactive: bool = False,
+        num_samples: int = 5,
+        max_new_tokens: int = 100,
+        top_k: int = 200,
+        temperature: float = 0.01,
+        hf_model: str = "microsoft/Phi-3-mini-4k-instruct",
+        checkpoint_path: str = None,
+        precision: str = 'float32',
+        stream_every_n: int = 7,
+        max_context_length: int = 3500,
+        use_history: bool = False
+    ):
         self.prompt = prompt
         self.interactive = interactive
         self.num_samples = num_samples
         self.max_new_tokens = max_new_tokens
         self.top_k = top_k
         self.temperature = temperature
-        self.model_repo = model_repo
-        self.checkpoint_path = Path(f"checkpoints/{model_repo}/model.pth") if checkpoint_path is None else Path(checkpoint_path)
+        self.hf_model = hf_model
+        self.checkpoint_path = Path(f"checkpoints/{hf_model}/model.pth") if checkpoint_path is None else Path(checkpoint_path)
         self.precision = torch.float32 if precision == 'float32' else torch.float16
         self.stream_every_n = stream_every_n
         self.max_context_length = max_context_length
@@ -136,21 +143,34 @@ class LLM_Model:
         self.tokenizer = None
         self.model = None
 
-    def encode_tokens(self, prompt, conversation_history, device=None, max_context_length=1500, bos=True):
+    def encode_tokens(
+        self,
+        prompt: str,
+        conversation_history: List[List[str]],
+        device: torch.device = None,
+        max_context_length: int = 1500,
+        bos: bool = True
+    ) -> torch.Tensor:
         if self.is_phi_2:
             tokens = self.format_prompt_phi2_chat_and_encode(
                 prompt, conversation_history, device, max_context_length, bos
             )
         else:
             tokens = self.format_prompt_and_encode(
-                prompt, conversation_history, device, max_context_length, 
+                prompt, conversation_history, device, max_context_length,
             )
         return tokens
-        
-    def format_prompt_and_encode(self, prompt, history, device=None, max_context_length=3500):
+
+    def format_prompt_and_encode(
+        self,
+        prompt: str,
+        conversation_history: List[List[str]],
+        device: torch.device = None,
+        max_context_length: int = 1500,
+    ) -> torch.Tensor:
         messages = []
-        if len(history) and self.use_history:
-            for user, assistant in history:
+        if len(conversation_history) and self.use_history:
+            for user, assistant in conversation_history:
                 user = {"role": "user", "content": user}
                 assistant = {"role": "assistant", "content": assistant}
                 messages.append(user)
@@ -172,7 +192,14 @@ class LLM_Model:
 
         return tokens
 
-    def format_prompt_phi2_chat_and_encode(self, prompt, conversation_history, device=None, max_context_length=1500, bos=True):
+    def format_prompt_phi2_chat_and_encode(
+        self,
+        prompt: str,
+        conversation_history: List[List[str]],
+        device: torch.device = None,
+        max_context_length: int = 1500,
+        bos: bool = True
+    ) -> torch.Tensor:
         formatted_prompt = ""
         if self.use_history:
             for user_prompt, llm_response in conversation_history:
@@ -194,7 +221,14 @@ class LLM_Model:
         token_tensor = torch.tensor(tokens, dtype=torch.int, device=device)
         return token_tensor
 
-    def format_prompt_phi2_qa_and_encode(self, prompt, conversation_history, max_context_length=1500, bos=True, device=None):
+    def format_prompt_phi2_qa_and_encode(
+        self,
+        prompt: str,
+        conversation_history: List[List[str]],
+        device: torch.device = None,
+        max_context_length: int = 1500,
+        bos: bool = True
+    ) -> torch.Tensor:
         formatted_prompt = ""
         if self.use_history:
             for user_prompt, llm_response in conversation_history:
@@ -218,22 +252,22 @@ class LLM_Model:
 
         token_tensor = torch.tensor(tokens, dtype=torch.int, device=device)
         return token_tensor
-    
-    def download_and_convert(self):
-        checkpoint_dir = hf_download(self.model_repo)
+
+    def download_and_convert(self) -> None:
+        checkpoint_dir = hf_download(self.hf_model)
         convert_hf_checkpoint(
             checkpoint_dir=Path(checkpoint_dir),
         )
-        self.checkpoint_path = Path(f"checkpoints/{self.model_repo}/model.pth")
+        self.checkpoint_path = Path(f"{checkpoint_dir}/model.pth")
 
-    def load_model(self):
+    def load_model(self) -> None:
         if not self.checkpoint_path.is_file():
-            print(f"{self.checkpoint_path} doesnt exist. Downloading and converting {self.model_repo} from huggingface hub. "
-                  "Specify a different model with --model_repo or valid pre-converted checkpoint with --checkpoint_path")
+            print(f"{self.checkpoint_path} doesnt exist. Downloading and converting {self.hf_model} from huggingface hub. "
+                  "Specify a different model with --hf_model or valid pre-converted checkpoint with --checkpoint_path")
             self.download_and_convert()
         print("Running app...")
         print(f"Loading model from {self.checkpoint_path}")
-        
+
         self.is_llama_3 = "Llama-3" in self.checkpoint_path.parent.name
         self.is_phi_2 = "phi-2" in self.checkpoint_path.parent.name
         print(f"Using device={device}, is_llama_3={self.is_llama_3}, is_phi_2={self.is_phi_2}")
@@ -245,9 +279,14 @@ class LLM_Model:
         if self.max_context_length > self.model.config.block_size - (self.max_new_tokens+1):
             raise ValueError(
                 f"Expected max_context_length to be less than {self.model.config.block_size - (self.max_new_tokens+1)} but got {self.max_context_length}")
-    
+
     @torch.no_grad()
-    def chat(self, prompt, history, **sampling_kwargs):
+    def chat(
+        self,
+        prompt: str,
+        history: List[List[str]],
+        **sampling_kwargs
+    ) -> Iterator[str]:
         torch.manual_seed(1235)
         encoded = self.encode_tokens(
             prompt,
@@ -256,7 +295,7 @@ class LLM_Model:
             max_context_length=self.max_context_length,
         )
 
-        toks = generate(
+        yield from generate(
             self.model,
             encoded,
             self.max_new_tokens,
@@ -266,15 +305,13 @@ class LLM_Model:
             temperature=self.temperature,
             top_k=self.top_k,
         )
-        return toks 
 
 
-def chat(message, history):
+def chat(message: str, history: List[List[str]]) -> Iterator[str]:
     total_msg = ""
     for msg in llm_model.chat(message, history):
         total_msg += msg
         yield total_msg
-
 
 
 if __name__ == "__main__":
@@ -282,16 +319,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Your CLI description.')
 
     parser.add_argument(
-        '--model_repo',
+        '--hf_model',
         type=str,
-        default="microsoft/Phi-3-mini-4k-instruct",
-        help='Huggingface Repository ID to download from.'
+        default="phi-3",
+        help='Huggingface Repository ID to download from. Or one of the model name from ["phi-2", "phi-3", "llama-2", "llama-3", "mistral"]'
     )
     parser.add_argument(
         '--checkpoint_path',
         type=str,
         default=None,
-        help='Converted pytorch model checkpoint path. Defaults to `checkpoints/{model_repo}/model.pth`.'
+        help='Converted pytorch model checkpoint path. Defaults to `checkpoints/{hf_model}/model.pth`.'
     )
     parser.add_argument(
         '--max_context_length',
@@ -319,7 +356,7 @@ if __name__ == "__main__":
                       max_new_tokens = 500,
                       top_k = 200,
                       temperature = 0.8,
-                      model_repo = args.model_repo,
+                      hf_model = args.hf_model,
                       checkpoint_path = args.checkpoint_path,
                       precision = args.precision,
                       max_context_length = args.max_context_length,
