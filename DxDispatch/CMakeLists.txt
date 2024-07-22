@@ -96,7 +96,6 @@ target_link_libraries(
     wil
     d3d12
     directml
-    flatbuffer
 )
 
 if(TARGET_WSL)
@@ -146,12 +145,7 @@ add_library(
     src/dxdispatch/ModuleInfo.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
-target_include_directories(
-    
-    dxdispatchImpl  
-    INTERFACE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch
-)
+target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
@@ -194,6 +188,7 @@ target_link_libraries(
     wil
     onnxruntime
     onnxruntime_extensions
+    flatbuffer
 )
 
 target_compile_features(dxdispatchImpl PRIVATE cxx_std_17)
