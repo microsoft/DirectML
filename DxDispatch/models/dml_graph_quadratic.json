@@ -1,0 +1,58 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "x": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [4,-2,3,-5]
+        },
+        "y": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 4, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "ax+b":
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "ScaleBias": { "Scale": 2, "Bias": 10 }
+            }
+        },
+
+        "x(ax+b)":
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_MULTIPLY",
+            "desc": 
+            {
+                "ATensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "BTensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] }
+            }
+        },
+
+        "ax^2+bx+c": 
+        {
+            "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "ScaleBias": { "Scale": 0, "Bias": 3.5 }
+            }
+        }
+    },
+
+    "commands": 
+    [
+        { "type": "print", "resource": "y" }
+    ]
+}
