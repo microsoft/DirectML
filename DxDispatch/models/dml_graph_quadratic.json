@@ -50,7 +50,7 @@
             }
         },
 
-        "quadratic":
+        "graph":
         {
             "type": "DML_GRAPH_DESC",
             "desc": 
@@ -59,23 +59,23 @@
                 "OutputCount": 1,
                 "Nodes": 
                 [
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_0" },
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_1" },
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_2" }
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_0" },
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_1" },
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_2" }
                 ],
                 "InputEdges":
                 [
-                    { "GraphInputIndex": 0, "ToNodeIndex": 0, "ToNodeInputIndex": 0 },
-                    { "GraphInputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0 }
+                    { "GraphInputIndex": 0, "ToNodeIndex": 0, "ToNodeInputIndex": 0, "Name": "x" },
+                    { "GraphInputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0, "Name": "x" }
                 ],
                 "OutputEdges":
                 [
-                    { "FromNodeIndex": 2, "FromNodeOutputIndex": 0, "GraphOutputIndex": 0 }
+                    { "FromNodeIndex": 2, "FromNodeOutputIndex": 0, "GraphOutputIndex": 0, "Name": "ax^2+bx+c" }
                 ],
                 "IntermediateEdges":
                 [
-                    { "FromNodeIndex": 0, "FromNodeOutputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0 },
-                    { "FromNodeIndex": 1, "FromNodeOutputIndex": 0, "ToNodeIndex": 2, "ToNodeInputIndex": 1 }
+                    { "FromNodeIndex": 0, "FromNodeOutputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0, "Name": "ax+b" },
+                    { "FromNodeIndex": 1, "FromNodeOutputIndex": 0, "ToNodeIndex": 2, "ToNodeInputIndex": 1, "Name": "ax^2+bx" }
                 ]
             }
         }
@@ -83,6 +83,12 @@
 
     "commands": 
     [
+        {
+            "type": "dispatch",
+            "dispatchable": "graph",
+            "inputBindings": [ "x" ],
+            "outputBindings": [ "y" ]
+        },
         { "type": "print", "resource": "y" }
     ]
 }

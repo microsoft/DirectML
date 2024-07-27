@@ -64,6 +64,7 @@ public:
             DmlCompileOp,
             DmlCompileGraph
         };
+
         struct BindPoint
         {
             std::string name;
@@ -83,6 +84,11 @@ public:
         DML_EXECUTION_FLAGS executionFlags;
         DmlCompileType compileType;
         Bindings initBindings;
+    };
+
+    struct DmlGraphDispatchableDesc
+    {
+        DML_GRAPH_DESC* desc;
     };
 
     struct HlslDispatchableDesc
@@ -112,7 +118,7 @@ public:
     struct DispatchableDesc
     {
         std::string name;
-        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc> value;
+        std::variant<DmlDispatchableDesc, DmlGraphDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc> value;
     };
 
     // COMMANDS

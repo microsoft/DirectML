@@ -1468,6 +1468,86 @@ Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value&
     return desc;
 }
 
+Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjson::Value& object, BucketAllocator& allocator)
+{
+    auto jsonDescMember = object.FindMember("Desc");
+
+    if (jsonDescMember == object.MemberEnd())
+    {
+        jsonDescMember = object.FindMember("desc");
+    }
+
+    if (!jsonDescMember->value.IsObject())
+    {
+        throw std::invalid_argument("Expected a non-null JSON object.");
+    }
+
+    Model::DmlGraphDispatchableDesc desc = {};
+
+    desc.desc = allocator.Allocate<DML_GRAPH_DESC>();
+    desc.desc->InputCount = ParseUInt32Field(jsonDescMember->value, "InputCount");
+    desc.desc->OutputCount = ParseUInt32Field(jsonDescMember->value, "OutputCount");
+
+    // nodes
+    auto jsonNodesField = jsonDescMember->value.FindMember("Nodes");
+    if (jsonNodesField == jsonDescMember->value.MemberEnd())
+    {
+        jsonNodesField = jsonDescMember->value.FindMember("nodes");
+    }
+    if (jsonNodesField == jsonDescMember->value.MemberEnd() || !jsonNodesField->value.IsArray())
+    {
+        throw std::invalid_argument("Expected a member 'Nodes', which must be a JSON array.");
+    }
+
+    auto jsonNodesArray = jsonNodesField->value.GetArray();
+   
+    auto apiNodeDescs = allocator.Allocate<DML_GRAPH_NODE_DESC>(jsonNodesArray.Size());
+    desc.desc->Nodes = apiNodeDescs;
+
+    desc.desc->NodeCount = static_cast<uint32_t>(jsonNodesArray.Size());
+
+    for (uint32_t i = 0; i < jsonNodesArray.Size(); i++)
+    {
+        auto& nodeValue = jsonNodesArray[i];
+        auto& apiNodeDesc = apiNodeDescs[i];
+
+        if (!nodeValue.IsObject())
+        {
+            throw std::invalid_argument("Expected a non-null JSON object.");
+        }
+
+        auto nodeType = ParseStringField(nodeValue, "type");
+        if (nodeType == "DML_GRAPH_NODE_TYPE_OPERATOR" || nodeType == "OPERATOR")
+        {
+            auto nameField = nodeValue.FindMember("Name");
+            if (nameField == nodeValue.MemberEnd())
+            {
+                nameField = nodeValue.FindMember("name");
+            }
+            if (nameField == nodeValue.MemberEnd() || !nameField->value.IsString())
+            {
+                throw std::invalid_argument("Expected a member 'Name', which must be the name of a DML operator dispatchable.");
+            }
+            
+            auto apiNodeDescValue = allocator.Allocate<DML_OPERATOR_GRAPH_NODE_DESC>();
+            apiNodeDescValue->Name = nameField->value.GetString();
+
+            apiNodeDesc.Type = DML_GRAPH_NODE_TYPE_OPERATOR;
+            apiNodeDesc.Desc = apiNodeDescValue;
+        }
+        else
+        {
+            // TODO: support constant data nodes
+            throw std::invalid_argument("Expected a node type of 'DML_GRAPH_NODE_TYPE_OPERATOR'.");
+        }
+    }
+
+
+    // input edges
+
+    return desc;
+}
+
 Model::DispatchableDesc ParseModelDispatchableDesc(
     std::string_view name,
     const std::filesystem::path& parentPath,
@@ -1489,6 +1569,10 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     else if (!_stricmp(type.data(), "onnx"))
     {
         desc.value = ParseModelOnnxDispatchableDesc(parentPath, object);
+    }
+    else if (!_stricmp(type.data(), "dml_graph_desc"))
+    {
+        desc.value = ParseModelDmlGraphDispatchableDesc(object, allocator);
     }
     else
     {
