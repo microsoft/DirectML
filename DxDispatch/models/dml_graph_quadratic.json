@@ -17,7 +17,7 @@
 
     "dispatchables": 
     {
-        "ax+b":
+        "node_0":
         {
             "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
             "desc": 
@@ -28,7 +28,7 @@
             }
         },
 
-        "x(ax+b)":
+        "node_1":
         {
             "type": "DML_OPERATOR_ELEMENT_WISE_MULTIPLY",
             "desc": 
@@ -39,7 +39,7 @@
             }
         },
 
-        "ax^2+bx+c": 
+        "node_2": 
         {
             "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
             "desc": 
@@ -47,6 +47,36 @@
                 "InputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
                 "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
                 "ScaleBias": { "Scale": 0, "Bias": 3.5 }
+            }
+        },
+
+        "quadratic":
+        {
+            "type": "DML_GRAPH_DESC",
+            "desc": 
+            {
+                "InputCount": 1,
+                "OutputCount": 1,
+                "Nodes": 
+                [
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_0" },
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_1" },
+                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Operator": "node_2" }
+                ],
+                "InputEdges":
+                [
+                    { "GraphInputIndex": 0, "ToNodeIndex": 0, "ToNodeInputIndex": 0 },
+                    { "GraphInputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0 }
+                ],
+                "OutputEdges":
+                [
+                    { "FromNodeIndex": 2, "FromNodeOutputIndex": 0, "GraphOutputIndex": 0 }
+                ],
+                "IntermediateEdges":
+                [
+                    { "FromNodeIndex": 0, "FromNodeOutputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0 },
+                    { "FromNodeIndex": 1, "FromNodeOutputIndex": 0, "ToNodeIndex": 2, "ToNodeInputIndex": 1 }
+                ]
             }
         }
     },
