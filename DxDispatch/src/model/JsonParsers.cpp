@@ -1490,48 +1490,31 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
 
     // nodes
     auto jsonNodesField = jsonDescMember->value.FindMember("Nodes");
-    if (jsonNodesField == jsonDescMember->value.MemberEnd())
-    {
-        jsonNodesField = jsonDescMember->value.FindMember("nodes");
-    }
     if (jsonNodesField == jsonDescMember->value.MemberEnd() || !jsonNodesField->value.IsArray())
     {
         throw std::invalid_argument("Expected a member 'Nodes', which must be a JSON array.");
     }
-
     auto jsonNodesArray = jsonNodesField->value.GetArray();
    
     auto apiNodeDescs = allocator.Allocate<DML_GRAPH_NODE_DESC>(jsonNodesArray.Size());
     desc.desc->Nodes = apiNodeDescs;
-
     desc.desc->NodeCount = static_cast<uint32_t>(jsonNodesArray.Size());
 
-    for (uint32_t i = 0; i < jsonNodesArray.Size(); i++)
+    for (uint32_t i = 0; i < desc.desc->NodeCount; i++)
     {
-        auto& nodeValue = jsonNodesArray[i];
         auto& apiNodeDesc = apiNodeDescs[i];
 
-        if (!nodeValue.IsObject())
+        auto& jsonNodeValue = jsonNodesArray[i];
+        if (!jsonNodeValue.IsObject())
         {
             throw std::invalid_argument("Expected a non-null JSON object.");
         }
 
-        auto nodeType = ParseStringField(nodeValue, "type");
+        auto nodeType = ParseStringField(jsonNodeValue, "Type");
         if (nodeType == "DML_GRAPH_NODE_TYPE_OPERATOR" || nodeType == "OPERATOR")
         {
-            auto nameField = nodeValue.FindMember("Name");
-            if (nameField == nodeValue.MemberEnd())
-            {
-                nameField = nodeValue.FindMember("name");
-            }
-            if (nameField == nodeValue.MemberEnd() || !nameField->value.IsString())
-            {
-                throw std::invalid_argument("Expected a member 'Name', which must be the name of a DML operator dispatchable.");
-            }
-            
             auto apiNodeDescValue = allocator.Allocate<DML_OPERATOR_GRAPH_NODE_DESC>();
-            apiNodeDescValue->Name = nameField->value.GetString();
-
+            apiNodeDescValue->Name = allocator.AllocateString(ParseStringField(jsonNodeValue, "Name"));
             apiNodeDesc.Type = DML_GRAPH_NODE_TYPE_OPERATOR;
             apiNodeDesc.Desc = apiNodeDescValue;
         }
@@ -1542,8 +1525,128 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
         }
     }
 
-
     // input edges
+    {
+        auto jsonInputEdgesField = jsonDescMember->value.FindMember("InputEdges");
+        if (jsonInputEdgesField == jsonDescMember->value.MemberEnd() || !jsonInputEdgesField->value.IsArray())
+        {
+            throw std::invalid_argument("Expected a member 'InputEdges', which must be a JSON array.");
+        }
+        auto jsonInputEdgesArray = jsonInputEdgesField->value.GetArray();
+        
+        auto apiInputEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonInputEdgesArray.Size());
+        desc.desc->InputEdges = apiInputEdgeDescs;
+        desc.desc->InputEdgeCount = static_cast<uint32_t>(jsonInputEdgesArray.Size());
+
+        for (uint32_t i = 0; i < desc.desc->InputEdgeCount; i++)
+        {
+            auto& apiEdgeDesc = apiInputEdgeDescs[i];
+
+            auto& edgeValue = jsonInputEdgesArray[i];
+            if (!edgeValue.IsObject())
+            {
+                throw std::invalid_argument("Expected a non-null JSON object.");
+            }
+
+            auto apiEdgeDescValue = allocator.Allocate<DML_INPUT_GRAPH_EDGE_DESC>();
+            *apiEdgeDescValue = {};
+
+            apiEdgeDescValue->GraphInputIndex = ParseUInt32Field(edgeValue, "GraphInputIndex");
+            apiEdgeDescValue->ToNodeIndex = ParseUInt32Field(edgeValue, "ToNodeIndex");
+            apiEdgeDescValue->ToNodeInputIndex = ParseUInt32Field(edgeValue, "ToNodeInputIndex");
+            auto name = ParseStringField(edgeValue, "Name");
+            if (!name.empty())
+            {
+                apiEdgeDescValue->Name = allocator.AllocateString(name);
+            }
+
+            apiEdgeDesc.Type = DML_GRAPH_EDGE_TYPE_INPUT;
+            apiEdgeDesc.Desc = apiEdgeDescValue;
+        }
+    }
+
+    // output edges
+    {
+        auto jsonOutputEdgesField = jsonDescMember->value.FindMember("OutputEdges");
+        if (jsonOutputEdgesField == jsonDescMember->value.MemberEnd() || !jsonOutputEdgesField->value.IsArray())
+        {
+            throw std::invalid_argument("Expected a member 'OutputEdges', which must be a JSON array.");
+        }
+        auto jsonOutputEdgesArray = jsonOutputEdgesField->value.GetArray();
+        
+        auto apiOutputEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonOutputEdgesArray.Size());
+        desc.desc->OutputEdges = apiOutputEdgeDescs;
+        desc.desc->OutputEdgeCount = static_cast<uint32_t>(jsonOutputEdgesArray.Size());
+
+        for (uint32_t i = 0; i < desc.desc->OutputEdgeCount; i++)
+        {
+            auto& apiEdgeDesc = apiOutputEdgeDescs[i];
+
+            auto& edgeValue = jsonOutputEdgesArray[i];
+            if (!edgeValue.IsObject())
+            {
+                throw std::invalid_argument("Expected a non-null JSON object.");
+            }
+
+            auto apiEdgeDescValue = allocator.Allocate<DML_OUTPUT_GRAPH_EDGE_DESC>();
+            *apiEdgeDescValue = {};
+
+            apiEdgeDescValue->FromNodeIndex = ParseUInt32Field(edgeValue, "FromNodeIndex");
+            apiEdgeDescValue->FromNodeOutputIndex = ParseUInt32Field(edgeValue, "FromNodeOutputIndex");
+            apiEdgeDescValue->GraphOutputIndex = ParseUInt32Field(edgeValue, "GraphOutputIndex");
+
+            auto name = ParseStringField(edgeValue, "Name");
+            if (!name.empty())
+            {
+                apiEdgeDescValue->Name = allocator.AllocateString(name);
+            }
+
+            apiEdgeDesc.Type = DML_GRAPH_EDGE_TYPE_OUTPUT;
+            apiEdgeDesc.Desc = apiEdgeDescValue;
+        }
+    }
+
+    // intermediate edges
+    {
+        auto jsonIntermediateEdgesField = jsonDescMember->value.FindMember("IntermediateEdges");
+        if (jsonIntermediateEdgesField == jsonDescMember->value.MemberEnd() || !jsonIntermediateEdgesField->value.IsArray())
+        {
+            throw std::invalid_argument("Expected a member 'IntermediateEdges', which must be a JSON array.");
+        }
+        auto jsonIntermediateEdgesArray = jsonIntermediateEdgesField->value.GetArray();
+        
+        auto apiIntermediateEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonIntermediateEdgesArray.Size());
+        desc.desc->IntermediateEdges = apiIntermediateEdgeDescs;
+        desc.desc->IntermediateEdgeCount = static_cast<uint32_t>(jsonIntermediateEdgesArray.Size());
+
+        for (uint32_t i = 0; i < desc.desc->IntermediateEdgeCount; i++)
+        {
+            auto& apiEdgeDesc = apiIntermediateEdgeDescs[i];
+
+            auto& edgeValue = jsonIntermediateEdgesArray[i];
+            if (!edgeValue.IsObject())
+            {
+                throw std::invalid_argument("Expected a non-null JSON object.");
+            }
+
+            auto apiEdgeDescValue = allocator.Allocate<DML_INTERMEDIATE_GRAPH_EDGE_DESC>();
+            *apiEdgeDescValue = {};
+
+            apiEdgeDescValue->FromNodeIndex = ParseUInt32Field(edgeValue, "FromNodeIndex");
+            apiEdgeDescValue->FromNodeOutputIndex = ParseUInt32Field(edgeValue, "FromNodeOutputIndex");
+            apiEdgeDescValue->ToNodeIndex = ParseUInt32Field(edgeValue, "ToNodeIndex");
+            apiEdgeDescValue->ToNodeInputIndex = ParseUInt32Field(edgeValue, "ToNodeInputIndex");
+
+            auto name = ParseStringField(edgeValue, "Name");
+            if (!name.empty())
+            {
+                apiEdgeDescValue->Name = allocator.AllocateString(name);
+            }
+
+            apiEdgeDesc.Type = DML_GRAPH_EDGE_TYPE_INTERMEDIATE;
+            apiEdgeDesc.Desc = apiEdgeDescValue;
+        }
+    }
 
     return desc;
 }

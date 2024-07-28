@@ -54,6 +54,14 @@ public:
         return reinterpret_cast<T*>(memory);
     }
 
+    char* AllocateString(std::string& string)
+    {
+        char* chars = Allocate<char>(string.size() + 1);
+        std::copy(string.begin(), string.end(), chars);
+        chars[string.size()] = '\0';
+        return chars;
+    }
+
 private:
     struct Bucket
     {

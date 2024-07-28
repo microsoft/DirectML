@@ -59,9 +59,9 @@
                 "OutputCount": 1,
                 "Nodes": 
                 [
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_0" },
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_1" },
-                    { "type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_2" }
+                    { "Type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_0" },
+                    { "Type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_1" },
+                    { "Type": "DML_GRAPH_NODE_TYPE_OPERATOR", "Name": "node_2" }
                 ],
                 "InputEdges":
                 [
