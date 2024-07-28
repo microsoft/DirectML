@@ -10,6 +10,13 @@ public:
         const Dispatchable::Bindings& initBindings,
         IDxDispatchLogger* logger);
 
+    DmlDispatchable(
+        std::string_view name, 
+        std::shared_ptr<Device> device, 
+        const Model::DmlGraphDispatchableDesc& desc,
+        const Dispatchable::Bindings& initBindings,
+        IDxDispatchLogger* logger);
+
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
     void Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBinings) final;
@@ -17,7 +24,8 @@ public:
 private:
     std::string m_name;
     std::shared_ptr<Device> m_device;
-    const Model::DmlDispatchableDesc& m_desc;
+    std::variant<const Model::DmlDispatchableDesc*, const Model::DmlGraphDispatchableDesc*> m_descVariant;
+
     Dispatchable::Bindings m_initBindings;
     Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
     Microsoft::WRL::ComPtr<IDMLCompiledOperator> m_operatorCompiled;

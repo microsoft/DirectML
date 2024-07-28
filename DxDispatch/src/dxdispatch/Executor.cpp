@@ -147,6 +147,13 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args, m_logger.Get());
 #endif
             }
+            else if (std::holds_alternative<Model::DmlGraphDispatchableDesc>(desc.value))
+            {
+                // TODO: deserialize flatbuffer into DML_GRAPH_DESC and use DmlGraphDispatchable
+                // TODO: translate DML op into graph if specified earlier...
+                auto& dmlGraphDispatchableDesc = std::get<Model::DmlGraphDispatchableDesc>(desc.value)
+                m_dispatchables[desc.name] = std::make_unique<DmlGraphDispatchable>(device, dmlGraphDispatchableDesc, args, m_logger.Get());
+            }
             else
             {
                 auto& dmlDispatchableDesc = std::get<Model::DmlDispatchableDesc>(desc.value);

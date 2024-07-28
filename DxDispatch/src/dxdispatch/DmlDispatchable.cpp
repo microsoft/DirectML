@@ -13,7 +13,18 @@ DmlDispatchable::DmlDispatchable(
     const Model::DmlDispatchableDesc& desc,
     const Dispatchable::Bindings& initBindings,
     IDxDispatchLogger* logger
-    ) : m_name(name), m_device(device), m_desc(desc), m_initBindings(std::move(initBindings)), m_logger(logger)
+    ) : m_name(name), m_device(device), m_descVariant(&desc), m_initBindings(std::move(initBindings)), m_logger(logger)
+{
+    THROW_IF_FAILED(device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
+}
+
+DmlDispatchable::DmlDispatchable(
+    std::string_view name, 
+    std::shared_ptr<Device> device, 
+    const Model::DmlGraphDispatchableDesc& desc,
+    const Dispatchable::Bindings& initBindings,
+    IDxDispatchLogger* logger
+    ) : m_name(name), m_device(device), m_descVariant(&desc), m_initBindings(std::move(initBindings)), m_logger(logger)
 {
     THROW_IF_FAILED(device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
 }
@@ -264,6 +275,8 @@ void DmlDispatchable::Initialize()
 
 void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 {
+    auto desc = std::get_if<Model::DmlDispatchableDesc>(&m_descVariant);
+
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
 
     BindingData inputBindingData = {};
