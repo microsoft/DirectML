@@ -1484,9 +1484,9 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
 
     Model::DmlGraphDispatchableDesc desc = {};
 
-    desc.desc = allocator.Allocate<DML_GRAPH_DESC>();
-    desc.desc->InputCount = ParseUInt32Field(jsonDescMember->value, "InputCount");
-    desc.desc->OutputCount = ParseUInt32Field(jsonDescMember->value, "OutputCount");
+    desc.unresolvedGraphDesc = allocator.Allocate<DML_GRAPH_DESC>();
+    desc.unresolvedGraphDesc->InputCount = ParseUInt32Field(jsonDescMember->value, "InputCount");
+    desc.unresolvedGraphDesc->OutputCount = ParseUInt32Field(jsonDescMember->value, "OutputCount");
 
     // nodes
     auto jsonNodesField = jsonDescMember->value.FindMember("Nodes");
@@ -1497,10 +1497,10 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
     auto jsonNodesArray = jsonNodesField->value.GetArray();
    
     auto apiNodeDescs = allocator.Allocate<DML_GRAPH_NODE_DESC>(jsonNodesArray.Size());
-    desc.desc->Nodes = apiNodeDescs;
-    desc.desc->NodeCount = static_cast<uint32_t>(jsonNodesArray.Size());
+    desc.unresolvedGraphDesc->Nodes = apiNodeDescs;
+    desc.unresolvedGraphDesc->NodeCount = static_cast<uint32_t>(jsonNodesArray.Size());
 
-    for (uint32_t i = 0; i < desc.desc->NodeCount; i++)
+    for (uint32_t i = 0; i < desc.unresolvedGraphDesc->NodeCount; i++)
     {
         auto& apiNodeDesc = apiNodeDescs[i];
 
@@ -1513,6 +1513,8 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
         auto nodeType = ParseStringField(jsonNodeValue, "Type");
         if (nodeType == "DML_GRAPH_NODE_TYPE_OPERATOR" || nodeType == "OPERATOR")
         {
+            // the "Operator" field cannot be set until other dispatchables are instantiated, hence
+            // the "unresolved" part of the name.
             auto apiNodeDescValue = allocator.Allocate<DML_OPERATOR_GRAPH_NODE_DESC>();
             apiNodeDescValue->Name = allocator.AllocateString(ParseStringField(jsonNodeValue, "Name"));
             apiNodeDesc.Type = DML_GRAPH_NODE_TYPE_OPERATOR;
@@ -1535,10 +1537,10 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
         auto jsonInputEdgesArray = jsonInputEdgesField->value.GetArray();
         
         auto apiInputEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonInputEdgesArray.Size());
-        desc.desc->InputEdges = apiInputEdgeDescs;
-        desc.desc->InputEdgeCount = static_cast<uint32_t>(jsonInputEdgesArray.Size());
+        desc.unresolvedGraphDesc->InputEdges = apiInputEdgeDescs;
+        desc.unresolvedGraphDesc->InputEdgeCount = static_cast<uint32_t>(jsonInputEdgesArray.Size());
 
-        for (uint32_t i = 0; i < desc.desc->InputEdgeCount; i++)
+        for (uint32_t i = 0; i < desc.unresolvedGraphDesc->InputEdgeCount; i++)
         {
             auto& apiEdgeDesc = apiInputEdgeDescs[i];
 
@@ -1575,10 +1577,10 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
         auto jsonOutputEdgesArray = jsonOutputEdgesField->value.GetArray();
         
         auto apiOutputEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonOutputEdgesArray.Size());
-        desc.desc->OutputEdges = apiOutputEdgeDescs;
-        desc.desc->OutputEdgeCount = static_cast<uint32_t>(jsonOutputEdgesArray.Size());
+        desc.unresolvedGraphDesc->OutputEdges = apiOutputEdgeDescs;
+        desc.unresolvedGraphDesc->OutputEdgeCount = static_cast<uint32_t>(jsonOutputEdgesArray.Size());
 
-        for (uint32_t i = 0; i < desc.desc->OutputEdgeCount; i++)
+        for (uint32_t i = 0; i < desc.unresolvedGraphDesc->OutputEdgeCount; i++)
         {
             auto& apiEdgeDesc = apiOutputEdgeDescs[i];
 
@@ -1616,10 +1618,10 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
         auto jsonIntermediateEdgesArray = jsonIntermediateEdgesField->value.GetArray();
         
         auto apiIntermediateEdgeDescs = allocator.Allocate<DML_GRAPH_EDGE_DESC>(jsonIntermediateEdgesArray.Size());
-        desc.desc->IntermediateEdges = apiIntermediateEdgeDescs;
-        desc.desc->IntermediateEdgeCount = static_cast<uint32_t>(jsonIntermediateEdgesArray.Size());
+        desc.unresolvedGraphDesc->IntermediateEdges = apiIntermediateEdgeDescs;
+        desc.unresolvedGraphDesc->IntermediateEdgeCount = static_cast<uint32_t>(jsonIntermediateEdgesArray.Size());
 
-        for (uint32_t i = 0; i < desc.desc->IntermediateEdgeCount; i++)
+        for (uint32_t i = 0; i < desc.unresolvedGraphDesc->IntermediateEdgeCount; i++)
         {
             auto& apiEdgeDesc = apiIntermediateEdgeDescs[i];
 
@@ -1645,6 +1647,17 @@ Model::DmlGraphDispatchableDesc ParseModelDmlGraphDispatchableDesc(const rapidjs
 
             apiEdgeDesc.Type = DML_GRAPH_EDGE_TYPE_INTERMEDIATE;
             apiEdgeDesc.Desc = apiEdgeDescValue;
+        }
+    }
+
+    desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+
+    auto bindingsField = object.FindMember("bindings");
+    if (bindingsField != object.MemberEnd() && bindingsField->value.IsObject())
+    {
+        for (auto bindingMember = bindingsField->value.MemberBegin(); bindingMember != bindingsField->value.MemberEnd(); bindingMember++)
+        {
+            desc.initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
         }
     }
 

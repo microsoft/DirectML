@@ -8,6 +8,11 @@
             "initialValuesDataType": "FLOAT32",
             "initialValues": [4,-2,3,-5]
         },
+        "c": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [1,2,3,4]
+        },
         "y": 
         {
             "initialValuesDataType": "FLOAT32",
@@ -41,12 +46,12 @@
 
         "node_2": 
         {
-            "type": "DML_OPERATOR_ELEMENT_WISE_IDENTITY",
+            "type": "DML_OPERATOR_ELEMENT_WISE_ADD",
             "desc": 
             {
-                "InputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
-                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] },
-                "ScaleBias": { "Scale": 0, "Bias": 3.5 }
+                "ATensor": { "DataType": "FLOAT32", "Sizes": [4] },
+                "BTensor": { "DataType": "FLOAT32", "Sizes": [4], "Flags": "OWNED_BY_DML" },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [4] }
             }
         },
 
@@ -55,7 +60,7 @@
             "type": "DML_GRAPH_DESC",
             "desc": 
             {
-                "InputCount": 1,
+                "InputCount": 2,
                 "OutputCount": 1,
                 "Nodes": 
                 [
@@ -66,7 +71,8 @@
                 "InputEdges":
                 [
                     { "GraphInputIndex": 0, "ToNodeIndex": 0, "ToNodeInputIndex": 0, "Name": "x" },
-                    { "GraphInputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0, "Name": "x" }
+                    { "GraphInputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0, "Name": "x" },
+                    { "GraphInputIndex": 1, "ToNodeIndex": 2, "ToNodeInputIndex": 1, "Name": "c" }
                 ],
                 "OutputEdges":
                 [
@@ -77,6 +83,10 @@
                     { "FromNodeIndex": 0, "FromNodeOutputIndex": 0, "ToNodeIndex": 1, "ToNodeInputIndex": 0, "Name": "ax+b" },
                     { "FromNodeIndex": 1, "FromNodeOutputIndex": 0, "ToNodeIndex": 2, "ToNodeInputIndex": 1, "Name": "ax^2+bx" }
                 ]
+            },
+            "bindings":
+            {
+                "in_1": "c"
             }
         }
     },
@@ -86,8 +96,11 @@
         {
             "type": "dispatch",
             "dispatchable": "graph",
-            "inputBindings": [ "x" ],
-            "outputBindings": [ "y" ]
+            "bindings":
+            {
+                "in_0": "x",
+                "out_0": "y"
+            }
         },
         { "type": "print", "resource": "y" }
     ]

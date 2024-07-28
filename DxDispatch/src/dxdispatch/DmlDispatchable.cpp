@@ -37,13 +37,11 @@ struct BindingData
 
 void FillBindingData(
     const std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints,
-    const Dispatchable::Bindings* initializeBindings,
-    const Dispatchable::Bindings* executeBindings,
+    const Dispatchable::Bindings* modelBindings,
     BindingData& bindingData,
-    bool bindingForInitialization, 
     Model::DmlDispatchableDesc::DmlCompileType compileType)
 {
-    const Dispatchable::Bindings& bindings = bindingForInitialization ? *initializeBindings : *executeBindings;
+    const Dispatchable::Bindings& bindings = *modelBindings;
 
     uint32_t totalResourceCount = 0;
     for (size_t i = 0; i < bindPoints.size(); i++) { totalResourceCount += bindPoints[i].resourceCount; }
@@ -230,7 +228,7 @@ void DmlDispatchable::Initialize()
         // Initializers can initialize multiple inputs simultaneously, so each compiled op's inputs must
         // be bound using a separate buffer array binding.
         BindingData inputBindingData = {};
-        FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, nullptr, inputBindingData, true, m_desc.compileType);
+        FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, inputBindingData, m_desc.compileType);
 
         DML_BUFFER_ARRAY_BINDING bufferArrayBindings = {};
         if (inputBindingData.bufferBindings.size() > std::numeric_limits<uint32_t>::max())
@@ -280,10 +278,10 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
     auto bindingProps = m_operatorCompiled->GetBindingProperties();
 
     BindingData inputBindingData = {};
-    FillBindingData(m_desc.bindPoints.inputs, &m_initBindings, &bindings, inputBindingData, false, m_desc.compileType);
+    FillBindingData(m_desc.bindPoints.inputs, &bindings, inputBindingData, m_desc.compileType);
 
     BindingData outputBindingData = {};
-    FillBindingData(m_desc.bindPoints.outputs, &m_initBindings, &bindings, outputBindingData, false, m_desc.compileType);
+    FillBindingData(m_desc.bindPoints.outputs, &bindings, outputBindingData, m_desc.compileType);
 
     D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
     descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;

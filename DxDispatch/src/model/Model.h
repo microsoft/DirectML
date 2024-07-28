@@ -57,26 +57,26 @@ public:
     // DISPATCHABLES
     // ------------------------------------------------------------------------
 
+    struct BindPoint
+    {
+        std::string name;
+        uint32_t resourceCount;
+        bool required;
+        bool requiredBinding;
+    };
+
+    struct BindPoints
+    {
+        std::vector<BindPoint> inputs;
+        std::vector<BindPoint> outputs;
+    };
+
     struct DmlDispatchableDesc
     {
         enum class DmlCompileType 
         {
             DmlCompileOp,
             DmlCompileGraph
-        };
-
-        struct BindPoint
-        {
-            std::string name;
-            uint32_t resourceCount;
-            bool required;
-            bool requiredBinding;
-        };
-
-        struct BindPoints
-        {
-            std::vector<BindPoint> inputs;
-            std::vector<BindPoint> outputs;
         };
 
         DML_OPERATOR_DESC* desc;
@@ -88,7 +88,20 @@ public:
 
     struct DmlGraphDispatchableDesc
     {
-        DML_GRAPH_DESC* desc;
+        // Nodes of type DML_GRAPH_NODE_TYPE_OPERATOR reference IDMLOperator
+        // instances that aren't available until runtime. Consumers must resolve 
+        // nodes first by using DML_OPERATOR_GRAPH_NODE_DESC::Name to look up the
+        // corresponding dispatchable by name.
+        DML_GRAPH_DESC* unresolvedGraphDesc;
+
+        // Model bind points are referenced by name (string) rather than index, since
+        // this is more user-friendly when binding operators in JSON. Graphs don't have
+        // named bind points in the API, so the names are generated here as "in_<index>"
+        // and "out_<index>".
+        BindPoints bindPoints;
+
+        DML_EXECUTION_FLAGS executionFlags;
+        Bindings initBindings;
     };
 
     struct HlslDispatchableDesc

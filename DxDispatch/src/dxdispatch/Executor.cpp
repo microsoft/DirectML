@@ -149,10 +149,20 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             }
             else if (std::holds_alternative<Model::DmlGraphDispatchableDesc>(desc.value))
             {
-                // TODO: deserialize flatbuffer into DML_GRAPH_DESC and use DmlGraphDispatchable
-                // TODO: translate DML op into graph if specified earlier...
-                auto& dmlGraphDispatchableDesc = std::get<Model::DmlGraphDispatchableDesc>(desc.value)
-                m_dispatchables[desc.name] = std::make_unique<DmlGraphDispatchable>(device, dmlGraphDispatchableDesc, args, m_logger.Get());
+                auto& dmlGraphDispatchableDesc = std::get<Model::DmlGraphDispatchableDesc>(desc.value);
+
+                Dispatchable::Bindings initBindings;
+                try
+                {
+                    initBindings = ResolveBindings(dmlGraphDispatchableDesc.initBindings);
+                }
+                catch (const std::exception& e)
+                {
+                    m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
+                    return;
+                }
+
+                m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(device, dmlGraphDispatchableDesc, initBindings, m_dispatchables, m_logger.Get());
             }
             else
             {
@@ -177,6 +187,9 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             throw std::invalid_argument(fmt::format("ERROR creating dispatchable '{}': {}", desc.name, e.what()));
         }
     }
+
+    // TODO: resolve IDMLOperators in the graph desc
+    model.ResolveCrossDispatchableRefs(m_dispatchables);
 
     // Compile/initialize dispatchables.
     {

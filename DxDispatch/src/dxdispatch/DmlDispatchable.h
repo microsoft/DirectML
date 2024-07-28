@@ -24,7 +24,7 @@ public:
 private:
     std::string m_name;
     std::shared_ptr<Device> m_device;
-    std::variant<const Model::DmlDispatchableDesc*, const Model::DmlGraphDispatchableDesc*> m_descVariant;
+    std::variant<const Model::DmlDispatchableDesc*, const Model::DmlGraphDispatchableDesc*> m_desc;
 
     Dispatchable::Bindings m_initBindings;
     Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
