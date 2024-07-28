@@ -18,18 +18,15 @@ DmlDispatchable::DmlDispatchable(
     ) : m_name(name), m_device(device), m_desc(desc), 
         m_initBindings(std::move(initBindings)), m_logger(logger), m_isSerializedGraph(false)
 {
-    if (std::holds_alternative<Model::DmlDispatchableDesc>(m_desc))
-    {
         m_bindPoints = desc.bindPoints;
-        const auto& desc = std::get<Model::DmlDispatchableDesc>(m_desc);
         THROW_IF_FAILED(m_device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
-    }
 }
 
 DmlDispatchable::DmlDispatchable(
     std::string_view name, 
     std::shared_ptr<Device> device, 
-    const Model::DmlSerializedGraphDispatchableDesc& desc)
+    const Model::DmlSerializedGraphDispatchableDesc& desc,
+    IDxDispatchLogger* logger)
     : m_name(name), m_device(device), m_desc(desc), m_isSerializedGraph(true)
 {
 }
@@ -127,6 +124,22 @@ void FillBindingData(
     }
 }
 
+uint32_t GetElementSize(DML_TENSOR_DATA_TYPE dataType)
+{
+    switch (dataType)
+    {
+        case DML_TENSOR_DATA_TYPE_FLOAT32: return 4;
+        case DML_TENSOR_DATA_TYPE_FLOAT16: return 2;
+        case DML_TENSOR_DATA_TYPE_UINT32: return 4;
+        case DML_TENSOR_DATA_TYPE_UINT16: return 2;
+        case DML_TENSOR_DATA_TYPE_UINT8: return 1;
+        case DML_TENSOR_DATA_TYPE_INT32: return 4;
+        case DML_TENSOR_DATA_TYPE_INT16: return 2;
+        case DML_TENSOR_DATA_TYPE_INT8: return 1;
+        default: throw std::runtime_error("Unknown data type");
+    }
+}
+
 static Model::DmlDispatchableDesc::BindPoints GetSerializedBindPoints(const DmlSerializedGraphDesc& serializedDesc)
 {
     Model::DmlDispatchableDesc::BindPoints result;
@@ -156,7 +169,7 @@ static Model::DmlDispatchableDesc::BindPoints GetSerializedBindPoints(const DmlS
     return result;
 }
 
-static std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantDataTypes(const DmlSerializedGraphDesc& serializedDesc)
+std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantDataTypes(const DmlSerializedGraphDesc& serializedDesc)
 {
     std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> constantDataTypes;
     std::unordered_map<uint32_t, DmlIntermediateSerializedGraphEdge> constantNodeEdges;
@@ -195,7 +208,7 @@ static std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantData
         return constantDataTypes;
 }
 
-static Dispatchable::Bindings GenerateInitialBindingsFromGraph(const DmlSerializedGraphDesc& serializedDesc,
+Dispatchable::Bindings GenerateInitialBindingsFromGraph(const DmlSerializedGraphDesc& serializedDesc,
 const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes)
 {
     Dispatchable::Bindings local_bindings;
@@ -212,7 +225,7 @@ const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes)
                 bindingSource.resourceDesc = nullptr;
                 bindingSource.elementOffset = 0;
                 bindingSource.elementCount = 0;  
-                bindingSource.elementSizeInBytes = GetElementSize(m_constantDataTypes[node.Name]);
+                bindingSource.elementSizeInBytes = GetElementSize(constantDataTypes.at(node.Name));
                 local_bindings[node.Name] = {bindingSource};
             }
         }
@@ -238,7 +251,12 @@ static std::vector<std::byte> LoadFileContents(const std::filesystem::path& file
     return buffer;
 }
 
-void DmlDispatchable::CreateResourceFromConstantNode(const DmlSerializedGraphNode& node)
+void DmlDispatchable::CreateResourceFromConstantNode(
+    const DmlSerializedGraphNode& node,
+    const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes,
+    const std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc>& m_desc,
+    std::shared_ptr<Device> m_device,  
+    Dispatchable::Bindings& m_initBindings)
 {
     const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
    
@@ -261,24 +279,8 @@ void DmlDispatchable::CreateResourceFromConstantNode(const DmlSerializedGraphNod
         {
             auto& bindingSource = m_initBindings[node.Name][0];
             bindingSource.resource = m_resources[node.Name].Get();
-            bindingSource.elementCount = data.size() / GetElementSize(m_constantDataTypes[node.Name]);
+            bindingSource.elementCount = data.size() / GetElementSize(constantDataTypes.at(node.Name));
         }
-    }
-}
-
-static uint32_t ::GetElementSize(DML_TENSOR_DATA_TYPE dataType)
-{
-    switch (dataType)
-    {
-        case DML_TENSOR_DATA_TYPE_FLOAT32: return 4;
-        case DML_TENSOR_DATA_TYPE_FLOAT16: return 2;
-        case DML_TENSOR_DATA_TYPE_UINT32: return 4;
-        case DML_TENSOR_DATA_TYPE_UINT16: return 2;
-        case DML_TENSOR_DATA_TYPE_UINT8: return 1;
-        case DML_TENSOR_DATA_TYPE_INT32: return 4;
-        case DML_TENSOR_DATA_TYPE_INT16: return 2;
-        case DML_TENSOR_DATA_TYPE_INT8: return 1;
-        default: throw std::runtime_error("Unknown data type");
     }
 }
 
@@ -299,17 +301,18 @@ void DmlDispatchable::BuildAndCompileGraph()
 
     std::vector<std::unique_ptr<std::byte[]>> rawData;
     DmlSerializedGraphDesc serializedDesc = DeserializeDmlGraph(blob.data(), rawData);
+    std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> constantDataTypes;
 
     m_bindPoints = GetSerializedBindPoints(serializedDesc);
-    m_constantDataTypes = ExtractConstantDataTypes(serializedDesc);
-    m_initBindings  = GenerateInitialBindingsFromGraph(serializedDesc);
+    constantDataTypes = ExtractConstantDataTypes(serializedDesc);
+    m_initBindings  = GenerateInitialBindingsFromGraph(serializedDesc, constantDataTypes);
 
     for (const auto& node : serializedDesc.Nodes)
     {
         const auto* constantVariantPtr = std::get_if<DmlSerializedGraphNodeConstantVariant>(&node.Desc);
         if (constantVariantPtr && std::holds_alternative<ConstantName>(*constantVariantPtr))
         {
-            CreateResourceFromConstantNode(node);
+            CreateResourceFromConstantNode(node, constantDataTypes, desc, m_device, m_initBindings);
         }
     }
 
@@ -430,8 +433,7 @@ void DmlDispatchable::Initialize()
    }
    else
    {
-        BuildAndCompile
-        Graph();
+        BuildAndCompileGraph();
    }
 
     ComPtr<IDMLOperatorInitializer> initializer;

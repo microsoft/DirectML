@@ -1,7 +1,6 @@
 #pragma once
 #include "DirectMLHelpers\DmlSerializedGraphDesc.h"
 
-
 class DmlDispatchable : public Dispatchable
 {
 public:
@@ -16,7 +15,8 @@ public:
     DmlDispatchable(
         std::string_view name, 
         std::shared_ptr<Device> device, 
-        const Model::DmlSerializedGraphDispatchableDesc& desc);
+        const Model::DmlSerializedGraphDispatchableDesc& desc,
+        IDxDispatchLogger* logger);
 
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
@@ -25,7 +25,7 @@ public:
 private:
     std::string m_name;
     std::shared_ptr<Device> m_device;
-    std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc> m_desc;
+    const std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc> m_desc;
     Dispatchable::Bindings m_initBindings;
     bool m_isSerializedGraph = false;
     Microsoft::WRL::ComPtr<IDMLOperator> m_operator;
@@ -35,21 +35,14 @@ private:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_descriptorHeap;
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
     Model::DmlDispatchableDesc::BindPoints m_bindPoints;
-    std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> m_constantDataTypes;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_resources;
 
 
     void BuildAndCompileGraph();
-    //BindPoints GetBindPoints() const;
-    //void CreateResourceFromConstantNode(const DmlSerializedGraphNode& node);
-
-    
-    // Model::DmlDispatchableDesc::BindPoints GetSerializedBindPoints(const DmlSerializedGraphDesc& serializedDesc);
-    // std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantDataTypes(const DmlSerializedGraphDesc& serializedDesc);
-    // Bindings GenerateInitialBindingsFromGraph(const DmlSerializedGraphDesc& graphDesc);
-    // std::vector<std::byte> LoadFileContents(const std::filesystem::path& filepath);
-    // static uint32_t GetElementSize(DML_TENSOR_DATA_TYPE dataType);
-
-
-
+    void DmlDispatchable::CreateResourceFromConstantNode(
+    const DmlSerializedGraphNode& node,
+    const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes,
+    const std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc>& m_desc,
+    std::shared_ptr<Device> m_device,  
+    Dispatchable::Bindings& m_initBindings);
 };
