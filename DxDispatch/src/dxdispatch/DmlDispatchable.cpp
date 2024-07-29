@@ -18,8 +18,8 @@ DmlDispatchable::DmlDispatchable(
     ) : m_name(name), m_device(device), m_desc(desc), 
         m_initBindings(std::move(initBindings)), m_logger(logger), m_isSerializedGraph(false)
 {
-        m_bindPoints = desc.bindPoints;
-        THROW_IF_FAILED(m_device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
+    m_bindPoints = desc.bindPoints;
+    THROW_IF_FAILED(m_device->DML()->CreateOperator(desc.desc, IID_PPV_ARGS(&m_operator)));
 }
 
 DmlDispatchable::DmlDispatchable(
@@ -113,7 +113,6 @@ void FillBindingData(
                     auto& bufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
                     bindingData.bufferBindings[bufferIndex].SizeInBytes = bufferDesc.sizeInBytes - bindingData.bufferBindings[bufferIndex].Offset;
                 }
-
                 bindingData.bufferBindings[bufferIndex].Buffer = source.resource;
                 bindingData.bufferBindings[bufferIndex].Offset = source.elementOffset * source.elementSizeInBytes;
                 bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_BUFFER;
@@ -148,7 +147,7 @@ static Model::DmlDispatchableDesc::BindPoints GetSerializedBindPoints(const DmlS
     {
         result.inputs.push_back({inputEdge.Name, 1, true});
     }
-    
+
     for (const auto& node : serializedDesc.Nodes)
     {
         if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc))
@@ -180,23 +179,29 @@ std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantDataTypes(c
         if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(nodeDesc)) 
         {
             const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(nodeDesc);
-            if (std::holds_alternative<ConstantName>(constantVariant)) {
+            if (std::holds_alternative<ConstantName>(constantVariant)) 
+            {
                 constantNodeEdges[edge.FromNodeIndex] = edge;
             }
         }
     }
 
-        for (uint32_t nodeIndex = 0; nodeIndex < serializedDesc.Nodes.size(); nodeIndex++) {
+        for (uint32_t nodeIndex = 0; nodeIndex < serializedDesc.Nodes.size(); nodeIndex++) 
+        {
             const auto& node = serializedDesc.Nodes[nodeIndex];
-            if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc)) {
+            if (std::holds_alternative<DmlSerializedGraphNodeConstantVariant>(node.Desc)) 
+            {
                 const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
-                if (std::holds_alternative<ConstantName>(constantVariant) && constantNodeEdges.find(nodeIndex) != constantNodeEdges.end()) {
+                if (std::holds_alternative<ConstantName>(constantVariant) && constantNodeEdges.find(nodeIndex) != constantNodeEdges.end()) 
+                {
                     const auto& edge = constantNodeEdges[nodeIndex];
                     const auto& operatorNode = serializedDesc.Nodes[edge.ToNodeIndex];
-                    if (std::holds_alternative<AbstractOperatorDesc>(operatorNode.Desc)) {
+                    if (std::holds_alternative<AbstractOperatorDesc>(operatorNode.Desc)) 
+                    {
                         const auto& opDesc = std::get<AbstractOperatorDesc>(operatorNode.Desc);
                         auto inputTensors = opDesc.GetInputTensors();
-                        if (edge.ToNodeInputIndex < inputTensors.size()) {
+                        if (edge.ToNodeInputIndex < inputTensors.size()) 
+                        {
                             const auto& constantTensor = inputTensors[edge.ToNodeInputIndex];
                             constantDataTypes[node.Name] = constantTensor->dataType;
                         }
@@ -241,9 +246,11 @@ static std::vector<std::byte> LoadFileContents(const std::filesystem::path& file
     {
         throw std::runtime_error("Could not open file: " + filepath.string());
     }
+
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
     std::vector<std::byte> buffer(size);
+    
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
     {
         throw std::runtime_error("Could not read file: " + filepath.string());
