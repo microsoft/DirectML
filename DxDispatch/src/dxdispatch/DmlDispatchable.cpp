@@ -52,7 +52,6 @@ uint64_t CalculateSize(uint64_t elementCount, uint64_t elementSizeInBytes)
     return (calculatedSize + 3) & ~3ull; // Round up to nearest 4 bytes
 }
 
-
 void FillBindingData(
     const std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints,
     const Dispatchable::Bindings* initializeBindings,
