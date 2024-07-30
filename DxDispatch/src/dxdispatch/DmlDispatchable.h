@@ -39,7 +39,7 @@ private:
 
 
     void BuildAndCompileGraph();
-    void DmlDispatchable::CreateResourceFromConstantNode(
+    void CreateResourceFromConstantNode(
     const DmlSerializedGraphNode& node,
     const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes,
     const std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc>& m_desc,

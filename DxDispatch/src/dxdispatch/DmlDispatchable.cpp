@@ -37,8 +37,24 @@ struct BindingData
     std::vector<DML_BINDING_DESC> bindingDescs;
 };
 
+uint64_t SafeMultiply(uint64_t a, uint64_t b)
+{
+    if (b != 0 && (a > std::numeric_limits<uint64_t>::max() / b))
+    {
+        throw std::overflow_error("Overflow in size calculation");
+    }
+    return a * b;
+}
+
+uint64_t CalculateSize(uint64_t elementCount, uint64_t elementSizeInBytes)
+{
+    uint64_t calculatedSize = SafeMultiply(elementCount, elementSizeInBytes);
+    return (calculatedSize + 3) & ~3ull; // Round up to nearest 4 bytes
+}
+
+
 void FillBindingData(
-    const std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints,  
+    const std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints,
     const Dispatchable::Bindings* initializeBindings,
     const Dispatchable::Bindings* executeBindings,
     BindingData& bindingData,
@@ -86,25 +102,33 @@ void FillBindingData(
         {
             auto& sources = bindingIterator->second;
 
-            if (bindPoints[i].resourceCount != sources.size())
-            {
-                throw std::invalid_argument(fmt::format(
-                    "Bind point '{}' requires {} resources, but {} were bound.", 
-                    bindPointName, 
-                    bindPoints[i].resourceCount, 
-                    sources.size()));
-            }
-
             for (auto& source : sources)
             {
-                assert(source.resource != nullptr);   
+                assert(source.resource != nullptr);
                 if (isSerializedGraph)
                 {
-                    bindingData.bufferBindings[bufferIndex].SizeInBytes = source.elementCount * source.elementSizeInBytes;
+                    // Use SafeMultiply and CalculateSize only for DMLSerialized
+                    uint64_t offset = SafeMultiply(source.elementOffset, source.elementSizeInBytes);
+                    uint64_t sizeInBytes = CalculateSize(source.elementCount, source.elementSizeInBytes);
+
+                    bindingData.bufferBindings[bufferIndex].Offset = offset;
+                    bindingData.bufferBindings[bufferIndex].SizeInBytes = sizeInBytes - offset;
+
+                    // Validation
+                    if (offset + SafeMultiply(source.elementCount, source.elementSizeInBytes) > sizeInBytes)
+                    {
+                        throw std::invalid_argument(fmt::format(
+                            "Buffer size ({} bytes) is too small for the data ({} bytes) at offset {} bytes for binding point '{}'", 
+                            sizeInBytes,
+                            SafeMultiply(source.elementCount, source.elementSizeInBytes),
+                            offset,
+                            bindPointName));
+                    }
                 }
                 else
                 {
                     assert(source.resourceDesc != nullptr);
+                    
                     if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
                     {
                         throw std::invalid_argument("DML operators only support buffer bindings");
@@ -113,8 +137,8 @@ void FillBindingData(
                     auto& bufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
                     bindingData.bufferBindings[bufferIndex].SizeInBytes = bufferDesc.sizeInBytes - bindingData.bufferBindings[bufferIndex].Offset;
                 }
+
                 bindingData.bufferBindings[bufferIndex].Buffer = source.resource;
-                bindingData.bufferBindings[bufferIndex].Offset = source.elementOffset * source.elementSizeInBytes;
                 bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_BUFFER;
                 bindingData.bindingDescs[bufferIndex].Desc = &bindingData.bufferBindings[bufferIndex];
                 bufferIndex++;
