@@ -39,5 +39,6 @@ private:
     void BuildAndCompileGraph();
     void CreateResourceFromConstantNode(
         const DmlSerializedGraphNode& node,
-        const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes);
+        const std::unordered_map<std::string, 
+        DML_TENSOR_DATA_TYPE>& constantDataTypes);
 };

@@ -1,6 +1,25 @@
 #include "pch.h"
 #include "Model.h"
 
+static void VerifyBindings(
+    const std::string& dispatchableType,
+    const std::unordered_map<std::string, std::vector<Model::BufferBindingSource>>& initBindings,
+    std::unordered_map<std::string, Model::ResourceDesc*>& resourceDescsByName)
+{
+    for (const auto& [bindingName, sourceResources] : initBindings)
+    {
+        for (const auto& sourceResource : sourceResources)
+        {
+            if (resourceDescsByName.find(sourceResource.name) == resourceDescsByName.end())
+            {
+                throw std::invalid_argument(fmt::format(
+                    "{} dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
+                    dispatchableType, sourceResource.name));
+            }
+        }
+    }
+}
+
 Model::Model(
     std::vector<ResourceDesc>&& resourceDescs,
     std::vector<DispatchableDesc>&& dispatchableDescs,
@@ -31,18 +50,7 @@ Model::Model(
                 ? "DML"
                 : "DmlSerializedGraph";
 
-            for (const auto& binding : initBindings)
-            {
-                for (const auto& sourceResource : binding.second)
-                {
-                    if (m_resourceDescsByName.find(sourceResource.name) == m_resourceDescsByName.end())
-                    {
-                        throw std::invalid_argument(fmt::format(
-                            "{} dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
-                            dispatchableType, sourceResource.name));
-                    }
-                }
-            }
+            VerifyBindings(dispatchableType, initBindings, m_resourceDescsByName);
         }
     }
 

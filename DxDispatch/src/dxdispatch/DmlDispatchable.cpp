@@ -254,7 +254,8 @@ std::unordered_map<std::string, DML_TENSOR_DATA_TYPE> ExtractConstantDataTypes(c
 
 Dispatchable::Bindings GenerateInitialBindingsFromGraph(
     const DmlSerializedGraphDesc& serializedDesc,
-    const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes)
+    const std::unordered_map<std::string, 
+    DML_TENSOR_DATA_TYPE>& constantDataTypes)
 {
     Dispatchable::Bindings local_bindings;
 
@@ -300,7 +301,8 @@ static std::vector<std::byte> LoadFileContents(const std::filesystem::path& file
 
 void DmlDispatchable::CreateResourceFromConstantNode(
     const DmlSerializedGraphNode& node,
-    const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes)
+    const std::unordered_map<std::string, 
+    DML_TENSOR_DATA_TYPE>& constantDataTypes)
 {
     const auto& constantVariant = std::get<DmlSerializedGraphNodeConstantVariant>(node.Desc);
    
@@ -393,7 +395,7 @@ void DmlDispatchable::BuildAndCompileGraph()
 
 void DmlDispatchable::Initialize()
 {
-    if (std::holds_alternative<Model::DmlDispatchableDesc>(m_desc))
+    if (!m_isSerializedGraph)
     {
         const auto& dmlDesc = std::get<Model::DmlDispatchableDesc>(m_desc);
     
@@ -513,7 +515,7 @@ void DmlDispatchable::Initialize()
     BindingData inputBindingData = {};
     std::optional<Model::DmlDispatchableDesc::DmlCompileType> compileType = std::nullopt;
     
-    // Set compileType only if desc is of dml=type
+    // Set compileType only if desc is of dmltype
     if (!m_isSerializedGraph)
     {
         compileType = std::get<Model::DmlDispatchableDesc>(m_desc).compileType;
@@ -570,14 +572,9 @@ void DmlDispatchable::Bind(const Bindings& bindings, uint32_t iteration)
 
     std::optional<Model::DmlDispatchableDesc::DmlCompileType> compileType = std::nullopt;
 
-    if (std::holds_alternative<Model::DmlDispatchableDesc>(m_desc))
+    if (!m_isSerializedGraph)
     {
-        const auto& dmlDesc = std::get<Model::DmlDispatchableDesc>(m_desc);
-        compileType = dmlDesc.compileType;
-    }
-    else if (!std::holds_alternative<Model::DmlSerializedGraphDispatchableDesc>(m_desc))
-    {
-        throw std::runtime_error("Unexpected descriptor type for DmlDispatchable");
+        compileType = std::get<Model::DmlDispatchableDesc>(m_desc).compileType;
     }
 
     FillBindingData(m_bindPoints.inputs, &m_initBindings, &bindings, inputBindingData, m_isSerializedGraph, false, compileType);
