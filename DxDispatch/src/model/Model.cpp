@@ -19,33 +19,28 @@ Model::Model(
     for (auto& dispatchableDesc : m_dispatchableDescs) 
     { 
         m_dispatchableDescsByName[dispatchableDesc.name] = &dispatchableDesc;
-
-        if (std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value))
+        
+        if (std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value) ||
+            std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
         {
-            auto& dmlDispatchableDesc = std::get<DmlDispatchableDesc>(dispatchableDesc.value);
-            for (auto& binding : dmlDispatchableDesc.initBindings)
+            const auto& initBindings = std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value)
+                ? std::get<DmlDispatchableDesc>(dispatchableDesc.value).initBindings
+                : std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value).initBindings;
+
+            const char* dispatchableType = std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value)
+                ? "DML"
+                : "DmlSerializedGraph";
+
+            for (const auto& binding : initBindings)
             {
-                for (auto& sourceResource : binding.second)
+                for (const auto& sourceResource : binding.second)
                 {
                     if (m_resourceDescsByName.find(sourceResource.name) == m_resourceDescsByName.end())
                     {
                         throw std::invalid_argument(fmt::format(
-                            "DML dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
-                            sourceResource.name));
+                            "{} dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
+                            dispatchableType, sourceResource.name));
                     }
-                }
-            }
-        }
-        else if (std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
-        {
-            auto& dmlSerializedGraphDispatchableDesc = std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value);
-            for (auto& sourceResource : dmlSerializedGraphDispatchableDesc.initBindings)
-            {
-                if (m_resourceDescsByName.find(sourceResource.first) == m_resourceDescsByName.end())
-                {
-                    throw std::invalid_argument(fmt::format(
-                        "DmlSerializedGraph dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model",
-                        sourceResource.first));
                 }
             }
         }

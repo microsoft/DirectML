@@ -8,9 +8,7 @@
 #include <vector>
 #include <gsl/gsl>
 #include <DirectML.h>
-#include "pch.h"
 #include "BucketAllocator.h"
-
 
 class Model
 {
@@ -116,7 +114,6 @@ public:
         DML_EXECUTION_FLAGS executionFlags;
         Bindings initBindings;
     };
-
 
     struct DispatchableDesc
     {

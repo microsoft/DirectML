@@ -154,7 +154,8 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(
                     desc.name, 
                     device, 
-                    dmlSerializedGraphDispatchableDesc, m_logger.Get());
+                    dmlSerializedGraphDispatchableDesc, 
+                    m_logger.Get());
             }
             else
             {

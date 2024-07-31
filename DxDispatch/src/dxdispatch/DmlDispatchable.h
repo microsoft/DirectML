@@ -4,7 +4,6 @@
 class DmlDispatchable : public Dispatchable
 {
 public:
-
     DmlDispatchable(
         std::string_view name, 
         std::shared_ptr<Device> device, 
@@ -20,7 +19,7 @@ public:
 
     void Initialize() final;
     void Bind(const Bindings& bindings, uint32_t iteration) final;
-    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBinings) final;
+    void Dispatch(const Model::DispatchCommand& args, uint32_t iteration, DeferredBindings& deferredBindings) final;
 
 private:
     std::string m_name;
@@ -37,12 +36,8 @@ private:
     Model::DmlDispatchableDesc::BindPoints m_bindPoints;
     std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_resources;
 
-
     void BuildAndCompileGraph();
     void CreateResourceFromConstantNode(
-    const DmlSerializedGraphNode& node,
-    const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes,
-    const std::variant<Model::DmlDispatchableDesc, Model::DmlSerializedGraphDispatchableDesc>& m_desc,
-    std::shared_ptr<Device> m_device,  
-    Dispatchable::Bindings& m_initBindings);
+        const DmlSerializedGraphNode& node,
+        const std::unordered_map<std::string, DML_TENSOR_DATA_TYPE>& constantDataTypes);
 };
