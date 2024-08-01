@@ -123,21 +123,20 @@ void FillBindingData(
                 assert(source.resource != nullptr);
             
                 uint64_t offset = SafeMultiply(source.elementOffset, source.elementSizeInBytes);
-                uint64_t sizeInBytes = CalculateSize(source.elementCount, source.elementSizeInBytes);
-            
-                if (offset + SafeMultiply(source.elementCount, source.elementSizeInBytes) > sizeInBytes)
-                {
-                    throw std::invalid_argument(fmt::format(
-                        "Buffer size ({} bytes) is too small for the data ({} bytes) at offset {} bytes for binding point '{}'", 
-                        sizeInBytes,
-                        SafeMultiply(source.elementCount, source.elementSizeInBytes),
-                        offset,
-                        bindPointName));
-                }
             
                 if (isSerializedGraph)
                 {
-                    bindingData.bufferBindings[bufferIndex].SizeInBytes = sizeInBytes - offset;
+                    uint64_t sizeInBytes = CalculateSize(source.elementCount, source.elementSizeInBytes);
+                    if (offset + SafeMultiply(source.elementCount, source.elementSizeInBytes) > sizeInBytes)
+                    {
+                        throw std::invalid_argument(fmt::format(
+                            "Buffer size ({} bytes) is too small for the data ({} bytes) at offset {} bytes for binding point '{}'", 
+                            sizeInBytes,
+                            SafeMultiply(source.elementCount, source.elementSizeInBytes),
+                            offset,
+                            bindPointName));
+                    }
+                    bindingData.bufferBindings[bufferIndex].SizeInBytes = sizeInBytes - offset;    
                 }
                 else
                 {

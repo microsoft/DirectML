@@ -39,19 +39,15 @@ Model::Model(
     { 
         m_dispatchableDescsByName[dispatchableDesc.name] = &dispatchableDesc;
         
-        if (std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value) ||
-            std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
+        if (std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value))
         {
-            const auto& initBindings = std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value)
-                ? std::get<DmlDispatchableDesc>(dispatchableDesc.value).initBindings
-                : std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value).initBindings;
-
-            const char* dispatchableType = std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value)
-                ? "DML"
-                : "DmlSerializedGraph";
-
-            VerifyBindings(dispatchableType, initBindings, m_resourceDescsByName);
+            VerifyBindings("DML", std::get<DmlDispatchableDesc>(dispatchableDesc.value).initBindings, m_resourceDescsByName);
         }
+        else if (std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
+        {
+            VerifyBindings("DmlSerializedGraph", std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value).initBindings, m_resourceDescsByName);
+        }
+
     }
 
     // Validate references to ops/resources in the model.
