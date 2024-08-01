@@ -118,43 +118,43 @@ void FillBindingData(
                     sources.size()));
             }
 
-		for (auto& source : sources)
-		{
-		    assert(source.resource != nullptr);
-		
-		    uint64_t offset = SafeMultiply(source.elementOffset, source.elementSizeInBytes);
-		    uint64_t sizeInBytes = CalculateSize(source.elementCount, source.elementSizeInBytes);
-		
-		    if (offset + SafeMultiply(source.elementCount, source.elementSizeInBytes) > sizeInBytes)
-		    {
-		        throw std::invalid_argument(fmt::format(
-		            "Buffer size ({} bytes) is too small for the data ({} bytes) at offset {} bytes for binding point '{}'", 
-		            sizeInBytes,
-		            SafeMultiply(source.elementCount, source.elementSizeInBytes),
-		            offset,
-		            bindPointName));
-		    }
-		
-		    if (isSerializedGraph)
-		    {
-		        bindingData.bufferBindings[bufferIndex].SizeInBytes = sizeInBytes - offset;
-		    }
-		    else
-		    {
-                if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
-		        {
-		            throw std::invalid_argument("DML operators only support buffer bindings");
-		        }                    
-		        auto& bufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
-		        bindingData.bufferBindings[bufferIndex].SizeInBytes = bufferDesc.sizeInBytes - offset;
-		    }
-		
-		    bindingData.bufferBindings[bufferIndex].Buffer = source.resource;
-		    bindingData.bufferBindings[bufferIndex].Offset = offset;
-		    bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_BUFFER;
-		    bindingData.bindingDescs[bufferIndex].Desc = &bindingData.bufferBindings[bufferIndex];
-		    bufferIndex++;
-		}
+            for (auto& source : sources)
+            {
+                assert(source.resource != nullptr);
+            
+                uint64_t offset = SafeMultiply(source.elementOffset, source.elementSizeInBytes);
+                uint64_t sizeInBytes = CalculateSize(source.elementCount, source.elementSizeInBytes);
+            
+                if (offset + SafeMultiply(source.elementCount, source.elementSizeInBytes) > sizeInBytes)
+                {
+                    throw std::invalid_argument(fmt::format(
+                        "Buffer size ({} bytes) is too small for the data ({} bytes) at offset {} bytes for binding point '{}'", 
+                        sizeInBytes,
+                        SafeMultiply(source.elementCount, source.elementSizeInBytes),
+                        offset,
+                        bindPointName));
+                }
+            
+                if (isSerializedGraph)
+                {
+                    bindingData.bufferBindings[bufferIndex].SizeInBytes = sizeInBytes - offset;
+                }
+                else
+                {
+                    if (!std::holds_alternative<Model::BufferDesc>(source.resourceDesc->value))
+                    {
+                        throw std::invalid_argument("DML operators only support buffer bindings");
+                    }                    
+                    auto& bufferDesc = std::get<Model::BufferDesc>(source.resourceDesc->value);
+                    bindingData.bufferBindings[bufferIndex].SizeInBytes = bufferDesc.sizeInBytes - offset;
+                }
+            
+                bindingData.bufferBindings[bufferIndex].Buffer = source.resource;
+                bindingData.bufferBindings[bufferIndex].Offset = offset;
+                bindingData.bindingDescs[bufferIndex].Type = DML_BINDING_TYPE_BUFFER;
+                bindingData.bindingDescs[bufferIndex].Desc = &bindingData.bufferBindings[bufferIndex];
+                bufferIndex++;
+            }
         }
     }
 }
