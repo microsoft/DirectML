@@ -39,6 +39,10 @@ PixCaptureHelper::PixCaptureHelper(PixCaptureType captureType, std::string_view 
     {
         m_gpuCaptureLibrary.reset(PIXLoadLatestWinPixGpuCapturerLibrary());
     }
+    else if (captureType == PixCaptureType::ProgrammaticTiming)
+    {
+        m_timingCaptureLibrary.reset(PIXLoadLatestWinPixTimingCapturerLibrary());
+    }
 #endif
 }
 
@@ -61,7 +65,9 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
     {
         case PixCaptureType::ProgrammaticTiming:
         {
-#ifdef _GAMING_XBOX
+#if defined(PIX_NONE)
+            return E_NOTIMPL;
+#elif defined(_GAMING_XBOX)
             auto captureName = m_captureName + L".pevt";
             PIXCaptureParameters captureParams = {};
             captureParams.TimingCaptureParameters.CaptureGpuTiming = TRUE;
@@ -73,8 +79,22 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
             captureParams.TimingCaptureParameters.MaximumToolingMemorySizeMb = 4096;
             return PIXBeginCapture(PIX_CAPTURE_TIMING, &captureParams);
 #else
-            // There is currently no programmatic API for timing captures on Windows.
-            return E_NOTIMPL;
+            if (!m_timingCaptureLibrary)
+            {
+                throw std::runtime_error("The WinPix Timing capturer library was not found. Ensure PIX is installed.");
+            }
+            auto captureName = m_captureName + L".wpix";
+
+            PIXCaptureParameters captureParams = {};
+            captureParams.TimingCaptureParameters.FileName = captureName.c_str();
+            captureParams.TimingCaptureParameters.CaptureGpuTiming = TRUE;
+            captureParams.TimingCaptureParameters.CaptureCallstacks = TRUE;
+            captureParams.TimingCaptureParameters.CaptureCpuSamples = TRUE;
+            captureParams.TimingCaptureParameters.CpuSamplesPerSecond = 4000;
+            captureParams.TimingCaptureParameters.CaptureStorage = PIXCaptureParameters::Memory;
+            captureParams.TimingCaptureParameters.FileName = captureName.data();
+            captureParams.TimingCaptureParameters.MaximumToolingMemorySizeMb = 4096;
+            return PIXBeginCapture(PIX_CAPTURE_TIMING, &captureParams);
 #endif
         }
 
@@ -95,7 +115,7 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
 
             // PIXBeginCapture can only be used for GPU captures on Windows.
             PIXCaptureParameters captureParams = {};
-            captureParams.TimingCaptureParameters.FileName = captureName.c_str();
+            captureParams.GpuCaptureParameters.FileName = captureName.c_str();
             return PIXBeginCapture(PIX_CAPTURE_GPU, &captureParams);
 #endif
         }
@@ -124,7 +144,9 @@ HRESULT PixCaptureHelper::EndCapturableWork()
     {
         case PixCaptureType::ProgrammaticTiming:
         {
-#if defined(_GAMING_XBOX)
+#if defined(PIX_NONE)
+            return E_NOTIMPL;
+#elif defined(_GAMING_XBOX)
             HRESULT hr;
             do
             {
@@ -137,8 +159,8 @@ HRESULT PixCaptureHelper::EndCapturableWork()
 
             return hr;
 #else
-            // There is currently no programmatic API for timing captures on Windows.
-            return E_NOTIMPL;
+            // PIX on Windows ignores the discard parameter.
+            return PIXEndCapture(/*discard*/FALSE);
 #endif
         }
 

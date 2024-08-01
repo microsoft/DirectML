@@ -35,6 +35,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 #if !defined(_GAMING_XBOX) && !defined(PIX_NONE)
     wil::unique_hmodule m_gpuCaptureLibrary;
+    wil::unique_hmodule m_timingCaptureLibrary;
     Microsoft::WRL::ComPtr<ID3D12SharingContract> m_sharingContract;
 #endif
 };
