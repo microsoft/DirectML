@@ -437,9 +437,6 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         else if (pixCaptureTypeStr == "timing")
         {
             m_pixCaptureType = PixCaptureType::ProgrammaticTiming;
-#ifndef _GAMING_XBOX
-            throw std::invalid_argument("Programmatic timing captures are not supported");
-#endif
         }
         else if (pixCaptureTypeStr == "manual")
         {
