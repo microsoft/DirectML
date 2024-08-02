@@ -81,7 +81,7 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
 #else
             if (!m_timingCaptureLibrary)
             {
-                throw std::runtime_error("The WinPix Timing capturer library was not found. Ensure PIX is installed.");
+                throw std::runtime_error("The WinPix Timing capturer library was not found. Ensure that PIX version 2303.02 or later is installed.");
             }
             auto captureName = m_captureName + L".wpix";
 
@@ -93,7 +93,12 @@ HRESULT PixCaptureHelper::BeginCapturableWork()
             captureParams.TimingCaptureParameters.CpuSamplesPerSecond = 4000;
             captureParams.TimingCaptureParameters.CaptureStorage = PIXCaptureParameters::Memory;
             captureParams.TimingCaptureParameters.MaximumToolingMemorySizeMb = 4096;
-            return PIXBeginCapture(PIX_CAPTURE_TIMING, &captureParams);
+            HRESULT hr = PIXBeginCapture(PIX_CAPTURE_TIMING, &captureParams);
+            if (hr == E_ACCESSDENIED)
+            {
+                throw std::runtime_error("E_ACCESSDENIED while attempting to begin PIX timing capture.  Timing capture requires elevated privileges.");
+            }
+            return hr;
 #endif
         }
 
@@ -158,7 +163,8 @@ HRESULT PixCaptureHelper::EndCapturableWork()
 
             return hr;
 #else
-            // PIX on Windows ignores the discard parameter.
+            // PIX on Windows ignores the discard parameter, and will flush internally,
+            // no need for the loop xbox needs above.
             return PIXEndCapture(/*discard*/FALSE);
 #endif
         }
