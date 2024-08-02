@@ -129,6 +129,8 @@ add_library(
     src/dxdispatch/Device.h
     src/dxdispatch/DmlDispatchable.cpp
     src/dxdispatch/DmlDispatchable.h
+    src/dxdispatch/DmlTracing.cpp
+    src/dxdispatch/DmlTracing.h
     src/dxdispatch/Executor.cpp
     src/dxdispatch/Executor.h
     src/dxdispatch/CommandLineArgs.cpp
@@ -140,6 +142,7 @@ add_library(
     src/dxdispatch/DxModules.cpp
     src/dxdispatch/DxModules.h
     src/dxdispatch/ModuleInfo.cpp
+    src/dxdispatch/Timer.h
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)

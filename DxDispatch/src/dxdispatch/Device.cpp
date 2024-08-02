@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Device.h"
+#include "DmlTracing.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -43,146 +44,6 @@ static void __stdcall DebugMessageCallback(D3D12_MESSAGE_CATEGORY cat, D3D12_MES
     }
 }
 #endif
-
-struct Timer
-{
-    std::chrono::steady_clock::time_point start;
-    std::chrono::steady_clock::time_point end;
-    Timer() { start = std::chrono::steady_clock::now(); }
-    Timer& Start() { start = std::chrono::steady_clock::now(); return *this; }
-    Timer& End() { end = std::chrono::steady_clock::now(); return *this; }
-    double DurationInMilliseconds() { return std::chrono::duration<double>(end - start).count() * 1000; }
-};
-
-class WrappedDmlDevice : public Microsoft::WRL::RuntimeClass<
-    Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, 
-    Microsoft::WRL::ChainInterfaces<IDMLDevice1, IDMLDevice, IDMLObject>>
-{
-public:
-    explicit WrappedDmlDevice(IDMLDevice1* impl, IDxDispatchLogger* logger) : m_impl(impl), m_logger(logger) {}
-
-    // IDMLObject
-
-    HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final
-    {
-        return m_impl->GetPrivateData(guid, dataSize, data);
-    }
-
-    HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept final
-    {
-        return m_impl->SetPrivateData(guid, dataSize, data);
-    }
-
-    HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID guid, _In_opt_ IUnknown* data) noexcept final
-    {
-        return m_impl->SetPrivateDataInterface(guid, data);
-    }
-
-    HRESULT STDMETHODCALLTYPE SetName(PCWSTR name) noexcept final
-    {
-        return m_impl->SetName(name);
-    }
-
-    // IDMLDevice
-
-    HRESULT STDMETHODCALLTYPE CheckFeatureSupport(
-        DML_FEATURE feature,
-        UINT featureQueryDataSize,
-        _In_reads_bytes_opt_(featureQueryDataSize) const void* featureQueryData,
-        UINT featureSupportDataSize,
-        _Out_writes_bytes_(featureSupportDataSize) void* featureSupportData
-        ) noexcept final
-    {
-        return m_impl->CheckFeatureSupport(feature, featureQueryDataSize, featureQueryData, featureSupportDataSize, featureSupportData);
-    }
-    
-    HRESULT STDMETHODCALLTYPE CreateOperator(
-        const DML_OPERATOR_DESC* desc,
-        REFIID riid,
-        _COM_Outptr_opt_ void** ppv
-        ) noexcept final
-    {
-        return m_impl->CreateOperator(desc, riid, ppv);
-    }
-    
-    HRESULT STDMETHODCALLTYPE CompileOperator(
-        IDMLOperator* op,
-        DML_EXECUTION_FLAGS flags,
-        REFIID riid,
-        _COM_Outptr_opt_ void** ppv
-        ) noexcept final
-    {
-        return m_impl->CompileOperator(op, flags, riid, ppv);
-    }
-    
-    HRESULT STDMETHODCALLTYPE CreateOperatorInitializer(
-        UINT operatorCount,
-        _In_reads_opt_(operatorCount) IDMLCompiledOperator* const* operators,
-        REFIID riid,
-        _COM_Outptr_ void** ppv
-        ) noexcept final
-    {
-        return m_impl->CreateOperatorInitializer(operatorCount, operators, riid, ppv);
-    }
-    
-    HRESULT STDMETHODCALLTYPE CreateCommandRecorder(
-        REFIID riid,
-        _COM_Outptr_ void** ppv
-        ) noexcept final
-    {
-        return m_impl->CreateCommandRecorder(riid, ppv);
-    }
-    
-    HRESULT STDMETHODCALLTYPE CreateBindingTable(
-        _In_opt_ const DML_BINDING_TABLE_DESC* desc,
-        REFIID riid,
-        _COM_Outptr_ void** ppv
-        ) noexcept final
-    {
-        return m_impl->CreateBindingTable(desc, riid, ppv);
-    }
-    
-    HRESULT STDMETHODCALLTYPE Evict( UINT count, _In_reads_(count) IDMLPageable* const* ppObjects ) noexcept final
-    {
-        return m_impl->Evict(count, ppObjects);
-    }
-    
-    HRESULT STDMETHODCALLTYPE MakeResident( UINT count, _In_reads_(count) IDMLPageable* const* ppObjects ) noexcept final
-    {
-        return m_impl->MakeResident(count, ppObjects);
-    }
-
-    HRESULT STDMETHODCALLTYPE GetDeviceRemovedReason() noexcept final
-    {
-        return m_impl->GetDeviceRemovedReason();
-    }
-
-    HRESULT STDMETHODCALLTYPE GetParentDevice( REFIID riid, _COM_Outptr_ void** ppv ) noexcept final
-    {
-        return m_impl->GetParentDevice(riid, ppv);
-    }
-
-    // IDMLDevice1
-
-    HRESULT STDMETHODCALLTYPE CompileGraph(
-        const DML_GRAPH_DESC* desc,
-        DML_EXECUTION_FLAGS flags,
-        REFIID riid,
-        _COM_Outptr_opt_ void** ppv
-        ) noexcept final
-    {
-        Timer timer;
-        timer.Start();
-        auto graph = m_impl->CompileGraph(desc, flags, riid, ppv);
-        timer.End();
-        m_logger->LogInfo(fmt::format("IDMLDevice1::CompileGraph completed in {:.2f} ms", timer.DurationInMilliseconds()).c_str());
-        return graph;
-    }
-
-private:
-    Microsoft::WRL::ComPtr<IDMLDevice1> m_impl;
-    Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
-};
 
 Device::Device(
     IAdapter* adapter, 
@@ -403,6 +264,7 @@ Device::Device(
         dmlFeatureLevel, 
         IID_PPV_ARGS(&dmlDevice)));
 
+    // TODO: only wrap if required based on command line arg
     ComPtr<IDMLDevice1> wrappedDmlDevice = Microsoft::WRL::Make<WrappedDmlDevice>(dmlDevice.Get(), m_logger.Get());
     THROW_IF_FAILED(wrappedDmlDevice.As<IDMLDevice1>(&m_dml));
 
