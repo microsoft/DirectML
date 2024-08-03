@@ -115,7 +115,7 @@ private:
 
     struct CompileGraphTrace
     {
-        // map of type to count
+        std::unordered_map<DML_OPERATOR_TYPE, size_t> opCounts;
     };
 
     std::vector<CompileGraphTrace> m_graphCompiles;

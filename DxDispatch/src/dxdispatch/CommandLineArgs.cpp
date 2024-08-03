@@ -200,7 +200,7 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
         (
             "trace_dml_compiles",
             "Trace details from IDMLDevice::CompileOperator and IDMLDevice::CompileGraph.",
-            cxxopts::value<uint32_t>()
+            cxxopts::value<bool>()
         )
         ;
 

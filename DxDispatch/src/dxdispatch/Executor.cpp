@@ -198,6 +198,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
         throw;
     }
 
+    m_device->ClearDispatchableState();
+
     // Dispatch
     uint32_t iterationsCompleted = 0;
     bool timedOut = false;
@@ -349,6 +351,8 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 }
             }
         }
+
+        m_device->PrintTracingInfo();
     }
 }
 

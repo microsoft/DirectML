@@ -5,6 +5,11 @@ WrappedDmlOperator::WrappedDmlOperator(IDMLOperator* impl, const DML_OPERATOR_DE
     m_impl(impl), m_type(desc->Type)
 {}
 
+HRESULT STDMETHODCALLTYPE WrappedDmlOperator::GetDevice(REFIID riid, _COM_Outptr_ void** ppv) noexcept
+{
+    return m_impl->GetDevice(riid, ppv);
+}
+
 HRESULT STDMETHODCALLTYPE WrappedDmlOperator::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
 {
     return m_impl->GetPrivateData(guid, dataSize, data);
@@ -183,6 +188,8 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
+    CompileGraphTrace compileTrace = {};
+
     // DML_GRAPH_DESC operator-type nodes reference IDMLOperators, which are wrapped when tracing.
     // The rest of the graph desc can pass through unmodified, but operator-type nodes need to be unwrapped.
     DML_GRAPH_DESC unwrappedDesc = *wrappedDesc;
@@ -201,12 +208,19 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
         if (wrappedNode.Type == DML_GRAPH_NODE_TYPE_OPERATOR)
         {
             DML_OPERATOR_GRAPH_NODE_DESC& unwrappedOpNode = unwrappedOpNodes[nodeIndex];
+
             const DML_OPERATOR_GRAPH_NODE_DESC& wrappedOpNode = *static_cast<const DML_OPERATOR_GRAPH_NODE_DESC*>(wrappedNode.Desc);
+            auto wrappedOp = static_cast<WrappedDmlOperator*>(wrappedOpNode.Operator);
+
             unwrappedOpNode = wrappedOpNode;
-            unwrappedOpNode.Operator = static_cast<WrappedDmlOperator*>(wrappedOpNode.Operator)->Impl();
+            unwrappedOpNode.Operator = wrappedOp->Impl();
             unwrappedNode.Desc = &unwrappedOpNode;
+
+            compileTrace.opCounts[wrappedOp->GetType()]++;
         }
     }
+
+    m_graphCompiles.push_back({std::move(compileTrace)});
 
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileGraphTimings.rawSamples.push_back(durationInMilliseconds);
