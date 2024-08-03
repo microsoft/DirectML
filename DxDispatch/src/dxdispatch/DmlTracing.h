@@ -1,22 +1,13 @@
 #pragma once
 
-namespace WRL
-{
-#ifdef WIN32
-    // Helper wrapper over Microsoft::WRL::RuntimeClass.
-    template <typename... TInterfaces>
-    using Base = Microsoft::WRL::RuntimeClass<
-        Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
-        TInterfaces...
-        >;
-#endif
-    using namespace Microsoft::WRL;
-}
-
-class WrappedDmlDevice : public WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLDevice1, IDMLDevice, IDMLObject>>
+class WrappedDmlDevice : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLDevice1, IDMLDevice, IDMLObject>>
 {
 public:
-    explicit WrappedDmlDevice(IDMLDevice1* impl, IDxDispatchLogger* logger);
+    explicit WrappedDmlDevice(
+        IDMLDevice1* impl, 
+        IDxDispatchLogger* logger,
+        const CommandLineArgs& args
+        );
 
     // IDMLObject
     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
@@ -80,4 +71,5 @@ public:
 private:
     Microsoft::WRL::ComPtr<IDMLDevice1> m_impl;
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
+    const CommandLineArgs& m_args;
 };

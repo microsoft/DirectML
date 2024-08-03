@@ -2,6 +2,7 @@
 
 #include "PixCaptureHelper.h"
 #include "DxModules.h"
+#include "CommandLineArgs.h"
 
 // Simplified abstraction for submitting work to a device with a single command queue. Not thread safe.
 // This "device" includes a single command list that is always open for recording work.
@@ -28,7 +29,8 @@ public:
         std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
         std::shared_ptr<D3d12Module> d3dModule,
         std::shared_ptr<DmlModule> dmlModule,
-        IDxDispatchLogger *logger
+        IDxDispatchLogger *logger,
+        const CommandLineArgs& args
         );
     ~Device();
 
@@ -155,6 +157,7 @@ private:
     bool m_restoreStablePowerState = false;
     std::optional<D3D12_FEATURE_DATA_ARCHITECTURE1> m_architectureSupport;
     bool m_useCustomHeaps = false;
+    const CommandLineArgs& m_args;
 
 #ifndef DXCOMPILER_NONE
     Microsoft::WRL::ComPtr<IDxcUtils> m_dxcUtils;

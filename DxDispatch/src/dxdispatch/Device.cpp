@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "CommandLineArgs.h"
 #include "Device.h"
 #include "DmlTracing.h"
 
@@ -65,7 +66,8 @@ Device::Device(
     std::shared_ptr<PixCaptureHelper> pixCaptureHelper,
     std::shared_ptr<D3d12Module> d3dModule,
     std::shared_ptr<DmlModule> dmlModule,
-    IDxDispatchLogger *logger
+    IDxDispatchLogger *logger,
+    const CommandLineArgs& args
     ) : m_pixCaptureHelper(std::move(pixCaptureHelper)),
         m_d3dModule(std::move(d3dModule)),
         m_dmlModule(std::move(dmlModule)),
@@ -73,7 +75,8 @@ Device::Device(
         m_logger(logger),
         m_restoreBackgroundProcessing(disableBackgroundProcessing),
         m_restoreStablePowerState(setStablePowerState),
-        m_useCustomHeaps(preferCustomHeaps)
+        m_useCustomHeaps(preferCustomHeaps),
+        m_args(args)
 {
     DML_CREATE_DEVICE_FLAGS dmlCreateDeviceFlags = debugLayersEnabled ? DML_CREATE_DEVICE_FLAG_DEBUG : DML_CREATE_DEVICE_FLAG_NONE;
 
@@ -265,7 +268,10 @@ Device::Device(
         IID_PPV_ARGS(&dmlDevice)));
 
     // TODO: only wrap if required based on command line arg
-    ComPtr<IDMLDevice1> wrappedDmlDevice = Microsoft::WRL::Make<WrappedDmlDevice>(dmlDevice.Get(), m_logger.Get());
+    ComPtr<IDMLDevice1> wrappedDmlDevice = Microsoft::WRL::Make<WrappedDmlDevice>(
+        dmlDevice.Get(), 
+        m_logger.Get(),
+        m_args);
     THROW_IF_FAILED(wrappedDmlDevice.As<IDMLDevice1>(&m_dml));
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(

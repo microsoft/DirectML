@@ -1,7 +1,13 @@
+#include "pch.h"
+#include "CommandLineArgs.h"
 #include "DmlTracing.h"
 #include "Timer.h"
 
-WrappedDmlDevice::WrappedDmlDevice(IDMLDevice1* impl, IDxDispatchLogger* logger) : m_impl(impl), m_logger(logger) {}
+WrappedDmlDevice::WrappedDmlDevice(
+    IDMLDevice1* impl, 
+    IDxDispatchLogger* logger,
+    const CommandLineArgs& args
+    ) : m_impl(impl), m_logger(logger), m_args(args) {}
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
 {
@@ -50,7 +56,13 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
-    m_logger->LogInfo("IDMLDevice::CompileOperator called");
+    ScopeTimer timer([&](double durationInMilliseconds){
+        if (m_args.GetTimingVerbosity() >= TimingVerbosity::All)
+        {
+            m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator: {:.4f} ms", durationInMilliseconds).c_str());
+        }
+    });
+
     return m_impl->CompileOperator(op, flags, riid, ppv);
 }
 
@@ -108,10 +120,12 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
-    Timer timer;
-    timer.Start();
-    auto graph = m_impl->CompileGraph(desc, flags, riid, ppv);
-    timer.End();
-    m_logger->LogInfo(fmt::format("IDMLDevice1::CompileGraph completed in {:.2f} ms", timer.DurationInMilliseconds()).c_str());
-    return graph;
+    ScopeTimer timer([&](double durationInMilliseconds){
+        if (m_args.GetTimingVerbosity() >= TimingVerbosity::All)
+        {
+            m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph: {:.4f} ms", durationInMilliseconds).c_str());
+        }
+    });
+
+    return m_impl->CompileGraph(desc, flags, riid, ppv);
 }

@@ -178,7 +178,8 @@ HRESULT DxDispatch::RuntimeClassInitialize(
                 m_pixCaptureHelper,
                 m_d3dModule,
                 m_dmlModule,
-                m_logger.Get()
+                m_logger.Get(),
+                *m_options
             );
     }
     catch(const std::exception& e)
