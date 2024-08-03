@@ -3,6 +3,28 @@
 #include "CommandLineArgs.h"
 #include "Timing.h"
 
+class WrappedDmlOperator : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLOperator, IDMLDeviceChild, IDMLObject>>
+{
+public:
+    explicit WrappedDmlOperator(IDMLOperator* impl, const DML_OPERATOR_DESC* desc);
+
+    IDMLOperator* Impl() { return m_impl.Get(); }
+    DML_OPERATOR_TYPE GetType() const { return m_type; }
+
+    // IDMLDeviceChild
+    HRESULT STDMETHODCALLTYPE GetDevice(REFIID riid, _COM_Outptr_ void** ppv) noexcept final;
+
+    // IDMLObject
+    HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
+    HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept final;
+    HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID guid, _In_opt_ IUnknown* data) noexcept final;
+    HRESULT STDMETHODCALLTYPE SetName(PCWSTR name) noexcept final;
+
+private:
+    Microsoft::WRL::ComPtr<IDMLOperator> m_impl;
+    DML_OPERATOR_TYPE m_type;
+};
+
 class WrappedDmlDevice : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLDevice1, IDMLDevice, IDMLObject>>
 {
 public:
@@ -83,4 +105,18 @@ private:
 
     Timings m_compileOpTimings;
     Timings m_compileGraphTimings;
+
+    struct CompileOperatorTrace
+    {
+        DML_OPERATOR_TYPE type;
+    };
+
+    std::vector<CompileOperatorTrace> m_opCompiles;
+
+    struct CompileGraphTrace
+    {
+        // map of type to count
+    };
+
+    std::vector<CompileGraphTrace> m_graphCompiles;
 };

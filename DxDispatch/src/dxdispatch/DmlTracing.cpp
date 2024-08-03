@@ -1,6 +1,30 @@
 #include "pch.h"
 #include "DmlTracing.h"
 
+WrappedDmlOperator::WrappedDmlOperator(IDMLOperator* impl, const DML_OPERATOR_DESC* desc) : 
+    m_impl(impl), m_type(desc->Type)
+{}
+
+HRESULT STDMETHODCALLTYPE WrappedDmlOperator::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
+{
+    return m_impl->GetPrivateData(guid, dataSize, data);
+}
+
+HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept
+{
+    return m_impl->SetPrivateData(guid, dataSize, data);
+}
+
+HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetPrivateDataInterface(REFGUID guid, _In_opt_ IUnknown* data) noexcept
+{
+    return m_impl->SetPrivateDataInterface(guid, data);
+}
+
+HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetName(PCWSTR name) noexcept
+{
+    return m_impl->SetName(name);
+}
+
 WrappedDmlDevice::WrappedDmlDevice(
     IDMLDevice1* impl, 
     IDxDispatchLogger* logger,
@@ -74,22 +98,35 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CreateOperator(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
-    return m_impl->CreateOperator(desc, riid, ppv);
+    Microsoft::WRL::ComPtr<IDMLOperator> op;
+    auto hr = m_impl->CreateOperator(desc, IID_PPV_ARGS(&op));
+
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    auto wrappedOp = Microsoft::WRL::Make<WrappedDmlOperator>(op.Get(), desc);
+    return wrappedOp.CopyTo(riid, ppv);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
-    IDMLOperator* op,
+    IDMLOperator* wrappedOpInterface,
     DML_EXECUTION_FLAGS flags,
     REFIID riid,
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
+    auto wrappedOp = static_cast<WrappedDmlOperator*>(wrappedOpInterface);
+    m_opCompiles.push_back({wrappedOp->GetType()});
+    
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileOpTimings.rawSamples.push_back(durationInMilliseconds);
         m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
-    return m_impl->CompileOperator(op, flags, riid, ppv);
+    // Compile using the unwrapped IDMLOperator implementation.
+    return m_impl->CompileOperator(wrappedOp->Impl(), flags, riid, ppv);
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CreateOperatorInitializer(
@@ -140,16 +177,41 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetParentDevice( REFIID riid, _COM_O
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
-    const DML_GRAPH_DESC* desc,
+    const DML_GRAPH_DESC* wrappedDesc,
     DML_EXECUTION_FLAGS flags,
     REFIID riid,
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
+    // DML_GRAPH_DESC operator-type nodes reference IDMLOperators, which are wrapped when tracing.
+    // The rest of the graph desc can pass through unmodified, but operator-type nodes need to be unwrapped.
+    DML_GRAPH_DESC unwrappedDesc = *wrappedDesc;
+
+    std::vector<DML_GRAPH_NODE_DESC> unwrappedNodes(wrappedDesc->NodeCount);
+    std::vector<DML_OPERATOR_GRAPH_NODE_DESC> unwrappedOpNodes(wrappedDesc->NodeCount);
+    unwrappedDesc.Nodes = unwrappedNodes.data();
+
+    for (uint32_t nodeIndex = 0; nodeIndex < wrappedDesc->NodeCount; nodeIndex++)
+    {
+        DML_GRAPH_NODE_DESC& unwrappedNode = unwrappedNodes[nodeIndex];
+        const DML_GRAPH_NODE_DESC& wrappedNode = wrappedDesc->Nodes[nodeIndex];
+
+        unwrappedNode = wrappedNode;
+
+        if (wrappedNode.Type == DML_GRAPH_NODE_TYPE_OPERATOR)
+        {
+            DML_OPERATOR_GRAPH_NODE_DESC& unwrappedOpNode = unwrappedOpNodes[nodeIndex];
+            const DML_OPERATOR_GRAPH_NODE_DESC& wrappedOpNode = *static_cast<const DML_OPERATOR_GRAPH_NODE_DESC*>(wrappedNode.Desc);
+            unwrappedOpNode = wrappedOpNode;
+            unwrappedOpNode.Operator = static_cast<WrappedDmlOperator*>(wrappedOpNode.Operator)->Impl();
+            unwrappedNode.Desc = &unwrappedOpNode;
+        }
+    }
+
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileGraphTimings.rawSamples.push_back(durationInMilliseconds);
         m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
-    return m_impl->CompileGraph(desc, flags, riid, ppv);
+    return m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);
 }
