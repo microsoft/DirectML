@@ -103,20 +103,18 @@ private:
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
     const CommandLineArgs& m_args;
 
-    Timings m_compileOpTimings;
-    Timings m_compileGraphTimings;
-
     struct CompileOperatorTrace
     {
         DML_OPERATOR_TYPE type;
+        double durationInMilliseconds;
     };
-
-    std::vector<CompileOperatorTrace> m_opCompiles;
 
     struct CompileGraphTrace
     {
         std::unordered_map<DML_OPERATOR_TYPE, size_t> opCounts;
+        double durationInMilliseconds;
     };
 
-    std::vector<CompileGraphTrace> m_graphCompiles;
+    std::vector<CompileOperatorTrace> m_compileOpTraces;
+    std::vector<CompileGraphTrace> m_compileGraphTraces;
 };

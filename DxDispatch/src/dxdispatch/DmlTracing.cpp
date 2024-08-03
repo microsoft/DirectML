@@ -38,44 +38,32 @@ WrappedDmlDevice::WrappedDmlDevice(
 
 void WrappedDmlDevice::ClearState()
 {
-    m_compileGraphTimings.rawSamples.clear();
-    m_compileOpTimings.rawSamples.clear();
+    m_compileOpTraces.clear();
+    m_compileGraphTraces.clear();
 }
 
 void WrappedDmlDevice::PrintTracingInfo()
 {
-    auto compileOpStats = Timings::ComputeStats(m_compileOpTimings.rawSamples);
-    auto compileGraphStats = Timings::ComputeStats(m_compileGraphTimings.rawSamples);
-
-    m_logger->LogInfo("IDMLDevice::CompileOperator timings:");
-    m_logger->LogInfo(fmt::format("  Count: {}", compileOpStats.count).c_str());
-    m_logger->LogInfo(fmt::format("  Sum: {:.4f} ms", compileOpStats.sum).c_str());
-    m_logger->LogInfo(fmt::format("  Average: {:.4f} ms", compileOpStats.average).c_str());
-    m_logger->LogInfo(fmt::format("  Median: {:.4f} ms", compileOpStats.median).c_str());
-    m_logger->LogInfo(fmt::format("  Min: {:.4f} ms", compileOpStats.min).c_str());
-    m_logger->LogInfo(fmt::format("  Max: {:.4f} ms", compileOpStats.max).c_str());
-
-    for (size_t i = 0; i < m_opCompiles.size(); i++)
+    for (size_t i = 0; i < m_compileOpTraces.size(); i++)
     {
-        const auto& compileTrace = m_opCompiles[i];
-        m_logger->LogInfo(fmt::format("Operator[{}]:", (uint32_t)compileTrace.type).c_str());
+        const auto& trace = m_compileOpTraces[i];
+        m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator[{}] ('{}'): {:.4f} ms", 
+            i, 
+            (uint32_t)trace.type,
+            trace.durationInMilliseconds).c_str());
     }
 
-    m_logger->LogInfo("IDMLDevice::CompileGraph timings:");
-    m_logger->LogInfo(fmt::format("  Count: {}", compileGraphStats.count).c_str());
-    m_logger->LogInfo(fmt::format("  Sum: {:.4f} ms", compileGraphStats.sum).c_str());
-    m_logger->LogInfo(fmt::format("  Average: {:.4f} ms", compileGraphStats.average).c_str());
-    m_logger->LogInfo(fmt::format("  Median: {:.4f} ms", compileGraphStats.median).c_str());
-    m_logger->LogInfo(fmt::format("  Min: {:.4f} ms", compileGraphStats.min).c_str());
-    m_logger->LogInfo(fmt::format("  Max: {:.4f} ms", compileGraphStats.max).c_str());
+    // Graph[0]: X ms
+    //  'Convolution': 1
+    //  'MatMul': 1
 
-    for (size_t i = 0; i < m_graphCompiles.size(); i++)
+    for (size_t i = 0; i < m_compileGraphTraces.size(); i++)
     {
-        const auto& compileTrace = m_graphCompiles[i];
-        m_logger->LogInfo(fmt::format("Graph[{}]:", i).c_str());
-        for (const auto& [opType, count] : compileTrace.opCounts)
+        const auto& trace = m_compileGraphTraces[i];
+        m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph[{}]: {:.4f} ms", i, trace.durationInMilliseconds).c_str());
+        for (const auto& [opType, count] : trace.opCounts)
         {
-            m_logger->LogInfo(fmt::format("  {} : {}", (uint32_t)opType, count).c_str());
+            m_logger->LogInfo(fmt::format("  '{}' : {}", (uint32_t)opType, count).c_str());
         }
     }
 }
@@ -137,14 +125,12 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     ) noexcept
 {
     auto wrappedOp = static_cast<WrappedDmlOperator*>(wrappedOpInterface);
-    m_opCompiles.push_back({wrappedOp->GetType()});
-    
-    ScopeTimer timer([&](double durationInMilliseconds){
-        m_compileOpTimings.rawSamples.push_back(durationInMilliseconds);
-    });
 
-    // Compile using the unwrapped IDMLOperator implementation.
-    return m_impl->CompileOperator(wrappedOp->Impl(), flags, riid, ppv);
+    Timer timer;
+    auto hr = m_impl->CompileOperator(wrappedOp->Impl(), flags, riid, ppv);
+    m_compileOpTraces.push_back({wrappedOp->GetType(), timer.End().DurationInMilliseconds()});
+
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CreateOperatorInitializer(
@@ -233,11 +219,11 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
         }
     }
 
-    m_graphCompiles.push_back({std::move(compileTrace)});
+    Timer timer;
+    auto hr = m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);
+    compileTrace.durationInMilliseconds = timer.End().DurationInMilliseconds();
 
-    ScopeTimer timer([&](double durationInMilliseconds){
-        m_compileGraphTimings.rawSamples.push_back(durationInMilliseconds);
-    });
+    m_compileGraphTraces.push_back({std::move(compileTrace)});
 
-    return m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);
+    return hr;
 }
