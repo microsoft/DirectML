@@ -3,6 +3,7 @@
 #include "PixCaptureHelper.h"
 #include "DxModules.h"
 #include "CommandLineArgs.h"
+#include "DmlTracing.h"
 
 // Simplified abstraction for submitting work to a device with a single command queue. Not thread safe.
 // This "device" includes a single command list that is always open for recording work.
@@ -138,6 +139,7 @@ private:
 #endif
     std::shared_ptr<DmlModule> m_dmlModule;
     Microsoft::WRL::ComPtr<IDMLDevice1> m_dml;
+    Microsoft::WRL::ComPtr<WrappedDmlDevice> m_dmlWrapper;
     Microsoft::WRL::ComPtr<IDMLCommandRecorder> m_commandRecorder;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_queue;
     Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_timestampHeap;

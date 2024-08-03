@@ -9,6 +9,9 @@ public:
         const CommandLineArgs& args
         );
 
+    void ClearTimings();
+    void PrintTimings();
+
     // IDMLObject
     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
     HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept final;
@@ -72,4 +75,7 @@ private:
     Microsoft::WRL::ComPtr<IDMLDevice1> m_impl;
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
     const CommandLineArgs& m_args;
+
+    Timings m_compileOpTimings;
+    Timings m_compileGraphTimings;
 };
