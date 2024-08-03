@@ -22,6 +22,7 @@ public:
     bool DebugLayersEnabled() const { return m_debugLayersEnabled; }
     TimingVerbosity GetTimingVerbosity() const { return m_timingVerbosity; }
     uint32_t MaxGpuTimeMeasurements() const { return m_maxGpuTimeMeasurements; }
+    bool TraceDmlCompiles() const { return m_traceDmlCompiles; }
     bool ForceDisablePrecompiledShadersOnXbox() const { return m_forceDisablePrecompiledShadersOnXbox; }
     bool ClearShaderCaches() const { return m_clearShaderCaches; }
     bool DisableGpuTimeout() const { return m_disableGpuTimeout; }
@@ -90,6 +91,7 @@ private:
     bool m_presentSeparator = false;
     bool m_uavBarrierAfterDispatch = true;
     bool m_aliasingBarrierAfterDispatch = false;
+    bool m_traceDmlCompiles = false;
     DML_FEATURE_LEVEL m_dmlFeatureLevel = DML_FEATURE_LEVEL_5_0;
     std::string m_adapterSubstring = "";
     std::optional<std::filesystem::path> m_modelPath;

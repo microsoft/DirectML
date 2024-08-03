@@ -7,13 +7,13 @@ WrappedDmlDevice::WrappedDmlDevice(
     const CommandLineArgs& args
     ) : m_impl(impl), m_logger(logger), m_args(args) {}
 
-void WrappedDmlDevice::ClearTimings()
+void WrappedDmlDevice::ClearState()
 {
     m_compileGraphTimings.rawSamples.clear();
     m_compileOpTimings.rawSamples.clear();
 }
 
-void WrappedDmlDevice::PrintTimings()
+void WrappedDmlDevice::PrintTracingInfo()
 {
     auto compileOpStats = Timings::ComputeStats(m_compileOpTimings.rawSamples);
     auto compileGraphStats = Timings::ComputeStats(m_compileGraphTimings.rawSamples);
@@ -33,6 +33,8 @@ void WrappedDmlDevice::PrintTimings()
     m_logger->LogInfo(fmt::format("  Median: {:.4f} ms", compileGraphStats.median).c_str());
     m_logger->LogInfo(fmt::format("  Min: {:.4f} ms", compileGraphStats.min).c_str());
     m_logger->LogInfo(fmt::format("  Max: {:.4f} ms", compileGraphStats.max).c_str());
+
+    // TODO: op types
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
@@ -83,10 +85,8 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     ) noexcept
 {
     ScopeTimer timer([&](double durationInMilliseconds){
-        if (m_args.GetTimingVerbosity() >= TimingVerbosity::All)
-        {
-            m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator: {:.4f} ms", durationInMilliseconds).c_str());
-        }
+        m_compileOpTimings.rawSamples.push_back(durationInMilliseconds);
+        m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
     return m_impl->CompileOperator(op, flags, riid, ppv);
@@ -148,10 +148,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
 {
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileGraphTimings.rawSamples.push_back(durationInMilliseconds);
-        if (m_args.GetTimingVerbosity() >= TimingVerbosity::All)
-        {
-            m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph: {:.4f} ms", durationInMilliseconds).c_str());
-        }
+        m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
     return m_impl->CompileGraph(desc, flags, riid, ppv);

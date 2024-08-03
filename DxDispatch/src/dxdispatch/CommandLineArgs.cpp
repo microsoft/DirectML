@@ -197,6 +197,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
             "Injects present after each full inference pass, giving debugging tools a notion of frames.",
             cxxopts::value<bool>()
         )
+        (
+            "trace_dml_compiles",
+            "Trace details from IDMLDevice::CompileOperator and IDMLDevice::CompileGraph.",
+            cxxopts::value<uint32_t>()
+        )
         ;
 
     // ONNX OPTIONS
@@ -325,6 +330,11 @@ CommandLineArgs::CommandLineArgs(int argc, char** argv)
     if (result.count("max_gpu_time_measurements"))
     {
         m_maxGpuTimeMeasurements = result["max_gpu_time_measurements"].as<uint32_t>();
+    }
+
+    if (result.count("trace_dml_compiles"))
+    {
+        m_traceDmlCompiles = result["trace_dml_compiles"].as<bool>();
     }
 
     if (result.count("show_dependencies"))

@@ -127,6 +127,9 @@ public:
 
     void DummyPresent();
 
+    void ClearDispatchableState();
+    void PrintTracingInfo();
+
 private:
     void EnsureDxcInterfaces();
 

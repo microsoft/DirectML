@@ -12,8 +12,10 @@ public:
         const CommandLineArgs& args
         );
 
-    void ClearTimings();
-    void PrintTimings();
+    // Clear any internal state. Useful when switching dispatchables.
+    void ClearState();
+
+    void PrintTracingInfo();
 
     // IDMLObject
     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;

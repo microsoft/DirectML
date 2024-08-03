@@ -813,3 +813,13 @@ void Device::DummyPresent()
     }
 #endif
 }
+
+void Device::ClearDispatchableState()
+{
+    m_dmlWrapper->ClearState();
+}
+
+void Device::PrintTracingInfo()
+{
+    m_dmlWrapper->PrintTracingInfo();
+}
