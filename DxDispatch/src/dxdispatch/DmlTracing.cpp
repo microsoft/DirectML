@@ -127,7 +127,6 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileOpTimings.rawSamples.push_back(durationInMilliseconds);
-        m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
     // Compile using the unwrapped IDMLOperator implementation.
@@ -224,7 +223,6 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
 
     ScopeTimer timer([&](double durationInMilliseconds){
         m_compileGraphTimings.rawSamples.push_back(durationInMilliseconds);
-        m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph: {:.4f} ms", durationInMilliseconds).c_str());
     });
 
     return m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);

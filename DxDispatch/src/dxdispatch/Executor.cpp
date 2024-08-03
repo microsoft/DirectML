@@ -96,6 +96,8 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Initialize dispatchables");
         for (auto& dispatchable : m_dispatchables)
         {
+            m_device->ClearDispatchableState();
+
             try
             {
                 timer.Start();
@@ -113,6 +115,8 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
             {
                 throw std::invalid_argument(fmt::format("ERROR while initializing '{}': {}", dispatchable.first, e.what()));
             }
+
+            m_device->PrintTracingInfo();
         }
         PIXEndEvent(m_device->GetCommandQueue());
     }
@@ -197,8 +201,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
         m_logger->LogError(fmt::format("Failed to resolve bindings: {}", e.what()).c_str());
         throw;
     }
-
-    m_device->ClearDispatchableState();
 
     // Dispatch
     uint32_t iterationsCompleted = 0;
@@ -351,8 +353,6 @@ void Executor::operator()(const Model::DispatchCommand& command)
                 }
             }
         }
-
-        m_device->PrintTracingInfo();
     }
 }
 
