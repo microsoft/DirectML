@@ -55,6 +55,12 @@ void WrappedDmlDevice::PrintTracingInfo()
     m_logger->LogInfo(fmt::format("  Min: {:.4f} ms", compileOpStats.min).c_str());
     m_logger->LogInfo(fmt::format("  Max: {:.4f} ms", compileOpStats.max).c_str());
 
+    for (size_t i = 0; i < m_opCompiles.size(); i++)
+    {
+        const auto& compileTrace = m_opCompiles[i];
+        m_logger->LogInfo(fmt::format("Operator[{}]:", (uint32_t)compileTrace.type).c_str());
+    }
+
     m_logger->LogInfo("IDMLDevice::CompileGraph timings:");
     m_logger->LogInfo(fmt::format("  Count: {}", compileGraphStats.count).c_str());
     m_logger->LogInfo(fmt::format("  Sum: {:.4f} ms", compileGraphStats.sum).c_str());
@@ -63,7 +69,15 @@ void WrappedDmlDevice::PrintTracingInfo()
     m_logger->LogInfo(fmt::format("  Min: {:.4f} ms", compileGraphStats.min).c_str());
     m_logger->LogInfo(fmt::format("  Max: {:.4f} ms", compileGraphStats.max).c_str());
 
-    // TODO: op types
+    for (size_t i = 0; i < m_graphCompiles.size(); i++)
+    {
+        const auto& compileTrace = m_graphCompiles[i];
+        m_logger->LogInfo(fmt::format("Graph[{}]:", i).c_str());
+        for (const auto& [opType, count] : compileTrace.opCounts)
+        {
+            m_logger->LogInfo(fmt::format("  {} : {}", (uint32_t)opType, count).c_str());
+        }
+    }
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
