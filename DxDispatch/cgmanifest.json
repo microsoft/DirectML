@@ -5,7 +5,7 @@
       "component": {
         "type": "git",
         "git": {
-          "commitHash": "302302b30839505703d37fb82f536c53cf9172fa",
+          "commitHash": "4bf61f08697b110d9e3991864650a405b3dd515d",
           "repositoryUrl": "https://github.com/jarro2783/cxxopts"
         }
       }
@@ -69,7 +69,7 @@
       "component": {
         "type": "git",
         "git": {
-          "commitHash": "703bd9caab50b139428cea1aaff9974ebee5742e",
+          "commitHash": "b514bdc898e2951020cbdca1304b75f5950d1f59",
           "repositoryUrl": "https://github.com/google/googletest"
         }
       }

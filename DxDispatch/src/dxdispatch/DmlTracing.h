@@ -1,5 +1,8 @@
 #pragma once
 
+#include "CommandLineArgs.h"
+#include "Timing.h"
+
 class WrappedDmlDevice : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLDevice1, IDMLDevice, IDMLObject>>
 {
 public:

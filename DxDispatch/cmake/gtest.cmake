@@ -1,7 +1,7 @@
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest
-    GIT_TAG        release-1.10.0
+    GIT_TAG        v1.15.2
 )
 
 set(BUILD_GMOCK OFF CACHE INTERNAL "Builds the googlemock subproject")

@@ -1,7 +1,5 @@
 #include "pch.h"
-#include "CommandLineArgs.h"
 #include "DmlTracing.h"
-#include "Timer.h"
 
 WrappedDmlDevice::WrappedDmlDevice(
     IDMLDevice1* impl, 

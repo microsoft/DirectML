@@ -1,7 +1,7 @@
 FetchContent_Declare(
     cxxopts
     GIT_REPOSITORY https://github.com/jarro2783/cxxopts
-    GIT_TAG        v2.2.1
+    GIT_TAG        v3.2.1
 )
 
 set(CXXOPTS_BUILD_EXAMPLES OFF CACHE INTERNAL "Set to ON to build examples")

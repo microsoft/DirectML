@@ -16,7 +16,7 @@
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
-#include "Timer.h"
+#include "Timing.h"
 
 using Microsoft::WRL::ComPtr;
 

@@ -8,6 +8,11 @@ project(dxdispatch VERSION 0.18.1 LANGUAGES CXX)
 include(FetchContent)
 include(cmake/helper_platform.cmake)
 
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    # See https://cmake.org/cmake/help/latest/policy/CMP0135.html
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 if(NOT TARGET_XBOX)
     # Statically link runtime library to avoid runtime dependency on Visual C++ redistributable.
     # On Xbox we deploy these dependencies for now.
@@ -142,7 +147,7 @@ add_library(
     src/dxdispatch/DxModules.cpp
     src/dxdispatch/DxModules.h
     src/dxdispatch/ModuleInfo.cpp
-    src/dxdispatch/Timer.h
+    src/dxdispatch/Timing.h
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
