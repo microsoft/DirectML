@@ -267,12 +267,19 @@ Device::Device(
         dmlFeatureLevel, 
         IID_PPV_ARGS(&dmlDevice)));
 
-    // TODO: only wrap if required based on command line arg
-    m_dmlWrapper = Microsoft::WRL::Make<WrappedDmlDevice>(
-        dmlDevice.Get(), 
-        m_logger.Get(),
-        m_args);
-    THROW_IF_FAILED(m_dmlWrapper.As<IDMLDevice1>(&m_dml));
+    if (m_args.TraceDmlCompiles())
+    {
+        m_dmlWrapper = Microsoft::WRL::Make<WrappedDmlDevice>(
+            dmlDevice.Get(), 
+            m_logger.Get(),
+            m_args);
+
+        THROW_IF_FAILED(m_dmlWrapper.As<IDMLDevice1>(&m_dml));
+    }
+    else
+    {
+        m_dml = dmlDevice;
+    }
 
     THROW_IF_FAILED(m_d3d->CreateCommandAllocator(
         m_commandListType,

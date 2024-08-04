@@ -35,7 +35,12 @@ void LogDmlTracingData(const DmlTraceData& data, IDxDispatchLogger* logger)
     {
         const auto& trace = data.compileGraphTraces[i];
         logger->LogInfo(fmt::format("IDMLDevice::CompileGraph[{}]: {:.4f} ms", i, trace.durationInMilliseconds).c_str());
-        for (const auto& [opType, count] : trace.opCounts)
+
+        // sort ops by count
+        std::vector<std::pair<DML_OPERATOR_TYPE, size_t>> sortedOpCounts(trace.opCounts.begin(), trace.opCounts.end());
+        std::sort(sortedOpCounts.begin(), sortedOpCounts.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+
+        for (const auto& [opType, count] : sortedOpCounts)
         {
             logger->LogInfo(fmt::format("  '{}' : {}", (uint32_t)opType, count).c_str());
         }
