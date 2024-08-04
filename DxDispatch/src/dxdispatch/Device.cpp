@@ -822,13 +822,12 @@ void Device::ResetTraceData()
     }
 }
 
-const DmlTraceData& Device::GetTraceData() const
+std::optional<DmlTraceData> Device::TryGetTraceData() const
 {
     if (m_dmlWrapper)
     {
         return m_dmlWrapper->GetTraceData();
     }
 
-    static DmlTraceData emptyTraceData;
-    return emptyTraceData;
+    return std::nullopt;
 }

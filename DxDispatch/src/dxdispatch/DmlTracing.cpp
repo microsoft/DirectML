@@ -38,29 +38,16 @@ WrappedDmlDevice::WrappedDmlDevice(
 
 void WrappedDmlDevice::ResetTraceData()
 {
-    m_traceData = {};
+    m_compileOperatorTraces.clear();
+    m_compileGraphTraces.clear();
 }
 
-void WrappedDmlDevice::PrintTracingInfo()
+DmlTraceData WrappedDmlDevice::GetTraceData() const
 {
-    for (size_t i = 0; i < m_compileOpTraces.size(); i++)
-    {
-        const auto& trace = m_compileOpTraces[i];
-        m_logger->LogInfo(fmt::format("IDMLDevice::CompileOperator[{}] ('{}'): {:.4f} ms", 
-            i, 
-            (uint32_t)trace.type,
-            trace.durationInMilliseconds).c_str());
-    }
-
-    for (size_t i = 0; i < m_compileGraphTraces.size(); i++)
-    {
-        const auto& trace = m_compileGraphTraces[i];
-        m_logger->LogInfo(fmt::format("IDMLDevice::CompileGraph[{}]: {:.4f} ms", i, trace.durationInMilliseconds).c_str());
-        for (const auto& [opType, count] : trace.opCounts)
-        {
-            m_logger->LogInfo(fmt::format("  '{}' : {}", (uint32_t)opType, count).c_str());
-        }
-    }
+    DmlTraceData traceData = {};
+    traceData.compileOperatorTraces = m_compileOperatorTraces;
+    traceData.compileGraphTraces = m_compileGraphTraces;
+    return traceData;
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
@@ -126,7 +113,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     timer.End();
 
     std::unique_lock<std::mutex> lock(m_mutex);
-    m_traceData.compileOpTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
+    m_compileOperatorTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
 
     return hr;
 }
@@ -224,7 +211,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
     compileTrace.durationInMilliseconds = timer.DurationInMilliseconds();
 
     std::unique_lock<std::mutex> lock(m_mutex);
-    m_traceData.compileGraphTraces.push_back({std::move(compileTrace)});
+    m_compileGraphTraces.push_back({std::move(compileTrace)});
 
     return hr;
 }

@@ -128,7 +128,7 @@ public:
     void DummyPresent();
 
     void ResetTraceData();
-    const DmlTraceData& GetTraceData() const;
+    std::optional<DmlTraceData> TryGetTraceData() const;
 
 private:
     void EnsureDxcInterfaces();

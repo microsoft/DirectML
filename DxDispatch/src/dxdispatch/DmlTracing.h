@@ -17,8 +17,8 @@ struct DmlCompileGraphTrace
 
 struct DmlTraceData
 {
-    std::vector<DmlCompileOperatorTrace> compileOpTraces;
-    std::vector<DmlCompileGraphTrace> compileGraphTraces;
+    gsl::span<const DmlCompileOperatorTrace> compileOperatorTraces;
+    gsl::span<const DmlCompileGraphTrace> compileGraphTraces;
 };
 
 class WrappedDmlOperator : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLOperator, IDMLDeviceChild, IDMLObject>>
@@ -54,7 +54,7 @@ public:
 
     void ResetTraceData();
 
-    const DmlTraceData& GetTraceData() const { return m_traceData; }
+    DmlTraceData GetTraceData() const;
 
     // IDMLObject
     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
@@ -121,5 +121,7 @@ private:
     const CommandLineArgs& m_args;
 
     std::mutex m_mutex;
-    DmlTraceData m_traceData;
+
+    std::vector<DmlCompileOperatorTrace> m_compileOperatorTraces;
+    std::vector<DmlCompileGraphTrace> m_compileGraphTraces;
 };

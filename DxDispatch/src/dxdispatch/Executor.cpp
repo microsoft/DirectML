@@ -20,6 +20,28 @@
 
 using Microsoft::WRL::ComPtr;
 
+void LogDmlTracingData(const DmlTraceData& data, IDxDispatchLogger* logger)
+{
+    for (size_t i = 0; i < data.compileOperatorTraces.size(); i++)
+    {
+        const auto& trace = data.compileOperatorTraces[i];
+        logger->LogInfo(fmt::format("IDMLDevice::CompileOperator[{}] ('{}'): {:.4f} ms", 
+            i, 
+            (uint32_t)trace.type,
+            trace.durationInMilliseconds).c_str());
+    }
+
+    for (size_t i = 0; i < data.compileGraphTraces.size(); i++)
+    {
+        const auto& trace = data.compileGraphTraces[i];
+        logger->LogInfo(fmt::format("IDMLDevice::CompileGraph[{}]: {:.4f} ms", i, trace.durationInMilliseconds).c_str());
+        for (const auto& [opType, count] : trace.opCounts)
+        {
+            logger->LogInfo(fmt::format("  '{}' : {}", (uint32_t)opType, count).c_str());
+        }
+    }
+}
+
 Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLineArgs& args, IDxDispatchLogger* logger) : 
     m_model(model), m_device(device), m_commandLineArgs(args), m_logger(logger)
 {
@@ -96,7 +118,7 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
         PIXBeginEvent(m_device->GetCommandQueue(), PIX_COLOR(255, 255, 0), "Initialize dispatchables");
         for (auto& dispatchable : m_dispatchables)
         {
-            m_device->ClearDispatchableState();
+            m_device->ResetTraceData();
 
             try
             {
@@ -116,7 +138,11 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 throw std::invalid_argument(fmt::format("ERROR while initializing '{}': {}", dispatchable.first, e.what()));
             }
 
-            m_device->PrintTracingInfo();
+            auto traceData = m_device->TryGetTraceData();
+            if (traceData)
+            {
+                LogDmlTracingData(*traceData, m_logger.Get());
+            }
         }
         PIXEndEvent(m_device->GetCommandQueue());
     }
