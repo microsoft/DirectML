@@ -115,6 +115,7 @@ private:
         double durationInMilliseconds;
     };
 
+    std::mutex m_mutex;
     std::vector<CompileOperatorTrace> m_compileOpTraces;
     std::vector<CompileGraphTrace> m_compileGraphTraces;
 };

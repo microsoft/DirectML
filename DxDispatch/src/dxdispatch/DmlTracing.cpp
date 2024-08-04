@@ -128,7 +128,10 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
 
     Timer timer;
     auto hr = m_impl->CompileOperator(wrappedOp->Impl(), flags, riid, ppv);
-    m_compileOpTraces.push_back({wrappedOp->GetType(), timer.End().DurationInMilliseconds()});
+    timer.End();
+
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_compileOpTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
 
     return hr;
 }
@@ -221,8 +224,11 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
 
     Timer timer;
     auto hr = m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);
-    compileTrace.durationInMilliseconds = timer.End().DurationInMilliseconds();
+    timer.End();
+    
+    compileTrace.durationInMilliseconds = timer.DurationInMilliseconds();
 
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_compileGraphTraces.push_back({std::move(compileTrace)});
 
     return hr;
