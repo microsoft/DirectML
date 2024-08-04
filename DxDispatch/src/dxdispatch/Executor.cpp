@@ -239,6 +239,7 @@ void Executor::operator()(const Model::DispatchCommand& command)
     uint32_t iterationsCompleted = 0;
     bool timedOut = false;
     PIXBeginEvent(PIX_COLOR(128, 255, 0), L"Dispatch Loop");
+    m_device->ResetTraceData();
     try
     {
         Timer loopTimer, iterationTimer, bindTimer, dispatchTimer;
@@ -292,6 +293,12 @@ void Executor::operator()(const Model::DispatchCommand& command)
         throw;
     }
     PIXEndEvent();
+
+    auto traceData = m_device->TryGetTraceData();
+    if (traceData)
+    {
+        LogDmlTracingData(*traceData, m_logger.Get());
+    }
 
     auto cpuStats = cpuTimings.ComputeStats(m_commandLineArgs.MaxWarmupSamples());
 
