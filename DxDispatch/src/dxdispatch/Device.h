@@ -127,8 +127,8 @@ public:
 
     void DummyPresent();
 
-    void ClearDispatchableState();
-    void PrintTracingInfo();
+    void ResetTraceData();
+    const DmlTraceData& GetTraceData() const;
 
 private:
     void EnsureDxcInterfaces();

@@ -36,10 +36,9 @@ WrappedDmlDevice::WrappedDmlDevice(
     const CommandLineArgs& args
     ) : m_impl(impl), m_logger(logger), m_args(args) {}
 
-void WrappedDmlDevice::ClearState()
+void WrappedDmlDevice::ResetTraceData()
 {
-    m_compileOpTraces.clear();
-    m_compileGraphTraces.clear();
+    m_traceData = {};
 }
 
 void WrappedDmlDevice::PrintTracingInfo()
@@ -52,10 +51,6 @@ void WrappedDmlDevice::PrintTracingInfo()
             (uint32_t)trace.type,
             trace.durationInMilliseconds).c_str());
     }
-
-    // Graph[0]: X ms
-    //  'Convolution': 1
-    //  'MatMul': 1
 
     for (size_t i = 0; i < m_compileGraphTraces.size(); i++)
     {
@@ -131,7 +126,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
     timer.End();
 
     std::unique_lock<std::mutex> lock(m_mutex);
-    m_compileOpTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
+    m_traceData.compileOpTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
 
     return hr;
 }
@@ -190,7 +185,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
-    CompileGraphTrace compileTrace = {};
+    DmlCompileGraphTrace compileTrace = {};
 
     // DML_GRAPH_DESC operator-type nodes reference IDMLOperators, which are wrapped when tracing.
     // The rest of the graph desc can pass through unmodified, but operator-type nodes need to be unwrapped.
@@ -229,7 +224,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
     compileTrace.durationInMilliseconds = timer.DurationInMilliseconds();
 
     std::unique_lock<std::mutex> lock(m_mutex);
-    m_compileGraphTraces.push_back({std::move(compileTrace)});
+    m_traceData.compileGraphTraces.push_back({std::move(compileTrace)});
 
     return hr;
 }

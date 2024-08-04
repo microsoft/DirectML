@@ -3,6 +3,24 @@
 #include "CommandLineArgs.h"
 #include "Timing.h"
 
+struct DmlCompileOperatorTrace
+{
+    DML_OPERATOR_TYPE type;
+    double durationInMilliseconds;
+};
+
+struct DmlCompileGraphTrace
+{
+    std::unordered_map<DML_OPERATOR_TYPE, size_t> opCounts;
+    double durationInMilliseconds;
+};
+
+struct DmlTraceData
+{
+    std::vector<DmlCompileOperatorTrace> compileOpTraces;
+    std::vector<DmlCompileGraphTrace> compileGraphTraces;
+};
+
 class WrappedDmlOperator : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLOperator, IDMLDeviceChild, IDMLObject>>
 {
 public:
@@ -34,10 +52,9 @@ public:
         const CommandLineArgs& args
         );
 
-    // Clear any internal state. Useful when switching dispatchables.
-    void ClearState();
+    void ResetTraceData();
 
-    void PrintTracingInfo();
+    const DmlTraceData& GetTraceData() const { return m_traceData; }
 
     // IDMLObject
     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
@@ -103,19 +120,6 @@ private:
     Microsoft::WRL::ComPtr<IDxDispatchLogger> m_logger;
     const CommandLineArgs& m_args;
 
-    struct CompileOperatorTrace
-    {
-        DML_OPERATOR_TYPE type;
-        double durationInMilliseconds;
-    };
-
-    struct CompileGraphTrace
-    {
-        std::unordered_map<DML_OPERATOR_TYPE, size_t> opCounts;
-        double durationInMilliseconds;
-    };
-
     std::mutex m_mutex;
-    std::vector<CompileOperatorTrace> m_compileOpTraces;
-    std::vector<CompileGraphTrace> m_compileGraphTraces;
+    DmlTraceData m_traceData;
 };

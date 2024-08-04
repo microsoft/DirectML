@@ -814,12 +814,21 @@ void Device::DummyPresent()
 #endif
 }
 
-void Device::ClearDispatchableState()
+void Device::ResetTraceData()
 {
-    m_dmlWrapper->ClearState();
+    if (m_dmlWrapper)
+    {
+        m_dmlWrapper->ResetTraceData();
+    }
 }
 
-void Device::PrintTracingInfo()
+const DmlTraceData& Device::GetTraceData() const
 {
-    m_dmlWrapper->PrintTracingInfo();
+    if (m_dmlWrapper)
+    {
+        return m_dmlWrapper->GetTraceData();
+    }
+
+    static DmlTraceData emptyTraceData;
+    return emptyTraceData;
 }
