@@ -18,6 +18,8 @@
 #include <half.hpp>
 #include "Timing.h"
 
+#include "StringHelpers.h"
+
 using Microsoft::WRL::ComPtr;
 
 void LogDmlTracingData(const DmlTraceData& data, IDxDispatchLogger* logger)
@@ -27,7 +29,7 @@ void LogDmlTracingData(const DmlTraceData& data, IDxDispatchLogger* logger)
         const auto& trace = data.compileOperatorTraces[i];
         logger->LogInfo(fmt::format("IDMLDevice::CompileOperator[{}] ('{}'): {:.4f} ms", 
             i, 
-            (uint32_t)trace.type,
+            ToString(trace.type),
             trace.durationInMilliseconds).c_str());
     }
 
@@ -42,7 +44,7 @@ void LogDmlTracingData(const DmlTraceData& data, IDxDispatchLogger* logger)
 
         for (const auto& [opType, count] : sortedOpCounts)
         {
-            logger->LogInfo(fmt::format("  '{}' : {}", (uint32_t)opType, count).c_str());
+            logger->LogInfo(fmt::format("- '{}' : {}", ToString(opType), count).c_str());
         }
     }
 }
