@@ -9,6 +9,36 @@ struct DmlOperatorMetadata
     DML_OPERATOR_TYPE type;
 };
 
+// class WrappedDmlBindingTable : public Microsoft::WRL::Base<Microsoft::WRL::ChainInterfaces<IDMLBindingTable, IDMLDeviceChild, IDMLObject>>
+// {
+// public:
+//     explicit WrappedDmlBindingTable(IDMLBindingTable* impl);
+
+//     IDMLBindingTable* Impl() { return m_impl.Get(); }
+
+//     // IDMLBindingTable
+//     void STDMETHODCALLTYPE BindInputs(UINT bindingCount, _In_reads_opt_(bindingCount) const DML_BINDING_DESC* bindings) noexcept final;
+//     void STDMETHODCALLTYPE BindOutputs(UINT bindingCount, _In_reads_opt_(bindingCount) const DML_BINDING_DESC* bindings) noexcept final;
+//     void STDMETHODCALLTYPE BindTemporaryResource(_In_opt_ const DML_BINDING_DESC* binding) noexcept final;
+//     void STDMETHODCALLTYPE BindPersistentResource(_In_opt_ const DML_BINDING_DESC* binding) noexcept final;
+//     HRESULT STDMETHODCALLTYPE Reset(_In_opt_ const DML_BINDING_TABLE_DESC* desc) noexcept final;
+
+//     // IDMLDeviceChild
+//     HRESULT STDMETHODCALLTYPE GetDevice(REFIID riid, _COM_Outptr_ void** ppv) noexcept final;
+
+//     // IDMLObject
+//     HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept final;
+//     HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept final;
+//     HRESULT STDMETHODCALLTYPE SetPrivateDataInterface(REFGUID guid, _In_opt_ IUnknown* data) noexcept final;
+//     HRESULT STDMETHODCALLTYPE SetName(PCWSTR name) noexcept final;
+
+// private:
+//     Microsoft::WRL::ComPtr<IDMLBindingTable> m_impl;
+// };
+
+// TODO: wrapped command recorder to record copy commands during dispatch init/exec
+
+
 WrappedDmlDevice::WrappedDmlDevice(
     IDMLDevice1* impl, 
     IDxDispatchLogger* logger,
