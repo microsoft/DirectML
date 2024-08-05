@@ -1,34 +1,13 @@
 #include "pch.h"
 #include "DmlTracing.h"
 
-WrappedDmlOperator::WrappedDmlOperator(IDMLOperator* impl, const DML_OPERATOR_DESC* desc) : 
-    m_impl(impl), m_type(desc->Type)
-{}
+// {1E508EFB-18B8-4705-9C0B-98B1194E9023}
+static constexpr GUID c_dmlOperatorMetadata = { 0x1e508efb, 0x18b8, 0x4705, { 0x9c, 0xb, 0x98, 0xb1, 0x19, 0x4e, 0x90, 0x23 } };
 
-HRESULT STDMETHODCALLTYPE WrappedDmlOperator::GetDevice(REFIID riid, _COM_Outptr_ void** ppv) noexcept
+struct DmlOperatorMetadata
 {
-    return m_impl->GetDevice(riid, ppv);
-}
-
-HRESULT STDMETHODCALLTYPE WrappedDmlOperator::GetPrivateData(REFGUID guid, _Inout_ UINT* dataSize, _Out_writes_bytes_opt_(*dataSize) void* data) noexcept
-{
-    return m_impl->GetPrivateData(guid, dataSize, data);
-}
-
-HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetPrivateData(REFGUID guid, UINT dataSize, _In_reads_bytes_opt_(dataSize) const void* data) noexcept
-{
-    return m_impl->SetPrivateData(guid, dataSize, data);
-}
-
-HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetPrivateDataInterface(REFGUID guid, _In_opt_ IUnknown* data) noexcept
-{
-    return m_impl->SetPrivateDataInterface(guid, data);
-}
-
-HRESULT STDMETHODCALLTYPE WrappedDmlOperator::SetName(PCWSTR name) noexcept
-{
-    return m_impl->SetName(name);
-}
+    DML_OPERATOR_TYPE type;
+};
 
 WrappedDmlDevice::WrappedDmlDevice(
     IDMLDevice1* impl, 
@@ -87,33 +66,41 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CreateOperator(
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
+    if (!ppv)
+    {
+        return m_impl->CreateOperator(desc, riid, ppv);
+    }
+    
     Microsoft::WRL::ComPtr<IDMLOperator> op;
     auto hr = m_impl->CreateOperator(desc, IID_PPV_ARGS(&op));
 
-    if (FAILED(hr))
+    if (SUCCEEDED(hr))
     {
-        return hr;
+        DmlOperatorMetadata metadata = { desc->Type };
+        THROW_IF_FAILED(op->SetPrivateData(c_dmlOperatorMetadata, sizeof(DmlOperatorMetadata), &metadata));
+        THROW_IF_FAILED(op.CopyTo(riid, ppv));
     }
 
-    auto wrappedOp = Microsoft::WRL::Make<WrappedDmlOperator>(op.Get(), desc);
-    return wrappedOp.CopyTo(riid, ppv);
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileOperator(
-    IDMLOperator* wrappedOpInterface,
+    IDMLOperator* op,
     DML_EXECUTION_FLAGS flags,
     REFIID riid,
     _COM_Outptr_opt_ void** ppv
     ) noexcept
 {
-    auto wrappedOp = static_cast<WrappedDmlOperator*>(wrappedOpInterface);
+    DmlOperatorMetadata metadata = {};
+    UINT dataSize = sizeof(metadata);
+    THROW_IF_FAILED(op->GetPrivateData(c_dmlOperatorMetadata, &dataSize, &metadata));
 
     Timer timer;
-    auto hr = m_impl->CompileOperator(wrappedOp->Impl(), flags, riid, ppv);
+    auto hr = m_impl->CompileOperator(op, flags, riid, ppv);
     timer.End();
 
     std::unique_lock<std::mutex> lock(m_mutex);
-    m_compileOperatorTraces.push_back({wrappedOp->GetType(), timer.DurationInMilliseconds()});
+    m_compileOperatorTraces.push_back({metadata.type, timer.DurationInMilliseconds()});
 
     return hr;
 }
@@ -166,7 +153,7 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::GetParentDevice( REFIID riid, _COM_O
 }
 
 HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
-    const DML_GRAPH_DESC* wrappedDesc,
+    const DML_GRAPH_DESC* desc,
     DML_EXECUTION_FLAGS flags,
     REFIID riid,
     _COM_Outptr_opt_ void** ppv
@@ -174,38 +161,24 @@ HRESULT STDMETHODCALLTYPE WrappedDmlDevice::CompileGraph(
 {
     DmlCompileGraphTrace compileTrace = {};
 
-    // DML_GRAPH_DESC operator-type nodes reference IDMLOperators, which are wrapped when tracing.
-    // The rest of the graph desc can pass through unmodified, but operator-type nodes need to be unwrapped.
-    DML_GRAPH_DESC unwrappedDesc = *wrappedDesc;
-
-    std::vector<DML_GRAPH_NODE_DESC> unwrappedNodes(wrappedDesc->NodeCount);
-    std::vector<DML_OPERATOR_GRAPH_NODE_DESC> unwrappedOpNodes(wrappedDesc->NodeCount);
-    unwrappedDesc.Nodes = unwrappedNodes.data();
-
-    for (uint32_t nodeIndex = 0; nodeIndex < wrappedDesc->NodeCount; nodeIndex++)
+    for (uint32_t nodeIndex = 0; nodeIndex < desc->NodeCount; nodeIndex++)
     {
-        DML_GRAPH_NODE_DESC& unwrappedNode = unwrappedNodes[nodeIndex];
-        const DML_GRAPH_NODE_DESC& wrappedNode = wrappedDesc->Nodes[nodeIndex];
+        const DML_GRAPH_NODE_DESC& node = desc->Nodes[nodeIndex];
 
-        unwrappedNode = wrappedNode;
-
-        if (wrappedNode.Type == DML_GRAPH_NODE_TYPE_OPERATOR)
+        if (node.Type == DML_GRAPH_NODE_TYPE_OPERATOR)
         {
-            DML_OPERATOR_GRAPH_NODE_DESC& unwrappedOpNode = unwrappedOpNodes[nodeIndex];
+            auto opNode = static_cast<const DML_OPERATOR_GRAPH_NODE_DESC*>(node.Desc);
 
-            const DML_OPERATOR_GRAPH_NODE_DESC& wrappedOpNode = *static_cast<const DML_OPERATOR_GRAPH_NODE_DESC*>(wrappedNode.Desc);
-            auto wrappedOp = static_cast<WrappedDmlOperator*>(wrappedOpNode.Operator);
+            DmlOperatorMetadata opMetadata = {};
+            UINT dataSize = sizeof(opMetadata);
+            THROW_IF_FAILED(opNode->Operator->GetPrivateData(c_dmlOperatorMetadata, &dataSize, &opMetadata));
 
-            unwrappedOpNode = wrappedOpNode;
-            unwrappedOpNode.Operator = wrappedOp->Impl();
-            unwrappedNode.Desc = &unwrappedOpNode;
-
-            compileTrace.opCounts[wrappedOp->GetType()]++;
+            compileTrace.opCounts[opMetadata.type]++;
         }
     }
 
     Timer timer;
-    auto hr = m_impl->CompileGraph(&unwrappedDesc, flags, riid, ppv);
+    auto hr = m_impl->CompileGraph(desc, flags, riid, ppv);
     timer.End();
     
     compileTrace.durationInMilliseconds = timer.DurationInMilliseconds();
