@@ -196,7 +196,7 @@ private:
 
     struct FixedBucket : Bucket
     {
-        std::array<byte, Size> stack;
+        std::array<std::byte, Size> stack;
 
         FixedBucket()
         {
