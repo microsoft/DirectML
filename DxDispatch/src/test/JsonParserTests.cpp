@@ -27,7 +27,7 @@ TEST(ParseFloat16Test, ValidInput)
         "x2": -1.2345
     })");
     ASSERT_FALSE(d.HasParseError());
-    half_float::half expectedValues[] = { half_float::half(1.2f), half_float::half(5.0f), half_float::half(-1.2345f) };
+    Ort::Float16_t expectedValues[] = { Ort::Float16_t(1.2f), Ort::Float16_t(5.0f), Ort::Float16_t(-1.2345f) };
     for (size_t i = 0; i < _countof(expectedValues); i++)
     {
         auto fieldName = fmt::format("x{}", i);
@@ -59,7 +59,7 @@ TEST(ParseFloat16Test, MissingField)
     Document d;
     d.Parse(R"({})");
     ASSERT_FALSE(d.HasParseError());
-    EXPECT_EQ(ParseFloat16Field(d, "x0", false, half_float::half(1.2f)), half_float::half(1.2f));
+    EXPECT_EQ(ParseFloat16Field(d, "x0", false, Ort::Float16_t(1.2f)), Ort::Float16_t(1.2f));
     EXPECT_THROW(ParseFloat16Field(d, "x0"), std::invalid_argument);
 }
 
@@ -73,8 +73,8 @@ TEST(ParseFloat16Test, NaN)
     ASSERT_FALSE(d.HasParseError());
     for (auto field = d.MemberBegin(); field < d.MemberEnd(); field++)
     {
-        EXPECT_TRUE(std::isnan(ParseFloat16(field->value)));
-        EXPECT_TRUE(std::isnan(ParseFloat16Field(d, field->name.GetString())));
+        EXPECT_TRUE(ParseFloat16(field->value).IsNaN());
+        EXPECT_TRUE(ParseFloat16Field(d, field->name.GetString()).IsNaN());
     }
 }
 
@@ -90,8 +90,8 @@ TEST(ParseFloat16Test, Infinity)
     ASSERT_FALSE(d.HasParseError());
     for (auto field = d.MemberBegin(); field < d.MemberEnd(); field++)
     {
-        EXPECT_TRUE(std::isinf(ParseFloat16(field->value)));
-        EXPECT_TRUE(std::isinf(ParseFloat16Field(d, field->name.GetString())));
+        EXPECT_TRUE(ParseFloat16(field->value).IsInfinity());
+        EXPECT_TRUE(ParseFloat16Field(d, field->name.GetString()).IsInfinity());
     }
 }
 
@@ -107,15 +107,15 @@ TEST(ParseFloat16ArrayTest, ValidInput)
     BucketAllocator allocator;
     auto x0 = ParseFloat16Array(d["x0"], allocator);
     EXPECT_EQ(1, x0.size());
-    EXPECT_EQ(x0[0], half_float::half(1.2f));
+    EXPECT_EQ(x0[0], Ort::Float16_t(1.2f));
 
     auto x1 = ParseFloat16Array(d["x1"], allocator);
     EXPECT_EQ(5, x1.size());
-    EXPECT_EQ(x1[0], half_float::half(1.2f));
-    EXPECT_EQ(x1[1], half_float::half(3.4f));
-    EXPECT_EQ(x1[2], half_float::half(5.6f));
-    EXPECT_TRUE(std::isnan(x1[3]));
-    EXPECT_TRUE(std::isinf(x1[4]));
+    EXPECT_EQ(x1[0], Ort::Float16_t(1.2f));
+    EXPECT_EQ(x1[1], Ort::Float16_t(3.4f));
+    EXPECT_EQ(x1[2], Ort::Float16_t(5.6f));
+    EXPECT_TRUE(x1[3].IsNaN());
+    EXPECT_TRUE(x1[4].IsInfinity());
 }
 
 // ----------------------------------------------------------------------------

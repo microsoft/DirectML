@@ -24,7 +24,6 @@ include(cmake/gsl.cmake)
 include(cmake/rapidjson.cmake)
 include(cmake/fmt.cmake)
 include(cmake/wil.cmake)
-include(cmake/half.cmake)
 include(cmake/cxxopts.cmake)
 
 if(NOT TARGET_XBOX)
@@ -90,11 +89,11 @@ target_link_libraries(
     fmt::fmt-header-only
     PUBLIC
     Microsoft.GSL::GSL
-    Half::Half
     rapidjson::rapidjson
     wil
     d3d12
     directml
+    onnxruntime
 )
 
 if(TARGET_WSL)

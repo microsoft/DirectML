@@ -15,7 +15,7 @@
 #include "NpyReaderWriter.h"
 #include "CommandLineArgs.h"
 #include "Executor.h"
-#include <half.hpp>
+#include <onnxruntime_cxx_api.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -462,12 +462,33 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
     return os;
 }
 
+template <>
+std::ostream& operator<<(std::ostream& os, const BufferDataView<Ort::Float16_t>& view)
+{
+    auto nBytes = std::max(view.desc.sizeInBytes, (uint64_t) view.desc.initialValues.size());
+    uint64_t elementCount = nBytes / Device::GetSizeInBytes(view.desc.initialValuesDataType);
+    if (elementCount > std::numeric_limits<uint32_t>::max())
+    {
+        throw std::invalid_argument("Buffer size is too large");
+    }
+    auto values = reinterpret_cast<const Ort::Float16_t*>(view.byteValues.data());
+    for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
+    {
+        os << float(values[elementIndex]);
+        if (elementIndex < elementCount - 1)
+        {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
 std::string ToString(gsl::span<const std::byte> byteValues, const Model::BufferDesc& desc)
 {
     std::stringstream ss;
     switch (desc.initialValuesDataType)
     {
-    case DML_TENSOR_DATA_TYPE_FLOAT16: ss << BufferDataView<half_float::half>{byteValues, desc}; break;
+    case DML_TENSOR_DATA_TYPE_FLOAT16: ss << BufferDataView<Ort::Float16_t>{byteValues, desc}; break;
     case DML_TENSOR_DATA_TYPE_FLOAT32: ss << BufferDataView<float>{byteValues, desc}; break;
     case DML_TENSOR_DATA_TYPE_FLOAT64: ss << BufferDataView<double>{byteValues, desc}; break;
     case DML_TENSOR_DATA_TYPE_UINT8: ss << BufferDataView<uint8_t>{byteValues, desc}; break;

@@ -30,7 +30,7 @@
 #include <rapidjson/error/en.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fmt/format.h>
-#include <half.hpp>
+#include <onnxruntime_cxx_api.h>
 
 template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
 template<class... Ts> overload(Ts...) -> overload<Ts...>;

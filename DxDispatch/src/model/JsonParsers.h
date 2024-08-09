@@ -2,7 +2,7 @@
 
 #include <DirectML.h>
 #include <rapidjson/document.h>
-#include <half.hpp>
+#include <onnxruntime_cxx_api.h>
 #include "Model.h"
 
 namespace JsonParsers
@@ -16,10 +16,10 @@ namespace JsonParsers
     bool ParseBoolField(const rapidjson::Value& object, std::string_view fieldName, bool required = true, bool defaultValue = false);
 
     // FLOAT16
-    half_float::half ParseFloat16(const rapidjson::Value& object);
-    half_float::half ParseFloat16Field(const rapidjson::Value& object, std::string_view fieldName, bool required = true, half_float::half defaultValue = half_float::half(0.0f));
-    gsl::span<half_float::half> ParseFloat16Array(const rapidjson::Value& object, BucketAllocator& allocator);
-    gsl::span<half_float::half> ParseFloat16ArrayField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required = true, gsl::span<half_float::half> defaultValue = {});
+    Ort::Float16_t ParseFloat16(const rapidjson::Value& object);
+    Ort::Float16_t ParseFloat16Field(const rapidjson::Value& object, std::string_view fieldName, bool required = true, Ort::Float16_t defaultValue = Ort::Float16_t(0.0f));
+    gsl::span<Ort::Float16_t> ParseFloat16Array(const rapidjson::Value& object, BucketAllocator& allocator);
+    gsl::span<Ort::Float16_t> ParseFloat16ArrayField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required = true, gsl::span<Ort::Float16_t> defaultValue = {});
 
     // FLOAT32
     float ParseFloat32(const rapidjson::Value& object);

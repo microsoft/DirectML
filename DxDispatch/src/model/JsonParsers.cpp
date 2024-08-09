@@ -206,7 +206,7 @@ TReturn ParseFieldHelper(
 template <typename T>
 T ParseFloatingPointNumber(const rapidjson::Value& value)
 {
-    static_assert(std::is_floating_point_v<T> || std::is_same_v<T, half_float::half>);
+    static_assert(std::is_floating_point_v<T> || std::is_same_v<T, Ort::Float16_t>);
     if (value.IsFloat() || value.IsDouble() || value.IsLosslessDouble())
     {
         return static_cast<T>(value.GetDouble());
@@ -365,27 +365,27 @@ bool ParseBoolField(const rapidjson::Value& object, std::string_view fieldName, 
 // FLOAT16
 // ----------------------------------------------------------------------------
 
-half_float::half ParseFloat16(const rapidjson::Value& value)
+Ort::Float16_t ParseFloat16(const rapidjson::Value& value)
 {
     auto parsedValue = ParseFloatingPointNumber<float>(value);
-    return half_float::half(parsedValue);
+    return Ort::Float16_t(parsedValue);
 }
 
-half_float::half ParseFloat16Field(const rapidjson::Value& object, std::string_view fieldName, bool required, half_float::half defaultValue)
+Ort::Float16_t ParseFloat16Field(const rapidjson::Value& object, std::string_view fieldName, bool required, Ort::Float16_t defaultValue)
 {
-    return ParseFieldHelper<half_float::half>(object, fieldName, required, defaultValue, [](auto& value){ 
+    return ParseFieldHelper<Ort::Float16_t>(object, fieldName, required, defaultValue, [](auto& value){ 
         return ParseFloat16(value); 
     });
 }
 
-gsl::span<half_float::half> ParseFloat16Array(const rapidjson::Value& value, BucketAllocator& allocator)
+gsl::span<Ort::Float16_t> ParseFloat16Array(const rapidjson::Value& value, BucketAllocator& allocator)
 {
-    return ParseArray<half_float::half>(value, allocator, ParseFloat16);
+    return ParseArray<Ort::Float16_t>(value, allocator, ParseFloat16);
 }
 
-gsl::span<half_float::half> ParseFloat16ArrayField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required, gsl::span<half_float::half> defaultValue)
+gsl::span<Ort::Float16_t> ParseFloat16ArrayField(const rapidjson::Value& object, std::string_view fieldName, BucketAllocator& allocator, bool required, gsl::span<Ort::Float16_t> defaultValue)
 {
-    return ParseFieldHelper<gsl::span<half_float::half>>(object, fieldName, required, defaultValue, [&allocator](auto& value){ 
+    return ParseFieldHelper<gsl::span<Ort::Float16_t>>(object, fieldName, required, defaultValue, [&allocator](auto& value){ 
         return ParseFloat16Array(value, allocator); 
     });
 }
@@ -741,8 +741,8 @@ static void ParseDmlScalarUnion(const rapidjson::Value& value, DML_TENSOR_DATA_T
         {
         case DML_TENSOR_DATA_TYPE_FLOAT16:
         {
-            auto halfValue = ParseFloat16(value);
-            returnValue.UInt16 = *reinterpret_cast<const uint16_t*>(&halfValue);
+            auto float16Value = ParseFloat16(value);
+            returnValue.UInt16 = *reinterpret_cast<const uint16_t*>(&float16Value);
             break;
         }
         case DML_TENSOR_DATA_TYPE_FLOAT32: returnValue.Float32 = ParseFloat32(value); break;
@@ -976,7 +976,7 @@ std::vector<std::byte> GenerateInitialValuesFromList(DML_TENSOR_DATA_TYPE dataTy
 {
     switch (dataType)
     {
-    case DML_TENSOR_DATA_TYPE_FLOAT16: return ParseArrayAsBytes<half_float::half>(object, ParseFloat16);
+    case DML_TENSOR_DATA_TYPE_FLOAT16: return ParseArrayAsBytes<Ort::Float16_t>(object, ParseFloat16);
     case DML_TENSOR_DATA_TYPE_FLOAT32: return ParseArrayAsBytes<float>(object, ParseFloat32);
     case DML_TENSOR_DATA_TYPE_FLOAT64: return ParseArrayAsBytes<double>(object, ParseFloat64);
     case DML_TENSOR_DATA_TYPE_UINT8: return ParseArrayAsBytes<uint8_t>(object, ParseUInt8);
@@ -1028,6 +1028,12 @@ std::vector<std::byte> GenerateInitialValuesFromConstant(DML_TENSOR_DATA_TYPE da
     }
 }
 
+Ort::Float16_t operator+(Ort::Float16_t lhs, Ort::Float16_t rhs)
+{
+    lhs = Ort::Float16_t(static_cast<float>(lhs) + static_cast<float>(rhs));
+    return lhs;
+}
+
 std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE dataType, const rapidjson::Value& object)
 {
     auto valueCount = ParseUInt32Field(object, "valueCount");
@@ -1045,14 +1051,14 @@ std::vector<std::byte> GenerateInitialValuesFromSequence(DML_TENSOR_DATA_TYPE da
             {
                 allBytes.push_back(byte);
             }
-            value += valueDelta;
+            value = value + valueDelta;
         }
         return allBytes;
     };
 
     switch (dataType)
     {
-    case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, half_float::half(0));
+    case DML_TENSOR_DATA_TYPE_FLOAT16: return AsBytes(ParseFloat16Field, Ort::Float16_t(0.0f));
     case DML_TENSOR_DATA_TYPE_FLOAT32: return AsBytes(ParseFloat32Field, 0.0f);
     case DML_TENSOR_DATA_TYPE_FLOAT64: return AsBytes(ParseFloat64Field, 0.0);
     case DML_TENSOR_DATA_TYPE_UINT8: return AsBytes(ParseUInt8Field, static_cast<uint8_t>(0));

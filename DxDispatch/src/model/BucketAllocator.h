@@ -8,7 +8,7 @@
 
 #include <deque>
 #include <wil/result.h>
-#include <half.hpp>
+#include <onnxruntime_cxx_api.h>
 #ifndef WIN32
 #include <sys/mman.h>
 #include <cerrno>
@@ -39,7 +39,7 @@ public:
     template <typename T>
     T* Allocate(size_t count = 1)
     {
-        static_assert(std::is_trivial_v<T> || std::is_same_v<T, half_float::half>, "This class does not invoke constructors.");
+        static_assert(std::is_trivial_v<T> || std::is_same_v<T, Ort::Float16_t>, "This class does not invoke constructors.");
 
         size_t sizeInBytes = sizeof(T) * count;
 
