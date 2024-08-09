@@ -1,0 +1,45 @@
+{
+  "$schema": "./_schema.json",
+
+  "resources": 
+  {
+      "model_input": 
+      {
+          "initialValuesDataType": "FLOAT32",
+          "initialValues": { "valueCount": 5, "value": 1.5 }
+      },
+      "model_output": 
+      {
+          "initialValuesDataType": "FLOAT32",
+          "initialValues": { "valueCount": 5, "value": 0 }
+      }
+  },
+
+  "dispatchables": 
+  {
+      "matmul_add": 
+      {
+        "type": "dmlSerializedGraph",
+        "sourcePath": "matmul_add/Partition_0.bin"
+      }
+  },
+
+  "commands": 
+  [
+      {
+          "type": "dispatch",
+          "dispatchable": "matmul_add",
+          "bindings": 
+          {
+            "model_input": "model_input",
+            "model_output": "model_output"
+          }
+      }
+      ,
+      {
+          "type": "print",
+          "resource": "model_output"
+      }
+  ]
+}
+
