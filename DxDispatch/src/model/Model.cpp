@@ -1,6 +1,25 @@
 #include "pch.h"
 #include "Model.h"
 
+static void VerifyBindings(
+    const std::string& dispatchableType,
+    const std::unordered_map<std::string, std::vector<Model::BufferBindingSource>>& initBindings,
+    std::unordered_map<std::string, Model::ResourceDesc*>& resourceDescsByName)
+{
+    for (const auto& [bindingName, sourceResources] : initBindings)
+    {
+        for (const auto& sourceResource : sourceResources)
+        {
+            if (resourceDescsByName.find(sourceResource.name) == resourceDescsByName.end())
+            {
+                throw std::invalid_argument(fmt::format(
+                    "{} dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
+                    dispatchableType, sourceResource.name));
+            }
+        }
+    }
+}
+
 Model::Model(
     std::vector<ResourceDesc>&& resourceDescs,
     std::vector<DispatchableDesc>&& dispatchableDescs,
@@ -19,23 +38,16 @@ Model::Model(
     for (auto& dispatchableDesc : m_dispatchableDescs) 
     { 
         m_dispatchableDescsByName[dispatchableDesc.name] = &dispatchableDesc;
-
+        
         if (std::holds_alternative<DmlDispatchableDesc>(dispatchableDesc.value))
         {
-            auto& dmlDispatchableDesc = std::get<DmlDispatchableDesc>(dispatchableDesc.value);
-            for (auto& binding : dmlDispatchableDesc.initBindings)
-            {
-                for (auto& sourceResource : binding.second)
-                {
-                    if (m_resourceDescsByName.find(sourceResource.name) == m_resourceDescsByName.end())
-                    {
-                        throw std::invalid_argument(fmt::format(
-                            "DML dispatchable attempts to bind resource '{}' for initialization, which does not exist in the model", 
-                            sourceResource.name));
-                    }
-                }
-            }
+            VerifyBindings("DML", std::get<DmlDispatchableDesc>(dispatchableDesc.value).initBindings, m_resourceDescsByName);
         }
+        else if (std::holds_alternative<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value))
+        {
+            VerifyBindings("DmlSerializedGraph", std::get<DmlSerializedGraphDispatchableDesc>(dispatchableDesc.value).initBindings, m_resourceDescsByName);
+        }
+
     }
 
     // Validate references to ops/resources in the model.
