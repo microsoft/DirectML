@@ -79,8 +79,8 @@
         "type": "other",
         "other": {
           "name": "Half",
-          "version": "2.1.0",
-          "downloadUrl": "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download"
+          "version": "1.12.0",
+          "downloadUrl": "https://sourceforge.net/projects/half/files/half/1.12.0/half-1.12.0.zip/download"
         }
       }
     },
