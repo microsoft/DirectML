@@ -359,7 +359,7 @@ void DmlDispatchable::BuildAndCompileGraph()
     }
 
     // Convert to Public Graph Description
-    StackAllocator<1024> allocator;
+    BucketAllocator allocator;
     DML_GRAPH_DESC dmlGraphDesc = {};
     std::vector<Microsoft::WRL::ComPtr<IDMLOperator>> dmlOperators;
     std::vector<DML_GRAPH_NODE_DESC> dmlGraphNodes;
@@ -367,7 +367,7 @@ void DmlDispatchable::BuildAndCompileGraph()
     std::vector<DML_GRAPH_EDGE_DESC> dmlOutputEdges;
     std::vector<DML_GRAPH_EDGE_DESC> dmlIntermediateEdges;
 
-    ConvertGraphDesc<1024>(
+    ConvertGraphDesc(
         serializedDesc,
         serializedDesc.InputCount,
         serializedDesc.OutputCount,

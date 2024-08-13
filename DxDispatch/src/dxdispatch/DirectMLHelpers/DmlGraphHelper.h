@@ -107,13 +107,12 @@ static std::map<uint32_t, std::vector<uint32_t>> GenerateNodeIndexToForcedConsta
     return nodeIndexToConstantInputIndicesMap;
 }
 
-template <size_t AllocatorSize>
 void ConvertGraphDesc(
     const DmlSerializedGraphDesc& graphDesc,
     const uint32_t inputCount,
     const uint32_t outputCount,
     IDMLDevice* device,
-    StackAllocator<AllocatorSize>& allocator,
+    BucketAllocator& allocator,
     const std::unordered_map<uint32_t, uint32_t>* serializedGraphInputIndexToSubgraphInputIndex,
     const std::unordered_map<std::string_view, uint32_t>* serializedGraphLargeConstantNameToSubgraphInputIndex,
     _Out_ DML_GRAPH_DESC& dmlGraphDesc,
@@ -130,7 +129,7 @@ void ConvertGraphDesc(
         if (std::holds_alternative<AbstractOperatorDesc>(node.Desc))
         {
             oldNodeIndexToNewNodeIndexMap[index] = static_cast<uint32_t>(dmlGraphNodes.size());
-            DML_OPERATOR_DESC dmlDesc = SchemaHelpers::ConvertOperatorDesc<AllocatorSize>(std::get<AbstractOperatorDesc>(node.Desc), &allocator);
+            DML_OPERATOR_DESC dmlDesc = SchemaHelpers::ConvertOperatorDesc(std::get<AbstractOperatorDesc>(node.Desc), &allocator);
             Microsoft::WRL::ComPtr<IDMLOperator> op;
             THROW_IF_FAILED(device->CreateOperator(&dmlDesc, IID_PPV_ARGS(&op)));
             dmlOperators.push_back(op);

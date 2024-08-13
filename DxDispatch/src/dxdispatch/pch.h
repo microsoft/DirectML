@@ -87,6 +87,7 @@ using IAdapter = IDXCoreAdapter;
 
 #include <DirectML.h>
 #include "DirectMLX.h"
+#include "BucketAllocator.h"
 #include "DirectMLHelpers/ApiTraits.h"
 #include "DirectMLHelpers/ApiHelpers.h"
 #include "DirectMLHelpers/DirectMLSchema.h"

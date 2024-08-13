@@ -118,7 +118,7 @@ namespace SchemaHelpers
     class StructFieldWriter
     {
     public:
-        explicit StructFieldWriter(gsl::span<byte> dst)
+        explicit StructFieldWriter(gsl::span<std::byte> dst)
             : m_dst(dst)
             , m_bytesWritten(0)
         {}
@@ -152,12 +152,11 @@ namespace SchemaHelpers
             return value;
         }
 
-        gsl::span<byte> m_dst;
+        gsl::span<std::byte> m_dst;
         size_t m_bytesWritten;
     };
 
-    template <size_t N>
-    DML_BUFFER_TENSOR_DESC MakeBufferTensorDesc(const DmlBufferTensorDesc& src, StackAllocator<N>* allocator)
+    inline DML_BUFFER_TENSOR_DESC MakeBufferTensorDesc(const DmlBufferTensorDesc& src, BucketAllocator* allocator)
     {
         size_t dimensionCount = src.sizes.size();
 
@@ -182,8 +181,7 @@ namespace SchemaHelpers
         return dst;
     }
 
-    template <size_t N>
-    DML_TENSOR_DESC MakeTensorDesc(const DmlBufferTensorDesc& src, StackAllocator<N>* allocator)
+    inline DML_TENSOR_DESC MakeTensorDesc(const DmlBufferTensorDesc& src, BucketAllocator* allocator)
     {
         auto* desc = allocator->template Allocate<DML_BUFFER_TENSOR_DESC>();
         *desc = MakeBufferTensorDesc(src, allocator);
@@ -194,11 +192,9 @@ namespace SchemaHelpers
         return dst;
     }
 
-    template <size_t N>
-    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, StackAllocator<N>* allocator);
+    inline DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, BucketAllocator* allocator);
 
-    template <size_t N>
-    void WriteOperatorDescField(const OperatorField& field, StructFieldWriter* dst, StackAllocator<N>* allocator)
+    inline void WriteOperatorDescField(const OperatorField& field, StructFieldWriter* dst, BucketAllocator* allocator)
     {
         const DML_SCHEMA_FIELD& schema = *field.GetSchema();
 
@@ -361,8 +357,7 @@ namespace SchemaHelpers
         }
     }
 
-    template <size_t N>
-    DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, StackAllocator<N>* allocator)
+    inline DML_OPERATOR_DESC ConvertOperatorDesc(const AbstractOperatorDesc& abstractDesc, BucketAllocator* allocator)
     {
         const DML_OPERATOR_SCHEMA& schema = *abstractDesc.schema;
 
@@ -373,7 +368,7 @@ namespace SchemaHelpers
         });
 
         // Allocate a blob of bytes to hold the struct
-        byte* abiDesc = allocator->template Allocate<byte>(abiDescSizeInBytes);
+        std::byte* abiDesc = allocator->template Allocate<std::byte>(abiDescSizeInBytes);
 
         // Use the schema to write data into the blob
 
