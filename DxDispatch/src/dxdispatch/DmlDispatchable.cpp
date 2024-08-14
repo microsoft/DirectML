@@ -330,7 +330,7 @@ void DmlDispatchable::BuildAndCompileGraph()
 {
     const auto& desc = std::get<Model::DmlSerializedGraphDispatchableDesc>(m_desc);
     
-    // Deserialize the graph
+    // Deserialize the dml graph
     std::ifstream inFile(desc.sourcePath, std::ios::binary | std::ios::ate);
     if (!inFile)
     {
