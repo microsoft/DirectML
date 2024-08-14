@@ -95,6 +95,7 @@ using IAdapter = IDXCoreAdapter;
 #include "DirectMLHelpers/GeneratedSchemaTypes.h"
 #include "DirectMLHelpers/SchemaHelpers.h"
 #include "DirectMLHelpers/GeneratedSchemaHelpers.h"
+#include "DirectMLHelpers/AbstractOperatorDescImpl.h"
 
 #include "DxDispatchInterface.h"
 #include "Logging.h"
