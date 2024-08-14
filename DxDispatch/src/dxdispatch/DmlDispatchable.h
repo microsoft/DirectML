@@ -1,5 +1,5 @@
 #pragma once
-#include "DirectMLHelpers\DmlSerializedGraphDesc.h"
+#include "DirectMLHelpers/DmlSerializedGraphDesc.h"
 
 class DmlDispatchable : public Dispatchable
 {

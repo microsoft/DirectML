@@ -146,7 +146,6 @@ add_library(
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
-target_include_directories(dxdispatchImpl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch/DirectMLHelpers)
 
 if(NOT dxcompiler_type STREQUAL None)
     target_sources(dxdispatchImpl PRIVATE src/dxdispatch/HlslDispatchable.cpp)
