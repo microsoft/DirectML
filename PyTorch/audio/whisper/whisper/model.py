@@ -177,10 +177,9 @@ class ResidualAttentionBlock(nn.Module):
 
 class AudioEncoder(nn.Module):
     def __init__(
-        self, n_mels: int, n_ctx: int, n_state: int, n_head: int, n_layer: int, use_dml_attn: bool = False,
+        self, n_mels: int, n_ctx: int, n_state: int, n_head: int, n_layer: int
     ):
         super().__init__()
-        self.use_dml_attn = use_dml_attn
         self.conv1 = Conv1d(n_mels, n_state, kernel_size=3, padding=1)
         self.conv2 = Conv1d(n_state, n_state, kernel_size=3, stride=2, padding=1)
         self.register_buffer("positional_embedding", sinusoids(n_ctx, n_state))
@@ -203,7 +202,7 @@ class AudioEncoder(nn.Module):
         x = (x + self.positional_embedding).to(x.dtype)
 
         for block in self.blocks:
-            x = block(x, use_dml_attn=self.use_dml_attn)
+            x = block(x)
 
         x = self.ln_post(x)
         return x
@@ -270,7 +269,6 @@ class Whisper(nn.Module):
             self.dims.n_audio_state,
             self.dims.n_audio_head,
             self.dims.n_audio_layer,
-            use_dml_attn
         )
         self.decoder = TextDecoder(
             self.dims.n_vocab,
