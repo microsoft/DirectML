@@ -8,7 +8,12 @@ include(FetchContent)
 
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
-  endif()
+endif()
+
+set(TARGET_ARCH ${CMAKE_CXX_COMPILER_ARCHITECTURE_ID})
+if(TARGET_ARCH STREQUAL AMD64)
+    set(TARGET_ARCH x64)
+endif()
 
 # -----------------------------------------------------------------------------
 # wil - Windows-related helper types/macros
@@ -28,10 +33,44 @@ add_library(wil INTERFACE)
 target_include_directories(wil INTERFACE "${wil_SOURCE_DIR}/include")
 
 # -----------------------------------------------------------------------------
+# onnxruntime
+# -----------------------------------------------------------------------------
+FetchContent_Declare(
+    ort
+    URL https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.19.0
+    URL_HASH SHA256=FD4E65EBD23385FD8ED792F0C859D2AA255DC1761D0E5761087568FF255187AC
+)
+
+FetchContent_MakeAvailable(ort)
+
+set(ort_bin_dir "${ort_SOURCE_DIR}/runtimes/win-${TARGET_ARCH}/native")
+
+add_library(ort INTERFACE)
+target_include_directories(ort INTERFACE "${${content}_SOURCE_DIR}/build/native/include")
+target_link_libraries(ort INTERFACE "${ort_bin_dir}/onnxruntime.lib")
+
+# -----------------------------------------------------------------------------
+# directml
+# -----------------------------------------------------------------------------
+FetchContent_Declare(
+    dml
+    URL https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.15.1
+    URL_HASH SHA256=F43EB3D8B39F588B6CF049EAF1E0EA6006774EB8C93C661A1DE7721E674F7F56
+)
+
+FetchContent_MakeAvailable(dml)
+
+set(dml_bin_dir "${dml_SOURCE_DIR}/bin/${TARGET_ARCH}-win")
+
+add_library(dml INTERFACE)
+target_include_directories(dml INTERFACE "${dml_SOURCE_DIR}/include")
+target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
+
+# -----------------------------------------------------------------------------
 # main sample source
 # -----------------------------------------------------------------------------
 
 add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil d3d12 dxgi)
+target_link_libraries(directml_cv PRIVATE wil onnxruntime d3d12 dxgi)
 target_compile_features(directml_cv PRIVATE cxx_std_20)
 target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
