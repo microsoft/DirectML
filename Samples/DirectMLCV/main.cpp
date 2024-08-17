@@ -25,7 +25,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-void CopyPixelDataFromImageFilename(std::wstring_view filename, )
+void CopyPixelDataFromImageFilename(std::wstring_view filename)
 {
     ComPtr<IWICImagingFactory> wicFactory;
     THROW_IF_FAILED(CoCreateInstance(
@@ -92,9 +92,9 @@ int main(int argc, char** argv)
     THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
     // load ort model session
-    
 
-    ImageTensorFromFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+
+    // ImageTensorFromFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
 
     CoUninitialize();
 

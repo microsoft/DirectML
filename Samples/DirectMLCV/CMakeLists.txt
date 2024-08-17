@@ -71,6 +71,14 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # -----------------------------------------------------------------------------
 
 add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil onnxruntime d3d12 dxgi)
+target_link_libraries(directml_cv PRIVATE wil ort d3d12 dxgi)
 target_compile_features(directml_cv PRIVATE cxx_std_20)
 target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+add_custom_command(
+    TARGET directml_cv 
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ort_bin_dir}/onnxruntime.dll" $<TARGET_FILE_DIR:directml_cv>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_cv>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.debug.dll" $<TARGET_FILE_DIR:directml_cv>
+)
