@@ -21,6 +21,7 @@
 // #include "d3dx12.h"
 
 #include <optional>
+#include <span>
 #include <string>
 
 #include "onnxruntime_cxx_api.h"
@@ -28,7 +29,18 @@
 
 using Microsoft::WRL::ComPtr;
 
-std::vector<std::byte> ImageFilenameToNCHWTensorBuffer(std::wstring_view filename)
+struct ImageTensorData
+{
+    std::vector<std::byte> buffer;
+    std::vector<int64_t> shape;
+
+    const int64_t Channels() const { return shape[0]; }
+    const int64_t Height() const { return shape[1]; }
+    const int64_t Width() const { return shape[2]; }
+    const int64_t Pixels() const { return Height() * Width(); }
+};
+
+ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename)
 {
     ComPtr<IWICImagingFactory> wicFactory;
     THROW_IF_FAILED(CoCreateInstance(
@@ -105,16 +117,80 @@ std::vector<std::byte> ImageFilenameToNCHWTensorBuffer(std::wstring_view filenam
     float* pixelDataCHWFloat = reinterpret_cast<float*>(pixelDataCHW32bpc.data());
     for (size_t pixelIndex = 0; pixelIndex < height * width; pixelIndex++)
     {
-        float r = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 0]) / 255.0f;
-        float g = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 1]) / 255.0f;
-        float b = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 2]) / 255.0f;
+        float r = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 0]) / 255.0f;
+        float g = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 1]) / 255.0f;
+        float b = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 2]) / 255.0f;
 
         pixelDataCHWFloat[pixelIndex + 0 * height * width] = r;
         pixelDataCHWFloat[pixelIndex + 1 * height * width] = g;
         pixelDataCHWFloat[pixelIndex + 2 * height * width] = b;
     }
 
-    return pixelDataCHW32bpc;
+    return { pixelDataCHW32bpc, { channels, height, width } };
+}
+
+void SaveTensorDataToImageFilename(const ImageTensorData& tensorData, std::wstring_view filename)
+{
+    // Convert CHW tensor at 32 bits per channel to HWC tensor at 8 bits per channel
+    auto src = reinterpret_cast<const float*>(tensorData.buffer.data());
+    std::vector<BYTE> dst(tensorData.Pixels() * tensorData.Channels() * sizeof(std::byte));
+
+    for (size_t pixelIndex = 0; pixelIndex < tensorData.Pixels(); pixelIndex++)
+    {
+        float r = src[pixelIndex + 0 * tensorData.Pixels()];
+        float g = src[pixelIndex + 1 * tensorData.Pixels()];
+        float b = src[pixelIndex + 2 * tensorData.Pixels()];
+
+        dst[pixelIndex * tensorData.Channels() + 0] = static_cast<BYTE>(r * 255.0f);
+        dst[pixelIndex * tensorData.Channels() + 1] = static_cast<BYTE>(g * 255.0f);
+        dst[pixelIndex * tensorData.Channels() + 2] = static_cast<BYTE>(b * 255.0f);
+    }
+
+
+    ComPtr<IWICImagingFactory> wicFactory;
+    THROW_IF_FAILED(CoCreateInstance(
+        CLSID_WICImagingFactory,
+        nullptr,
+        CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&wicFactory)
+    ));
+
+    // Create a WIC bitmap
+    ComPtr<IWICBitmap> bitmap;
+    THROW_IF_FAILED(wicFactory->CreateBitmapFromMemory(
+        tensorData.Width(),
+        tensorData.Height(),
+        GUID_WICPixelFormat24bppRGB,
+        tensorData.Width() * tensorData.Channels(),
+        dst.size(),
+        dst.data(),
+        &bitmap
+    ));
+
+    ComPtr<IWICStream> stream;
+    THROW_IF_FAILED(wicFactory->CreateStream(&stream));
+
+    THROW_IF_FAILED(stream->InitializeFromFilename(filename.data(), GENERIC_WRITE));
+
+    ComPtr<IWICBitmapEncoder> encoder;
+    THROW_IF_FAILED(wicFactory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder));
+
+    THROW_IF_FAILED(encoder->Initialize(stream.Get(), WICBitmapEncoderNoCache));
+
+    ComPtr<IWICBitmapFrameEncode> frame;
+    ComPtr<IPropertyBag2> propertyBag;
+
+    THROW_IF_FAILED(encoder->CreateNewFrame(&frame, &propertyBag));
+
+    THROW_IF_FAILED(frame->Initialize(propertyBag.Get()));
+
+    THROW_IF_FAILED(frame->WriteSource(bitmap.Get(), nullptr));
+
+    THROW_IF_FAILED(frame->Commit());
+
+    THROW_IF_FAILED(encoder->Commit());
+
+    
 }
 
 std::tuple<ComPtr<IDMLDevice>, ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue()
@@ -183,7 +259,8 @@ int main(int argc, char** argv)
 
     // // ortSession.Run
 
-    ImageFilenameToNCHWTensorBuffer(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+    auto tensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+    SaveTensorDataToImageFilename(tensorData, LR"(C:\src\ort_sr_demo\zebra_out.jpg)");
 
     CoUninitialize();
 
