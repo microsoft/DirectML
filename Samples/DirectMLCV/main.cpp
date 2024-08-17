@@ -40,7 +40,7 @@ struct ImageTensorData
     const int64_t Pixels() const { return Height() * Width(); }
 };
 
-ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename)
+ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename, uint32_t targetHeight = 0, uint32_t targetWidth = 0)
 {
     ComPtr<IWICImagingFactory> wicFactory;
     THROW_IF_FAILED(CoCreateInstance(
@@ -65,8 +65,18 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename)
     ComPtr<IWICBitmapFrameDecode> frame;
     THROW_IF_FAILED(decoder->GetFrame(0, &frame));
 
-    UINT width, height;
-    THROW_IF_FAILED(frame->GetSize(&width, &height));
+    UINT originalWidth, originalHeight;
+    THROW_IF_FAILED(frame->GetSize(&originalWidth, &originalHeight));
+
+    if (targetHeight == 0)
+    {
+        targetHeight = originalHeight;
+    }
+
+    if (targetWidth == 0)
+    {
+        targetWidth = originalWidth;
+    }
 
     WICPixelFormatGUID pixelFormat;
     THROW_IF_FAILED(frame->GetPixelFormat(&pixelFormat));
@@ -99,12 +109,37 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename)
         bitmapSource = bitmap;
     }
 
+    if (originalWidth != targetWidth || originalHeight != targetHeight)
+    {
+        if (targetWidth == targetHeight)
+        {
+            uint32_t minSide = std::min(originalHeight, originalWidth);
+            WICRect cropRect = { 0, 0, static_cast<INT>(minSide), static_cast<INT>(minSide) };
+            ComPtr<IWICBitmapClipper> clipper;
+            THROW_IF_FAILED(wicFactory->CreateBitmapClipper(&clipper));
+            THROW_IF_FAILED(clipper->Initialize(bitmapSource.Get(), &cropRect));
+            bitmapSource = clipper;
+        }
+
+        ComPtr<IWICBitmapScaler> scaler;
+        THROW_IF_FAILED(wicFactory->CreateBitmapScaler(&scaler));
+
+        THROW_IF_FAILED(scaler->Initialize(
+            bitmapSource.Get(),
+            targetWidth,
+            targetHeight,
+            WICBitmapInterpolationModeFant
+        ));
+
+        bitmapSource = scaler;
+    }
+
     constexpr uint32_t channels = 3;
 
     // Read pixel data into HWC buffer with 8 bits per channel in RGB order
-    std::vector<std::byte> pixelDataHWC8bpc(height * width * channels * sizeof(std::byte));
-    const uint32_t pixelDataHWC8bpcStrideH = width * channels * sizeof(uint8_t);
-    WICRect rect = { 0, 0, static_cast<INT>(width), static_cast<INT>(height) };
+    std::vector<std::byte> pixelDataHWC8bpc(targetHeight * targetWidth * channels * sizeof(std::byte));
+    const uint32_t pixelDataHWC8bpcStrideH = targetWidth * channels * sizeof(uint8_t);
+    WICRect rect = { 0, 0, static_cast<INT>(targetWidth), static_cast<INT>(targetHeight) };
     THROW_IF_FAILED(bitmapSource->CopyPixels(
         &rect, 
         pixelDataHWC8bpcStrideH, 
@@ -113,20 +148,20 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename)
     ));
 
     // Convert pixel data to CHW buffer with 32 bits per channel in RGB order
-    std::vector<std::byte> pixelDataCHW32bpc(channels * height * width * sizeof(float));
+    std::vector<std::byte> pixelDataCHW32bpc(channels * targetHeight * targetWidth * sizeof(float));
     float* pixelDataCHWFloat = reinterpret_cast<float*>(pixelDataCHW32bpc.data());
-    for (size_t pixelIndex = 0; pixelIndex < height * width; pixelIndex++)
+    for (size_t pixelIndex = 0; pixelIndex < targetHeight * targetWidth; pixelIndex++)
     {
         float r = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 0]) / 255.0f;
         float g = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 1]) / 255.0f;
         float b = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 2]) / 255.0f;
 
-        pixelDataCHWFloat[pixelIndex + 0 * height * width] = r;
-        pixelDataCHWFloat[pixelIndex + 1 * height * width] = g;
-        pixelDataCHWFloat[pixelIndex + 2 * height * width] = b;
+        pixelDataCHWFloat[pixelIndex + 0 * targetHeight * targetWidth] = r;
+        pixelDataCHWFloat[pixelIndex + 1 * targetHeight * targetWidth] = g;
+        pixelDataCHWFloat[pixelIndex + 2 * targetHeight * targetWidth] = b;
     }
 
-    return { pixelDataCHW32bpc, { channels, height, width } };
+    return { pixelDataCHW32bpc, { channels, targetHeight, targetWidth } };
 }
 
 void SaveTensorDataToImageFilename(const ImageTensorData& tensorData, std::wstring_view filename)
@@ -259,7 +294,7 @@ int main(int argc, char** argv)
 
     // // ortSession.Run
 
-    auto tensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+    auto tensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", 128, 128);
     SaveTensorDataToImageFilename(tensorData, LR"(C:\src\ort_sr_demo\zebra_out.jpg)");
 
     CoUninitialize();
