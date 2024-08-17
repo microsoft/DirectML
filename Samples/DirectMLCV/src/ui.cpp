@@ -2,8 +2,82 @@
 
 #include <fstream>
 
+#include <wincodec.h>
+#include <wil/result.h>
+#include <wrl/client.h>
+
 UserInterface::UserInterface()
 {
+    // create image
+    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
+    Microsoft::WRL::ComPtr<IWICImagingFactory> wicFactory;
+    THROW_IF_FAILED(CoCreateInstance(
+        CLSID_WICImagingFactory,
+        nullptr,
+        CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&wicFactory)
+    ));
+
+    Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
+    THROW_IF_FAILED(wicFactory->CreateDecoderFromFilename(
+        LR"(C:\src\ort_sr_demo\zebra.jpg)",
+        nullptr,
+        GENERIC_READ,
+        WICDecodeMetadataCacheOnLoad,
+        &decoder
+    ));
+
+    UINT frameCount;
+    THROW_IF_FAILED(decoder->GetFrameCount(&frameCount));
+
+    Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+    THROW_IF_FAILED(decoder->GetFrame(0, &frame));
+
+    UINT width, height;
+    THROW_IF_FAILED(frame->GetSize(&width, &height));
+
+
+    WICPixelFormatGUID pixelFormat;
+    THROW_IF_FAILED(frame->GetPixelFormat(&pixelFormat));
+
+    Microsoft::WRL::ComPtr<IWICBitmapSource> bitmapSource = frame;
+
+    // convert to 24bppRGB (most ML models expect 3 channels, not 4)
+    constexpr bool modelExpectsRGB = true;
+    WICPixelFormatGUID desiredFormat = modelExpectsRGB ? GUID_WICPixelFormat24bppRGB : GUID_WICPixelFormat32bppBGR;
+    if (pixelFormat != desiredFormat)
+    {
+        Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+        THROW_IF_FAILED(wicFactory->CreateFormatConverter(&converter));
+
+        THROW_IF_FAILED(converter->Initialize(
+            frame.Get(),
+            GUID_WICPixelFormat24bppRGB,
+            WICBitmapDitherTypeNone,
+            nullptr,
+            0.0f,
+            WICBitmapPaletteTypeCustom
+        ));
+
+        Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
+        THROW_IF_FAILED(wicFactory->CreateBitmapFromSource(
+            converter.Get(), 
+            WICBitmapCacheOnLoad, 
+            &bitmap
+        ));
+
+        bitmapSource = bitmap;
+    }
+
+    // bitmapSource->CopyPixels();
+
+
+    // GUID_WICPixelFormat24bppBGR
+    // GUID_WICPixelFormat24bppRGB
+    // GUID_WICPixelFormat32bppBGR - has alpha channel
+    
+
 
 }
 
