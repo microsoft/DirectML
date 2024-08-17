@@ -295,7 +295,7 @@ int main(int argc, char** argv)
     // // ortSession.Run
 
     auto tensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", 128, 128);
-    SaveTensorDataToImageFilename(tensorData, LR"(C:\src\ort_sr_demo\zebra_out.jpg)");
+    SaveTensorDataToImageFilename(tensorData, LR"(C:\src\ort_sr_demo\zebra_out.png)");
 
     CoUninitialize();
 
