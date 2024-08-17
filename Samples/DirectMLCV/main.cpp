@@ -28,7 +28,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-void CopyPixelDataFromImageFilename(std::wstring_view filename)
+std::vector<std::byte> ImageFilenameToNCHWTensorBuffer(std::wstring_view filename)
 {
     ComPtr<IWICImagingFactory> wicFactory;
     THROW_IF_FAILED(CoCreateInstance(
@@ -56,15 +56,13 @@ void CopyPixelDataFromImageFilename(std::wstring_view filename)
     UINT width, height;
     THROW_IF_FAILED(frame->GetSize(&width, &height));
 
-
     WICPixelFormatGUID pixelFormat;
     THROW_IF_FAILED(frame->GetPixelFormat(&pixelFormat));
 
     ComPtr<IWICBitmapSource> bitmapSource = frame;
 
-    // convert to 24bppRGB (most ML models expect 3 channels, not 4)
     constexpr bool modelExpectsRGB = true;
-    WICPixelFormatGUID desiredFormat = modelExpectsRGB ? GUID_WICPixelFormat24bppRGB : GUID_WICPixelFormat32bppBGR;
+    WICPixelFormatGUID desiredFormat = modelExpectsRGB ? GUID_WICPixelFormat24bppRGB : GUID_WICPixelFormat24bppBGR;
     if (pixelFormat != desiredFormat)
     {
         Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
@@ -87,7 +85,36 @@ void CopyPixelDataFromImageFilename(std::wstring_view filename)
         ));
 
         bitmapSource = bitmap;
-    } 
+    }
+
+    constexpr uint32_t channels = 3;
+
+    // Read pixel data into HWC buffer with 8 bits per channel in RGB order
+    std::vector<std::byte> pixelDataHWC8bpc(height * width * channels * sizeof(std::byte));
+    const uint32_t pixelDataHWC8bpcStrideH = width * channels * sizeof(uint8_t);
+    WICRect rect = { 0, 0, static_cast<INT>(width), static_cast<INT>(height) };
+    THROW_IF_FAILED(bitmapSource->CopyPixels(
+        &rect, 
+        pixelDataHWC8bpcStrideH, 
+        pixelDataHWC8bpc.size(), 
+        reinterpret_cast<BYTE*>(pixelDataHWC8bpc.data())
+    ));
+
+    // Convert pixel data to CHW buffer with 32 bits per channel in RGB order
+    std::vector<std::byte> pixelDataCHW32bpc(channels * height * width * sizeof(float));
+    float* pixelDataCHWFloat = reinterpret_cast<float*>(pixelDataCHW32bpc.data());
+    for (size_t pixelIndex = 0; pixelIndex < height * width; pixelIndex++)
+    {
+        float r = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 0]) / 255.0f;
+        float g = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 1]) / 255.0f;
+        float b = static_cast<float>(pixelDataHWC8bpc[pixelIndex * 3 + 2]) / 255.0f;
+
+        pixelDataCHWFloat[pixelIndex + 0 * height * width] = r;
+        pixelDataCHWFloat[pixelIndex + 1 * height * width] = g;
+        pixelDataCHWFloat[pixelIndex + 2 * height * width] = b;
+    }
+
+    return pixelDataCHW32bpc;
 }
 
 std::tuple<ComPtr<IDMLDevice>, ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue()
@@ -135,13 +162,28 @@ int main(int argc, char** argv)
 {
     THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
-    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
-    auto ortSession = CreateOnnxRuntimeSession(dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\xlsr.onnx)");
 
-    // load input image
+    // auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
-    CopyPixelDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+    // auto ortSession = CreateOnnxRuntimeSession(dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\xlsr.onnx)");
+
+    // // NCHW
+
+    // // load input image
+
+    // // Ort::Value inputTensor = Ort::Value::CreateTensor<float>({ 1, 3, 128, 128 }, dmlDevice.Get());
+
+    // Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+    // auto inputTensor = Ort::Value::CreateTensor<float>(memoryInfo, data, dataSizeInElements,  shape, 4);
+
+
+    // // ortApi.CreateTensorWithDataAsOrtValue(dmlDevice.Get(), inputTensor.Get(), inputTensor.GetElementCount(), inputTensor.GetElementSize(), inputTensor.GetData(), inputTensor.GetAllocatedDataSize(), inputTensor.GetElementType());
+
+    // // ortSession.Run
+
+    ImageFilenameToNCHWTensorBuffer(LR"(C:\src\ort_sr_demo\zebra.jpg)");
 
     CoUninitialize();
 
