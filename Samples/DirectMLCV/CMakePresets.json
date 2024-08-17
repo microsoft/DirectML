@@ -1,0 +1,58 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "vs2022",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": { 
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/${presetName}/install"
+            },
+            "vendor": { "microsoft.com/VisualStudioSettings/CMake/1.0": { "hostOS": [ "Windows" ] } }
+        },
+        { 
+            "name": "win-x64",
+            "displayName": "Windows x64",
+            "inherits": "vs2022",
+            "architecture": { "value": "x64", "strategy": "set" }
+        },
+        { 
+            "name": "win-arm64",
+            "displayName": "Windows x64",
+            "inherits": "vs2022",
+            "architecture": { "value": "arm64", "strategy": "set" }
+        }
+    ],
+
+    "buildPresets": [
+        {
+            "name": "win-x64-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-x64",
+            "configuration": "Debug",
+            "nativeToolOptions": ["/m"]
+        },
+        {
+            "name": "win-x64-release",
+            "displayName": "Release",
+            "configurePreset": "win-x64",
+            "configuration": "Release",
+            "nativeToolOptions": ["/m"]
+        },
+        {
+            "name": "win-arm64-debug",
+            "displayName": "Debug",
+            "configurePreset": "win-arm64",
+            "configuration": "Debug",
+            "nativeToolOptions": ["/m"]
+        },
+        {
+            "name": "win-arm64-release",
+            "displayName": "Release",
+            "configurePreset": "win-arm64",
+            "configuration": "Release",
+            "nativeToolOptions": ["/m"]
+        }
+    ]
+}
