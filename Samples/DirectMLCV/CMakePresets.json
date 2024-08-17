@@ -19,7 +19,7 @@
         },
         { 
             "name": "win-arm64",
-            "displayName": "Windows x64",
+            "displayName": "Windows ARM64",
             "inherits": "vs2022",
             "architecture": { "value": "arm64", "strategy": "set" }
         }

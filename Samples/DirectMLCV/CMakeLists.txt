@@ -6,9 +6,13 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 
 include(FetchContent)
 
-# ------------------------------------
-# imgui
-# ------------------------------------
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+  endif()
+
+# -----------------------------------------------------------------------------
+# imgui - graphical user interface
+# -----------------------------------------------------------------------------
 FetchContent_Declare(
     imgui
     URL https://github.com/ocornut/imgui/archive/refs/tags/v1.91.0.zip
@@ -29,9 +33,9 @@ add_library(imgui STATIC
 
 target_include_directories(imgui PUBLIC "${imgui_SOURCE_DIR}" "${imgui_SOURCE_DIR}/backends")
 
-# ------------------------------------
-# wil
-# ------------------------------------
+# -----------------------------------------------------------------------------
+# wil - Windows-related helper types/macros
+# -----------------------------------------------------------------------------
 FetchContent_Declare(
     wil
     URL https://github.com/microsoft/wil/archive/refs/tags/v1.0.240803.1.zip
@@ -46,9 +50,9 @@ endif()
 add_library(wil INTERFACE)
 target_include_directories(wil INTERFACE "${wil_SOURCE_DIR}/include")
 
-# ------------------------------------
-# sample executable
-# ------------------------------------
+# -----------------------------------------------------------------------------
+# main sample source
+# -----------------------------------------------------------------------------
 
 add_executable(
     directml_cv 
@@ -58,6 +62,8 @@ add_executable(
     src/app.h
     src/swapchain.cpp
     src/swapchain.h
+    src/ui.cpp
+    src/ui.h
 )
 target_link_libraries(directml_cv PRIVATE imgui wil d3d12 dxgi)
 target_compile_features(directml_cv PRIVATE cxx_std_20)

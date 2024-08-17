@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include "SwapChain.h"
+#include "ui.h"
 
 class App
 {
@@ -22,6 +23,7 @@ private:
     float m_aspectRatio = 1.0f;
     HWND m_hwnd = 0;
     bool m_running = true;
+    UserInterface m_ui;
 
     Microsoft::WRL::ComPtr<ID3D12Device5> m_device;
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;

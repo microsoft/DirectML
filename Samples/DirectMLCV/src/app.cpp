@@ -189,7 +189,7 @@ void App::Render()
     ImGui_ImplDX12_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
-    // m_userInterface.RenderFrame(m_windowWidth, m_windowHeight);
+    m_ui.RenderFrame(m_windowWidth, m_windowHeight);
     ImGui::Render();
 
     SwapChain::FrameBuffer& backBuffer = m_swapChain->StartFrame(m_commandList.Get());
