@@ -46,7 +46,7 @@ FetchContent_MakeAvailable(ort)
 set(ort_bin_dir "${ort_SOURCE_DIR}/runtimes/win-${TARGET_ARCH}/native")
 
 add_library(ort INTERFACE)
-target_include_directories(ort INTERFACE "${${content}_SOURCE_DIR}/build/native/include")
+target_include_directories(ort INTERFACE "${ort_SOURCE_DIR}/build/native/include")
 target_link_libraries(ort INTERFACE "${ort_bin_dir}/onnxruntime.lib")
 
 # -----------------------------------------------------------------------------
@@ -71,7 +71,7 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # -----------------------------------------------------------------------------
 
 add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil ort d3d12 dxgi)
+target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxgi)
 target_compile_features(directml_cv PRIVATE cxx_std_20)
 target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 

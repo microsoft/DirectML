@@ -23,6 +23,9 @@
 #include <optional>
 #include <string>
 
+#include "onnxruntime_cxx_api.h"
+#include "dml_provider_factory.h"
+
 using Microsoft::WRL::ComPtr;
 
 void CopyPixelDataFromImageFilename(std::wstring_view filename)
@@ -87,14 +90,58 @@ void CopyPixelDataFromImageFilename(std::wstring_view filename)
     } 
 }
 
+std::tuple<ComPtr<IDMLDevice>, ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue()
+{
+    ComPtr<ID3D12Device> d3d12Device;
+    THROW_IF_FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&d3d12Device)));
+
+    ComPtr<IDMLDevice> dmlDevice;
+    THROW_IF_FAILED(DMLCreateDevice(d3d12Device.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&dmlDevice)));
+
+    D3D12_COMMAND_QUEUE_DESC queueDesc = 
+    {
+        .Type = D3D12_COMMAND_LIST_TYPE_COMPUTE,
+        .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
+        .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+        .NodeMask = 0
+    };
+
+    ComPtr<ID3D12CommandQueue> commandQueue;
+    THROW_IF_FAILED(d3d12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
+
+    return { dmlDevice, commandQueue };
+}
+
+Ort::Session CreateOnnxRuntimeSession(IDMLDevice* dmlDevice, ID3D12CommandQueue* commandQueue, std::wstring_view modelPath)
+{
+    const OrtApi& ortApi = Ort::GetApi();
+    // Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
+
+    Ort::SessionOptions sessionOptions;
+    sessionOptions.DisablePerSessionThreads();
+    sessionOptions.DisableMemPattern();
+    sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+
+    const OrtDmlApi* ortDmlApi = nullptr;
+    Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
+    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, dmlDevice, commandQueue));
+
+    Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
+
+    return Ort::Session(env, modelPath.data(), sessionOptions);
+}
+
 int main(int argc, char** argv)
 {
     THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
-    // load ort model session
+    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
+    auto ortSession = CreateOnnxRuntimeSession(dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\xlsr.onnx)");
 
-    // ImageTensorFromFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
+    // load input image
+
+    CopyPixelDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)");
 
     CoUninitialize();
 
