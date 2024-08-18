@@ -34,9 +34,9 @@ struct ImageTensorData
     std::vector<std::byte> buffer;
     std::vector<int64_t> shape;
 
-    const int64_t Channels() const { return shape[0]; }
-    const int64_t Height() const { return shape[1]; }
-    const int64_t Width() const { return shape[2]; }
+    const int64_t Channels() const { return shape[1]; }
+    const int64_t Height() const { return shape[2]; }
+    const int64_t Width() const { return shape[3]; }
     const int64_t Pixels() const { return Height() * Width(); }
 };
 
@@ -161,7 +161,7 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename, uint
         pixelDataCHWFloat[pixelIndex + 2 * targetHeight * targetWidth] = b;
     }
 
-    return { pixelDataCHW32bpc, { channels, targetHeight, targetWidth } };
+    return { pixelDataCHW32bpc, { 1, channels, targetHeight, targetWidth } };
 }
 
 void SaveTensorDataToImageFilename(const ImageTensorData& tensorData, std::wstring_view filename)
@@ -250,21 +250,17 @@ std::tuple<ComPtr<IDMLDevice>, ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCom
     return { dmlDevice, commandQueue };
 }
 
-Ort::Session CreateOnnxRuntimeSession(IDMLDevice* dmlDevice, ID3D12CommandQueue* commandQueue, std::wstring_view modelPath)
+Ort::Session CreateOnnxRuntimeSession(Ort::Env& env, IDMLDevice* dmlDevice, ID3D12CommandQueue* commandQueue, std::wstring_view modelPath)
 {
     const OrtApi& ortApi = Ort::GetApi();
-    // Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&m_ortDmlApi)));
 
     Ort::SessionOptions sessionOptions;
-    sessionOptions.DisablePerSessionThreads();
     sessionOptions.DisableMemPattern();
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
 
     const OrtDmlApi* ortDmlApi = nullptr;
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, dmlDevice, commandQueue));
-
-    Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
 
     return Ort::Session(env, modelPath.data(), sessionOptions);
 }
@@ -273,29 +269,61 @@ int main(int argc, char** argv)
 {
     THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
+    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
+
+    Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
+    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\xlsr.onnx)");
+
+    auto inputInfo = ortSession.GetInputTypeInfo(0);
+    auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
+    auto inputTensorShape = inputTensorInfo.GetShape();
+    auto inputTensorType = inputTensorInfo.GetElementType();
+
+    auto outputInfo = ortSession.GetOutputTypeInfo(0);
+    auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
+    auto outputTensorShape = outputTensorInfo.GetShape();
+    auto outputTensorType = outputTensorInfo.GetElementType();
+
+    auto inputTensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
+    SaveTensorDataToImageFilename(inputTensorData, LR"(C:\src\ort_sr_demo\input_tensor.png)");
+
+    const OrtApi& ortApi = Ort::GetApi();
+
+    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    auto inputTensor = Ort::Value::CreateTensor(
+        memoryInfo, 
+        inputTensorData.buffer.data(), 
+        inputTensorData.buffer.size(), 
+        inputTensorData.shape.data(), 
+        inputTensorData.shape.size(),
+        inputTensorType
+    );
+
+    Ort::RunOptions runOpts{nullptr};
+
+    std::vector<const char*> inputNames = { "image" };
+    std::vector<const char*> outputNames = { "output_0" };
+
+    auto results = ortSession.Run(
+        runOpts, 
+        inputNames.data(), 
+        &inputTensor, 
+        1, 
+        outputNames.data(), 
+        1
+    );
 
 
-    // auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
+    // TODO: silly to copy
+    float* outputData = results[0].GetTensorMutableData<float>();
+    std::vector<std::byte> outputTensorDataBuffer(512 * 512 * 3 * sizeof(float));
+    std::memcpy(outputTensorDataBuffer.data(), outputData, 512*512*3*sizeof(float));
+    ImageTensorData outputTensorData = { 
+        outputTensorDataBuffer, 
+        results[0].GetTensorTypeAndShapeInfo().GetShape() 
+    };
 
-    // auto ortSession = CreateOnnxRuntimeSession(dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\xlsr.onnx)");
-
-    // // NCHW
-
-    // // load input image
-
-    // // Ort::Value inputTensor = Ort::Value::CreateTensor<float>({ 1, 3, 128, 128 }, dmlDevice.Get());
-
-    // Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-
-    // auto inputTensor = Ort::Value::CreateTensor<float>(memoryInfo, data, dataSizeInElements,  shape, 4);
-
-
-    // // ortApi.CreateTensorWithDataAsOrtValue(dmlDevice.Get(), inputTensor.Get(), inputTensor.GetElementCount(), inputTensor.GetElementSize(), inputTensor.GetData(), inputTensor.GetAllocatedDataSize(), inputTensor.GetElementType());
-
-    // // ortSession.Run
-
-    auto tensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", 128, 128);
-    SaveTensorDataToImageFilename(tensorData, LR"(C:\src\ort_sr_demo\zebra_out.png)");
+    SaveTensorDataToImageFilename(outputTensorData, LR"(C:\src\ort_sr_demo\output_tensor.png)");
 
     CoUninitialize();
 
