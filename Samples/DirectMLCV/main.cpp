@@ -272,7 +272,7 @@ int main(int argc, char** argv)
     auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
     Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
-    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(xlsr.onnx)");
+    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\esrgan.onnx)");
 
     auto inputInfo = ortSession.GetInputTypeInfo(0);
     auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
@@ -284,8 +284,8 @@ int main(int argc, char** argv)
     auto outputTensorShape = outputTensorInfo.GetShape();
     auto outputTensorType = outputTensorInfo.GetElementType();
 
-    auto inputTensorData = LoadTensorDataFromImageFilename(LR"(zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
-    SaveTensorDataToImageFilename(inputTensorData, LR"(input_tensor.png)");
+    auto inputTensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
+    SaveTensorDataToImageFilename(inputTensorData, LR"(C:\src\ort_sr_demo\input_tensor.png)");
 
     const OrtApi& ortApi = Ort::GetApi();
 
