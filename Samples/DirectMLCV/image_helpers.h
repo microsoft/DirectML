@@ -158,79 +158,103 @@ void FillNCHWBufferFromImageFilename(
 
     // Copy to CHW buffer with 32 bits (float) per channel element
     std::span<float> bufferCHW_Float(reinterpret_cast<float*>(buffer.data()), buffer.size_bytes() / sizeof(float));
-    float* floatBuffer = reinterpret_cast<float*>(buffer.data());
-    for (size_t pixelIndex = 0; pixelIndex < targetHeight * width; pixelIndex++)
+    for (size_t pixelIndex = 0; pixelIndex < bufferHeight * bufferWidth; pixelIndex++)
     {
-        float r = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 0]) / 255.0f;
-        float g = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 1]) / 255.0f;
-        float b = static_cast<float>(pixelDataHWC8bpc[pixelIndex * channels + 2]) / 255.0f;
+        float r = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 0]) / 255.0f;
+        float g = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 1]) / 255.0f;
+        float b = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 2]) / 255.0f;
 
-        buffer[pixelIndex + 0 * targetHeight * width] = r;
-        buffer[pixelIndex + 1 * targetHeight * width] = g;
-        buffer[pixelIndex + 2 * targetHeight * width] = b;
+        bufferCHW_Float[pixelIndex + 0 * bufferHeight * bufferWidth] = r;
+        bufferCHW_Float[pixelIndex + 1 * bufferHeight * bufferWidth] = g;
+        bufferCHW_Float[pixelIndex + 2 * bufferHeight * bufferWidth] = b;
     }
-
-    // return { pixelDataCHW32bpc, { 1, channels, targetHeight, width } };
 }
 
-// void SaveTensorDataToImageFilename(const ImageTensorData& tensorData, std::wstring_view filename)
-// {
-//     // Convert CHW tensor at 32 bits per channel to HWC tensor at 8 bits per channel
-//     auto src = reinterpret_cast<const float*>(tensorData.buffer.data());
-//     std::vector<BYTE> dst(tensorData.Pixels() * tensorData.Channels() * sizeof(std::byte));
+void SaveNCHWBufferToImageFilename(
+    std::wstring_view filename,
+    std::span<const std::byte> buffer,
+    uint32_t bufferHeight,
+    uint32_t bufferWidth,
+    DataType bufferDataType = DataType::Float32,
+    ChannelOrder bufferChannelOrder = ChannelOrder::RGB)
+{
+    using Microsoft::WRL::ComPtr;
 
-//     for (size_t pixelIndex = 0; pixelIndex < tensorData.Pixels(); pixelIndex++)
-//     {
-//         float r = src[pixelIndex + 0 * tensorData.Pixels()];
-//         float g = src[pixelIndex + 1 * tensorData.Pixels()];
-//         float b = src[pixelIndex + 2 * tensorData.Pixels()];
+    uint32_t bufferChannels = 0;
+    WICPixelFormatGUID desiredImagePixelFormat = GUID_WICPixelFormatDontCare;
+    switch (bufferChannelOrder)
+    {
+        case ChannelOrder::RGB:
+            bufferChannels = 3;
+            desiredImagePixelFormat = GUID_WICPixelFormat24bppRGB;
+            break;
 
-//         dst[pixelIndex * tensorData.Channels() + 0] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, r)) * 255.0f);
-//         dst[pixelIndex * tensorData.Channels() + 1] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, g)) * 255.0f);
-//         dst[pixelIndex * tensorData.Channels() + 2] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, b)) * 255.0f);
-//     }
+        case ChannelOrder::BGR:
+            bufferChannels = 3;
+            desiredImagePixelFormat = GUID_WICPixelFormat24bppBGR;
+            break;
 
+        default:
+            throw std::invalid_argument("Unsupported channel order");
+    }
 
-//     ComPtr<IWICImagingFactory> wicFactory;
-//     THROW_IF_FAILED(CoCreateInstance(
-//         CLSID_WICImagingFactory,
-//         nullptr,
-//         CLSCTX_INPROC_SERVER,
-//         IID_PPV_ARGS(&wicFactory)
-//     ));
+    uint32_t outputBufferSizeInBytes = bufferChannels * bufferHeight * bufferWidth;
+    switch (bufferDataType)
+    {
+        case DataType::Float32:
+            outputBufferSizeInBytes *= sizeof(float);
+            break;
 
-//     // Create a WIC bitmap
-//     ComPtr<IWICBitmap> bitmap;
-//     THROW_IF_FAILED(wicFactory->CreateBitmapFromMemory(
-//         tensorData.Width(),
-//         tensorData.Height(),
-//         GUID_WICPixelFormat24bppRGB,
-//         tensorData.Width() * tensorData.Channels(),
-//         dst.size(),
-//         dst.data(),
-//         &bitmap
-//     ));
+        default:
+            throw std::invalid_argument("Unsupported data type");
+    }
 
-//     ComPtr<IWICStream> stream;
-//     THROW_IF_FAILED(wicFactory->CreateStream(&stream));
+    std::vector<BYTE> bufferHWC_Uint8(outputBufferSizeInBytes);
 
-//     THROW_IF_FAILED(stream->InitializeFromFilename(filename.data(), GENERIC_WRITE));
+    std::span<const float> bufferCHW_Float(reinterpret_cast<const float*>(buffer.data()), buffer.size_bytes() / sizeof(float));
+    for (size_t pixelIndex = 0; pixelIndex < bufferHeight * bufferWidth; pixelIndex++)
+    {
+        BYTE r = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 0 * bufferHeight * bufferWidth])) * 255.0f);
+        BYTE g = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 1 * bufferHeight * bufferWidth])) * 255.0f);
+        BYTE b = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 2 * bufferHeight * bufferWidth])) * 255.0f);
 
-//     ComPtr<IWICBitmapEncoder> encoder;
-//     THROW_IF_FAILED(wicFactory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder));
+        bufferHWC_Uint8[pixelIndex * bufferChannels + 0] = r;
+        bufferHWC_Uint8[pixelIndex * bufferChannels + 1] = g;
+        bufferHWC_Uint8[pixelIndex * bufferChannels + 2] = b;
+    }
 
-//     THROW_IF_FAILED(encoder->Initialize(stream.Get(), WICBitmapEncoderNoCache));
+    ComPtr<IWICImagingFactory> wicFactory;
+    THROW_IF_FAILED(CoCreateInstance(
+        CLSID_WICImagingFactory,
+        nullptr,
+        CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&wicFactory)
+    ));
 
-//     ComPtr<IWICBitmapFrameEncode> frame;
-//     ComPtr<IPropertyBag2> propertyBag;
+    ComPtr<IWICBitmap> bitmap;
+    THROW_IF_FAILED(wicFactory->CreateBitmapFromMemory(
+        bufferWidth,
+        bufferHeight,
+        desiredImagePixelFormat,
+        bufferWidth * bufferChannels,
+        bufferHWC_Uint8.size(),
+        bufferHWC_Uint8.data(),
+        &bitmap
+    ));
 
-//     THROW_IF_FAILED(encoder->CreateNewFrame(&frame, &propertyBag));
+    ComPtr<IWICStream> stream;
+    THROW_IF_FAILED(wicFactory->CreateStream(&stream));
+    THROW_IF_FAILED(stream->InitializeFromFilename(filename.data(), GENERIC_WRITE));
 
-//     THROW_IF_FAILED(frame->Initialize(propertyBag.Get()));
+    ComPtr<IWICBitmapEncoder> encoder;
+    THROW_IF_FAILED(wicFactory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder));
+    THROW_IF_FAILED(encoder->Initialize(stream.Get(), WICBitmapEncoderNoCache));
 
-//     THROW_IF_FAILED(frame->WriteSource(bitmap.Get(), nullptr));
-
-//     THROW_IF_FAILED(frame->Commit());
-
-//     THROW_IF_FAILED(encoder->Commit());
-// }
+    ComPtr<IWICBitmapFrameEncode> frame;
+    ComPtr<IPropertyBag2> propertyBag;
+    THROW_IF_FAILED(encoder->CreateNewFrame(&frame, &propertyBag));
+    THROW_IF_FAILED(frame->Initialize(propertyBag.Get()));
+    THROW_IF_FAILED(frame->WriteSource(bitmap.Get(), nullptr));
+    THROW_IF_FAILED(frame->Commit());
+    THROW_IF_FAILED(encoder->Commit());
+}
