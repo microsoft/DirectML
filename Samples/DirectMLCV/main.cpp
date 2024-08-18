@@ -99,14 +99,7 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename, uint
             WICBitmapPaletteTypeCustom
         ));
 
-        Microsoft::WRL::ComPtr<IWICBitmap> bitmap;
-        THROW_IF_FAILED(wicFactory->CreateBitmapFromSource(
-            converter.Get(), 
-            WICBitmapCacheOnLoad, 
-            &bitmap
-        ));
-
-        bitmapSource = bitmap;
+        bitmapSource = converter;
     }
 
     if (originalWidth != targetWidth || originalHeight != targetHeight)
@@ -128,7 +121,7 @@ ImageTensorData LoadTensorDataFromImageFilename(std::wstring_view filename, uint
             bitmapSource.Get(),
             targetWidth,
             targetHeight,
-            WICBitmapInterpolationModeFant
+            WICBitmapInterpolationModeHighQualityCubic
         ));
 
         bitmapSource = scaler;
@@ -272,7 +265,7 @@ int main(int argc, char** argv)
     auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
     Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
-    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(C:\src\ort_sr_demo\esrgan.onnx)");
+    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(esrgan.onnx)");
 
     auto inputInfo = ortSession.GetInputTypeInfo(0);
     auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
@@ -284,8 +277,8 @@ int main(int argc, char** argv)
     auto outputTensorShape = outputTensorInfo.GetShape();
     auto outputTensorType = outputTensorInfo.GetElementType();
 
-    auto inputTensorData = LoadTensorDataFromImageFilename(LR"(C:\src\ort_sr_demo\zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
-    SaveTensorDataToImageFilename(inputTensorData, LR"(C:\src\ort_sr_demo\input_tensor.png)");
+    auto inputTensorData = LoadTensorDataFromImageFilename(LR"(zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
+    SaveTensorDataToImageFilename(inputTensorData, LR"(input_tensor.png)");
 
     const OrtApi& ortApi = Ort::GetApi();
 
@@ -323,7 +316,7 @@ int main(int argc, char** argv)
         results[0].GetTensorTypeAndShapeInfo().GetShape() 
     };
 
-    SaveTensorDataToImageFilename(outputTensorData, LR"(C:\src\ort_sr_demo\output_tensor.png)");
+    SaveTensorDataToImageFilename(outputTensorData, LR"(output_tensor.png)");
 
     CoUninitialize();
 
