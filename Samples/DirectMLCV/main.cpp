@@ -69,66 +69,74 @@ int main(int argc, char** argv)
 {
     THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
-    uint32_t inputChannels = 3;
-    uint32_t inputHeight = 128;
-    uint32_t inputWidth = 128;
+    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
+
+    const OrtApi& ortApi = Ort::GetApi();
+
+    Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
+    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(esrgan.onnx)");
+
+    if (ortSession.GetInputCount() != 1 && ortSession.GetOutputCount() != 1)
+    {
+        throw std::invalid_argument("Model must have exactly one input and one output");
+    }
+
+    auto inputInfo = ortSession.GetInputTypeInfo(0);
+    auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
+    auto inputTensorShape = inputTensorInfo.GetShape();
+    auto inputTensorType = inputTensorInfo.GetElementType();
+    if (inputTensorType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+    {
+        throw std::invalid_argument("Model input must be of type float32");
+    }
+
+    // Load image and transform it into an NCHW tensor with the correct shape and data type.
+    const uint32_t inputChannels = inputTensorShape[1];
+    const uint32_t inputHeight = inputTensorShape[2];
+    const uint32_t inputWidth = inputTensorShape[3];
     std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * sizeof(float));
     FillNCHWBufferFromImageFilename(LR"(zebra.jpg)", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
+    SaveNCHWBufferToImageFilename(LR"(input_image.png)", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
 
-    // auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
+    Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    auto inputTensor = Ort::Value::CreateTensor(
+        memoryInfo, 
+        inputBuffer.data(), 
+        inputBuffer.size(), 
+        inputTensorShape.data(), 
+        inputTensorShape.size(),
+        inputTensorType
+    );
 
-    // Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
-    // auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(esrgan.onnx)");
+    auto outputInfo = ortSession.GetOutputTypeInfo(0);
+    auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
+    auto outputTensorShape = outputTensorInfo.GetShape();
+    auto outputTensorType = outputTensorInfo.GetElementType();
+    if (outputTensorType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+    {
+        throw std::invalid_argument("Model output must be of type float32");
+    }
 
-    // auto inputInfo = ortSession.GetInputTypeInfo(0);
-    // auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
-    // auto inputTensorShape = inputTensorInfo.GetShape();
-    // auto inputTensorType = inputTensorInfo.GetElementType();
+    const uint32_t outputChannels = outputTensorShape[1];
+    const uint32_t outputHeight = outputTensorShape[2];
+    const uint32_t outputWidth = outputTensorShape[3];
 
-    // auto outputInfo = ortSession.GetOutputTypeInfo(0);
-    // auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
-    // auto outputTensorShape = outputTensorInfo.GetShape();
-    // auto outputTensorType = outputTensorInfo.GetElementType();
+    Ort::RunOptions runOpts;
+    std::vector<const char*> inputNames = { "image" };
+    std::vector<const char*> outputNames = { "output_0" };
 
-    // auto inputTensorData = LoadTensorDataFromImageFilename(LR"(zebra.jpg)", inputTensorShape[2], inputTensorShape[3]);
-    // SaveTensorDataToImageFilename(inputTensorData, LR"(input_tensor.png)");
+    auto outputs = ortSession.Run(runOpts, inputNames.data(), &inputTensor, 1, outputNames.data(), 1);
 
-    // const OrtApi& ortApi = Ort::GetApi();
+    std::span<const std::byte> outputBuffer(reinterpret_cast<const std::byte*>(outputs[0].GetTensorData<float>()), outputChannels * outputHeight * outputWidth * sizeof(float));
 
-    // Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-    // auto inputTensor = Ort::Value::CreateTensor(
-    //     memoryInfo, 
-    //     inputTensorData.buffer.data(), 
-    //     inputTensorData.buffer.size(), 
-    //     inputTensorData.shape.data(), 
-    //     inputTensorData.shape.size(),
-    //     inputTensorType
-    // );
-
-    // Ort::RunOptions runOpts{nullptr};
-
-    // std::vector<const char*> inputNames = { "image" };
-    // std::vector<const char*> outputNames = { "output_0" };
-
-    // auto results = ortSession.Run(
-    //     runOpts, 
-    //     inputNames.data(), 
-    //     &inputTensor, 
-    //     1, 
-    //     outputNames.data(), 
-    //     1
-    // );
-
-    // // TODO: silly to copy
-    // float* outputData = results[0].GetTensorMutableData<float>();
-    // std::vector<std::byte> outputTensorDataBuffer(512 * 512 * 3 * sizeof(float));
-    // std::memcpy(outputTensorDataBuffer.data(), outputData, 512*512*3*sizeof(float));
-    // ImageTensorData outputTensorData = { 
-    //     outputTensorDataBuffer, 
-    //     results[0].GetTensorTypeAndShapeInfo().GetShape() 
-    // };
-
-    // SaveTensorDataToImageFilename(outputTensorData, LR"(output_tensor.png)");
+    SaveNCHWBufferToImageFilename(
+        LR"(output_image.png)", 
+        outputBuffer, 
+        outputHeight, 
+        outputWidth, 
+        DataType::Float32, 
+        ChannelOrder::RGB
+    );
 
     CoUninitialize();
 
