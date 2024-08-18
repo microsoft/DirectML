@@ -176,9 +176,9 @@ void SaveTensorDataToImageFilename(const ImageTensorData& tensorData, std::wstri
         float g = src[pixelIndex + 1 * tensorData.Pixels()];
         float b = src[pixelIndex + 2 * tensorData.Pixels()];
 
-        dst[pixelIndex * tensorData.Channels() + 0] = static_cast<BYTE>(r * 255.0f);
-        dst[pixelIndex * tensorData.Channels() + 1] = static_cast<BYTE>(g * 255.0f);
-        dst[pixelIndex * tensorData.Channels() + 2] = static_cast<BYTE>(b * 255.0f);
+        dst[pixelIndex * tensorData.Channels() + 0] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, r)) * 255.0f);
+        dst[pixelIndex * tensorData.Channels() + 1] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, g)) * 255.0f);
+        dst[pixelIndex * tensorData.Channels() + 2] = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, b)) * 255.0f);
     }
 
 
