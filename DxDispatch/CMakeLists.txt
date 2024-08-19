@@ -5,6 +5,10 @@ project(dxdispatch VERSION 0.18.1 LANGUAGES CXX)
 # External Libraries/Helpers
 # ==============================================================================
 
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 include(FetchContent)
 include(cmake/helper_platform.cmake)
 
