@@ -35,10 +35,11 @@ Run CMake to configure and build the sample:
 
 ## Run
 
-Run the compiled executable to 
+Running the compiled executable will list all enumerate DX adapters, select a DX adapter (by default the first), then use this adapter to run inference with the model:
+
 ```
 > cd build/win-<arch>/<config>
-> directml_esrgan.exe
+> .\directml_esrgan.exe
 
 Adapter[0]: NVIDIA GeForce RTX 4080 (SELECTED)
 Adapter[1]: Intel(R) UHD Graphics 770
@@ -46,3 +47,17 @@ Adapter[2]: Microsoft Basic Render Driver
 Saving cropped/scaled image to input.png
 Saving inference results to output.png
 ```
+
+### NPU Support
+
+You may use the `-a <adapter_substring>` to select a different adapter that contains part of the `<adapter_substring>` in its description. For example, you can run on a compatible<sup>1</sup> NPU using `-a NPU`:
+
+```
+> cd build/win-arm64/release
+> .\directml_esrgan.exe -a NPU
+Adapter[0]: Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Adreno(TM) GPU
+Adapter[1]: Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Hexagon(TM) NPU (SELECTED)
+...
+```
+
+<sup>1</sup> Currently, this sample is only supported on the Qualcomm Hexagon NPU available in Copilot+ PCs. Support for additional NPUs will come soon.
