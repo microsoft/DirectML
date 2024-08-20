@@ -17,6 +17,7 @@
 #include <dxcore.h>
 #include <optional>
 #include <iostream>
+#include <filesystem>
 #include <span>
 #include <string>
 #include "cxxopts.hpp"
@@ -25,37 +26,12 @@
 #include "image_helpers.h"
 #include "dx_helpers.h"
 
-int main(int argc, char** argv)
+void RunModel(
+    IDMLDevice* dmlDevice, 
+    ID3D12CommandQueue* d3dQueue, 
+    const std::filesystem::path& modelPath,
+    const std::filesystem::path& imagePath)
 {
-    using Microsoft::WRL::ComPtr;
-
-    // Functions in image_helpers.h use WIC APIs, which require CoInitialize.
-    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-
-    // Parse command-line options.
-    cxxopts::Options commandLineParams("directml_cv", "DirectML Computer Vision Sample");
-    commandLineParams.add_options()
-        ("h,help", "Print usage")
-        ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan.onnx"))
-        ("i,image", "Path to input image file", cxxopts::value<std::string>()->default_value("zebra.jpg"))
-        ("a,adapter", "Adapter name substring filter", cxxopts::value<std::string>()->default_value(""))
-    ;
-
-    auto commandLineArgs = commandLineParams.parse(argc, argv);
-
-    // See dx_helpers.h for logic to select a DXCore adapter, create DML device, and create D3D command queue.
-    ComPtr<IDMLDevice> dmlDevice;
-    ComPtr<ID3D12CommandQueue> commandQueue;
-    try
-    {
-        std::tie(dmlDevice, commandQueue) = CreateDmlDeviceAndCommandQueue(commandLineArgs["adapter"].as<std::string>());
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
-
     // DML execution provider prefers these session options.
     Ort::SessionOptions sessionOptions;
     sessionOptions.DisableMemPattern();
@@ -68,13 +44,13 @@ int main(int argc, char** argv)
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
     Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(
         sessionOptions, 
-        dmlDevice.Get(), 
-        commandQueue.Get()
+        dmlDevice, 
+        d3dQueue
     ));
 
     // Load ONNX model into a session.
     Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
-    Ort::Session ortSession(env, L"esrgan.onnx", sessionOptions);
+    Ort::Session ortSession(env, modelPath.wstring().c_str(), sessionOptions);
 
     if (ortSession.GetInputCount() != 1 && ortSession.GetOutputCount() != 1)
     {
@@ -95,7 +71,7 @@ int main(int argc, char** argv)
     const uint32_t inputHeight = inputTensorShape[2];
     const uint32_t inputWidth = inputTensorShape[3];
     std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * sizeof(float));
-    FillNCHWBufferFromImageFilename(L"zebra.jpg", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
+    FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
     SaveNCHWBufferToImageFilename(L"input.png", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
 
     // For simplicity, this sample binds input/output buffers in system memory instead of DirectX resources.
@@ -138,9 +114,57 @@ int main(int argc, char** argv)
         DataType::Float32, 
         ChannelOrder::RGB
     );
+}
+
+int main(int argc, char** argv)
+{
+    using Microsoft::WRL::ComPtr;
+
+    // Functions in image_helpers.h use WIC APIs, which require CoInitialize.
+    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
+    // Parse command-line options.
+    cxxopts::Options commandLineParams("directml_cv", "DirectML Computer Vision Sample");
+    commandLineParams.add_options()
+        ("h,help", "Print usage")
+        ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan.onnx"))
+        ("i,image", "Path to input image file", cxxopts::value<std::string>()->default_value("zebra.jpg"))
+        ("a,adapter", "Adapter name substring filter", cxxopts::value<std::string>()->default_value(""));
+
+    auto commandLineArgs = commandLineParams.parse(argc, argv);
+
+    // See dx_helpers.h for logic to select a DXCore adapter, create DML device, and create D3D command queue.
+    ComPtr<IDMLDevice> dmlDevice;
+    ComPtr<ID3D12CommandQueue> commandQueue;
+    try
+    {
+        std::tie(dmlDevice, commandQueue) = CreateDmlDeviceAndCommandQueue(commandLineArgs["adapter"].as<std::string>());
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error creating device: " << e.what() << std::endl;
+        return 1;
+    }
+
+    try
+    {
+        RunModel(
+            dmlDevice.Get(), 
+            commandQueue.Get(), 
+            commandLineArgs["model"].as<std::string>(),
+            commandLineArgs["image"].as<std::string>()
+        );
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error running model: " << e.what() << std::endl;
+        return 1;
+    }
 
     // Functions in image_helpers.h use WIC APIs, which require CoUninitialize.
     CoUninitialize();
+
+    std::cout <<"done\n";
 
     return 0;
 }
