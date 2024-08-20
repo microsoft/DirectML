@@ -57,21 +57,20 @@ void RunModel(
         throw std::invalid_argument("Model must have exactly one input and one output");
     }
 
-    auto inputInfo = ortSession.GetInputTypeInfo(0);
-    auto inputTensorInfo = inputInfo.GetTensorTypeAndShapeInfo();
-    auto inputTensorShape = inputTensorInfo.GetShape();
+    auto inputTensorInfo = ortSession.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo();
+    auto inputShape = inputTensorInfo.GetShape();
     auto inputDataType = inputTensorInfo.GetElementType();
     if (inputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && inputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
     {
         throw std::invalid_argument("Model input must be of type float32 or float16");
     }
 
-    const uint32_t inputChannels = inputTensorShape[1];
-    const uint32_t inputHeight = inputTensorShape[2];
-    const uint32_t inputWidth = inputTensorShape[3];
+    const uint32_t inputChannels = inputShape[1];
+    const uint32_t inputHeight = inputShape[2];
+    const uint32_t inputWidth = inputShape[3];
+    const uint32_t inputElementSize = inputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
-    auto outputInfo = ortSession.GetOutputTypeInfo(0);
-    auto outputTensorInfo = outputInfo.GetTensorTypeAndShapeInfo();
+    auto outputTensorInfo = ortSession.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo();
     auto outputTensorShape = outputTensorInfo.GetShape();
     auto outputDataType = outputTensorInfo.GetElementType();
     if (outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
@@ -82,9 +81,10 @@ void RunModel(
     const uint32_t outputChannels = outputTensorShape[1];
     const uint32_t outputHeight = outputTensorShape[2];
     const uint32_t outputWidth = outputTensorShape[3];
+    const uint32_t outputElementSize = outputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
     // Load image and transform it into an NCHW tensor with the correct shape and data type.
-    std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * sizeof(float));
+    std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * inputElementSize);
     FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, inputDataType, ChannelOrder::RGB);
 
     std::cout << "Saving cropped/scaled image to input.png" << std::endl;
@@ -96,8 +96,8 @@ void RunModel(
         memoryInfo, 
         inputBuffer.data(), 
         inputBuffer.size(), 
-        inputTensorShape.data(), 
-        inputTensorShape.size(),
+        inputShape.data(), 
+        inputShape.size(),
         inputDataType
     );
 
@@ -107,7 +107,10 @@ void RunModel(
     std::vector<const char*> outputNames = { "output_0" };
     auto outputs = ortSession.Run(runOpts, inputNames.data(), &inputTensor, 1, outputNames.data(), 1);
 
-    std::span<const std::byte> outputBuffer(reinterpret_cast<const std::byte*>(outputs[0].GetTensorData<float>()), outputChannels * outputHeight * outputWidth * sizeof(float));
+    std::span<const std::byte> outputBuffer(
+        reinterpret_cast<const std::byte*>(outputs[0].GetTensorRawData()), 
+        outputChannels * outputHeight * outputWidth * outputElementSize
+    );
 
     std::cout << "Saving inference results to output.png" << std::endl;
     SaveNCHWBufferToImageFilename(
