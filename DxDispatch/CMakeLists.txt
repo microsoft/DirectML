@@ -5,6 +5,10 @@ project(dxdispatch VERSION 0.18.1 LANGUAGES CXX)
 # External Libraries/Helpers
 # ==============================================================================
 
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 include(FetchContent)
 include(cmake/helper_platform.cmake)
 
@@ -24,7 +28,6 @@ include(cmake/gsl.cmake)
 include(cmake/rapidjson.cmake)
 include(cmake/fmt.cmake)
 include(cmake/wil.cmake)
-include(cmake/half.cmake)
 include(cmake/cxxopts.cmake)
 
 if(NOT TARGET_XBOX)
@@ -90,7 +93,6 @@ target_link_libraries(
     fmt::fmt-header-only
     PUBLIC
     Microsoft.GSL::GSL
-    Half::Half
     rapidjson::rapidjson
     wil
     d3d12
@@ -104,6 +106,7 @@ endif()
 target_compile_features(model PRIVATE cxx_std_17)
 target_precompile_headers(model PRIVATE src/model/pch.h)
 target_include_directories(model INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
+target_include_directories(model PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/external)
 
 # ==============================================================================
 # Dll
