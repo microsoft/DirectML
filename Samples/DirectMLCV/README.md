@@ -1,13 +1,12 @@
 
 
-# Build
+# Build (x64)
 
 ARM64:
 ```
 cmake --preset win-arm64
 cmake --build preset win-arm64-release
 ```
-
 
 # Run
 

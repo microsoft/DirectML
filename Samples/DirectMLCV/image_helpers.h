@@ -2,6 +2,7 @@
 #include <wrl/client.h>
 #include <wil/result.h>
 #include <span>
+#include "half.hpp"
 
 enum class ChannelOrder
 {
@@ -9,17 +10,62 @@ enum class ChannelOrder
     BGR,
 };
 
-enum class DataType
+// Converts a pixel buffer to an NCHW tensor (batch size 1).
+// Source: buffer of RGB pixels (HWC) using uint8 components.
+// Target: buffer of RGB planes (CHW) using float32/float16 components.
+template <typename T> 
+void CopyPixelsToTensor(
+    std::span<const std::byte> src, 
+    std::span<std::byte> dst,
+    uint32_t height,
+    uint32_t width,
+    uint32_t channels)
 {
-    Float32,
-};
+    std::span<T> dstT(reinterpret_cast<T*>(dst.data()), dst.size_bytes() / sizeof(T));
+
+    for (size_t pixelIndex = 0; pixelIndex < height * width; pixelIndex++)
+    {
+        float r = static_cast<float>(src[pixelIndex * channels + 0]) / 255.0f;
+        float g = static_cast<float>(src[pixelIndex * channels + 1]) / 255.0f;
+        float b = static_cast<float>(src[pixelIndex * channels + 2]) / 255.0f;
+
+        dstT[pixelIndex + 0 * height * width] = r;
+        dstT[pixelIndex + 1 * height * width] = g;
+        dstT[pixelIndex + 2 * height * width] = b;
+    }
+}
+
+// Converts an NCHW tensor buffer (batch size 1) to a pixel buffer.
+// Source: buffer of RGB planes (CHW) using float32/float16 components.
+// Target: buffer of RGB pixels (HWC) using uint8 components.
+template <typename T>
+void CopyTensorToPixels(
+    std::span<const std::byte> src, 
+    std::span<BYTE> dst,
+    uint32_t height,
+    uint32_t width,
+    uint32_t channels)
+{
+    std::span<const T> srcT(reinterpret_cast<const T*>(src.data()), src.size_bytes() / sizeof(T));
+
+    for (size_t pixelIndex = 0; pixelIndex < height * width; pixelIndex++)
+    {
+        BYTE r = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, (float)srcT[pixelIndex + 0 * height * width])) * 255.0f);
+        BYTE g = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, (float)srcT[pixelIndex + 1 * height * width])) * 255.0f);
+        BYTE b = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, (float)srcT[pixelIndex + 2 * height * width])) * 255.0f);
+
+        dst[pixelIndex * channels + 0] = r;
+        dst[pixelIndex * channels + 1] = g;
+        dst[pixelIndex * channels + 2] = b;
+    }
+}
 
 void FillNCHWBufferFromImageFilename(
     std::wstring_view filename,
-    std::span<std::byte> buffer,
+    std::span<std::byte> tensorBuffer,
     uint32_t bufferHeight,
     uint32_t bufferWidth,
-    DataType bufferDataType = DataType::Float32,
+    ONNXTensorElementDataType bufferDataType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
     ChannelOrder bufferChannelOrder = ChannelOrder::RGB)
 {
     using Microsoft::WRL::ComPtr;
@@ -45,17 +91,21 @@ void FillNCHWBufferFromImageFilename(
     uint32_t expectedBufferSizeInBytes = bufferChannels * bufferHeight * bufferWidth;
     switch (bufferDataType)
     {
-        case DataType::Float32:
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
             expectedBufferSizeInBytes *= sizeof(float);
+            break;
+
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+            expectedBufferSizeInBytes *= sizeof(uint16_t);
             break;
 
         default:
             throw std::invalid_argument("Unsupported data type");
     }
 
-    if (buffer.size_bytes() != expectedBufferSizeInBytes)
+    if (tensorBuffer.size_bytes() < expectedBufferSizeInBytes)
     {
-        throw std::invalid_argument("Buffer size does not match expected size");
+        throw std::invalid_argument("Provided buffer is too small");
     }
 
     ComPtr<IWICImagingFactory> wicFactory;
@@ -143,39 +193,38 @@ void FillNCHWBufferFromImageFilename(
     // data elements from uint8 to float.
 
     // Copy to HWC buffer with 8 bits (uint8) per channel element
-    std::vector<std::byte> bufferHWC_UInt8(bufferHeight * bufferWidth * bufferChannels);
+    std::vector<std::byte> pixelBuffer(bufferHeight * bufferWidth * bufferChannels);
+    WICRect pixelBufferRect = { 0, 0, static_cast<INT>(bufferWidth), static_cast<INT>(bufferHeight) };
+    const uint32_t pixelBufferStride = bufferWidth * bufferChannels * sizeof(uint8_t);
+
+    THROW_IF_FAILED(bitmapSource->CopyPixels(
+        &pixelBufferRect, 
+        pixelBufferStride, 
+        pixelBuffer.size(), 
+        reinterpret_cast<BYTE*>(pixelBuffer.data())
+    ));
+
+    switch (bufferDataType)
     {
-        WICRect rect = { 0, 0, static_cast<INT>(bufferWidth), static_cast<INT>(bufferHeight) };
-        const uint32_t stride = bufferWidth * bufferChannels * sizeof(uint8_t);
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+            CopyPixelsToTensor<float>(pixelBuffer, tensorBuffer, bufferHeight, bufferWidth, bufferChannels);
+            break;
 
-        THROW_IF_FAILED(bitmapSource->CopyPixels(
-            &rect, 
-            stride, 
-            bufferHWC_UInt8.size(), 
-            reinterpret_cast<BYTE*>(bufferHWC_UInt8.data())
-        ));
-    }
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+            CopyPixelsToTensor<half_float::half>(pixelBuffer, tensorBuffer, bufferHeight, bufferWidth, bufferChannels);
+            break;
 
-    // Copy to CHW buffer with 32 bits (float) per channel element
-    std::span<float> bufferCHW_Float(reinterpret_cast<float*>(buffer.data()), buffer.size_bytes() / sizeof(float));
-    for (size_t pixelIndex = 0; pixelIndex < bufferHeight * bufferWidth; pixelIndex++)
-    {
-        float r = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 0]) / 255.0f;
-        float g = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 1]) / 255.0f;
-        float b = static_cast<float>(bufferHWC_UInt8[pixelIndex * bufferChannels + 2]) / 255.0f;
-
-        bufferCHW_Float[pixelIndex + 0 * bufferHeight * bufferWidth] = r;
-        bufferCHW_Float[pixelIndex + 1 * bufferHeight * bufferWidth] = g;
-        bufferCHW_Float[pixelIndex + 2 * bufferHeight * bufferWidth] = b;
+        default:
+            throw std::invalid_argument("Unsupported data type");
     }
 }
 
 void SaveNCHWBufferToImageFilename(
     std::wstring_view filename,
-    std::span<const std::byte> buffer,
+    std::span<const std::byte> tensorBuffer,
     uint32_t bufferHeight,
     uint32_t bufferWidth,
-    DataType bufferDataType = DataType::Float32,
+    ONNXTensorElementDataType bufferDataType = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
     ChannelOrder bufferChannelOrder = ChannelOrder::RGB)
 {
     using Microsoft::WRL::ComPtr;
@@ -201,7 +250,7 @@ void SaveNCHWBufferToImageFilename(
     uint32_t outputBufferSizeInBytes = bufferChannels * bufferHeight * bufferWidth;
     switch (bufferDataType)
     {
-        case DataType::Float32:
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
             outputBufferSizeInBytes *= sizeof(float);
             break;
 
@@ -209,18 +258,20 @@ void SaveNCHWBufferToImageFilename(
             throw std::invalid_argument("Unsupported data type");
     }
 
-    std::vector<BYTE> bufferHWC_Uint8(outputBufferSizeInBytes);
+    std::vector<BYTE> pixelBuffer(outputBufferSizeInBytes);
 
-    std::span<const float> bufferCHW_Float(reinterpret_cast<const float*>(buffer.data()), buffer.size_bytes() / sizeof(float));
-    for (size_t pixelIndex = 0; pixelIndex < bufferHeight * bufferWidth; pixelIndex++)
+    switch (bufferDataType)
     {
-        BYTE r = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 0 * bufferHeight * bufferWidth])) * 255.0f);
-        BYTE g = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 1 * bufferHeight * bufferWidth])) * 255.0f);
-        BYTE b = static_cast<BYTE>(std::max(0.0f, std::min(1.0f, bufferCHW_Float[pixelIndex + 2 * bufferHeight * bufferWidth])) * 255.0f);
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
+            CopyTensorToPixels<float>(tensorBuffer, pixelBuffer, bufferHeight, bufferWidth, bufferChannels);
+            break;
 
-        bufferHWC_Uint8[pixelIndex * bufferChannels + 0] = r;
-        bufferHWC_Uint8[pixelIndex * bufferChannels + 1] = g;
-        bufferHWC_Uint8[pixelIndex * bufferChannels + 2] = b;
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+            CopyTensorToPixels<half_float::half>(tensorBuffer, pixelBuffer, bufferHeight, bufferWidth, bufferChannels);
+            break;
+
+        default:
+            throw std::invalid_argument("Unsupported data type");
     }
 
     ComPtr<IWICImagingFactory> wicFactory;
@@ -237,8 +288,8 @@ void SaveNCHWBufferToImageFilename(
         bufferHeight,
         desiredImagePixelFormat,
         bufferWidth * bufferChannels,
-        bufferHWC_Uint8.size(),
-        bufferHWC_Uint8.data(),
+        pixelBuffer.size(),
+        pixelBuffer.data(),
         &bitmap
     ));
 
