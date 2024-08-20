@@ -30,6 +30,11 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
         ));
     }
 
+    if (adapterList->GetAdapterCount() == 0)
+    {
+        throw std::runtime_error("No compatible adapters found.");
+    }
+
     // Sort the adapters by preference, with hardware and high-performance adapters first.
     DXCoreAdapterPreference preferences[] = 
     {
@@ -39,11 +44,14 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
 
     THROW_IF_FAILED(adapterList->Sort(_countof(preferences), preferences));
 
-    ComPtr<IDXCoreAdapter> selectedAdapter;
+    std::vector<ComPtr<IDXCoreAdapter>> adapters;
+    std::vector<std::string> adapterDescriptions;
+    std::optional<uint32_t> firstAdapterMatchingNameFilter;
+
     for (uint32_t i = 0; i < adapterList->GetAdapterCount(); i++)
     {
         ComPtr<IDXCoreAdapter> adapter;
-        THROW_IF_FAILED(adapterList->GetAdapter(i, adapter.ReleaseAndGetAddressOf()));
+        THROW_IF_FAILED(adapterList->GetAdapter(i, adapter.GetAddressOf()));
 
         size_t descriptionSize;
         THROW_IF_FAILED(adapter->GetPropertySize(
@@ -58,31 +66,34 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
             adapterDescription.data()
         ));
 
-        std::string selectedText = "";
+        adapters.push_back(adapter);
+        adapterDescriptions.push_back(adapterDescription);
 
-        // Use the first adapter matching the name filter.
-        if (!selectedAdapter && adapterDescription.find(adapterNameFilter) != std::string::npos)
+        if (!firstAdapterMatchingNameFilter &&
+            adapterDescription.find(adapterNameFilter) != std::string::npos)
         {
-            selectedAdapter = adapter;
-            selectedText = " (SELECTED)";
+            firstAdapterMatchingNameFilter = i;
+            std::cout << "Adapter[" << i << "]: " << adapterDescription << " (SELECTED)\n";
         }
-
-        std::cout << "Adapter[" << i << "]: " << adapterDescription << selectedText << std::endl;
+        else
+        {
+            std::cout << "Adapter[" << i << "]: " << adapterDescription << "\n";
+        }
     }
 
-    if (!selectedAdapter)
+    if (!firstAdapterMatchingNameFilter)
     {
-        throw std::runtime_error("No suitable adapters found");
+        throw std::invalid_argument("No adapters match the provided name filter.");
     }
 
-    return selectedAdapter;
+    return adapters[*firstAdapterMatchingNameFilter];
 }
 
-std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue()
+std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue(std::string_view adapterNameFilter = "")
 {
     using Microsoft::WRL::ComPtr;
     
-    ComPtr<IDXCoreAdapter> adapter = SelectAdapter();
+    ComPtr<IDXCoreAdapter> adapter = SelectAdapter(adapterNameFilter);
 
     ComPtr<ID3D12Device> d3d12Device;
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&d3d12Device)));
