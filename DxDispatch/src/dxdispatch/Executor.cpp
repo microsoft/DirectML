@@ -147,6 +147,16 @@ Executor::Executor(Model& model, std::shared_ptr<Device> device, const CommandLi
                 m_dispatchables[desc.name] = std::make_unique<OnnxDispatchable>(device, std::get<Model::OnnxDispatchableDesc>(desc.value), args, m_logger.Get());
 #endif
             }
+            else if (std::holds_alternative<Model::DmlSerializedGraphDispatchableDesc>(desc.value)) 
+            {
+                auto& dmlSerializedGraphDispatchableDesc = std::get<Model::DmlSerializedGraphDispatchableDesc>(desc.value);
+
+                m_dispatchables[desc.name] = std::make_unique<DmlDispatchable>(
+                    desc.name, 
+                    device, 
+                    dmlSerializedGraphDispatchableDesc, 
+                    m_logger.Get());
+            }
             else
             {
                 auto& dmlDispatchableDesc = std::get<Model::DmlDispatchableDesc>(desc.value);

@@ -10,7 +10,6 @@
 #include <DirectML.h>
 #include "BucketAllocator.h"
 
-
 class Model
 {
 public:
@@ -108,11 +107,22 @@ public:
         uint32_t graphOptimizationLevel = 99;
         uint32_t loggingLevel = 2;
     };
+    
+    struct DmlSerializedGraphDispatchableDesc
+    {
+        std::filesystem::path sourcePath;
+        DML_EXECUTION_FLAGS executionFlags;
+        Bindings initBindings;
+    };
 
     struct DispatchableDesc
     {
         std::string name;
-        std::variant<DmlDispatchableDesc, HlslDispatchableDesc, OnnxDispatchableDesc> value;
+        std::variant<
+            DmlDispatchableDesc,
+            HlslDispatchableDesc,
+            OnnxDispatchableDesc,
+            DmlSerializedGraphDispatchableDesc> value;
     };
 
     // COMMANDS
