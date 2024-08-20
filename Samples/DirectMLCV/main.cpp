@@ -72,6 +72,8 @@ void RunModel(
     const uint32_t inputWidth = inputTensorShape[3];
     std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * sizeof(float));
     FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
+
+    std::cout << "Saving cropped/scaled input iamge to input.png" << std::endl;
     SaveNCHWBufferToImageFilename(L"input.png", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
 
     // For simplicity, this sample binds input/output buffers in system memory instead of DirectX resources.
@@ -106,6 +108,7 @@ void RunModel(
 
     std::span<const std::byte> outputBuffer(reinterpret_cast<const std::byte*>(outputs[0].GetTensorData<float>()), outputChannels * outputHeight * outputWidth * sizeof(float));
 
+    std::cout << "Saving inference results to output.png" << std::endl;
     SaveNCHWBufferToImageFilename(
         L"output.png", 
         outputBuffer, 
@@ -163,8 +166,6 @@ int main(int argc, char** argv)
 
     // Functions in image_helpers.h use WIC APIs, which require CoUninitialize.
     CoUninitialize();
-
-    std::cout <<"done\n";
 
     return 0;
 }
