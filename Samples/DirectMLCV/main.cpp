@@ -73,7 +73,7 @@ void RunModel(
     std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * sizeof(float));
     FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
 
-    std::cout << "Saving cropped/scaled input iamge to input.png" << std::endl;
+    std::cout << "Saving cropped/scaled image to input.png" << std::endl;
     SaveNCHWBufferToImageFilename(L"input.png", inputBuffer, inputHeight, inputWidth, DataType::Float32, ChannelOrder::RGB);
 
     // For simplicity, this sample binds input/output buffers in system memory instead of DirectX resources.
