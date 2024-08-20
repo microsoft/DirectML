@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     cxxopts::Options commandLineParams("directml_cv", "DirectML Computer Vision Sample");
     commandLineParams.add_options()
         ("h,help", "Print usage")
-        ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan.onnx"))
+        ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan_fp16.onnx"))
         ("i,image", "Path to input image file", cxxopts::value<std::string>()->default_value("zebra.jpg"))
         ("a,adapter", "Adapter name substring filter", cxxopts::value<std::string>()->default_value(""));
 

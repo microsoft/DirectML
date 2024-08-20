@@ -96,7 +96,7 @@ void FillNCHWBufferFromImageFilename(
             break;
 
         case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
-            expectedBufferSizeInBytes *= sizeof(uint16_t);
+            expectedBufferSizeInBytes *= sizeof(half_float::half);
             break;
 
         default:
@@ -252,6 +252,10 @@ void SaveNCHWBufferToImageFilename(
     {
         case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:
             outputBufferSizeInBytes *= sizeof(float);
+            break;
+
+        case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16:
+            outputBufferSizeInBytes *= sizeof(half_float::half);
             break;
 
         default:
