@@ -50,6 +50,23 @@ target_include_directories(ort INTERFACE "${ort_SOURCE_DIR}/build/native/include
 target_link_libraries(ort INTERFACE "${ort_bin_dir}/onnxruntime.lib")
 
 # -----------------------------------------------------------------------------
+# directx-headers - to get the latest DXCore header with GENERIC_ML GUID
+# -----------------------------------------------------------------------------
+FetchContent_Declare(
+    dxheaders
+    GIT_REPOSITORY https://github.com/microsoft/DirectX-Headers
+    GIT_TAG de28d93dfa9ebf3e473127c1c657e1920a5345ee # v1.613.1
+)
+
+FetchContent_MakeAvailable(dxheaders)
+
+set(ort_bin_dir "${ort_SOURCE_DIR}/runtimes/win-${TARGET_ARCH}/native")
+
+add_library(dxheaders INTERFACE)
+target_include_directories(dxheaders INTERFACE ${dxheaders_SOURCE_DIR}/include/directx)
+target_link_libraries(dxheaders INTERFACE Microsoft::DirectX-Guids)
+
+# -----------------------------------------------------------------------------
 # directml
 # -----------------------------------------------------------------------------
 FetchContent_Declare(
@@ -71,7 +88,7 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # -----------------------------------------------------------------------------
 
 add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxgi)
+target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxcore dxheaders)
 target_compile_features(directml_cv PRIVATE cxx_std_20)
 target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -81,4 +98,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ort_bin_dir}/onnxruntime.dll" $<TARGET_FILE_DIR:directml_cv>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_cv>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.debug.dll" $<TARGET_FILE_DIR:directml_cv>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_cv>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/zebra.jpg" $<TARGET_FILE_DIR:directml_cv>
 )
