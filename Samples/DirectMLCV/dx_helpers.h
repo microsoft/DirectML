@@ -2,7 +2,8 @@
 #include <wrl/client.h>
 #include <wil/result.h>
 
-Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNameFilter = "")
+std::tuple<Microsoft::WRL::ComPtr<IDXCoreAdapter>, D3D_FEATURE_LEVEL> SelectAdapter(
+    std::string_view adapterNameFilter = "")
 {
     using Microsoft::WRL::ComPtr;
 
@@ -12,6 +13,7 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
     // First try getting all GENERIC_ML devices, which is the broadest set of adapters 
     // and includes both GPUs and NPUs; however, running this sample on an older build of 
     // Windows may not have drivers that report GENERIC_ML.
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_1_0_GENERIC;
     ComPtr<IDXCoreAdapterList> adapterList;
     THROW_IF_FAILED(adapterFactory->CreateAdapterList(
         1,
@@ -23,6 +25,7 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
     // set of adapters and may filter out some NPUs.
     if (adapterList->GetAdapterCount() == 0)
     {
+        featureLevel = D3D_FEATURE_LEVEL_1_0_CORE;
         THROW_IF_FAILED(adapterFactory->CreateAdapterList(
             1, 
             &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, 
@@ -86,17 +89,17 @@ Microsoft::WRL::ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNam
         throw std::invalid_argument("No adapters match the provided name filter.");
     }
 
-    return adapters[*firstAdapterMatchingNameFilter];
+    return { adapters[*firstAdapterMatchingNameFilter], featureLevel };
 }
 
 std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue(std::string_view adapterNameFilter = "")
 {
     using Microsoft::WRL::ComPtr;
     
-    ComPtr<IDXCoreAdapter> adapter = SelectAdapter(adapterNameFilter);
+    auto [adapter, featureLevel] = SelectAdapter(adapterNameFilter);
 
     ComPtr<ID3D12Device> d3d12Device;
-    THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&d3d12Device)));
+    THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), featureLevel, IID_PPV_ARGS(&d3d12Device)));
 
     ComPtr<IDMLDevice> dmlDevice;
     THROW_IF_FAILED(DMLCreateDevice(d3d12Device.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&dmlDevice)));
