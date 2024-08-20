@@ -22,132 +22,38 @@
 #include "onnxruntime_cxx_api.h"
 #include "dml_provider_factory.h"
 #include "image_helpers.h"
+#include "dx_helpers.h"
 
-using Microsoft::WRL::ComPtr;
-
-ComPtr<IDXCoreAdapter> SelectAdapter(std::string_view adapterNameFilter = "")
+int main(int argc, char** argv)
 {
-    ComPtr<IDXCoreAdapterFactory> adapterFactory;
-    THROW_IF_FAILED(DXCoreCreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
+    using Microsoft::WRL::ComPtr;
 
-    // First try getting all GENERIC_ML devices, which is the broadest set of adapters 
-    // and includes both GPUs and NPUs; however, running this sample on an older build of 
-    // Windows may not have drivers that report GENERIC_ML.
-    ComPtr<IDXCoreAdapterList> adapterList;
-    THROW_IF_FAILED(adapterFactory->CreateAdapterList(
-        1,
-        &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML,
-        adapterList.GetAddressOf()
-    ));
+    // Functions in image_helpers.h use WIC APIs, which require CoInitialize.
+    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 
-    // Fall back to CORE_COMPUTE if GENERIC_ML devices are not available. This is a more restricted
-    // set of adapters and may filter out some NPUs.
-    if (adapterList->GetAdapterCount() == 0)
-    {
-        THROW_IF_FAILED(adapterFactory->CreateAdapterList(
-            1, 
-            &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, 
-            adapterList.GetAddressOf()
-        ));
-    }
+    // See dx_helpers.h for logic to select a DXCore adapter, create DML device, and create D3D command queue.
+    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
 
-    // Sort the adapters by preference, with hardware and high-performance adapters first.
-    DXCoreAdapterPreference preferences[] = 
-    {
-        DXCoreAdapterPreference::Hardware,
-        DXCoreAdapterPreference::HighPerformance
-    };
 
-    THROW_IF_FAILED(adapterList->Sort(_countof(preferences), preferences));
-
-    ComPtr<IDXCoreAdapter> selectedAdapter;
-    for (uint32_t i = 0; i < adapterList->GetAdapterCount(); i++)
-    {
-        ComPtr<IDXCoreAdapter> adapter;
-        THROW_IF_FAILED(adapterList->GetAdapter(i, adapter.ReleaseAndGetAddressOf()));
-
-        size_t descriptionSize;
-        THROW_IF_FAILED(adapter->GetPropertySize(
-            DXCoreAdapterProperty::DriverDescription, 
-            &descriptionSize
-        ));
-
-        std::string adapterDescription(descriptionSize, '\0');
-        THROW_IF_FAILED(adapter->GetProperty(
-            DXCoreAdapterProperty::DriverDescription, 
-            descriptionSize, 
-            adapterDescription.data()
-        ));
-
-        std::string selectedText = "";
-
-        // Use the first adapter matching the name filter.
-        if (!selectedAdapter && adapterDescription.find(adapterNameFilter) != std::string::npos)
-        {
-            selectedAdapter = adapter;
-            selectedText = " (SELECTED)";
-        }
-
-        std::cout << "Adapter[" << i << "]: " << adapterDescription << selectedText << std::endl;
-    }
-
-    if (!selectedAdapter)
-    {
-        throw std::runtime_error("No suitable adapters found");
-    }
-
-    return selectedAdapter;
-}
-
-std::tuple<ComPtr<IDMLDevice>, ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue()
-{
-    ComPtr<IDXCoreAdapter> adapter = SelectAdapter();
-
-    ComPtr<ID3D12Device> d3d12Device;
-    THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&d3d12Device)));
-
-    ComPtr<IDMLDevice> dmlDevice;
-    THROW_IF_FAILED(DMLCreateDevice(d3d12Device.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&dmlDevice)));
-
-    D3D12_COMMAND_QUEUE_DESC queueDesc = 
-    {
-        .Type = D3D12_COMMAND_LIST_TYPE_COMPUTE,
-        .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
-        .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
-        .NodeMask = 0
-    };
-
-    ComPtr<ID3D12CommandQueue> commandQueue;
-    THROW_IF_FAILED(d3d12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
-
-    return { dmlDevice, commandQueue };
-}
-
-Ort::Session CreateOnnxRuntimeSession(Ort::Env& env, IDMLDevice* dmlDevice, ID3D12CommandQueue* commandQueue, std::wstring_view modelPath)
-{
-    const OrtApi& ortApi = Ort::GetApi();
-
+    // DML execution provider prefers these session options.
     Ort::SessionOptions sessionOptions;
     sessionOptions.DisableMemPattern();
     sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
 
+    // By passing in an explicitly created DML device & queue, the DML execution provider sends work
+    // to the desired device. If not used, the DML execution provider will create its own device & queue.
+    const OrtApi& ortApi = Ort::GetApi();
     const OrtDmlApi* ortDmlApi = nullptr;
     Ort::ThrowOnError(ortApi.GetExecutionProviderApi("DML", ORT_API_VERSION, reinterpret_cast<const void**>(&ortDmlApi)));
-    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(sessionOptions, dmlDevice, commandQueue));
+    Ort::ThrowOnError(ortDmlApi->SessionOptionsAppendExecutionProvider_DML1(
+        sessionOptions, 
+        dmlDevice.Get(), 
+        commandQueue.Get()
+    ));
 
-    return Ort::Session(env, modelPath.data(), sessionOptions);
-}
-
-int main(int argc, char** argv)
-{
-    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-
-    auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue();
-
-    const OrtApi& ortApi = Ort::GetApi();
-
+    // Load ONNX model into a session.
     Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, "DirectML_CV");
-    auto ortSession = CreateOnnxRuntimeSession(env, dmlDevice.Get(), commandQueue.Get(), LR"(esrgan.onnx)");
+    Ort::Session ortSession(env, L"esrgan.onnx", sessionOptions);
 
     if (ortSession.GetInputCount() != 1 && ortSession.GetOutputCount() != 1)
     {
@@ -195,10 +101,10 @@ int main(int argc, char** argv)
     const uint32_t outputHeight = outputTensorShape[2];
     const uint32_t outputWidth = outputTensorShape[3];
 
+    // Run the session to get inference results.
     Ort::RunOptions runOpts;
     std::vector<const char*> inputNames = { "image" };
     std::vector<const char*> outputNames = { "output_0" };
-
     auto outputs = ortSession.Run(runOpts, inputNames.data(), &inputTensor, 1, outputNames.data(), 1);
 
     std::span<const std::byte> outputBuffer(reinterpret_cast<const std::byte*>(outputs[0].GetTensorData<float>()), outputChannels * outputHeight * outputWidth * sizeof(float));
@@ -212,6 +118,7 @@ int main(int argc, char** argv)
         ChannelOrder::RGB
     );
 
+    // Functions in image_helpers.h use WIC APIs, which require CoUninitialize.
     CoUninitialize();
 
     return 0;

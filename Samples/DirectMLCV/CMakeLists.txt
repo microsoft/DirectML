@@ -67,6 +67,21 @@ target_include_directories(dxheaders INTERFACE ${dxheaders_SOURCE_DIR}/include/d
 target_link_libraries(dxheaders INTERFACE Microsoft::DirectX-Guids)
 
 # -----------------------------------------------------------------------------
+# cxxopts - for parsing command line arguments
+# -----------------------------------------------------------------------------
+
+FetchContent_Declare(
+    cxxopts
+    GIT_REPOSITORY https://github.com/jarro2783/cxxopts
+    GIT_TAG v3.2.1
+)
+
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE INTERNAL "Set to ON to build examples")
+set(CXXOPTS_BUILD_TESTS OFF CACHE INTERNAL "Set to ON to build tests")
+set(CXXOPTS_ENABLE_INSTALL OFF CACHE INTERNAL "Generate the install target")
+FetchContent_MakeAvailable(cxxopts)
+
+# -----------------------------------------------------------------------------
 # directml
 # -----------------------------------------------------------------------------
 FetchContent_Declare(
@@ -88,7 +103,7 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # -----------------------------------------------------------------------------
 
 add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxcore dxheaders)
+target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxcore dxheaders cxxopts)
 target_compile_features(directml_cv PRIVATE cxx_std_20)
 target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
