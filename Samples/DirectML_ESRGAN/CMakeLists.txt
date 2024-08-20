@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(directml_cv VERSION 0.0.0 LANGUAGES CXX)
+project(directml_esrgan VERSION 0.0.0 LANGUAGES CXX)
 
 # To avoid runtime dependency on MSVC runtime DLLs
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
@@ -102,17 +102,16 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # main sample source
 # -----------------------------------------------------------------------------
 
-add_executable(directml_cv main.cpp)
-target_link_libraries(directml_cv PRIVATE wil ort dml d3d12 dxcore dxheaders cxxopts)
-target_compile_features(directml_cv PRIVATE cxx_std_20)
-target_include_directories(directml_cv PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+add_executable(directml_esrgan main.cpp)
+target_link_libraries(directml_esrgan PRIVATE wil ort dml d3d12 dxcore dxheaders cxxopts)
+target_compile_features(directml_esrgan PRIVATE cxx_std_20)
+target_include_directories(directml_esrgan PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 add_custom_command(
-    TARGET directml_cv 
+    TARGET directml_esrgan 
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ort_bin_dir}/onnxruntime.dll" $<TARGET_FILE_DIR:directml_cv>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_cv>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.debug.dll" $<TARGET_FILE_DIR:directml_cv>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_cv>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/zebra.jpg" $<TARGET_FILE_DIR:directml_cv>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ort_bin_dir}/onnxruntime.dll" $<TARGET_FILE_DIR:directml_esrgan>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_esrgan>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_esrgan>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/zebra.jpg" $<TARGET_FILE_DIR:directml_esrgan>
 )
