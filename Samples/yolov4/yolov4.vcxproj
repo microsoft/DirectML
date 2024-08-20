@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.props')" />
+  <Import Project="packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
       <Configuration>Debug</Configuration>
@@ -566,7 +566,7 @@ copy $(ProjectDir)data\. $(OutDir)data</Command>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\WinPixEventRuntime.1.0.210209001\build\WinPixEventRuntime.targets" Condition="Exists('packages\WinPixEventRuntime.1.0.210209001\build\WinPixEventRuntime.targets')" />
-    <Import Project="packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.targets')" />
+    <Import Project="packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.targets')" />
   </ImportGroup>
   <Target Name="DownloadContentFiles" BeforeTargets="PrepareForBuild" Condition="!Exists('Data\yolov4.weights')">
     <DownloadFile SourceUrl="https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights" DestinationFolder="$(MSBuildProjectDirectory)\Data">
@@ -578,7 +578,7 @@ copy $(ProjectDir)data\. $(OutDir)data</Command>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('packages\WinPixEventRuntime.1.0.210209001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\WinPixEventRuntime.1.0.210209001\build\WinPixEventRuntime.targets'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.0\build\Microsoft.AI.DirectML.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.1\build\Microsoft.AI.DirectML.targets'))" />
   </Target>
 </Project>
