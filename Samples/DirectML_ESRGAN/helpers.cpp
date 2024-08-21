@@ -123,7 +123,7 @@ std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12Comm
     ComPtr<ID3D12CommandQueue> commandQueue;
     THROW_IF_FAILED(d3d12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&commandQueue)));
 
-    return { dmlDevice, commandQueue };
+    return { std::move(dmlDevice), std::move(commandQueue) };
 }
 
 // Converts a pixel buffer to an NCHW tensor (batch size 1).
