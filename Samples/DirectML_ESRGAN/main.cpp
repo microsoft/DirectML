@@ -57,6 +57,9 @@ void RunModel(
         throw std::invalid_argument("Model must have exactly one input and one output");
     }
 
+    Ort::AllocatorWithDefaultOptions ortAllocator;
+
+    auto inputName = ortSession.GetInputNameAllocated(0, ortAllocator);
     auto inputTypeInfo = ortSession.GetInputTypeInfo(0);
     auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
     auto inputShape = inputTensorInfo.GetShape();
@@ -71,6 +74,7 @@ void RunModel(
     const uint32_t inputWidth = inputShape[3];
     const uint32_t inputElementSize = inputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
+    auto outputName = ortSession.GetOutputNameAllocated(0, ortAllocator);
     auto outputTypeInfo = ortSession.GetOutputTypeInfo(0);
     auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
     auto outputTensorShape = outputTensorInfo.GetShape();
@@ -103,14 +107,17 @@ void RunModel(
         inputDataType
     );
 
+    auto bindings = Ort::IoBinding::IoBinding(ortSession);
+    bindings.BindInput(inputName.get(), inputTensor);
+    bindings.BindOutput(outputName.get(), memoryInfo);
+
     // Run the session to get inference results.
     Ort::RunOptions runOpts;
-    std::vector<const char*> inputNames = { "image" };
-    std::vector<const char*> outputNames = { "output_0" };
-    auto outputs = ortSession.Run(runOpts, inputNames.data(), &inputTensor, 1, outputNames.data(), 1);
+    ortSession.Run(runOpts, bindings);
+    bindings.SynchronizeOutputs();
 
     std::span<const std::byte> outputBuffer(
-        reinterpret_cast<const std::byte*>(outputs[0].GetTensorRawData()), 
+        reinterpret_cast<const std::byte*>(bindings.GetOutputValues()[0].GetTensorRawData()),
         outputChannels * outputHeight * outputWidth * outputElementSize
     );
 
