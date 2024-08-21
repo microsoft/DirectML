@@ -57,7 +57,8 @@ void RunModel(
         throw std::invalid_argument("Model must have exactly one input and one output");
     }
 
-    auto inputTensorInfo = ortSession.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo();
+    auto inputTypeInfo = ortSession.GetInputTypeInfo(0);
+    auto inputTensorInfo = inputTypeInfo.GetTensorTypeAndShapeInfo();
     auto inputShape = inputTensorInfo.GetShape();
     auto inputDataType = inputTensorInfo.GetElementType();
     if (inputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && inputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
@@ -70,7 +71,8 @@ void RunModel(
     const uint32_t inputWidth = inputShape[3];
     const uint32_t inputElementSize = inputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
-    auto outputTensorInfo = ortSession.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo();
+    auto outputTypeInfo = ortSession.GetOutputTypeInfo(0);
+    auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
     auto outputTensorShape = outputTensorInfo.GetShape();
     auto outputDataType = outputTensorInfo.GetElementType();
     if (outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
