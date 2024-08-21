@@ -23,6 +23,8 @@ The included variant of the ESRGAN model accepts a 128x128 input image and upsca
 
 ## Build
 
+This sample uses [CMake](https://cmake.org/download/) to generate a Visual Studio solution and download external dependencies. The following instructions assume you have installed CMake and it is available on the PATH.
+
 Run CMake to configure and build the sample:
 
 ```
