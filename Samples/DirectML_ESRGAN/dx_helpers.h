@@ -62,7 +62,7 @@ std::tuple<Microsoft::WRL::ComPtr<IDXCoreAdapter>, D3D_FEATURE_LEVEL> SelectAdap
             &descriptionSize
         ));
 
-        std::string adapterDescription(descriptionSize, '\0');
+        std::string adapterDescription(descriptionSize - 1, '\0');
         THROW_IF_FAILED(adapter->GetProperty(
             DXCoreAdapterProperty::DriverDescription, 
             descriptionSize, 
