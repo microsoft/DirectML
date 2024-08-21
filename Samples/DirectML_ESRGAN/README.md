@@ -62,4 +62,6 @@ Adapter[1]: Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Hexagon(TM) NPU (SELE
 ...
 ```
 
-<sup>1</sup> Currently, this sample is only supported on the Qualcomm Hexagon NPU available in Copilot+ PCs. Support for additional NPUs will come soon. To run this sample with the QC NPU you must install the pre-alpha driver 30.0.31.250 or newer.
+You must have Windows 11 24H2 installed to run this sample using an NPU.
+
+<sup>1</sup> Currently, this sample is only supported with the NPU available in Copilot+ PCs with Snapdragon X Series processors. Support for additional NPUs will come soon. To run this sample with the QC NPU you must install driver 30.0.31.250 or newer.
