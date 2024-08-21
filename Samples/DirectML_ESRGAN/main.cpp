@@ -1,30 +1,8 @@
-#pragma once
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-#define UNICODE
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#define NODRAWTEXT
-#define NOGDI
-#define NOBITMAP
-#define NOMCX
-#define NOSERVICE
-#define NOHELP
-
-#include <Windows.h>
-#include <wrl/client.h>
-#include <wil/result.h>
-#include <d3d12.h>
-#include <dxcore.h>
-#include <optional>
-#include <iostream>
-#include <filesystem>
-#include <span>
-#include <string>
-#include "cxxopts.hpp"
-#include "onnxruntime_cxx_api.h"
-#include "dml_provider_factory.h"
-#include "image_helpers.h"
-#include "dx_helpers.h"
+#include "pch.h"
+#include "helpers.h"
 
 void RunModel(
     IDMLDevice* dmlDevice, 
