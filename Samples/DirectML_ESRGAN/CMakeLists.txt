@@ -102,6 +102,15 @@ target_link_libraries(dml INTERFACE "${dml_bin_dir}/directml.lib")
 # main sample source
 # -----------------------------------------------------------------------------
 
+FetchContent_Declare(
+    esgran_model
+    URL https://huggingface.co/microsoft/dml-ai-hub-models/resolve/main/esrgan/esrgan.onnx
+    URL_HASH SHA256=A853CB2585C47CF0C003B23B1129DB1FA21EC0FAA98A9158284F37FF7C94423B
+    DOWNLOAD_NO_EXTRACT TRUE
+)
+
+FetchContent_MakeAvailable(esgran_model)
+
 add_executable(directml_esrgan main.cpp)
 target_link_libraries(directml_esrgan PRIVATE wil ort dml d3d12 dxcore dxheaders cxxopts)
 target_compile_features(directml_esrgan PRIVATE cxx_std_20)
@@ -112,6 +121,6 @@ add_custom_command(
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ort_bin_dir}/onnxruntime.dll" $<TARGET_FILE_DIR:directml_esrgan>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_esrgan>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_esrgan>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${esgran_model_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_esrgan>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/zebra.jpg" $<TARGET_FILE_DIR:directml_esrgan>
 )
