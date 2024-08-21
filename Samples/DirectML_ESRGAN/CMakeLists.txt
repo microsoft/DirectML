@@ -123,4 +123,5 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dml_bin_dir}/directml.dll" $<TARGET_FILE_DIR:directml_esrgan>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${esgran_model_SOURCE_DIR}/esrgan.onnx" $<TARGET_FILE_DIR:directml_esrgan>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/zebra.jpg" $<TARGET_FILE_DIR:directml_esrgan>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/ThirdPartyNotices.txt" $<TARGET_FILE_DIR:directml_esrgan>
 )
