@@ -68,25 +68,33 @@ void RunModel(
     {
         throw std::invalid_argument("Model input must be of type float32 or float16");
     }
+    if (inputShape.size() < 3)
+    {
+        throw std::invalid_argument("Model input must be an image with 3 or 4 dimensions");
+    }
 
-    const uint32_t inputChannels = inputShape[1];
-    const uint32_t inputHeight = inputShape[2];
-    const uint32_t inputWidth = inputShape[3];
+    const uint32_t inputChannels = inputShape[inputShape.size() - 3];
+    const uint32_t inputHeight = inputShape[inputShape.size() - 2];
+    const uint32_t inputWidth = inputShape[inputShape.size() - 1];
     const uint32_t inputElementSize = inputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
     auto outputName = ortSession.GetOutputNameAllocated(0, ortAllocator);
     auto outputTypeInfo = ortSession.GetOutputTypeInfo(0);
     auto outputTensorInfo = outputTypeInfo.GetTensorTypeAndShapeInfo();
-    auto outputTensorShape = outputTensorInfo.GetShape();
+    auto outputShape = outputTensorInfo.GetShape();
     auto outputDataType = outputTensorInfo.GetElementType();
     if (outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT && outputDataType != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT16)
     {
         throw std::invalid_argument("Model output must be of type float32 or float16");
     }
+    if (outputShape.size() < 3)
+    {
+        throw std::invalid_argument("Model output must be an image with 3 or 4 dimensions");
+    }
 
-    const uint32_t outputChannels = outputTensorShape[1];
-    const uint32_t outputHeight = outputTensorShape[2];
-    const uint32_t outputWidth = outputTensorShape[3];
+    const uint32_t outputChannels = outputShape[outputShape.size() - 3];
+    const uint32_t outputHeight = outputShape[outputShape.size() - 2];
+    const uint32_t outputWidth = outputShape[outputShape.size() - 1];
     const uint32_t outputElementSize = outputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
 
     // Load image and transform it into an NCHW tensor with the correct shape and data type.
