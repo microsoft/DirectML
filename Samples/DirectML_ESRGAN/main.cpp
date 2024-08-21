@@ -122,48 +122,36 @@ int main(int argc, char** argv)
 {
     using Microsoft::WRL::ComPtr;
 
-    // Functions in image_helpers.h use WIC APIs, which require CoInitialize.
-    THROW_IF_FAILED(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-
-    // Parse command-line options.
-    cxxopts::Options commandLineParams("directml_cv", "DirectML Computer Vision Sample");
-    commandLineParams.add_options()
-        ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan.onnx"))
-        ("i,image", "Path to input image file", cxxopts::value<std::string>()->default_value("zebra.jpg"))
-        ("a,adapter", "Adapter name substring filter", cxxopts::value<std::string>()->default_value(""));
-
-    auto commandLineArgs = commandLineParams.parse(argc, argv);
-
-    // See dx_helpers.h for logic to select a DXCore adapter, create DML device, and create D3D command queue.
-    ComPtr<IDMLDevice> dmlDevice;
-    ComPtr<ID3D12CommandQueue> commandQueue;
     try
     {
-        std::tie(dmlDevice, commandQueue) = CreateDmlDeviceAndCommandQueue(commandLineArgs["adapter"].as<std::string>());
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Error creating device: " << e.what() << std::endl;
-        return 1;
-    }
+        // Functions in image_helpers.h use WIC APIs, which require CoInitialize.
+        auto coInit = wil::CoInitializeEx_failfast(COINIT_MULTITHREADED);
 
-    try
-    {
+        // Parse command-line options.
+        cxxopts::Options commandLineParams("directml_cv", "DirectML Computer Vision Sample");
+        commandLineParams.add_options()
+            ("m,model", "Path to ONNX model file", cxxopts::value<std::string>()->default_value("esrgan.onnx"))
+            ("i,image", "Path to input image file", cxxopts::value<std::string>()->default_value("zebra.jpg"))
+            ("a,adapter", "Adapter name substring filter", cxxopts::value<std::string>()->default_value(""));
+
+        auto commandLineArgs = commandLineParams.parse(argc, argv);
+
+        // See helpers.h for logic to select a DXCore adapter, create DML device, and create D3D command queue.
+        auto [dmlDevice, commandQueue] = CreateDmlDeviceAndCommandQueue(commandLineArgs["adapter"].as<std::string>());
+
         RunModel(
             dmlDevice.Get(), 
             commandQueue.Get(), 
             commandLineArgs["model"].as<std::string>(),
             commandLineArgs["image"].as<std::string>()
         );
+
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Error running model: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-
-    // Functions in image_helpers.h use WIC APIs, which require CoUninitialize.
-    CoUninitialize();
 
     return 0;
 }
