@@ -37,7 +37,7 @@
             "name": "win-x64-release",
             "displayName": "Release",
             "configurePreset": "win-x64",
-            "configuration": "Release",
+            "configuration": "RelWithDebInfo",
             "nativeToolOptions": ["/m"]
         },
         {
@@ -51,7 +51,7 @@
             "name": "win-arm64-release",
             "displayName": "Release",
             "configurePreset": "win-arm64",
-            "configuration": "Release",
+            "configuration": "RelWithDebInfo",
             "nativeToolOptions": ["/m"]
         }
     ]
