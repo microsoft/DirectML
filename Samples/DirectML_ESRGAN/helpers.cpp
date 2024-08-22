@@ -112,9 +112,38 @@ std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12Comm
     ComPtr<IDMLDevice> dmlDevice;
     THROW_IF_FAILED(DMLCreateDevice(d3d12Device.Get(), DML_CREATE_DEVICE_FLAG_NONE, IID_PPV_ARGS(&dmlDevice)));
 
+    D3D_FEATURE_LEVEL featureLevelsRequested[] = 
+    {
+        D3D_FEATURE_LEVEL_1_0_GENERIC,
+        D3D_FEATURE_LEVEL_1_0_CORE,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_12_1
+    };
+
+    D3D12_FEATURE_DATA_FEATURE_LEVELS featureLevelSupport = 
+    {
+        .NumFeatureLevels = _countof(featureLevelsRequested),
+        .pFeatureLevelsRequested = featureLevelsRequested
+    };
+
+    THROW_IF_FAILED(d3d12Device->CheckFeatureSupport(
+        D3D12_FEATURE_FEATURE_LEVELS,
+        &featureLevelSupport,
+        sizeof(featureLevelSupport)
+    ));
+
+    // The feature level returned by SelectAdapter is the MINIMUM feature level required for the adapter.
+    // However, some adapters may support higher feature levels. For compatibility reasons, this sample
+    // uses a direct queue for graphics-capable adapters that support feature levels > CORE.
+    auto queueType = (featureLevelSupport.MaxSupportedFeatureLevel <= D3D_FEATURE_LEVEL_1_0_CORE) ? 
+        D3D12_COMMAND_LIST_TYPE_COMPUTE : 
+        D3D12_COMMAND_LIST_TYPE_DIRECT;
+
     D3D12_COMMAND_QUEUE_DESC queueDesc = 
     {
-        .Type = D3D12_COMMAND_LIST_TYPE_COMPUTE,
+        .Type = queueType,
         .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
         .Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
         .NodeMask = 0
