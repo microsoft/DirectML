@@ -65,3 +65,11 @@ Adapter[1]: Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Hexagon(TM) NPU (SELE
 You must have Windows 11 24H2 installed to run this sample using an NPU.
 
 <sup>1</sup> Currently, this sample is only supported with the NPU available in Copilot+ PCs with Snapdragon X Series processors. Support for additional NPUs will come soon. To run this sample with the QC NPU you must install driver 30.0.31.250 or newer.
+
+<sup>2</sup> The following message is expected and trust that the model has executed successfully. The "Error in cpuinfo" and "Unknown Qualcomm CPU" messaging you received is a print message done in error. It will be removed in an upcoming release.
+```
+Error in cpuinfo: Unknown chip model name 'snapdragon (tm) 8cx gen 3 @ 3.40 GHz'.
+```
+```
+unknown Qualcomm CPU part 0x1 ignored
+```
