@@ -37,8 +37,8 @@ target_include_directories(wil INTERFACE "${wil_SOURCE_DIR}/include")
 # -----------------------------------------------------------------------------
 FetchContent_Declare(
     ort
-    URL https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.19.0
-    URL_HASH SHA256=FD4E65EBD23385FD8ED792F0C859D2AA255DC1761D0E5761087568FF255187AC
+    URL https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.18.0
+    URL_HASH SHA256=16D73AF3FC1EDD8392E8B6843FDEA281E89EE68A0C78DDE6325C30D20080EEE5
 )
 
 FetchContent_MakeAvailable(ort)
