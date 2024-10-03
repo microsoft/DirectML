@@ -13,6 +13,27 @@
 
 using Microsoft::WRL::ComPtr;
 
+bool TryGetProperty(ComPtr<IDXCoreAdapter>& adapter, DXCoreAdapterProperty prop, std::string& outputValue)
+{
+    if (adapter->IsPropertySupported(prop))
+    {
+        size_t propSize;
+        THROW_IF_FAILED(adapter->GetPropertySize(prop, &propSize));
+
+        outputValue.resize(propSize);
+        THROW_IF_FAILED(adapter->GetProperty(prop, propSize, outputValue.data()));
+
+        // Trim any trailing nul characters. 
+        while (!outputValue.empty() && outputValue.back() == '\0')
+        {
+            outputValue.pop_back();
+        }
+
+        return true;
+    }
+    return false;
+}
+
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
 {
     // Following flags toggle common scenarios for testing Compute and/or Generic ML devices.
@@ -40,12 +61,12 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE) :
         dxGuidDisallowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
 
-    if (requireComputeDevice)
+    if (requireComputeAttributes)
     {
         dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
     }
 
-    if (requireGenericMLDevice)
+    if (requireGenericMLAttributes)
     {
         dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
     }
@@ -67,7 +88,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     if (factory)
     {
         // If there's any required attributes, save time by only passing in required attributes instead.
-        std::vector<GUID> iteratingAdapterList = dxGuidRequireAllAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequireAllAttributes;
+        const std::vector<GUID>& iteratingAdapterList = dxGuidRequireAllAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequireAllAttributes;
         
         for (auto& allowedGuid : iteratingAdapterList)
         {
@@ -105,11 +126,9 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
 
     if (adapter)
     {
-        size_t adapterNameSize = 0;
-        THROW_IF_FAILED(adapter->GetPropertySize(DXCoreAdapterProperty::DriverDescription, &adapterNameSize));
-        char* adapterName = (char*)malloc(adapterNameSize);
-        THROW_IF_FAILED(adapter->GetProperty(DXCoreAdapterProperty::DriverDescription, adapterNameSize, adapterName));
-        printf("Successfully found adapter %s\n", adapterName);
+        std::string adapterName;
+        TryGetProperty(adapter, DXCoreAdapterProperty::DriverDescription, adapterName);
+        printf("Successfully found adapter %s\n", adapterName.c_str());
     }
 
     // Create the D3D12 Device
