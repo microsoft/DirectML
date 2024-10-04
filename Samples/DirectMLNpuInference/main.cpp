@@ -34,43 +34,25 @@ bool TryGetProperty(ComPtr<IDXCoreAdapter>& adapter, DXCoreAdapterProperty prop,
     return false;
 }
 
+bool GetNonGraphicsAdapter(ComPtr<IDXCoreAdapterList>& adapterList, ComPtr<IDXCoreAdapter>& outAdapter)
+{
+    for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
+    {
+        ComPtr<IDXCoreAdapter> possibleAdapter;
+        THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&possibleAdapter)));
+
+        if (!possibleAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
+        {
+            outAdapter = std::move(possibleAdapter);
+            return true;
+        }
+    }
+    return false;
+}
+
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
 {
-    // Following flags toggle common scenarios for testing Compute and/or Generic ML devices.
-    // The allow, required, and disallowed attributes list will be modified by code to follow these flags.
-    const bool allowGraphicsAttributes = false;
-    const bool allowComputeAttributes = true;
-    const bool requireComputeAttributes = false;
-    const bool requireGenericMLAttributes = false;
-
-    assert(!(!allowComputeAttributes && requireComputeAttributes));
-
-    // Populate helper structures based on above flags
-    std::vector<GUID> dxGuidAllowedAttributes = {}; // Attributes here are ok, having them does not disquality a device
-    std::vector<GUID> dxGuidRequireAllAttributes = {}; // All attributes here must be present for a device to be used
-    std::vector<GUID> dxGuidDisallowedAttributes = {}; // Any attribute here disqualifies a device from being used
-
-    // By default allow for these generic attribute
-    dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
-
-    allowGraphicsAttributes ?
-        dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS) :
-        dxGuidDisallowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS);
-
-    allowComputeAttributes ?
-        dxGuidAllowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE) :
-        dxGuidDisallowedAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
-
-    if (requireComputeAttributes)
-    {
-        dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
-    }
-
-    if (requireGenericMLAttributes)
-    {
-        dxGuidRequireAllAttributes.push_back(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
-    }
-
+    // Create Adapter Factory
     ComPtr<IDXCoreAdapterFactory> factory;
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
     if (dxCoreModule)
@@ -83,44 +65,23 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
             dxcoreCreateAdapterFactory(IID_PPV_ARGS(&factory));
         }
     }
-    // Create the DXCore Adapter
+
+    // Create the DXCore Adapter, for the purposes of the sample we look for (!GRAPHICS && (GENERIC_ML || CORE_COMPUTE))
     ComPtr<IDXCoreAdapter> adapter;
+    ComPtr<IDXCoreAdapterList> adapterList;
     if (factory)
     {
-        // If there's any required attributes, save time by only passing in required attributes instead.
-        const std::vector<GUID>& iteratingAdapterList = dxGuidRequireAllAttributes.empty() ? dxGuidAllowedAttributes : dxGuidRequireAllAttributes;
-        
-        for (auto& allowedGuid : iteratingAdapterList)
+        THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML, IID_PPV_ARGS(&adapterList)));
+
+        if (adapterList->GetAdapterCount() > 0)
         {
-            if (adapter != nullptr) break;
-            
-            ComPtr<IDXCoreAdapterList> adapterList;
-            THROW_IF_FAILED(factory->CreateAdapterList(1, &allowedGuid, IID_PPV_ARGS(&adapterList)));
-                
-            for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
-            {
-                ComPtr<IDXCoreAdapter> currentGpuAdapter;
-                THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&currentGpuAdapter)));
-
-                bool isAdapterValid = true;
-
-                // filter out adapters with disallowed attributes
-                for (auto& disallowedGuid : dxGuidDisallowedAttributes)
-                {
-                    if (currentGpuAdapter->IsAttributeSupported(disallowedGuid)) { isAdapterValid = false; }
-                }
-
-                // filter out adapters that doesn't match all required attributes
-                for (auto& requiredGuid : dxGuidRequireAllAttributes)
-                {
-                    if (!currentGpuAdapter->IsAttributeSupported(requiredGuid)) { isAdapterValid = false; }
-                }
-
-                if (!isAdapterValid) { continue; }
-
-                adapter = std::move(currentGpuAdapter);
-                break;
-            }
+            GetNonGraphicsAdapter(adapterList, adapter);
+        }
+        
+        if (!adapter)
+        {
+            THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, IID_PPV_ARGS(&adapterList)));
+            GetNonGraphicsAdapter(adapterList, adapter);
         }
     }
 
