@@ -13,7 +13,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-bool TryGetProperty(ComPtr<IDXCoreAdapter>& adapter, DXCoreAdapterProperty prop, std::string& outputValue)
+bool TryGetProperty(IDXCoreAdapter* adapter, DXCoreAdapterProperty prop, std::string& outputValue)
 {
     if (adapter->IsPropertySupported(prop))
     {
@@ -88,8 +88,14 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     if (adapter)
     {
         std::string adapterName;
-        TryGetProperty(adapter, DXCoreAdapterProperty::DriverDescription, adapterName);
-        printf("Successfully found adapter %s\n", adapterName.c_str());
+        if (TryGetProperty(adapter.Get(), DXCoreAdapterProperty::DriverDescription, adapterName))
+        {
+            printf("Successfully found adapter %s\n", adapterName.c_str());
+        }
+        else
+        {
+            printf("Failed to get adapter name.\n");
+        }
     }
 
     // Create the D3D12 Device
