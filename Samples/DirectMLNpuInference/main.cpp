@@ -34,7 +34,7 @@ bool TryGetProperty(IDXCoreAdapter* adapter, DXCoreAdapterProperty prop, std::st
     return false;
 }
 
-bool GetNonGraphicsAdapter(ComPtr<IDXCoreAdapterList>& adapterList, ComPtr<IDXCoreAdapter>& outAdapter)
+bool GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
 {
     for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
     {
@@ -43,7 +43,7 @@ bool GetNonGraphicsAdapter(ComPtr<IDXCoreAdapterList>& adapterList, ComPtr<IDXCo
 
         if (!possibleAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
         {
-            outAdapter = std::move(possibleAdapter);
+            possibleAdapter.CopyTo(outAdapter);
             return true;
         }
     }
@@ -75,13 +75,13 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
 
         if (adapterList->GetAdapterCount() > 0)
         {
-            GetNonGraphicsAdapter(adapterList, adapter);
+            GetNonGraphicsAdapter(adapterList.Get(), adapter.GetAddressOf());
         }
         
         if (!adapter)
         {
             THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, IID_PPV_ARGS(&adapterList)));
-            GetNonGraphicsAdapter(adapterList, adapter);
+            GetNonGraphicsAdapter(adapterList.Get(), adapter.GetAddressOf());
         }
     }
 
