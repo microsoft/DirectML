@@ -4,7 +4,6 @@
 #include "NpyReaderWriter.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
@@ -1402,21 +1401,85 @@ std::vector<Model::BufferBindingSource> ParseBindingSource(const rapidjson::Valu
     return sourceResources;
 }
 
-Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value& object, BucketAllocator& allocator)
+Model::DmlDispatchableDesc::DmlCompileType ParseDmlCompileType(const rapidjson::Value& value)
 {
-    Model::DmlDispatchableDesc desc;
-    desc.desc = ParseDmlOperatorDesc(object, false, allocator);
-    desc.bindPoints = GetBindPoints(*desc.desc);
-    desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+    if (value.GetType() != rapidjson::Type::kStringType)
+    {
+        throw std::invalid_argument("Expected a string.");
+    }
+    auto valueString = value.GetString();
+    if (!strcmp(valueString, "DmlCompileOp")) { return Model::DmlDispatchableDesc::DmlCompileType::DmlCompileOp; }
+    if (!strcmp(valueString, "DmlCompileGraph")) { return Model::DmlDispatchableDesc::DmlCompileType::DmlCompileGraph; }
+    throw std::invalid_argument(fmt::format("'{}' is not a recognized value for DmlCompileType.", valueString));
+}
 
+Model::DmlDispatchableDesc::DmlCompileType ParseDmlCompileTypeField(const rapidjson::Value& object, std::string_view fieldName, bool required, Model::DmlDispatchableDesc::DmlCompileType defaultValue)
+{
+    return ParseFieldHelper<Model::DmlDispatchableDesc::DmlCompileType>(object, fieldName, required, defaultValue, [](auto& value) {
+        return ParseDmlCompileType(value);
+        });
+}
+
+void ParseBindings(const rapidjson::Value& object, std::unordered_map<std::string, std::vector<Model::BufferBindingSource>>& initBindings)
+{
     auto bindingsField = object.FindMember("bindings");
     if (bindingsField != object.MemberEnd() && bindingsField->value.IsObject())
     {
         for (auto bindingMember = bindingsField->value.MemberBegin(); bindingMember != bindingsField->value.MemberEnd(); bindingMember++)
         {
-            desc.initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
+            initBindings[bindingMember->name.GetString()] = ParseBindingSource(bindingMember->value);
         }
     }
+}
+
+Model::DmlDispatchableDesc ParseModelDmlDispatchableDesc(const rapidjson::Value& object, BucketAllocator& allocator)
+{
+    Model::DmlDispatchableDesc desc;
+    desc.desc = ParseDmlOperatorDesc(object, false, allocator);
+    desc.bindPoints = GetBindPoints(*desc.desc);
+
+    // DirectML requires optional bindings if DML_OPERATOR_DESC declares that binding for optional operator tensors.
+    // Logic is based on the Model directml Operator the tensors declared in "desc".
+    auto UpdateBindingPoints = [](const rapidjson::Value& object, std::vector<Model::DmlDispatchableDesc::BindPoint>& bindPoints) {
+        for (auto& bindPoint : bindPoints)
+        {
+            if (bindPoint.required || object.HasMember(bindPoint.name.c_str()))
+            {
+                bindPoint.requiredBinding = true;
+            }
+            else
+            {
+                bindPoint.requiredBinding = false;
+            }
+        }};
+
+    auto descMember = object.FindMember("Desc");
+    if (descMember == object.MemberEnd())
+    {
+        descMember = object.FindMember("desc");
+    }
+    if (descMember != object.MemberEnd())
+    {
+        UpdateBindingPoints(descMember->value, desc.bindPoints.inputs);
+        UpdateBindingPoints(descMember->value, desc.bindPoints.outputs);
+    }
+    desc.compileType = ParseDmlCompileTypeField(object, "dmlCompileType", false, Model::DmlDispatchableDesc::DmlCompileType::DmlCompileOp);
+
+    desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+
+    ParseBindings(object, desc.initBindings);
+
+    return desc;
+}
+
+Model::DmlSerializedGraphDispatchableDesc ParseModelDmlSerializedGraphDispatchableDesc(const std::filesystem::path& parentPath, const rapidjson::Value& object)
+{
+    Model::DmlSerializedGraphDispatchableDesc desc = {};
+    desc.sourcePath = ResolveInputFilePath(parentPath, ParseStringField(object, "sourcePath"));
+    
+    desc.executionFlags = ParseDmlExecutionFlagsField(object, "executionFlags", false, DML_EXECUTION_FLAG_NONE);
+
+    ParseBindings(object, desc.initBindings);
 
     return desc;
 }
@@ -1442,6 +1505,10 @@ Model::DispatchableDesc ParseModelDispatchableDesc(
     else if (!_stricmp(type.data(), "onnx"))
     {
         desc.value = ParseModelOnnxDispatchableDesc(parentPath, object);
+    }
+    else if (!_stricmp(type.data(), "dmlSerializedGraph"))
+    {
+        desc.value = ParseModelDmlSerializedGraphDispatchableDesc(parentPath, object);
     }
     else
     {
@@ -1511,6 +1578,7 @@ Model::WriteFileCommand ParseWriteFileCommand(const rapidjson::Value& object, co
 
     return command;
 }
+
 Model::Command ParseModelCommand(const rapidjson::Value& object, const std::filesystem::path& outputPath)
 {
     return ParseModelCommandDesc(object, outputPath).command;

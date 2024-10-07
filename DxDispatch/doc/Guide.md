@@ -23,6 +23,14 @@
     - [Handling Dynamic Shapes at Initialization](#handling-dynamic-shapes-at-initialization)
     - [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)
     - [Implicit Bindings and Optional JSON](#implicit-bindings-and-optional-json)
+  - [Dispatchable: DML Serialized Graph](#dispatchable-dml-serialized-graph)
+    - [Creating Flatbuffer Files](#creating-flatbuffer-files)
+    - [JSON Definition](#json-definition)
+    - [Key Components](#key-components)
+    - [Initialization Process](#initialization-process)
+    - [Execution](#execution)
+    - [Important Considerations](#important-considerations)
+    - [Comparison with Other Dispatchables](#comparison-with-other-dispatchables)    
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
@@ -366,7 +374,7 @@ You can initialize a buffer is using an array of elements with different types a
 
 ## Dispatchables
 
-Dispatchables are objects that can be executed on a D3D command queue. The model supports three types of dispatchables: DirectML operators, custom HLSL compute shaders, and serialized ONNX models.
+Dispatchables are objects that can be executed on a D3D command queue. The model supports four types of dispatchables: DirectML operators, custom HLSL compute shaders, serialized ONNX models, and DirectML serialized graph models .
 
 ## Dispatchable: DirectML Operator
 
@@ -467,6 +475,28 @@ Take note of the few odd cases that don't follow the usual rule exactly:
 
 - Enum values of type `DML_OPERATOR_TYPE` omit `_TYPE` from their prefix. It's `DML_OPERATOR_GEMM`, not `DML_OPERATOR_TYPE_GEMM`.
 - Flag values are singular and omit the "S". It's `DML_EXECUTION_FLAG_NONE`, not `DML_EXECUTION_FLAGS_NONE`. 
+
+### DirectML Compile Op vs Graph (dmlCompileType)
+Enum dmlCompileType configures whether a defined DirectML operator uses IDMLDevice::CompileOperator or the operator is inserted into DML_GRAPH_DESC and compiled using IDMLDevice1::CompileGraph.
+
+| Enums for dmlCompileType                         | Description                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| <b><i>DmlCompileGraph</b></i> (Default behavior) | Uses IDMLDevice::CompileOperator for defined operator                     |
+| <b><i>DmlCompileGraph</b></i> (Default behavior) | Inserts Operator into a DML_GRAPH_DESC and uses IDMLDevice1::CompileGraph |
+
+Syntax:
+
+```json
+        "dmlOperator":
+        {
+            "type": "DML_OPERATOR_*",
+            "dmlCompileType": "DmlCompileGraph",
+            "Desc": { ... }
+        }
+```
+
+See full example in [dml_gemm_graph.json](../models/dml_gemm_graph.json).
+
 
 ### DML_TENSOR_DESC
 
@@ -693,6 +723,117 @@ As a convenience, you can also skip writing the JSON model altogether and simply
 ```
 > dxdispatch.exe .\models\onnx_gemm.onnx [other options...]
 ```
+# DML Serialized Graph Dispatchable
+
+The DML Serialized Graph dispatchable allows you to execute pre-compiled DirectML graphs from flatbuffer files. This approach provides a way to run complex DirectML graphs that have been serialized, typically from ONNX models.
+
+## Creating Flatbuffer Files
+
+To generate flatbuffer files for an ONNX model:
+
+1. Use ONNXRuntime with the DirectML execution provider.
+2. Enable graph serialization by setting the `ep.dml.enable_graph_serialization` config option when creating the ONNXRuntime session.
+3. ONNXRuntime will generate a serialized DML graph in flatbuffer format (named `Partition_0.bin`) along with weight files.
+
+Alternatively, use `onnxruntime_perf_test.exe`:
+
+```
+.\onnxruntime_perf_test.exe -I -e dml -d 0 -o 99 -m times -r 1 -i "enable_graph_serialization|True" <onnx_model_path>
+```
+
+**Note:** This dispatchable currently only works when the DirectML execution provider creates a single partition for the ONNX model.
+
+## JSON Definition
+
+Example of a DML Serialized Graph dispatchable in JSON:
+
+```json
+{
+  "resources": 
+  {
+      "data_0": 
+      {
+          "initialValuesDataType": "FLOAT16",
+          "initialValues": { "valueCount": 150528, "value": 0 }
+      },
+      "prob_1": 
+      {
+          "initialValuesDataType": "FLOAT16",
+          "initialValues": { "valueCount": 9216, "value": 0 }
+      }
+  },
+
+  "dispatchables": 
+  {
+      "bvlcalexnet": 
+      {
+        "type": "dmlSerializedGraph",
+        "sourcePath": "fb_bvlcalexnet_12_fp16/Partition_0.bin"
+      }
+  },
+
+  "commands": 
+  [
+      {
+          "type": "dispatch",
+          "dispatchable": "bvlcalexnet",
+          "bindings": 
+          {
+            "data_0": "data_0",
+            "prob_1": "prob_1"
+          }
+      },
+      {
+          "type": "print",
+          "resource": "prob_1"
+      }
+  ]
+}
+```
+
+## Key Components
+
+1. **Type**: Set to `"dmlSerializedGraph"`.
+2. **Source Path**: Path to the flatbuffer file containing the serialized graph.
+3. **Execution Flags**: (Optional) Set DirectML execution flags using the `"executionFlags"` field.
+4. **Bindings**: Define input and output bindings as with other dispatchable types.
+
+## Initialization Process
+
+The initialization process for a DmlSerializedGraph dispatchable differs from other dispatchable types:
+
+1. The flatbuffer file is loaded and deserialized using `DeserializeDmlGraph`.
+2. The deserialized graph is converted to a `DML_GRAPH_DESC` structure using `ConvertGraphDesc`.
+3. The graph is compiled using `IDMLDevice1::CompileGraph`.
+4. Bind points are set up based on the graph's input and output edges.
+5. Resources for constant nodes in the graph are created and initialized.
+
+## Execution
+
+Execution is similar to other DirectML-based dispatchables. The compiled graph is executed using the bindings provided in the dispatch command.
+
+## Important Considerations
+
+1. **Constant Nodes**: The dispatchable automatically handles constant nodes in the graph. It creates resources for these nodes and initializes them with data from the separate weight files ORT dumped (with `.bin` extension) in the same directory as the graph file.
+
+2. **Binding Points**: The bind points for inputs and outputs are determined from the serialized graph structure, not explicitly defined in the JSON. This differs from other dispatchable types where bind points are typically defined in the JSON.
+
+3. **Data Types**: The dispatchable extracts data types for constant tensors from the graph. 
+
+4. **Resource Sizing**: When binding resources, the dispatchable calculates required buffer sizes based on the tensor shapes in the graph.
+
+5. **Initialization Bindings**: The dispatchable generates initial bindings based on the graph structure.
+
+6. **Error Handling**: The implementation includes robust error checking. Pay attention to any thrown exceptions, as they may provide valuable information about mismatches between your JSON definitions and the serialized graph requirements.
+
+## Comparison with Other Dispatchables
+
+Unlike ONNX or DML operator dispatchables, the DmlSerializedGraph:
+- Doesn't require explicit operator definitions in the JSON.
+- Handles constant tensors automatically from serialized data.
+- Offers a more direct execution path for complex, pre-optimized graphs.
+
+
 
 ## Commands
 ### Dispatch

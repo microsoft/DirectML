@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.19)
-project(dxdispatch VERSION 0.18.0 LANGUAGES CXX)
+project(dxdispatch VERSION 0.18.1 LANGUAGES CXX)
 
 # ==============================================================================
 # External Libraries/Helpers
 # ==============================================================================
+
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(FetchContent)
 include(cmake/helper_platform.cmake)
@@ -22,9 +26,9 @@ endif()
 
 include(cmake/gsl.cmake)
 include(cmake/rapidjson.cmake)
+include(cmake/flatbuffer.cmake)
 include(cmake/fmt.cmake)
 include(cmake/wil.cmake)
-include(cmake/half.cmake)
 include(cmake/cxxopts.cmake)
 
 if(NOT TARGET_XBOX)
@@ -90,7 +94,6 @@ target_link_libraries(
     fmt::fmt-header-only
     PUBLIC
     Microsoft.GSL::GSL
-    Half::Half
     rapidjson::rapidjson
     wil
     d3d12
@@ -104,6 +107,7 @@ endif()
 target_compile_features(model PRIVATE cxx_std_17)
 target_precompile_headers(model PRIVATE src/model/pch.h)
 target_include_directories(model INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/model)
+target_include_directories(model PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/external)
 
 # ==============================================================================
 # Dll
@@ -129,6 +133,8 @@ add_library(
     src/dxdispatch/Device.h
     src/dxdispatch/DmlDispatchable.cpp
     src/dxdispatch/DmlDispatchable.h
+    src/dxdispatch/DirectMLHelpers/DmlGraphDeserialization.cpp
+    src/dxdispatch/DirectMLHelpers/ApiTraits.cpp
     src/dxdispatch/Executor.cpp
     src/dxdispatch/Executor.h
     src/dxdispatch/CommandLineArgs.cpp
@@ -185,6 +191,7 @@ target_link_libraries(
     wil
     onnxruntime
     onnxruntime_extensions
+    flatbuffer
 )
 
 target_compile_features(dxdispatchImpl PRIVATE cxx_std_17)
@@ -323,7 +330,7 @@ if(DXD_TESTS)
         model
     )
     target_include_directories(jsontests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/dxdispatch)
-    gtest_discover_tests(jsontests)
+    gtest_discover_tests(jsontests DISCOVERY_MODE PRE_TEST)
 
     # Hacky. Needed for silly reasons related to defining GUIDs in winadapter. This should
     # ideally be cleaned up at some point.

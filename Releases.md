@@ -4,6 +4,9 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                  | Feature level                                                                                                            | First available in OS                                             | Redistributable                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1.15.2 | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.2](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.2) |
+| [1.15.1](#directml-1151) | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.1) |
+| [1.15.0](#directml-1150) | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.0) |
 | [1.13.1](#directml-1131) | [DML_FEATURE_LEVEL_6_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_2) | TBD                                                               | [Microsoft.AI.DirectML.1.13.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.13.1) |
 | [1.13.0](#directml-1130) | [DML_FEATURE_LEVEL_6_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_2) | TBD                                                               | [Microsoft.AI.DirectML.1.13.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.13.0) |
 | [1.12.1](#directml-1121) | [DML_FEATURE_LEVEL_6_1](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_1) | TBD                                                               | [Microsoft.AI.DirectML.1.12.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.12.1) |
@@ -27,6 +30,41 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
 
+# DirectML 1.15.1
+- Improved performance across many operators on certain NPU hardware.
+  
+# DirectML 1.15.0
+- Introduced DML_FEATURE_LEVEL 6.4:
+  - Added 3 new operators:
+    - DML_OPERATOR_RESAMPLE3
+    - DML_OPERATOR_FOLD
+    - DML_OPERATOR_UNFOLD
+  - Updated 3 operators:
+    - DML_OPERATOR_PADDING (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
+    - DML_OPERATOR_PADDING1 (updated to accept DML_PADDING_MODE::DML_PADDING_MODE_WRAP)
+    - DML_OPERATOR_ACTIVATION_SOFTPLUS (updated to allow Steepness < 1)
+
+- Introduced DML_FEATURE_LEVEL 6.3:
+  - Added data type Support:
+    - DML_TENSOR_DATA_TYPE_UINT4
+    - DML_TENSOR_DATA_TYPE_INT4
+  - Added 4 new operators:
+    - DML_OPERATOR_MEAN_VARIANCE_NORMALIZATION2
+    - DML_OPERATOR_MULTIHEAD_ATTENTION1
+    - DML_OPERATOR_QUANTIZE (added with INT4/UINT4 support)
+    - DML_OPERATOR_DEQUANTIZE (added with INT4/UINT4 support)
+
+- Optimizations:
+  - (LLM) Added INT4 Dequantize + GEMM fusion metacommand and DXIL lowerings.
+  - (LLM) Added Multihead Attention fusion
+  - Added Gemm fusion optimizations
+  - (Intel ARC GPU) Fix pooling metacommand calls by driver version
+ 
+Bug fixes:
+  - Swish now produces correct output when invoked with strided input tensors
+  - Intel
+    - (Precision) FP16 GemmWave emulated on FP32
+ 
 # DirectML 1.13.1
 
 - Fixed performance issues and bugs introduced in the 1.13 release for models that use the Join operator.
