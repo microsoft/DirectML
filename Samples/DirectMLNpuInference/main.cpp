@@ -66,7 +66,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         }
     }
 
-    // Create the DXCore Adapter, for the purposes of the sample we look for (!GRAPHICS && (GENERIC_ML || CORE_COMPUTE))
+    // Create the DXCore Adapter, for the purposes of selecting NPU we look for (!GRAPHICS && (GENERIC_ML || CORE_COMPUTE))
     ComPtr<IDXCoreAdapter> adapter;
     ComPtr<IDXCoreAdapterList> adapterList;
     if (factory)
