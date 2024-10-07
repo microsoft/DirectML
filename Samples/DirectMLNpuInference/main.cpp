@@ -94,7 +94,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         }
         else
         {
-            printf("Failed to get adapter name.\n");
+            printf("Failed to get adapter description.\n");
         }
     }
 
