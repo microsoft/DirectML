@@ -151,7 +151,14 @@ static DataTypeInfo GetDataTypeInfo(ONNXTensorElementDataType dataType)
         info.dmlDataType = DML_TENSOR_DATA_TYPE_FLOAT64;
         info.sizeInBytes = 8;
         break;
+
+    case ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL:
+        info.dmlDataType = DML_TENSOR_DATA_TYPE_UINT8;
+        info.sizeInBytes = 1;
+        break;
     }
+
+    assert(info.dmlDataType != DML_TENSOR_DATA_TYPE_UNKNOWN);
 
     return info;
 }
