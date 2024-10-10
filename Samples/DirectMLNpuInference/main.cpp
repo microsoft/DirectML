@@ -34,20 +34,21 @@ bool TryGetProperty(IDXCoreAdapter* adapter, DXCoreAdapterProperty prop, std::st
     return false;
 }
 
-bool GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
+// Returns nullptr if not found.
+void GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
 {
     for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
     {
         ComPtr<IDXCoreAdapter> possibleAdapter;
-        THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&possibleAdapter)));
+        THROW_IF_FAILED(adapterList->GetAdapter(i, IID_PPV_ARGS(&possibleAdapter)));
 
         if (!possibleAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
         {
-            possibleAdapter.CopyTo(outAdapter);
-            return true;
+            *outAdapter = possibleAdapter.Detach();
+            return;
         }
     }
-    return false;
+    *outAdapter = nullptr;
 }
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
