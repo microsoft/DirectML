@@ -34,20 +34,21 @@ bool TryGetProperty(IDXCoreAdapter* adapter, DXCoreAdapterProperty prop, std::st
     return false;
 }
 
-bool GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
+// Returns nullptr if not found.
+void GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
 {
     for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
     {
         ComPtr<IDXCoreAdapter> possibleAdapter;
-        THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&possibleAdapter)));
+        THROW_IF_FAILED(adapterList->GetAdapter(i, IID_PPV_ARGS(&possibleAdapter)));
 
         if (!possibleAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
         {
-            possibleAdapter.CopyTo(outAdapter);
-            return true;
+            *outAdapter = possibleAdapter.Detach();
+            return;
         }
     }
-    return false;
+    *outAdapter = nullptr;
 }
 
 void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
@@ -69,6 +70,8 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     // Create the DXCore Adapter, for the purposes of selecting NPU we look for (!GRAPHICS && (GENERIC_ML || CORE_COMPUTE))
     ComPtr<IDXCoreAdapter> adapter;
     ComPtr<IDXCoreAdapterList> adapterList;
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_1_0_GENERIC;
+
     if (factory)
     {
         THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML, IID_PPV_ARGS(&adapterList)));
@@ -80,6 +83,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         
         if (!adapter)
         {
+            featureLevel = D3D_FEATURE_LEVEL_1_0_CORE;
             THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, IID_PPV_ARGS(&adapterList)));
             GetNonGraphicsAdapter(adapterList.Get(), adapter.GetAddressOf());
         }
@@ -94,7 +98,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         }
         else
         {
-            printf("Failed to get adapter name.\n");
+            printf("Failed to get adapter description.\n");
         }
     }
 
@@ -111,10 +115,11 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
             if (d3d12CreateDevice)
             {
                 // The GENERIC feature level minimum allows for the creation of both compute only and generic ML devices.
-                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_1_0_GENERIC, IID_PPV_ARGS(&d3dDevice)));
+                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), featureLevel, IID_PPV_ARGS(&d3dDevice)));
             }
         }
     }
+
     // Create the DML Device and D3D12 Command Queue
     ComPtr<IDMLDevice> dmlDevice;
     ComPtr<ID3D12CommandQueue> commandQueue;
