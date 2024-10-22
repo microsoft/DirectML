@@ -55,7 +55,10 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
 {
     // Create Adapter Factory
     ComPtr<IDXCoreAdapterFactory> factory;
+
+    // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
+    
     if (dxCoreModule)
     {
         auto dxcoreCreateAdapterFactory = reinterpret_cast<HRESULT(WINAPI*)(REFIID, void**)>(
@@ -106,6 +109,7 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
     ComPtr<ID3D12Device1> d3dDevice;
     if (adapter)
     {
+        // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
         HMODULE d3d12Module = LoadLibraryW(L"d3d12.dll");
         if (d3d12Module)
         {
@@ -130,6 +134,8 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         THROW_IF_FAILED(d3dDevice->CreateCommandQueue(
             &queueDesc,
             IID_PPV_ARGS(commandQueue.ReleaseAndGetAddressOf())));
+
+        // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
         HMODULE dmlModule = LoadLibraryW(L"DirectML.dll");
         if (dmlModule)
         {
