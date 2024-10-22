@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.props" Condition="Exists('packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.props')" />
+  <Import Project="packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.props" Condition="Exists('packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.props')" />
   <Import Project="packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
@@ -444,7 +444,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
     <Import Project="packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.targets')" />
-    <Import Project="packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.targets" Condition="Exists('packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.targets')" />
+    <Import Project="packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.targets" Condition="Exists('packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -453,7 +453,7 @@
     <Error Condition="!Exists('packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Windows.ImplementationLibrary.1.0.220914.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
     <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.props'))" />
     <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.15.2\build\Microsoft.AI.DirectML.targets'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.props'))" />
-    <Error Condition="!Exists('packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.MachineLearning.1.17.0\build\native\Microsoft.AI.MachineLearning.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.MachineLearning.1.19.2\build\native\Microsoft.AI.MachineLearning.targets'))" />
   </Target>
 </Project>

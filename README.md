@@ -63,6 +63,7 @@ See the following sections for more information:
 
 DirectML C++ sample code is available under [Samples](./Samples).
 * [HelloDirectML](./Samples/HelloDirectML): A minimal "hello world" application that executes a single DirectML operator.
+* [DirectMLNpuInference](./Samples\DirectMLNpuInference): A sample that showcases how to utilize NPU hardware with DirectML.
 * [DirectMLSuperResolution](./Samples/DirectMLSuperResolution): A sample that uses DirectML to execute a basic super-resolution model to upscale video from 540p to 1080p in real time.
 * [yolov4](./Samples/yolov4): YOLOv4 is an object detection model capable of recognizing up to 80 different classes of objects in an image. This sample contains a complete end-to-end implementation of the model using DirectML, and is able to run in real time on a user-provided video stream.
 

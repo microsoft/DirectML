@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "pch.h"
@@ -13,13 +13,52 @@
 
 using Microsoft::WRL::ComPtr;
 
-void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut) {
-    // Whether to skip adapters which support Graphics in order to target NPU for testing
-    bool forceComputeOnlyDevice = true;
-    bool forceGenericMLDevice = false;
-    
+bool TryGetProperty(IDXCoreAdapter* adapter, DXCoreAdapterProperty prop, std::string& outputValue)
+{
+    if (adapter->IsPropertySupported(prop))
+    {
+        size_t propSize;
+        THROW_IF_FAILED(adapter->GetPropertySize(prop, &propSize));
+
+        outputValue.resize(propSize);
+        THROW_IF_FAILED(adapter->GetProperty(prop, propSize, outputValue.data()));
+
+        // Trim any trailing nul characters. 
+        while (!outputValue.empty() && outputValue.back() == '\0')
+        {
+            outputValue.pop_back();
+        }
+
+        return true;
+    }
+    return false;
+}
+
+// Returns nullptr if not found.
+void GetNonGraphicsAdapter(IDXCoreAdapterList* adapterList, IDXCoreAdapter** outAdapter)
+{
+    for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
+    {
+        ComPtr<IDXCoreAdapter> possibleAdapter;
+        THROW_IF_FAILED(adapterList->GetAdapter(i, IID_PPV_ARGS(&possibleAdapter)));
+
+        if (!possibleAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GRAPHICS))
+        {
+            *outAdapter = possibleAdapter.Detach();
+            return;
+        }
+    }
+    *outAdapter = nullptr;
+}
+
+void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** commandQueueOut, IDMLDevice** dmlDeviceOut)
+{
+    // Create Adapter Factory
     ComPtr<IDXCoreAdapterFactory> factory;
+
+    // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
     HMODULE dxCoreModule = LoadLibraryW(L"DXCore.dll");
+    
     if (dxCoreModule)
     {
         auto dxcoreCreateAdapterFactory = reinterpret_cast<HRESULT(WINAPI*)(REFIID, void**)>(
@@ -30,40 +69,47 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
             dxcoreCreateAdapterFactory(IID_PPV_ARGS(&factory));
         }
     }
-    // Create the DXCore Adapter
+
+    // Create the DXCore Adapter, for the purposes of selecting NPU we look for (!GRAPHICS && (GENERIC_ML || CORE_COMPUTE))
     ComPtr<IDXCoreAdapter> adapter;
+    ComPtr<IDXCoreAdapterList> adapterList;
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_1_0_GENERIC;
+
     if (factory)
     {
-        const GUID dxGUIDs[] = { DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE };
-        ComPtr<IDXCoreAdapterList> adapterList;
-        THROW_IF_FAILED(factory->CreateAdapterList(ARRAYSIZE(dxGUIDs), dxGUIDs, IID_PPV_ARGS(&adapterList)));
-        for (uint32_t i = 0, adapterCount = adapterList->GetAdapterCount(); i < adapterCount; i++)
-        {
-            ComPtr<IDXCoreAdapter> currentGpuAdapter;
-            THROW_IF_FAILED(adapterList->GetAdapter(static_cast<uint32_t>(i), IID_PPV_ARGS(&currentGpuAdapter)));
+        THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML, IID_PPV_ARGS(&adapterList)));
 
-            if (!forceComputeOnlyDevice && !forceGenericMLDevice)
-            {
-                // No device restrictions
-                adapter = std::move(currentGpuAdapter);
-                break;
-            }
-            else if (forceComputeOnlyDevice && currentGpuAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE))
-            {
-                adapter = std::move(currentGpuAdapter);
-                break;
-            }
-            else if (forceGenericMLDevice && currentGpuAdapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML))
-            {
-                adapter = std::move(currentGpuAdapter);
-                break;
-            }
+        if (adapterList->GetAdapterCount() > 0)
+        {
+            GetNonGraphicsAdapter(adapterList.Get(), adapter.GetAddressOf());
+        }
+        
+        if (!adapter)
+        {
+            featureLevel = D3D_FEATURE_LEVEL_1_0_CORE;
+            THROW_IF_FAILED(factory->CreateAdapterList(1, &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, IID_PPV_ARGS(&adapterList)));
+            GetNonGraphicsAdapter(adapterList.Get(), adapter.GetAddressOf());
         }
     }
+
+    if (adapter)
+    {
+        std::string adapterName;
+        if (TryGetProperty(adapter.Get(), DXCoreAdapterProperty::DriverDescription, adapterName))
+        {
+            printf("Successfully found adapter %s\n", adapterName.c_str());
+        }
+        else
+        {
+            printf("Failed to get adapter description.\n");
+        }
+    }
+
     // Create the D3D12 Device
     ComPtr<ID3D12Device1> d3dDevice;
     if (adapter)
     {
+        // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
         HMODULE d3d12Module = LoadLibraryW(L"d3d12.dll");
         if (d3d12Module)
         {
@@ -72,10 +118,12 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
                 );
             if (d3d12CreateDevice)
             {
-                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_1_0_CORE, IID_PPV_ARGS(&d3dDevice)));
+                // The GENERIC feature level minimum allows for the creation of both compute only and generic ML devices.
+                THROW_IF_FAILED(d3d12CreateDevice(adapter.Get(), featureLevel, IID_PPV_ARGS(&d3dDevice)));
             }
         }
     }
+
     // Create the DML Device and D3D12 Command Queue
     ComPtr<IDMLDevice> dmlDevice;
     ComPtr<ID3D12CommandQueue> commandQueue;
@@ -86,6 +134,8 @@ void InitializeDirectML(ID3D12Device1** d3dDeviceOut, ID3D12CommandQueue** comma
         THROW_IF_FAILED(d3dDevice->CreateCommandQueue(
             &queueDesc,
             IID_PPV_ARGS(commandQueue.ReleaseAndGetAddressOf())));
+
+        // Note: this module is not currently properly freed. Outside of sample usage, this module should freed e.g. with an explicit free or through wil::unique_hmodule.
         HMODULE dmlModule = LoadLibraryW(L"DirectML.dll");
         if (dmlModule)
         {
