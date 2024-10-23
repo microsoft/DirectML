@@ -4,7 +4,8 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 
 | Version                  | Feature level                                                                                                            | First available in OS                                             | Redistributable                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1.15.2 | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.2](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.2) |
+| [1.15.3](#directml-1153) | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.3](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.3) |
+| 1.15.2                   | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.2](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.2) |
 | [1.15.1](#directml-1151) | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.1) |
 | [1.15.0](#directml-1150) | [DML_FEATURE_LEVEL_6_4](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_4) | TBD                                                               | [Microsoft.AI.DirectML.1.15.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.0) |
 | [1.13.1](#directml-1131) | [DML_FEATURE_LEVEL_6_2](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_6_2) | TBD                                                               | [Microsoft.AI.DirectML.1.13.1](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.13.1) |
@@ -29,6 +30,9 @@ See [DirectML version history on MSDN](https://docs.microsoft.com/windows/win32/
 | [1.4.0](#directml-140)   | [DML_FEATURE_LEVEL_3_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_3_0) | Redistributable only                                              | [Microsoft.AI.DirectML.1.4.0](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.4.0)   |
 | [1.1.0](#directml-110)   | [DML_FEATURE_LEVEL_2_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_2_0) | Windows 10 May 2020 Update, Version 2004 (Build 10.0.19041, 20H1) | -                                                                                           |
 | [1.0.0](#directml-100)   | [DML_FEATURE_LEVEL_1_0](https://learn.microsoft.com/windows/ai/directml/dml-feature-level-history#dml_feature_level_1_0) | Windows 10 May 2019 Update, Version 1903 (Build 10.0.18362; 19H1) | -                                                                                           |
+
+# DirectML 1.15.3
+- Update for running WebNN Whisper on certain NPU hardware.
 
 # DirectML 1.15.1
 - Improved performance across many operators on certain NPU hardware.
