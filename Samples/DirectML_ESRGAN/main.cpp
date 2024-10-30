@@ -55,6 +55,7 @@ void RunModel(
     const uint32_t inputHeight = inputShape[inputShape.size() - 2];
     const uint32_t inputWidth = inputShape[inputShape.size() - 1];
     const uint32_t inputElementSize = inputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
+    const ChannelOrder inputChannelOrder = inputChannels == 3 ? ChannelOrder::RGB : ChannelOrder::RGBA;
 
     auto outputName = ortSession.GetOutputNameAllocated(0, ortAllocator);
     auto outputTypeInfo = ortSession.GetOutputTypeInfo(0);
@@ -74,13 +75,14 @@ void RunModel(
     const uint32_t outputHeight = outputShape[outputShape.size() - 2];
     const uint32_t outputWidth = outputShape[outputShape.size() - 1];
     const uint32_t outputElementSize = outputDataType == ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ? sizeof(float) : sizeof(uint16_t);
+    const ChannelOrder outputChannelOrder = outputChannels == 3 ? ChannelOrder::RGB : ChannelOrder::RGBA;
 
     // Load image and transform it into an NCHW tensor with the correct shape and data type.
     std::vector<std::byte> inputBuffer(inputChannels * inputHeight * inputWidth * inputElementSize);
-    FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, inputDataType, ChannelOrder::RGB);
+    FillNCHWBufferFromImageFilename(imagePath.wstring(), inputBuffer, inputHeight, inputWidth, inputDataType, inputChannelOrder);
 
     std::cout << "Saving cropped/scaled image to input.png" << std::endl;
-    SaveNCHWBufferToImageFilename(L"input.png", inputBuffer, inputHeight, inputWidth, inputDataType, ChannelOrder::RGB);
+    SaveNCHWBufferToImageFilename(L"input.png", inputBuffer, inputHeight, inputWidth, inputDataType, inputChannelOrder);
 
     // For simplicity, this sample binds input/output buffers in system memory instead of DirectX resources.
     Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
@@ -114,7 +116,7 @@ void RunModel(
         outputHeight, 
         outputWidth, 
         outputDataType, 
-        ChannelOrder::RGB
+        outputChannelOrder
     );
 }
 

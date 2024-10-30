@@ -7,6 +7,7 @@ enum class ChannelOrder
 {
     RGB,
     BGR,
+    RGBA,
 };
 
 std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue(

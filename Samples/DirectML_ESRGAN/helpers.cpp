@@ -229,6 +229,11 @@ void FillNCHWBufferFromImageFilename(
             desiredImagePixelFormat = GUID_WICPixelFormat24bppBGR;
             break;
 
+        case ChannelOrder::RGBA:
+            bufferChannels = 4;
+            desiredImagePixelFormat = GUID_WICPixelFormat32bppRGBA;
+            break;
+
         default:
             throw std::invalid_argument("Unsupported channel order");
     }
@@ -386,6 +391,11 @@ void SaveNCHWBufferToImageFilename(
         case ChannelOrder::BGR:
             bufferChannels = 3;
             desiredImagePixelFormat = GUID_WICPixelFormat24bppBGR;
+            break;
+
+        case ChannelOrder::RGBA:
+            bufferChannels = 4;
+            desiredImagePixelFormat = GUID_WICPixelFormat32bppRGBA;
             break;
 
         default:
