@@ -4,34 +4,51 @@
 #include "pch.h"
 #include "helpers.h"
 
-std::tuple<Microsoft::WRL::ComPtr<IDXCoreAdapter>, D3D_FEATURE_LEVEL> SelectAdapter(
-    std::string_view adapterNameFilter)
+enum class HardwareType
+{
+    Unknown,
+    GPU,
+    NPU
+};
+
+struct AdapterInfo
+{
+    Microsoft::WRL::ComPtr<IDXCoreAdapter> adapter;
+    std::string description;
+    bool supportsGraphics;
+    bool supportsCoreCompute;
+    bool supportsGenericML;
+    HardwareType type;
+};
+
+// Returns a list of DX adapters sorted with a preference for high-performance hardware such
+// as GPUs before energy-efficient hardware. If the prioritizeNPU flag is set, NPUs are placed
+// in front of GPUs regardless of absolute performance.
+std::vector<AdapterInfo> EnumerateAdapters(bool prioritizeNPU = true)
 {
     using Microsoft::WRL::ComPtr;
 
     ComPtr<IDXCoreAdapterFactory> adapterFactory;
     THROW_IF_FAILED(DXCoreCreateAdapterFactory(IID_PPV_ARGS(adapterFactory.GetAddressOf())));
 
-    // First try getting all GENERIC_ML devices, which is the broadest set of adapters 
-    // and includes both GPUs and NPUs; however, running this sample on an older build of 
-    // Windows may not have drivers that report GENERIC_ML.
-    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_1_0_GENERIC;
+    // Enumerate GENERIC_ML devices, which is the broadest set of adapters and includes both
+    // GPUs and NPUs.
     ComPtr<IDXCoreAdapterList> adapterList;
     THROW_IF_FAILED(adapterFactory->CreateAdapterList(
         1,
         &DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML,
-        adapterList.GetAddressOf()
+        adapterList.ReleaseAndGetAddressOf()
     ));
 
-    // Fall back to CORE_COMPUTE if GENERIC_ML devices are not available. This is a more restricted
-    // set of adapters and may filter out some NPUs.
+    // Older versions of Windows will not have GENERIC_ML drivers, so fall back to searching for 
+    // CORE_COMPUTE if devices are not detected. This is a more restricted set of adapters and may 
+    // filter out some NPUs.
     if (adapterList->GetAdapterCount() == 0)
     {
-        featureLevel = D3D_FEATURE_LEVEL_1_0_CORE;
         THROW_IF_FAILED(adapterFactory->CreateAdapterList(
             1, 
             &DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE, 
-            adapterList.GetAddressOf()
+            adapterList.ReleaseAndGetAddressOf()
         ));
     }
 
@@ -49,62 +66,106 @@ std::tuple<Microsoft::WRL::ComPtr<IDXCoreAdapter>, D3D_FEATURE_LEVEL> SelectAdap
 
     THROW_IF_FAILED(adapterList->Sort(_countof(preferences), preferences));
 
-    std::vector<ComPtr<IDXCoreAdapter>> adapters;
-    std::vector<std::string> adapterDescriptions;
-    std::optional<uint32_t> firstAdapterMatchingNameFilter;
-
+    std::vector<AdapterInfo> adapters;
     for (uint32_t i = 0; i < adapterList->GetAdapterCount(); i++)
     {
-        ComPtr<IDXCoreAdapter> adapter;
-        THROW_IF_FAILED(adapterList->GetAdapter(i, adapter.GetAddressOf()));
+        AdapterInfo info;
+
+        THROW_IF_FAILED(adapterList->GetAdapter(i, info.adapter.GetAddressOf()));
 
         size_t descriptionSize;
-        THROW_IF_FAILED(adapter->GetPropertySize(
+        THROW_IF_FAILED(info.adapter->GetPropertySize(
             DXCoreAdapterProperty::DriverDescription, 
             &descriptionSize
         ));
 
-        std::string adapterDescription(descriptionSize, '\0');
-        THROW_IF_FAILED(adapter->GetProperty(
+        info.description.resize(descriptionSize, '\0');
+        THROW_IF_FAILED(info.adapter->GetProperty(
             DXCoreAdapterProperty::DriverDescription, 
             descriptionSize, 
-            adapterDescription.data()
+            info.description.data()
         ));
 
         // Remove trailing null terminator written by DXCore.
-        while (!adapterDescription.empty() && adapterDescription.back() == '\0')
+        while (!info.description.empty() && info.description.back() == '\0')
         {
-            adapterDescription.pop_back();
+            info.description.pop_back();
         }
 
-        adapters.push_back(adapter);
-        adapterDescriptions.push_back(adapterDescription);
+        info.supportsGraphics = info.adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_MEDIA);
+        info.supportsCoreCompute = info.adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_CORE_COMPUTE);
+        info.supportsGenericML = info.adapter->IsAttributeSupported(DXCORE_ADAPTER_ATTRIBUTE_D3D12_GENERIC_ML);
 
-        if (!firstAdapterMatchingNameFilter &&
-            adapterDescription.find(adapterNameFilter) != std::string::npos)
+        if (info.adapter->IsAttributeSupported(DXCORE_HARDWARE_TYPE_ATTRIBUTE_GPU))
         {
-            firstAdapterMatchingNameFilter = i;
-            std::cout << "Adapter[" << i << "]: " << adapterDescription << " (SELECTED)\n";
+            info.type = HardwareType::GPU;
+        }
+        else if (info.adapter->IsAttributeSupported(DXCORE_HARDWARE_TYPE_ATTRIBUTE_NPU))
+        {
+            info.type = HardwareType::NPU;
         }
         else
         {
-            std::cout << "Adapter[" << i << "]: " << adapterDescription << "\n";
+            info.type = HardwareType::Unknown;
+        }
+
+        adapters.emplace_back(std::move(info));
+    }
+
+    if (prioritizeNPU)
+    {
+        // Ensure NPUs are listed before other hardware types.
+        std::stable_partition(adapters.begin(), adapters.end(), [](const AdapterInfo& info)
+        {
+            return info.type == HardwareType::NPU;
+        });
+    }
+
+    return adapters;
+}
+
+// Picks the first adapter from a list of adapters that matches the provided name filter. If the
+// filter name is empty, the first adapter is selected.
+std::tuple<Microsoft::WRL::ComPtr<IDXCoreAdapter>, D3D_FEATURE_LEVEL> SelectAdapter(
+    std::span<const AdapterInfo> adapters,
+    std::string_view adapterNameFilter)
+{
+    using Microsoft::WRL::ComPtr;
+
+    ComPtr<IDXCoreAdapter> selectedAdapter;
+    D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_1_0_GENERIC;
+
+    for (size_t i = 0; i < adapters.size(); i++)
+    {
+        const auto& adapterInfo = adapters[i];
+
+        if (!selectedAdapter && adapterInfo.description.find(adapterNameFilter) != std::string::npos)
+        {
+            selectedAdapter = adapterInfo.adapter;
+            featureLevel = adapterInfo.supportsGenericML ? D3D_FEATURE_LEVEL_1_0_GENERIC : D3D_FEATURE_LEVEL_1_0_CORE;
+            std::cout << "Adapter[" << i << "]: " << adapterInfo.description << " (SELECTED)\n";
+        }
+        else
+        {
+            std::cout << "Adapter[" << i << "]: " << adapterInfo.description << "\n";
         }
     }
 
-    if (!firstAdapterMatchingNameFilter)
+    if (!selectedAdapter)
     {
         throw std::invalid_argument("No adapters match the provided name filter.");
     }
 
-    return { adapters[*firstAdapterMatchingNameFilter], featureLevel };
+    return { selectedAdapter, featureLevel };
 }
 
 std::tuple<Microsoft::WRL::ComPtr<IDMLDevice>, Microsoft::WRL::ComPtr<ID3D12CommandQueue>> CreateDmlDeviceAndCommandQueue(std::string_view adapterNameFilter)
 {
     using Microsoft::WRL::ComPtr;
+
+    auto adapters = EnumerateAdapters();
     
-    auto [adapter, featureLevel] = SelectAdapter(adapterNameFilter);
+    auto [adapter, featureLevel] = SelectAdapter(adapters, adapterNameFilter);
 
     ComPtr<ID3D12Device> d3d12Device;
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), featureLevel, IID_PPV_ARGS(&d3d12Device)));
