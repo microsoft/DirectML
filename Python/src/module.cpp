@@ -425,9 +425,10 @@ PYBIND11_MODULE(pydirectml, module)
         dml::Optional<dml::Expression> bias,
         std::vector<uint32_t> axes,
         bool normalizeVariance,
+        bool normalizeMean,
         float epsilon,
         dml::FusedActivation fusedActivation) {
-            return dml::MeanVarianceNormalization(input, scale, bias, axes, normalizeVariance, epsilon, fusedActivation);
+            return dml::MeanVarianceNormalization(input, scale, bias, axes, normalizeVariance, normalizeMean, epsilon, fusedActivation);
         }, "Normalize inputs using output = scale * (input - mean) / sqrt(variance + epsilon) + bias, where mean and variance are computed per instance per channel.",
         py::arg("input"),
         py::arg("scale") = dml::NullOpt,

@@ -20,7 +20,7 @@ elif target_arch == 'aarch64' or target_arch == 'arm64':
 
 dml_feed_url = 'https://api.nuget.org/v3/index.json'
 dml_resource_id = 'microsoft.ai.directml'
-dml_resource_version = '1.9.1'
+dml_resource_version = '1.15.4'
 
 dependency_dir = 'dependencies'
 dml_bin_path = f'{dependency_dir}/{dml_resource_id}.{dml_resource_version}/bin/{target_arch}-win/'
