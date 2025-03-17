@@ -435,6 +435,7 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("bias") = dml::NullOpt,
         py::arg("axes") = std::vector<uint32_t>{},
         py::arg("normalize_variance"),
+        py::arg("normalize_mean"),
         py::arg("epsilon"),
         py::arg("fused_activation") = dml::FusedActivation::None());
 
@@ -512,8 +513,9 @@ PYBIND11_MODULE(pydirectml, module)
         std::vector<uint32_t> windowSizes,
         std::vector<uint32_t> startPadding,
         std::vector<uint32_t> endPadding,
+        std::vector<uint32_t> dilations,
         bool includePadding) {
-            return dml::AveragePooling(input, strides, windowSizes, startPadding, endPadding, includePadding);
+            return dml::AveragePooling(input, strides, windowSizes, startPadding, endPadding, dilations, includePadding);
         },
         "Average all elements in each pool.",
         py::arg("input"),
@@ -521,6 +523,7 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("window_sizes"),
         py::arg("start_padding"),
         py::arg("end_padding"),
+        py::arg("dilations"),
         py::arg("include_padding"));
 
     module.def("max_pooling", [](

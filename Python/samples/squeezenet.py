@@ -223,7 +223,7 @@ squeezenet0_conv25_bias = append_input_tensor(builder, input_bindings, dml.Tenso
 squeezenet0_conv25_fwd = dml.convolution(squeezenet0_dropout0_fwd, squeezenet0_conv25_weight, squeezenet0_conv25_bias, fused_activation = dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # squeezenet0_pool3_fwd
-squeezenet0_pool3_fwd = dml.average_pooling(squeezenet0_conv25_fwd, [13,13], [13,13], [0,0], [0,0], 0)
+squeezenet0_pool3_fwd = dml.average_pooling(squeezenet0_conv25_fwd, [13,13], [13,13], [0,0], [0,0], [0,0], 0)
 
 # squeezenet0_flatten0_reshape0
 squeezenet0_flatten0_reshape0 =dml.reinterpret(squeezenet0_pool3_fwd, dml.TensorDataType.FLOAT32, [1,1,1,1000], [1000,1000,1000,1])
