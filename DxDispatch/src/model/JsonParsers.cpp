@@ -1235,15 +1235,21 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
                 throw std::invalid_argument("Field 'resampleSize' must be empty or have four dimensions in N,C,H,W order. N must be 1.");
             }
 
-            ImageTensorInfo dstTensorInfo = {};
-            dstTensorInfo.dataType = buffer.initialValuesDataType;
-            dstTensorInfo.channels = resampleSize.size() > 1 ? resampleSize[1] : 0;
-            dstTensorInfo.height = resampleSize.size() > 2 ? resampleSize[2] : 0;
-            dstTensorInfo.width = resampleSize.size() > 3 ? resampleSize[3] : 0;
-            dstTensorInfo.sizeInBytes = GetSizeInBytes(dstTensorInfo.dataType) * dstTensorInfo.channels * dstTensorInfo.height * dstTensorInfo.width;
-            dstTensorInfo.layout = ImageTensorLayout::NCHW;
-            dstTensorInfo.channelOrder = dstTensorInfo.channels == 3 ? ImageTensorChannelOrder::RGB : ImageTensorChannelOrder::RGBA;
+            std::string extension = initialValuesField->value["sourcePath"].GetString();
+            std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return std::tolower(c); });
 
+            ImageTensorInfo dstTensorInfo = {};
+            if (extension == ".jpg" || extension == ".png")
+            {
+                dstTensorInfo.dataType = buffer.initialValuesDataType;
+                dstTensorInfo.channels = resampleSize.size() > 1 ? resampleSize[1] : 0;
+                dstTensorInfo.height = resampleSize.size() > 2 ? resampleSize[2] : 0;
+                dstTensorInfo.width = resampleSize.size() > 3 ? resampleSize[3] : 0;
+                dstTensorInfo.sizeInBytes = GetSizeInBytes(dstTensorInfo.dataType) * dstTensorInfo.channels * dstTensorInfo.height * dstTensorInfo.width;
+                dstTensorInfo.layout = ImageTensorLayout::NCHW;
+                dstTensorInfo.channelOrder = dstTensorInfo.channels == 3 ? ImageTensorChannelOrder::RGB : ImageTensorChannelOrder::RGBA;
+            }
+            
             std::string resampleMode = ParseStringField(object, "resampleMode", false, "scale");
 
             auto [initialValues, fileBufferDataType, fileName] = GenerateInitialValuesFromFile(
