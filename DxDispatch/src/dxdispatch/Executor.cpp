@@ -13,6 +13,7 @@
 #endif
 #include "StdSupport.h"
 #include "NpyReaderWriter.h"
+#include "ImageReaderWriter.h"
 #include "CommandLineArgs.h"
 #include "Executor.h"
 #include <half.hpp>
@@ -613,14 +614,11 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             std::filesystem::create_directories(pathToFile.parent_path());
         }
 
-        std::ofstream file(command.targetPath.c_str(), std::ifstream::trunc | std::ifstream::binary);
-        if (!file.is_open())
-        {
-            throw std::ios::failure("Could not open file");
-        }
+        std::string extension = pathToFile.extension().string();
+        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
         // If NumPy array, serialize data into .npy file.
-        if (IsNpyFilenameExtension(command.targetPath))
+        if (extension == ".npy")
         {
             // If no dimensions were given, then treat as a 1D array.
             if (dimensions.empty())
@@ -633,9 +631,54 @@ void Executor::operator()(const Model::WriteFileCommand& command)
             WriteNpy(fileData, tensorType, dimensions, /*out*/ npyFileData);
             std::swap(fileDataStorage, npyFileData);
             fileData = fileDataStorage;
+
+            std::ofstream file(command.targetPath.c_str(), std::ifstream::trunc | std::ifstream::binary);
+            if (!file.is_open())
+            {
+                throw std::ios::failure("Could not open file");
+            }
+
+            file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
+        }
+        else if (extension == ".jpg" || extension == ".png")
+        {
+            ImageTensorInfo tensorInfo = {};
+            tensorInfo.dataType = tensorType;
+            tensorInfo.channels = dimensions.size() > 1 ? dimensions[1] : 0;
+            tensorInfo.height = dimensions.size() > 2 ? dimensions[2] : 0;
+            tensorInfo.width = dimensions.size() > 3 ? dimensions[3] : 0;
+            tensorInfo.sizeInBytes = static_cast<uint64_t>(fileData.size());
+            tensorInfo.layout = ImageTensorLayout::NCHW;
+            if (tensorInfo.channels == 1)
+            {
+                tensorInfo.channelOrder = ImageTensorChannelOrder::Grayscale;
+            }
+            else if (tensorInfo.channels == 3)
+            {
+                tensorInfo.channelOrder = ImageTensorChannelOrder::RGB;
+            }
+            else if (tensorInfo.channels == 4)
+            {
+                tensorInfo.channelOrder = ImageTensorChannelOrder::RGBA;
+            }
+            else
+            {
+                throw std::invalid_argument(fmt::format("Unsupported channel count {} for image file", tensorInfo.channels));
+            }
+
+            WriteTensorToImage(pathToFile, fileData, tensorInfo);
+        }
+        else // raw binary
+        {
+            std::ofstream file(command.targetPath.c_str(), std::ifstream::trunc | std::ifstream::binary);
+            if (!file.is_open())
+            {
+                throw std::ios::failure("Could not open file");
+            }
+
+            file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
         }
 
-        file.write(reinterpret_cast<const char*>(fileData.data()), fileData.size());
         m_logger->LogInfo(fmt::format("Resource '{}' written to '{}'", command.resourceName, command.targetPath).c_str());
     }
     catch (const std::exception& e)

@@ -4,6 +4,7 @@
 #include "NpyReaderWriter.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "ImageReaderWriter.h"
 #ifndef WIN32
 #define _stricmp strcasecmp
 #endif
@@ -609,6 +610,18 @@ gsl::span<uint32_t> ParseUInt32ArrayField(const rapidjson::Value& object, std::s
     });
 }
 
+std::vector<uint32_t> ParseUInt32ArrayAsVector(const rapidjson::Value& object)
+{
+    return ParseArrayAsVector<uint32_t>(object, ParseUInt32);
+}
+
+std::vector<uint32_t> ParseUInt32ArrayAsVectorField(const rapidjson::Value& object, std::string_view fieldName, bool required, std::vector<uint32_t> defaultValue)
+{
+    return ParseFieldHelper<std::vector<uint32_t>>(object, fieldName, required, defaultValue, [](auto& value){ 
+        return ParseUInt32ArrayAsVector(value); 
+    });
+}
+
 // ----------------------------------------------------------------------------
 // UINT64
 // ----------------------------------------------------------------------------
@@ -1102,22 +1115,43 @@ std::vector<std::byte> ReadFileContent(const std::string& fileName)
 
 std::tuple<std::vector<std::byte>, DML_TENSOR_DATA_TYPE, std::filesystem::path> GenerateInitialValuesFromFile(
     const std::filesystem::path& parentPath,
-    const rapidjson::Value& object)
+    const rapidjson::Value& object,
+    const ImageTensorInfo& resampleTensorInfo,
+    const std::string& resampleMode)
 {
     auto sourcePath = ParseStringField(object, "sourcePath");
     auto filePath = ResolveInputFilePath(parentPath, sourcePath);
 
-    std::vector<std::byte> allBytes = ReadFileContent(filePath.string());
+    auto fileExtension = filePath.extension().string();
+    std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), 
+        [](unsigned char c) { return std::tolower(c); }
+    );
 
     DML_TENSOR_DATA_TYPE tensorDataType = DML_TENSOR_DATA_TYPE_UNKNOWN;
+    std::vector<std::byte> allBytes;
 
-    // Check for NumPy array files. Otherwise read it as raw file data, such as a .dat/.bin file.
-    if (IsNpyFilenameExtension(sourcePath))
+    if (fileExtension == ".npy")
     {
+        allBytes = ReadFileContent(filePath.string());
+
         std::vector<uint32_t> dimensions;
         std::vector<std::byte> arrayByteData;
         ReadNpy(allBytes, /*out*/ tensorDataType, /*out*/ dimensions, /*out*/ arrayByteData);
         allBytes = std::move(arrayByteData);
+    }
+    else if (fileExtension == ".jpg" || fileExtension == ".png")
+    {
+        if (resampleMode != "scale")
+        {
+            // Could support cropping or other transforms in the future.
+            throw std::invalid_argument("Field 'resampleMode' must be 'scale' for image files.");
+        }
+
+        allBytes = ReadTensorFromImage(filePath, resampleTensorInfo);
+    }
+    else
+    {
+        allBytes = ReadFileContent(filePath.string());
     }
 
     return {std::move(allBytes), tensorDataType, filePath};
@@ -1194,7 +1228,30 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
         // e.g. "initialValues": { "sourcePath": "inputFile.npy" }
         else if (initialValuesField->value.HasMember("sourcePath"))
         {
-            auto [initialValues, fileBufferDataType, fileName] = GenerateInitialValuesFromFile(parentPath, initialValuesField->value);
+            std::vector<uint32_t> resampleSize = ParseUInt32ArrayAsVectorField(object, "resampleSize", false, {});
+
+            if (!resampleSize.empty() && resampleSize.size() != 4)
+            {
+                throw std::invalid_argument("Field 'resampleSize' must be empty or have four dimensions in N,C,H,W order. N must be 1.");
+            }
+
+            ImageTensorInfo dstTensorInfo = {};
+            dstTensorInfo.dataType = buffer.initialValuesDataType;
+            dstTensorInfo.channels = resampleSize.size() > 1 ? resampleSize[1] : 0;
+            dstTensorInfo.height = resampleSize.size() > 2 ? resampleSize[2] : 0;
+            dstTensorInfo.width = resampleSize.size() > 3 ? resampleSize[3] : 0;
+            dstTensorInfo.sizeInBytes = GetSizeInBytes(dstTensorInfo.dataType) * dstTensorInfo.channels * dstTensorInfo.height * dstTensorInfo.width;
+            dstTensorInfo.layout = ImageTensorLayout::NCHW;
+            dstTensorInfo.channelOrder = dstTensorInfo.channels == 3 ? ImageTensorChannelOrder::RGB : ImageTensorChannelOrder::RGBA;
+
+            std::string resampleMode = ParseStringField(object, "resampleMode", false, "scale");
+
+            auto [initialValues, fileBufferDataType, fileName] = GenerateInitialValuesFromFile(
+                parentPath, 
+                initialValuesField->value,
+                dstTensorInfo,
+                resampleMode
+            );
 
             // Depending on the file type (.npy vs .dat), the file may have an explict data type.
             // Use the data type if present, else require initialValuesDataType if not.
@@ -1772,7 +1829,6 @@ Model ParseModel(
     std::filesystem::path inputPath,
     std::filesystem::path outputPath)
 {
-
     std::filesystem::path modelPath = filePath;
     if (!std::filesystem::exists(filePath))
     {

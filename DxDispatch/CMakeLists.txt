@@ -86,6 +86,8 @@ add_library(
     src/model/Model.h
     src/model/NpyReaderWriter.cpp
     src/model/NpyReaderWriter.h
+    src/model/ImageReaderWriter.cpp
+    src/model/ImageReaderWriter.h
 )
 
 target_link_libraries(
