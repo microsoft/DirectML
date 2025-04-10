@@ -1235,7 +1235,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
                 throw std::invalid_argument("Field 'resampleSize' must be empty or have four dimensions in N,C,H,W order. N must be 1.");
             }
 
-            std::string extension = initialValuesField->value["sourcePath"].GetString();
+            std::string extension = std::filesystem::path(initialValuesField->value["sourcePath"].GetString()).extension().string();
             std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return std::tolower(c); });
 
             ImageTensorInfo dstTensorInfo = {};
