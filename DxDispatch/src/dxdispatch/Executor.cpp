@@ -644,9 +644,9 @@ void Executor::operator()(const Model::WriteFileCommand& command)
         {
             ImageTensorInfo tensorInfo = {};
             tensorInfo.dataType = tensorType;
-            tensorInfo.channels = dimensions.size() > 1 ? dimensions[1] : 0;
-            tensorInfo.height = dimensions.size() > 2 ? dimensions[2] : 0;
-            tensorInfo.width = dimensions.size() > 3 ? dimensions[3] : 0;
+            tensorInfo.channels = dimensions.size() > 1 ? dimensions[1] : 1;
+            tensorInfo.height = dimensions.size() > 2 ? dimensions[2] : 1;
+            tensorInfo.width = dimensions.size() > 3 ? dimensions[3] : 1;
             tensorInfo.sizeInBytes = static_cast<uint64_t>(fileData.size());
             tensorInfo.layout = ImageTensorLayout::NCHW;
             if (tensorInfo.channels == 1)

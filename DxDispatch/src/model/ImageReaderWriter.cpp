@@ -30,6 +30,7 @@ size_t GetDataTypeSize(DML_TENSOR_DATA_TYPE dataType)
     {
         case DML_TENSOR_DATA_TYPE_FLOAT32: return sizeof(float);
         case DML_TENSOR_DATA_TYPE_FLOAT16: return sizeof(uint16_t);
+        case DML_TENSOR_DATA_TYPE_UINT8: return sizeof(uint8_t);
         case DML_TENSOR_DATA_TYPE_INT8: return sizeof(int8_t);
 
         default: throw std::invalid_argument("Unsupported data type");
@@ -74,7 +75,7 @@ std::vector<std::byte> ConvertPixelsToTensor(std::span<const std::byte> src, con
     return dstRaw;
 }
 
-std::vector<std::byte> ReadTensorFromImage(std::filesystem::path srcPath, const ImageTensorInfo& dstTensorInfo)
+std::vector<std::byte> ReadTensorFromImage(const std::filesystem::path& srcPath, const ImageTensorInfo& dstTensorInfo)
 {
     WICPixelFormatGUID desiredImagePixelFormat = GUID_WICPixelFormatDontCare;
 
@@ -83,6 +84,7 @@ std::vector<std::byte> ReadTensorFromImage(std::filesystem::path srcPath, const 
         case ImageTensorChannelOrder::RGB: desiredImagePixelFormat = GUID_WICPixelFormat24bppRGB; break;
         case ImageTensorChannelOrder::RGBA: desiredImagePixelFormat = GUID_WICPixelFormat32bppRGBA; break;
         case ImageTensorChannelOrder::BGR: desiredImagePixelFormat = GUID_WICPixelFormat24bppBGR; break;
+        case ImageTensorChannelOrder::BGRA: desiredImagePixelFormat = GUID_WICPixelFormat32bppBGRA; break;
         case ImageTensorChannelOrder::Grayscale: desiredImagePixelFormat = GUID_WICPixelFormat8bppGray; break;
         default: throw std::invalid_argument("Unsupported channel order");
     }
@@ -195,7 +197,7 @@ std::vector<std::byte> ConvertTensorToPixels(std::span<const std::byte> srcRaw, 
     return dst;
 }
 
-void WriteTensorToImage(std::filesystem::path dstPath, std::span<const std::byte> srcData, const ImageTensorInfo& srcTensorInfo)
+void WriteTensorToImage(const std::filesystem::path& dstPath, std::span<const std::byte> srcData, const ImageTensorInfo& srcTensorInfo)
 {
     WICPixelFormatGUID desiredImagePixelFormat = GUID_WICPixelFormatDontCare;
 
@@ -204,6 +206,7 @@ void WriteTensorToImage(std::filesystem::path dstPath, std::span<const std::byte
         case ImageTensorChannelOrder::RGB: desiredImagePixelFormat = GUID_WICPixelFormat24bppRGB; break;
         case ImageTensorChannelOrder::RGBA: desiredImagePixelFormat = GUID_WICPixelFormat32bppRGBA; break;
         case ImageTensorChannelOrder::BGR: desiredImagePixelFormat = GUID_WICPixelFormat24bppBGR; break;
+        case ImageTensorChannelOrder::BGRA: desiredImagePixelFormat = GUID_WICPixelFormat32bppBGRA; break;
         case ImageTensorChannelOrder::Grayscale: desiredImagePixelFormat = GUID_WICPixelFormat8bppGray; break;
         default: throw std::invalid_argument("Unsupported channel order");
     }
@@ -241,12 +244,15 @@ void WriteTensorToImage(std::filesystem::path dstPath, std::span<const std::byte
     THROW_IF_FAILED(wicFactory->CreateStream(&stream));
     THROW_IF_FAILED(stream->InitializeFromFilename(dstPath.wstring().data(), GENERIC_WRITE));
 
+    std::string extension = dstPath.extension().string();
+    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
     GUID containerFormat;
-    if (dstPath.extension() == L".jpg")
+    if (extension == ".jpg")
     {
         containerFormat = GUID_ContainerFormatJpeg;
     }
-    else if (dstPath.extension() == L".png")
+    else if (extension == ".png")
     {
         containerFormat = GUID_ContainerFormatPng;
     }

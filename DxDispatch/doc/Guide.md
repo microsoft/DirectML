@@ -274,13 +274,13 @@ Each resource in the resources dictionary maps to a separate D3D resource (speci
 
 All buffer resources have the following fields, though only the first two are required:
 
-| Member                  | JSON Type                     | Description                                                                                   |
-| ----------------------- | ----------------------------- | --------------------------------------------------------------------------------------------- |
-| `initialValues`         | Object or array               | Determines initial contents of the buffer.                                                    |
-| `initialValuesDataType` | String (DML_TENSOR_DATA_TYPE) | The data type associated with the buffer's initial values.                                    |
-| `sizeInBytes`           | Number (UINT64)               | **Optional**. Will be calculated if omitted.                                                  |
-| `resampleSize`          | Array (UINT64)                | **Optional**. Buffer source will be resampled to match this shape, if provided (images only). |
-| `resampleMode`          | String                        | **Optional**. Must be "scale" for now (images only).                                        |
+| Member                  | JSON Type                     | Description                                                                                        |
+| ----------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| `initialValues`         | Object or array               | Determines initial contents of the buffer.                                                         |
+| `initialValuesDataType` | String (DML_TENSOR_DATA_TYPE) | The data type associated with the buffer's initial values.                                         |
+| `sizeInBytes`           | Number (UINT64)               | **Optional**. Will be calculated if omitted.                                                       |
+| `resampleSize`          | Array (UINT64)                | **Optional**. Buffer source will be resampled to match this NCHW shape, if provided (images only). |
+| `resampleMode`          | String                        | **Optional**. Must be "scale" for now (images only).                                               |
 
 The following rules apply:
 

@@ -12,6 +12,7 @@ enum class ImageTensorChannelOrder
     RGB,
     RGBA,
     BGR,
+    BGRA,
     Grayscale,
 };
 
@@ -27,12 +28,12 @@ struct ImageTensorInfo
 };
 
 std::vector<std::byte> ReadTensorFromImage(
-    std::filesystem::path srcPath,
+    const std::filesystem::path& srcPath,
     const ImageTensorInfo& dstTensorInfo
 );
 
 void WriteTensorToImage(
-    std::filesystem::path dstPath,
+    const std::filesystem::path& dstPath,
     std::span<const std::byte> srcData,
     const ImageTensorInfo& srcInfo
 );
