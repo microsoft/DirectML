@@ -1,0 +1,66 @@
+{
+    "$schema": "./_schema.json",
+    
+    "resources": 
+    {
+        "input": 
+        {
+            "initialValues": { "sourcePath": "chihuahua.jpg" },
+            "initialValuesDataType": "FLOAT32",
+            "resampleSize": [1, 3, 512, 512]
+        },
+        "filter":
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": [ 0.2989, 0.5870, 0.1140 ]
+        },
+        "output": 
+        {
+            "initialValuesDataType": "FLOAT32",
+            "initialValues": { "valueCount": 786432, "value": 0 }
+        }
+    },
+
+    "dispatchables": 
+    {
+        "convert_to_grayscale": 
+        {
+            "type": "DML_OPERATOR_CONVOLUTION",
+            "desc": 
+            {
+                "InputTensor": { "DataType": "FLOAT32", "Sizes": [1,3,512,512] },
+                "FilterTensor": { "DataType": "FLOAT32", "Sizes": [1,3,1,1] },
+                "OutputTensor": { "DataType": "FLOAT32", "Sizes": [1,1,512,512] },
+                "Mode": "DML_CONVOLUTION_MODE_CROSS_CORRELATION",
+                "Direction": "DML_CONVOLUTION_DIRECTION_FORWARD",
+                "DimensionCount": 2,
+                "Strides": [1,1],
+                "Dilations": [1,1],
+                "StartPadding": [0,0],
+                "EndPadding": [0,0],
+                "OutputPadding": [0,0],
+                "GroupCount": 1
+            }
+        }
+    },
+
+    "commands": 
+    [
+        {
+            "type": "dispatch",
+            "dispatchable": "convert_to_grayscale",
+            "bindings": 
+            {
+                "InputTensor": "input",
+                "FilterTensor": "filter",
+                "OutputTensor": "output"
+            }
+        },
+        {
+            "type": "writeFile",
+            "targetPath": "output.png",
+            "resource": "output",
+            "dimensions": [1, 1, 512, 512]
+        }
+    ]
+}

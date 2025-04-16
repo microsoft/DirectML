@@ -13,6 +13,11 @@ using namespace Microsoft::WRL;
 
 int main(int argc, char** argv)
 {
+#ifdef WIN32
+    // For image parsers
+    auto coInit = wil::CoInitializeEx_failfast(COINIT_MULTITHREADED);
+#endif
+
     ComPtr<IDxDispatch> dispatch;
     HRESULT hr = S_OK;
     hr = CreateDxDispatchFromArgs(

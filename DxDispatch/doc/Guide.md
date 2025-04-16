@@ -16,6 +16,7 @@
   - [Dispatchable: DirectML Operator](#dispatchable-directml-operator)
     - [Desc Structs (type and void\*)](#desc-structs-type-and-void)
     - [Abbreviated Enum Values](#abbreviated-enum-values)
+    - [DirectML Compile Op vs Graph (dmlCompileType)](#directml-compile-op-vs-graph-dmlcompiletype)
     - [DML\_TENSOR\_DESC](#dml_tensor_desc)
   - [Dispatchable: HLSL Compute Shader](#dispatchable-hlsl-compute-shader)
   - [Dispatchable: ONNX Model](#dispatchable-onnx-model)
@@ -23,18 +24,18 @@
     - [Handling Dynamic Shapes at Initialization](#handling-dynamic-shapes-at-initialization)
     - [Handling Dynamic Shapes at Session Run](#handling-dynamic-shapes-at-session-run)
     - [Implicit Bindings and Optional JSON](#implicit-bindings-and-optional-json)
-  - [Dispatchable: DML Serialized Graph](#dispatchable-dml-serialized-graph)
-    - [Creating Flatbuffer Files](#creating-flatbuffer-files)
-    - [JSON Definition](#json-definition)
-    - [Key Components](#key-components)
-    - [Initialization Process](#initialization-process)
-    - [Execution](#execution)
-    - [Important Considerations](#important-considerations)
-    - [Comparison with Other Dispatchables](#comparison-with-other-dispatchables)    
   - [Commands](#commands)
     - [Dispatch](#dispatch)
     - [Print](#print)
     - [Write File](#write-file)
+- [DML Serialized Graph Dispatchable](#dml-serialized-graph-dispatchable)
+  - [Creating Flatbuffer Files](#creating-flatbuffer-files)
+  - [JSON Definition](#json-definition)
+  - [Key Components](#key-components)
+  - [Initialization Process](#initialization-process)
+  - [Execution](#execution)
+  - [Important Considerations](#important-considerations)
+  - [Comparison with Other Dispatchables](#comparison-with-other-dispatchables)
   - [Advanced Binding](#advanced-binding)
 - [Timing Dispatchables](#timing-dispatchables)
   - [Post-Dispatch Barriers](#post-dispatch-barriers)
@@ -273,11 +274,13 @@ Each resource in the resources dictionary maps to a separate D3D resource (speci
 
 All buffer resources have the following fields, though only the first two are required:
 
-| Member                  | JSON Type                     | Description                                                |
-| ----------------------- | ----------------------------- | ---------------------------------------------------------- |
-| `initialValues`         | Object or array               | Determines initial contents of the buffer.                 |
-| `initialValuesDataType` | String (DML_TENSOR_DATA_TYPE) | The data type associated with the buffer's initial values. |
-| `sizeInBytes`           | Number (UINT64)               | **Optional**. Will be calculated if omitted.               |
+| Member                  | JSON Type                     | Description                                                                                        |
+| ----------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| `initialValues`         | Object or array               | Determines initial contents of the buffer.                                                         |
+| `initialValuesDataType` | String (DML_TENSOR_DATA_TYPE) | The data type associated with the buffer's initial values.                                         |
+| `sizeInBytes`           | Number (UINT64)               | **Optional**. Will be calculated if omitted.                                                       |
+| `resampleSize`          | Array (UINT64)                | **Optional**. Buffer source will be resampled to match this NCHW shape, if provided (images only). |
+| `resampleMode`          | String                        | **Optional**. Must be "scale" for now (images only).                                               |
 
 The following rules apply:
 
@@ -286,7 +289,6 @@ The following rules apply:
 - The buffer's `sizeInBytes` will, if not supplied, be calculated as as number of elements in `initialValues` multiplied by the size of `initialValuesDataType`. If supplied, the `sizeInBytes` must be *at least* as large as the size calculated from the initial values. The total size will be inflated, if necessary, to meet DirectML's 4-byte alignment requirement.
 - The `initialValues` are always written to the start of the buffer; if the `sizeInBytes` is larger than the implied size of the initial data then the end will be padded.
 - The initial values are written into an upload-heap resource that is then copied to the default-heap buffer resource at startup; any commands that write into a buffer after startup will have a permanent effect on that buffer's contents for the duration of model execution.
-- sourcePath
 
 ### Buffer: Constant Initializer
 
@@ -332,21 +334,34 @@ You can initialize a buffer is using a sequence. The example below will write `[
 
 ### Buffer: File Data Initializer
 
-You can initialize a buffer using a raw binary file (.dat/.bin) or NumPy array file (.npy).
+You can initialize a buffer using a raw binary file (.dat/.bin), NumPy array file (.npy), or image file (.png, .jpg).
 
 - The `sourcePath` must exist, either relative to the base .json file or the current directory.
 - The `initialValuesDataType` is irrelevant when reading from .npy's since they contain their data type, but when reading from a raw binary file, the type must be given and not `"UNKNOWN"`.
+- When initializing from an image, `initialValuesDataType` determines the final element data type and can be different from the stored pixel format. For example, a 24bpp BGR image can be converted into a buffer of FLOAT32 elements.
 
+Example of initializing a buffer from a raw numpy array:
 ```json
 {
     "initialValues": { "sourcePath": "inputFile.npy" }
 }
 ```
 
+Example of initializing a buffer from a raw binary file:
 ```json
 {
     "initialValuesDataType": "FLOAT32",
     "initialValues": { "sourcePath": "inputFile.dat" }
+}
+```
+
+Example of initializing a buffer from a JPEG image (the image will resampled from its original format to 800x600 with 3 channels and FLOAT32 elements):
+```json
+{
+    "initialValues": { "sourcePath": "inputFile.jpg" },
+    "initialValuesDataType": "FLOAT32",
+    "resampleSize": [1, 3, 800, 600],
+    "resampleMode": "scale"
 }
 ```
 
@@ -723,6 +738,110 @@ As a convenience, you can also skip writing the JSON model altogether and simply
 ```
 > dxdispatch.exe .\models\onnx_gemm.onnx [other options...]
 ```
+
+## Commands
+### Dispatch
+
+A dispatch command records a dispatchable into a D3D command list and executes it. Each dispatch command has the following fields:
+
+| Member           | Type                     | DML      | HLSL     | Description                                        |
+| ---------------- | ------------------------ | -------- | -------- | -------------------------------------------------- |
+| type             | String                   | Required | Required | Must be `"dispatch"`.                              |
+| dispatchable     | String                   | Required | Required | Name of the dispatchable object.                   |
+| bindings         | String, Object, or Array | Required | Required | Size of each element (or structure) in the buffer. |
+| threadGroupCount | Array                    | -        | Optional | Number of thread groups in X, Y, and Z dimensions. |
+
+The only difference between DML and HLSL dispatches is that DML ops ignore the `threadGroupCount` field (defaults to `[1,1,1]` for HLSL if omitted).
+
+Below is an example of a dispatch command for a DML operator:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "join",
+    "bindings": 
+    {
+        "InputTensors": [ "A", "B", "C" ],
+        "OutputTensor": "Out"
+    }
+}
+```
+
+Below is an example of a dispatch command for an HLSL operator:
+
+```json
+{
+    "type": "dispatch",
+    "dispatchable": "add",
+    "threadGroupCount": [ 2, 1, 1 ],
+    "bindings": 
+    {
+        "inputA": "A",
+        "inputB": "B",
+        "output": "Out",
+        "constants": "Constants"
+    }
+}
+```
+
+
+The most important property to discuss in this command is the `bindings`, which ties the resources in the model to the *bind points* in the dispatchable. The `bindings` field is a dictionary that maps the name of a bind point to an array of resource bindings. Bind points in DML operators are the names of `DML_TENSOR_DESC` fields in the operator desc. For example, the join operator has **two** bind points: `InputTensors` and `OutputTensor`. Each bind point may have 1 or more resources bound to it. In the case of join, `InputTensors` has a variable number of resources bound to it, which is determined using the value of of `InputCount`. The `OutputTensor` bind point must have 1 and only 1 resource bound to it.
+
+```cpp
+struct DML_JOIN_OPERATOR_DESC
+{
+    UINT InputCount;
+    _Field_size_(InputCount) const DML_TENSOR_DESC* InputTensors;
+    const DML_TENSOR_DESC* OutputTensor;
+    UINT Axis;
+};
+```
+
+Bind points in compute shaders are the shader input names. The following HLSL has 4 bind points: `inputA`, `inputB`, `output`, and `constants`:
+
+```c
+StructuredBuffer<float16_t> inputA;
+StructuredBuffer<float16_t> inputB;
+RWStructuredBuffer<float16_t> output;
+cbuffer constants { uint elementCount; };
+```
+
+
+
+### Print
+
+This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. More control over printing may be added in the future.
+
+```json
+{ 
+    "type": "print", 
+    "resource": "Out" 
+}
+```
+
+### Write File
+
+This command writes the contents of a resource to a file, either as raw binary (.dat/.bin), a NumPy array (.npy, which includes the original dimensions and data type), or an image (.png, .jpg).
+
+```json
+{ 
+    "type": "writeFile",
+    "targetPath": "OutputFile.npy",
+    "resource": "Out"
+}
+```
+
+ When writing an image the output pixel format will be R8G8B8 for 3-channel tensors or R8G8B8A8 for 4-channel tensors. All tensors are assumed to have RGB(A) channel order.
+
+```json
+{ 
+    "type": "writeFile",
+    "targetPath": "OutputFile.jpg",
+    "resource": "Out"
+}
+```
+
+
 # DML Serialized Graph Dispatchable
 
 The DML Serialized Graph dispatchable allows you to execute pre-compiled DirectML graphs from flatbuffer files. This approach provides a way to run complex DirectML graphs that have been serialized, typically from ONNX models.
@@ -833,99 +952,6 @@ Unlike ONNX or DML operator dispatchables, the DmlSerializedGraph:
 - Handles constant tensors automatically from serialized data.
 - Offers a more direct execution path for complex, pre-optimized graphs.
 
-
-
-## Commands
-### Dispatch
-
-A dispatch command records a dispatchable into a D3D command list and executes it. Each dispatch command has the following fields:
-
-| Member           | Type                     | DML      | HLSL     | Description                                        |
-| ---------------- | ------------------------ | -------- | -------- | -------------------------------------------------- |
-| type             | String                   | Required | Required | Must be `"dispatch"`.                              |
-| dispatchable     | String                   | Required | Required | Name of the dispatchable object.                   |
-| bindings         | String, Object, or Array | Required | Required | Size of each element (or structure) in the buffer. |
-| threadGroupCount | Array                    | -        | Optional | Number of thread groups in X, Y, and Z dimensions. |
-
-The only difference between DML and HLSL dispatches is that DML ops ignore the `threadGroupCount` field (defaults to `[1,1,1]` for HLSL if omitted).
-
-Below is an example of a dispatch command for a DML operator:
-
-```json
-{
-    "type": "dispatch",
-    "dispatchable": "join",
-    "bindings": 
-    {
-        "InputTensors": [ "A", "B", "C" ],
-        "OutputTensor": "Out"
-    }
-}
-```
-
-Below is an example of a dispatch command for an HLSL operator:
-
-```json
-{
-    "type": "dispatch",
-    "dispatchable": "add",
-    "threadGroupCount": [ 2, 1, 1 ],
-    "bindings": 
-    {
-        "inputA": "A",
-        "inputB": "B",
-        "output": "Out",
-        "constants": "Constants"
-    }
-}
-```
-
-
-The most important property to discuss in this command is the `bindings`, which ties the resources in the model to the *bind points* in the dispatchable. The `bindings` field is a dictionary that maps the name of a bind point to an array of resource bindings. Bind points in DML operators are the names of `DML_TENSOR_DESC` fields in the operator desc. For example, the join operator has **two** bind points: `InputTensors` and `OutputTensor`. Each bind point may have 1 or more resources bound to it. In the case of join, `InputTensors` has a variable number of resources bound to it, which is determined using the value of of `InputCount`. The `OutputTensor` bind point must have 1 and only 1 resource bound to it.
-
-```cpp
-struct DML_JOIN_OPERATOR_DESC
-{
-    UINT InputCount;
-    _Field_size_(InputCount) const DML_TENSOR_DESC* InputTensors;
-    const DML_TENSOR_DESC* OutputTensor;
-    UINT Axis;
-};
-```
-
-Bind points in compute shaders are the shader input names. The following HLSL has 4 bind points: `inputA`, `inputB`, `output`, and `constants`:
-
-```c
-StructuredBuffer<float16_t> inputA;
-StructuredBuffer<float16_t> inputB;
-RWStructuredBuffer<float16_t> output;
-cbuffer constants { uint elementCount; };
-```
-
-
-
-### Print
-
-This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. More control over printing may be added in the future.
-
-```json
-{ 
-    "type": "print", 
-    "resource": "Out" 
-}
-```
-
-### Write File
-
-This command writes the contents of a resource to a file, either as raw binary (.dat/.bin) or a NumPy array (.npy, which includes the original dimensions and data type).
-
-```json
-{ 
-    "type": "writeFile",
-    "targetPath": "OutputFile.npy",
-    "resource": "Out"
-}
-```
 
 ## Advanced Binding
 
