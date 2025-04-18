@@ -720,7 +720,7 @@ batch_norm53_bias = append_input_tensor(builder, input_bindings, dml.TensorDesc(
 batch_norm53 = dml.batch_normalization(conv53, batch_norm53_mean, batch_norm53_variance, batch_norm53_scale, batch_norm53_bias, 1, 0.000009999999747378752, dml.FusedActivation(dml.OperatorType.ACTIVATION_RELU))
 
 # avg_pool1
-avg_pool1 = dml.average_pooling(batch_norm53, [1,1], [7,7], [0,0], [0,0], 0)
+avg_pool1 = dml.average_pooling(batch_norm53, [1,1], [7,7], [0,0], [0,0], [0,0], 0)
 
 # conv54
 conv54_filter = append_input_tensor(builder, input_bindings, dml.TensorDesc(data_type, flags, [1000,1280,1,1]), "mobilenetv20_output_pred_weight.npy")

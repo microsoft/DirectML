@@ -425,15 +425,17 @@ PYBIND11_MODULE(pydirectml, module)
         dml::Optional<dml::Expression> bias,
         std::vector<uint32_t> axes,
         bool normalizeVariance,
+        bool normalizeMean,
         float epsilon,
         dml::FusedActivation fusedActivation) {
-            return dml::MeanVarianceNormalization(input, scale, bias, axes, normalizeVariance, epsilon, fusedActivation);
+            return dml::MeanVarianceNormalization(input, scale, bias, axes, normalizeVariance, normalizeMean, epsilon, fusedActivation);
         }, "Normalize inputs using output = scale * (input - mean) / sqrt(variance + epsilon) + bias, where mean and variance are computed per instance per channel.",
         py::arg("input"),
         py::arg("scale") = dml::NullOpt,
         py::arg("bias") = dml::NullOpt,
         py::arg("axes") = std::vector<uint32_t>{},
         py::arg("normalize_variance"),
+        py::arg("normalize_mean"),
         py::arg("epsilon"),
         py::arg("fused_activation") = dml::FusedActivation::None());
 
@@ -511,8 +513,9 @@ PYBIND11_MODULE(pydirectml, module)
         std::vector<uint32_t> windowSizes,
         std::vector<uint32_t> startPadding,
         std::vector<uint32_t> endPadding,
+        std::vector<uint32_t> dilations,
         bool includePadding) {
-            return dml::AveragePooling(input, strides, windowSizes, startPadding, endPadding, includePadding);
+            return dml::AveragePooling(input, strides, windowSizes, startPadding, endPadding, dilations, includePadding);
         },
         "Average all elements in each pool.",
         py::arg("input"),
@@ -520,6 +523,7 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("window_sizes"),
         py::arg("start_padding"),
         py::arg("end_padding"),
+        py::arg("dilations"),
         py::arg("include_padding"));
 
     module.def("max_pooling", [](
@@ -554,7 +558,7 @@ PYBIND11_MODULE(pydirectml, module)
         py::arg("new_size"),
         py::arg("new_strides"));
 
-    module.def("activation_soft_max", &dml::ActivationSoftmax, "Raise all elements to e, and divide all the elements in each batch by that batch's sum.",
+    module.def("activation_soft_max", py::overload_cast<dml::Expression>(&dml::ActivationSoftmax), "Raise all elements to e, and divide all the elements in each batch by that batch's sum.",
         py::arg("input"));
 
     module.def("join", [](

@@ -36,5 +36,18 @@ pybind11_add_module(
 
 target_compile_options(pydirectml PRIVATE /W4 /WX)
 target_include_directories(pydirectml PRIVATE pybind11/include gpgmm/src/include gpgmm/ ${DML_PATH}/include ${DMLX_PATH})
-target_link_directories(pydirectml PRIVATE ${DML_PATH}/bin/x64-win)
+
+# if not windows, raise error
+if(NOT WIN32)
+    message(FATAL_ERROR "This project is only supported on Windows.")
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "x64")
+    target_link_directories(pydirectml PRIVATE ${DML_PATH}/bin/x64-win)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+    target_link_directories(pydirectml PRIVATE ${DML_PATH}/bin/arm64-win)
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+
 target_link_libraries(pydirectml PRIVATE gpgmm dxgi.lib d3d12.lib directml.lib)
