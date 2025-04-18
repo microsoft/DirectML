@@ -12,22 +12,28 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
+target_arch = platform.machine().lower()
+if target_arch == 'amd64' or target_arch == 'x86_64':
+    target_arch = 'x64'
+elif target_arch == 'aarch64' or target_arch == 'arm64':
+    target_arch = 'arm64'
+
 dml_feed_url = 'https://api.nuget.org/v3/index.json'
 dml_resource_id = 'microsoft.ai.directml'
 dml_resource_version = '1.9.1'
 
 dependency_dir = 'dependencies'
-dml_bin_path = f'{dependency_dir}/{dml_resource_id}.{dml_resource_version}/bin/x64-win/'
-lib_dir = '..\libraries'
+dml_bin_path = f'{dependency_dir}/{dml_resource_id}.{dml_resource_version}/bin/{target_arch}-win/'
+lib_dir = '..\\libraries'
 base_path = os.path.dirname(os.path.realpath(__file__))
 dependency_path = os.path.join(base_path, dependency_dir)
 
 dml_resource_name = '.'.join([dml_resource_id, dml_resource_version])
-dml_path = '%s\%s' % (dependency_path, dml_resource_name)
+dml_path = os.path.join(dependency_path, dml_resource_name)
 
 dmlx = 'DirectMLX'
 dmlx_file = dmlx + '.h'
-dmlx_source_path = '%s\%s' % (os.path.join(base_path, lib_dir), dmlx_file)
+dmlx_source_path = os.path.join(base_path, lib_dir, dmlx_file)
 dmlx_path = os.path.join(dependency_path, dmlx)
 
 class CMakeExtension(Extension):
@@ -105,7 +111,7 @@ class CMakeBuild(build_ext):
         if platform.system() == "Windows":
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
             if sys.maxsize > 2**32:
-                cmake_args += ['-A', 'x64']
+                cmake_args += ['-A', target_arch]
             cmake_args += ['-DDML_PATH={}'.format(dml_path)]
             cmake_args += ['-DDMLX_PATH={}'.format(dmlx_path)]
             build_args += ['--', '/m']
