@@ -1627,6 +1627,7 @@ Model::PrintCommand ParsePrintCommand(const rapidjson::Value& object)
 {
     Model::PrintCommand command = {};
     command.resourceName = ParseStringField(object, "resource");
+    command.verbose = ParseBoolField(object, "verbose", false, false);
     return command;
 }
 

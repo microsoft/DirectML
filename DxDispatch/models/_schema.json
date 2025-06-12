@@ -402,6 +402,11 @@
                 {
                     "type": "string",
                     "description": "Name of the resource to display"
+                },
+                "verbose":
+                {
+                    "type": "boolean",
+                    "description": "Whether to print raw data values too"
                 }
             },
             "required": ["resource"]

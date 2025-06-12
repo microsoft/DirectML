@@ -138,6 +138,7 @@ public:
     struct PrintCommand
     {
         std::string resourceName;
+        bool verbose;
     };
 
     struct WriteFileCommand

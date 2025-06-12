@@ -810,12 +810,13 @@ cbuffer constants { uint elementCount; };
 
 ### Print
 
-This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. More control over printing may be added in the future.
+This command is used to print the contents of a resource to stdout. If the resource lives in a GPU-visible-only heap then it will first be downloaded into a CPU-visible readback heap. Buffers are always printed as a flat 1D view of elements: the data type and number of elements display will be derived using the resource's initializer. The optional `verbose` option prints the raw value's data as hexadecimal. More control over printing may be added in the future.
 
 ```json
 { 
-    "type": "print", 
-    "resource": "Out" 
+    "type": "print",
+    "resource": "Out",
+    "verbose": false
 }
 ```
 
