@@ -450,6 +450,7 @@ struct BufferDataView
 {
     gsl::span<const std::byte> byteValues;
     const Model::BufferDesc& desc;
+    bool verbose = false;
 };
 
 template <typename T>
@@ -465,7 +466,21 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {
         os << values[elementIndex];
-        if (elementIndex < elementCount - 1)
+        
+        // For verbose mode, print each value on a line by itself with both numeric representation and hex bytes.
+        if (view.verbose)
+        {
+            char hexDigitBuffer[sizeof(uint64_t) * 2 + 1]; // Enough hex digits for largest data type and null.
+            static_assert(sizeof(hexDigitBuffer) > sizeof(T) * 2);
+
+            DML_SCALAR_UNION scalarUnion = {};
+            memcpy(scalarUnion.Bytes, &values[elementIndex], sizeof(T));
+
+            // Use printf style here since much more concise and less stateful.
+            snprintf(hexDigitBuffer, sizeof(hexDigitBuffer), " (0x%.*llX)\n", int(sizeof(T) * 2), scalarUnion.UInt64);
+            os << hexDigitBuffer;
+        }
+        else if (elementIndex < elementCount - 1)
         {
             os << ", ";
         }
@@ -473,22 +488,22 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
     return os;
 }
 
-std::string ToString(gsl::span<const std::byte> byteValues, const Model::BufferDesc& desc)
+std::string ToString(gsl::span<const std::byte> byteValues, const Model::BufferDesc& desc, bool verbose)
 {
     std::stringstream ss;
     switch (desc.initialValuesDataType)
     {
-    case DML_TENSOR_DATA_TYPE_FLOAT16: ss << BufferDataView<half_float::half>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_FLOAT32: ss << BufferDataView<float>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_FLOAT64: ss << BufferDataView<double>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_UINT8: ss << BufferDataView<uint8_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_UINT16: ss << BufferDataView<uint16_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_UINT32: ss << BufferDataView<uint32_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_UINT64: ss << BufferDataView<uint64_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_INT8: ss << BufferDataView<int8_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_INT16: ss << BufferDataView<int16_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_INT32: ss << BufferDataView<int32_t>{byteValues, desc}; break;
-    case DML_TENSOR_DATA_TYPE_INT64: ss << BufferDataView<int64_t>{byteValues, desc}; break;
+    case DML_TENSOR_DATA_TYPE_FLOAT16: ss << BufferDataView<half_float::half>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_FLOAT32: ss << BufferDataView<float>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_FLOAT64: ss << BufferDataView<double>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_UINT8: ss << BufferDataView<uint8_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_UINT16: ss << BufferDataView<uint16_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_UINT32: ss << BufferDataView<uint32_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_UINT64: ss << BufferDataView<uint64_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_INT8: ss << BufferDataView<int8_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_INT16: ss << BufferDataView<int16_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_INT32: ss << BufferDataView<int32_t>{byteValues, desc, verbose}; break;
+    case DML_TENSOR_DATA_TYPE_INT64: ss << BufferDataView<int64_t>{byteValues, desc, verbose}; break;
     default: throw std::invalid_argument("Unexpected DML_TENSOR_DATA_TYPE");
     }
     return ss.str();
@@ -553,7 +568,9 @@ void Executor::operator()(const Model::PrintCommand& command)
             outputValues = outputValuesStorage;
         }
 
-        m_logger->LogInfo(fmt::format("Resource '{}': {}", command.resourceName, ToString(outputValues, bufferDesc.value())).c_str());
+        auto formattedValues = ToString(outputValues, bufferDesc.value(), command.verbose);
+        const char* formattingString = command.verbose ? "Resource '{}':\n{}" : "Resource '{}': {}";
+        m_logger->LogInfo(fmt::format(formattingString, command.resourceName, formattedValues).c_str());
     }
     catch (const std::exception& e)
     {
