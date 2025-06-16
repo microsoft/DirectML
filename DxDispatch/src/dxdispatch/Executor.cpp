@@ -463,26 +463,32 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
         throw std::invalid_argument("Buffer size is too large");
     }
     auto values = reinterpret_cast<const T*>(view.byteValues.data());
+
+    const int32_t elementIndexWidth = int32_t(floor(log10(elementCount))) + 1;
+    const int32_t hexDigitWidth = int32_t(sizeof(T) * 2);
+
     for (uint32_t elementIndex = 0; elementIndex < elementCount; elementIndex++)
     {
-        os << values[elementIndex];
+        T value = values[elementIndex];
         
         // For verbose mode, print each value on a line by itself with both numeric representation and hex bytes.
         if (view.verbose)
         {
-            char hexDigitBuffer[sizeof(uint64_t) * 2 + 1]; // Enough hex digits for largest data type and null.
-            static_assert(sizeof(hexDigitBuffer) > sizeof(T) * 2);
-
             DML_SCALAR_UNION scalarUnion = {};
-            memcpy(scalarUnion.Bytes, &values[elementIndex], sizeof(T));
+            memcpy(scalarUnion.Bytes, &value, sizeof(T));
 
             // Use printf style here since much more concise and less stateful.
-            snprintf(hexDigitBuffer, sizeof(hexDigitBuffer), " (0x%.*llX)\n", int(sizeof(T) * 2), scalarUnion.UInt64);
-            os << hexDigitBuffer;
+            os << fmt::format("[{:{}}] ", elementIndex, elementIndexWidth);
+            os << value;
+            os << fmt::format(" (0x{:{}})\n", scalarUnion.UInt64, hexDigitWidth);
         }
-        else if (elementIndex < elementCount - 1)
+        else
         {
-            os << ", ";
+            os << value;
+            if (elementIndex < elementCount - 1)
+            {
+                os << ", ";
+            }
         }
     }
     return os;
