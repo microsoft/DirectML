@@ -471,13 +471,12 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
     {
         T value = values[elementIndex];
         
-        // For verbose mode, print each value on a line by itself with both numeric representation and hex bytes.
+        // For verbose mode, print each value on a line by itself with array index, numeric value, and hex bytes.
         if (view.verbose)
         {
             DML_SCALAR_UNION scalarUnion = {};
             memcpy(scalarUnion.Bytes, &value, sizeof(T));
 
-            // Use printf style here since much more concise and less stateful.
             os << fmt::format("[{:{}}] ", elementIndex, elementIndexWidth);
             os << value;
             os << fmt::format(" (0x{:{}})\n", scalarUnion.UInt64, hexDigitWidth);
