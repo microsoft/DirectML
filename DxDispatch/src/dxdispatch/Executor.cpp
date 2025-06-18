@@ -479,7 +479,7 @@ std::ostream& operator<<(std::ostream& os, const BufferDataView<T>& view)
 
             os << fmt::format("[{:{}}] ", elementIndex, elementIndexWidth);
             os << value;
-            os << fmt::format(" (0x{:{}})\n", scalarUnion.UInt64, hexDigitWidth);
+            os << fmt::format(" (0x{:{}X})\n", scalarUnion.UInt64, hexDigitWidth);
         }
         else
         {
