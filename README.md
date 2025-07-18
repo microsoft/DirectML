@@ -2,10 +2,10 @@
 
 ---
 
-⚠️ **DirectML is in maintenance mode and will not receive any further feature updates.** ⚠️
+⚠️ **DirectML is in maintenance mode. It will continue to receive security and compliance-related fixes, though no new feature updates are planned.** ⚠️
 
-- If your PC runs Windows 11 24H2 (build 26100) or greater consider using [Windows ML](https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/overview) for acceleration of ML models on Windows.
-- DirectML will continue to work on previous releases of Windows (see [releases](https://learn.microsoft.com/en-us/windows/ai/directml/dml-version-history)), and it will continue to ship in new versions of Windows, but it will not be updated with new functionality.
+- If your PC runs Windows 11, version 24H2 (build 26100) or later, consider using [Windows ML](https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/overview) for accelerated machine learning model execution.
+- DirectML will remain supported on previous Windows releases (see [releases](https://learn.microsoft.com/en-us/windows/ai/directml/dml-version-history)) and will continue to ship with future versions of Windows. However, no new functionality or feature updates are planned.
 - The issues and samples in this repository will not be updated.
 - Refer to [SECURITY.md](./SECURITY.md) for reporting security issues.
 
