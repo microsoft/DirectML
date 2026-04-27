@@ -64,6 +64,19 @@ inline UINT64 DMLCalcBufferTensorSize(
     _In_reads_(dimensionCount) const UINT* sizes,
     _In_reads_opt_(dimensionCount) const UINT* strides)
 {
+    auto addWillOverflow = [](UINT64 a, UINT64 b) {
+        return a > UINT64_MAX - b;
+    };
+
+    auto multiplyWillOverflow = [](UINT64 a, UINT64 b) {
+        return b != 0 && a > UINT64_MAX / b;
+    };
+
+    if (dimensionCount == 0 || sizes == nullptr)
+    {
+        return 0;
+    }
+
     UINT elementSizeInBits = 0;
     switch (dataType)
     {
@@ -107,24 +120,67 @@ inline UINT64 DMLCalcBufferTensorSize(
         minimumImpliedSizeInBits = sizes[0];
         for (UINT i = 1; i < dimensionCount; ++i)
         {
+            if (multiplyWillOverflow(minimumImpliedSizeInBits, sizes[i]))
+            {
+                return 0;
+            }
+
             minimumImpliedSizeInBits *= sizes[i];
         }
+
+        if (multiplyWillOverflow(minimumImpliedSizeInBits, elementSizeInBits))
+        {
+            return 0;
+        }
+
         minimumImpliedSizeInBits *= elementSizeInBits;
     }
     else
     {
-        UINT indexOfLastElement = 0;
+        UINT64 indexOfLastElement = 0;
         for (UINT i = 0; i < dimensionCount; ++i)
         {
-            indexOfLastElement += (sizes[i] - 1) * strides[i];
+            if (sizes[i] == 0)
+            {
+                return 0;
+            }
+
+            UINT64 lastElementOffset = sizes[i] - 1;
+            if (multiplyWillOverflow(lastElementOffset, strides[i]))
+            {
+                return 0;
+            }
+
+            lastElementOffset *= strides[i];
+            if (addWillOverflow(indexOfLastElement, lastElementOffset))
+            {
+                return 0;
+            }
+
+            indexOfLastElement += lastElementOffset;
         }
 
-        minimumImpliedSizeInBits = (static_cast<UINT64>(indexOfLastElement) + 1) * elementSizeInBits;
+        if (addWillOverflow(indexOfLastElement, 1) || multiplyWillOverflow(indexOfLastElement + 1, elementSizeInBits))
+        {
+            return 0;
+        }
+
+        minimumImpliedSizeInBits = (indexOfLastElement + 1) * elementSizeInBits;
+    }
+
+    if (addWillOverflow(minimumImpliedSizeInBits, 7))
+    {
+        return 0;
     }
 
     UINT64 minimumImpliedSizeInBytes = (minimumImpliedSizeInBits + 7) / 8;
 
     // Round up to the nearest 4 bytes.
+    if (addWillOverflow(minimumImpliedSizeInBytes, 3))
+    {
+        return 0;
+    }
+
     minimumImpliedSizeInBytes = (minimumImpliedSizeInBytes + 3) & ~3ull;
 
     return minimumImpliedSizeInBytes;
@@ -369,6 +425,18 @@ namespace dml
             uint32_t dimensionCount = static_cast<uint32_t>(sizes.size());
             TensorStrides strides(dimensionCount);
 
+            auto multiplyWillOverflowUint32 = [](uint32_t a, uint32_t b) {
+                return b != 0 && a > UINT32_MAX / b;
+            };
+
+            auto makeOverflowProperties = [&strides]() {
+                TensorProperties props;
+                props.strides = std::move(strides);
+                props.totalTensorSizeInBytes = 0;
+                props.guaranteedBaseOffsetAlignment = 0;
+                return props;
+            };
+
             enum Axes { N, C, /* spatial dimensions ... */ };
 
             // N dimension strides
@@ -377,6 +445,11 @@ namespace dml
                 strides[N] = 1;
                 for (uint32_t i = 1; i < dimensionCount; ++i)
                 {
+                    if (multiplyWillOverflowUint32(strides[N], sizes[i]))
+                    {
+                        return makeOverflowProperties();
+                    }
+
                     strides[N] *= sizes[i];
                 }
             }
@@ -394,6 +467,11 @@ namespace dml
                 for (uint32_t i = dimensionCount - 1; i >= 2; --i)
                 {
                     strides[i] = stride;
+                    if (multiplyWillOverflowUint32(stride, sizes[i]))
+                    {
+                        return makeOverflowProperties();
+                    }
+
                     stride *= sizes[i];
                 }
             }
