@@ -40,11 +40,28 @@
 
 #if __cpp_exceptions
     #include <stdexcept>
+#else
+    #include <cstdlib>
 #endif
 
 #if __cplusplus >= 201703L && __has_include(<string_view>)
     #include <string_view>
 #endif
+
+namespace dml
+{
+    namespace detail
+    {
+        [[noreturn]] inline void ThrowTensorSizeOverflow()
+        {
+#if __cpp_exceptions
+            throw std::overflow_error("Tensor size calculation overflowed.");
+#else
+            std::abort();
+#endif
+        }
+    }
+}
 
 /** Calculates the minimum number of bytes required to store a buffer tensor with the specified type, sizes, and
     strides. The formula can be expressed as the following:
@@ -122,7 +139,7 @@ inline UINT64 DMLCalcBufferTensorSize(
         {
             if (multiplyWillOverflow(minimumImpliedSizeInBits, sizes[i]))
             {
-                return 0;
+                dml::detail::ThrowTensorSizeOverflow();
             }
 
             minimumImpliedSizeInBits *= sizes[i];
@@ -130,7 +147,7 @@ inline UINT64 DMLCalcBufferTensorSize(
 
         if (multiplyWillOverflow(minimumImpliedSizeInBits, elementSizeInBits))
         {
-            return 0;
+            dml::detail::ThrowTensorSizeOverflow();
         }
 
         minimumImpliedSizeInBits *= elementSizeInBits;
@@ -148,13 +165,13 @@ inline UINT64 DMLCalcBufferTensorSize(
             UINT64 lastElementOffset = sizes[i] - 1;
             if (multiplyWillOverflow(lastElementOffset, strides[i]))
             {
-                return 0;
+                dml::detail::ThrowTensorSizeOverflow();
             }
 
             lastElementOffset *= strides[i];
             if (addWillOverflow(indexOfLastElement, lastElementOffset))
             {
-                return 0;
+                dml::detail::ThrowTensorSizeOverflow();
             }
 
             indexOfLastElement += lastElementOffset;
@@ -162,7 +179,7 @@ inline UINT64 DMLCalcBufferTensorSize(
 
         if (addWillOverflow(indexOfLastElement, 1) || multiplyWillOverflow(indexOfLastElement + 1, elementSizeInBits))
         {
-            return 0;
+            dml::detail::ThrowTensorSizeOverflow();
         }
 
         minimumImpliedSizeInBits = (indexOfLastElement + 1) * elementSizeInBits;
@@ -170,7 +187,7 @@ inline UINT64 DMLCalcBufferTensorSize(
 
     if (addWillOverflow(minimumImpliedSizeInBits, 7))
     {
-        return 0;
+        dml::detail::ThrowTensorSizeOverflow();
     }
 
     UINT64 minimumImpliedSizeInBytes = (minimumImpliedSizeInBits + 7) / 8;
@@ -178,7 +195,7 @@ inline UINT64 DMLCalcBufferTensorSize(
     // Round up to the nearest 4 bytes.
     if (addWillOverflow(minimumImpliedSizeInBytes, 3))
     {
-        return 0;
+        dml::detail::ThrowTensorSizeOverflow();
     }
 
     minimumImpliedSizeInBytes = (minimumImpliedSizeInBytes + 3) & ~3ull;
@@ -429,14 +446,6 @@ namespace dml
                 return b != 0 && a > UINT32_MAX / b;
             };
 
-            auto makeOverflowProperties = [&strides]() {
-                TensorProperties props;
-                props.strides = std::move(strides);
-                props.totalTensorSizeInBytes = 0;
-                props.guaranteedBaseOffsetAlignment = 0;
-                return props;
-            };
-
             enum Axes { N, C, /* spatial dimensions ... */ };
 
             // N dimension strides
@@ -447,7 +456,7 @@ namespace dml
                 {
                     if (multiplyWillOverflowUint32(strides[N], sizes[i]))
                     {
-                        return makeOverflowProperties();
+                        detail::ThrowTensorSizeOverflow();
                     }
 
                     strides[N] *= sizes[i];
@@ -469,7 +478,7 @@ namespace dml
                     strides[i] = stride;
                     if (multiplyWillOverflowUint32(stride, sizes[i]))
                     {
-                        return makeOverflowProperties();
+                        detail::ThrowTensorSizeOverflow();
                     }
 
                     stride *= sizes[i];

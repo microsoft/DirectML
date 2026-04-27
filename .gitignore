@@ -17,6 +17,7 @@
 # Python extensions package artifacts
 build/
 dist/
+.eggs/
 *.egg-info/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
