@@ -1259,7 +1259,7 @@ Model::BufferDesc ParseModelBufferDesc(const std::filesystem::path& parentPath, 
                 resampleMode
             );
 
-            // Depending on the file type (.npy vs .dat), the file may have an explict data type.
+            // Depending on the file type (.npy vs .dat), the file may have an explicit data type.
             // Use the data type if present, else require initialValuesDataType if not.
             if (buffer.initialValuesDataType == DML_TENSOR_DATA_TYPE_UNKNOWN)
             {
