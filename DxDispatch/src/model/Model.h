@@ -100,7 +100,7 @@ public:
     {
         std::filesystem::path sourcePath;
 
-        // NOTE: these will be overriden if also using the respective command-line options.
+        // NOTE: these will be overridden if also using the respective command-line options.
         std::vector<std::pair<std::string, uint32_t>> freeDimNameOverrides;
         std::vector<std::pair<std::string, uint32_t>> freeDimDenotationOverrides;
         std::vector<std::pair<std::string, std::string>> sessionOptionsConfigEntries;
